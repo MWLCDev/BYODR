@@ -1,5 +1,4 @@
 Service Architecture
-watchdog function
 Smart Segment
 A smart segment is part of the robot that houses computer systems inside that allow it to move autonomously. Connected segments make the robot act like a caterpillar.
 This computer system includes a Raspberry Pi, a Jetson Nano, 2 cameras, a router and 2 motor controllers.
@@ -67,8 +66,6 @@ Raspberry Pi docker service descriptions:
 -Output: Sends the stream via RTSP to the web server located in Teleop.
 -Q1: Why does the Pi create the streams, and not just send them from the cameras directly to the nano, bypassing the Pi?
 
-
-
 2) Stream1
 -Input: Receives video stream from the Operator camera.
 -Purpose: Similarly to the process above, it creates a high quality H264 video output stream.
@@ -85,7 +82,8 @@ Raspberry Pi docker service descriptions:
 -Input: Receives commands in JSON format from Teleop, Inference, Pilot that request movement from the motors. 
 -Function: Sets up a JSON server that listens on 0.0.0.0:5555 for commands from other processes. Listening to 0.0.0.0 means listening from anywhere that has network access to this device. It also sets up  a JSON Publisher so that this service can send JSON data to any services that are listening to this service. Decodes commands received from the other services are decoded and stored in a deque.
 This service also initiates an http server listening to port 9101 (default option).
--Output: The commands are sent to the Motor controllers via the serial USB connection.
+-Output 1: The commands are sent to the Motor controllers via the serial USB connection.
+-Output 2: 
 -Q1: BalenaCloud lists another service called “pigpiod”. This service and the “servos” service both use the same image in their docker container. What does the pigpiod service do?
 -Q2: Why does this service have a JSON publisher? Who does it send data to?
 
@@ -102,12 +100,12 @@ Jetson Nano docker service descriptions:
 
 2) Inference
 -Input 1: Receives stream from AI camera with the socket url being 'ipc:///byodr/camera_0.sock'
--Input 2: Receives routes from teleop with the socket url being 'ipc:///byodr/teleop.sock'
--Input 3: Receives timestamps from teleop with the socket url being 'ipc:///byodr/teleop_c.sock'
+-Input 2: Receives a route from Teleop’s Output 5
+-Input 3: Receives the timestamp with a 'restart' command from Output 6 of Teleop
 -Function: This service is responsible for an interface for generating steering angles and making predictions based on images. These actions are based on a trained neural network model. If this service has input from Teleop, they override the self-driving directions of the model.
 This service also initiates an IPC server with url 'ipc:///byodr/inference_c.sock', and a JSON publisher with url 'ipc:///byodr/inference.sock'. The IPC server has the ability to receive requests from other services, and respond based on the message type of the request.
--Output 1: Sends the AI model’s current state (predicted action, obstacle avoidance, penalties, and other navigation-related information) to the local JSON Publisher. From here, the state can be sent to JSON Receivers of other services.
--Output 2: If the IPC server receives a 'system/startup/list' request, it returns a dictionary containing the server's name, the timestamp of the last startup, and any error messages that occurred during startup.    If the IPC server receives a 'system/service/capabilities' request, it returns a dictionary containing the server's name and its current capabilities.
+-Output 1: Sends the AI model’s current state (predicted action, obstacle avoidance, penalties, and other navigation-related information) to the local JSON Publisher.
+-Output 2:Creates list with any errors from this service. The list will be send to the Teleop service upon request.
 -Q1: How does Inference, Pilot and Teleop work together, if they work together?
 -Q2: How does Inference send its data to the Pi for proper movement?
 
@@ -116,12 +114,10 @@ This service also initiates an IPC server with url 'ipc:///byodr/inference_c.soc
 -Function: The Nano can be added into a virtual network.
 -Output: Can communicate securely with nodes of the same network.
 
-4) WireGuard
+4) WireGuard (Not used)
 -Input: Receives data from the Nano and the Router.
 -Function: Encrypts the data of the Nano.
 -Output: The data send by the Nano towards the internet are encrypted.
--Q: Why do we use Wireguard if we have ZT?
--A: Since ZeroTier and WireGuard look similar, the project uses both ZeroTier and WireGuard for different purposes. ZeroTier is used to create a secure network connection between the robot and the user's computer, while WireGuard is used to encrypt the data that is transmitted over that connection. Together, these technologies provide a secure and reliable way for users to remotely control the robots.
 
 5) Teleop
 -Input 1: Receives stream from the AI camera with the socket url being 'ipc:///byodr/camera_0.sock'
@@ -223,4 +219,4 @@ General questions
 Q1: How json receivers and publishers work? Because this is used to send data one to another.
 Q2: If all segments are in a zerotier network, does any data sent between the segments encrypted?
 Q3: Why do we docker for this project?
-
+Q4: Where is the watchdog function of the Pi/Nano?
