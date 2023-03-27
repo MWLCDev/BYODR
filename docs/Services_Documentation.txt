@@ -66,8 +66,6 @@ Raspberry Pi docker service descriptions:
 -Output: Sends the stream via RTSP to the web server located in Teleop.
 -Q1: Why does the Pi create the streams, and not just send them from the cameras directly to the nano, bypassing the Pi?
 
-
-
 2) Stream1
 -Input: Receives video stream from the Operator camera.
 -Purpose: Similarly to the process above, it creates a high quality H264 video output stream.
