@@ -11,15 +11,15 @@ var screen_utils = {
     }, 
 
     _init: function() {
-        this._arrow_images.left = this._create_image('im_arrow_left.png?v=' + this._version);
-        this._arrow_images.right = this._create_image('im_arrow_right.png?v=' + this._version);
-        this._arrow_images.ahead = this._create_image('im_arrow_up.png?v=' + this._version);
-        this._arrow_images.none = this._create_image('im_arrow_none.png?v=' + this._version);
-        this._wheel_images.black = this._create_image('im_wheel_black.png?v=' + this._version);
-        this._wheel_images.blue = this._create_image('im_wheel_blue.png?v=' + this._version);
-        this._wheel_images.red = this._create_image('im_wheel_red.png?v=' + this._version);
-        this._navigation_icons.play = this._create_image('icon_play.png?v=' + this._version);
-        this._navigation_icons.pause = this._create_image('icon_pause.png?v=' + this._version);
+        this._arrow_images.left = this._create_image('./assets/im_arrow_left.png?v=' + this._version);
+        this._arrow_images.right = this._create_image('./assets/im_arrow_right.png?v=' + this._version);
+        this._arrow_images.ahead = this._create_image('./assets/im_arrow_up.png?v=' + this._version);
+        this._arrow_images.none = this._create_image('./assets/im_arrow_none.png?v=' + this._version);
+        this._wheel_images.black = this._create_image('./assets/im_wheel_black.png?v=' + this._version);
+        this._wheel_images.blue = this._create_image('./assets/im_wheel_blue.png?v=' + this._version);
+        this._wheel_images.red = this._create_image('./assets/im_wheel_red.png?v=' + this._version);
+        this._navigation_icons.play = this._create_image('./assets/icon_play.png?v=' + this._version);
+        this._navigation_icons.pause = this._create_image('./assets/icon_pause.png?v=' + this._version);
     },
 
     _decorate_server_message: function(message) {
