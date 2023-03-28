@@ -1,320 +1,203 @@
 <html>
+
 <head>
     <meta charset="UTF-8">
     <title>Teleop</title>
     <link rel="stylesheet" href="jquery/jquery-ui-1.12.1.min.css">
-    <style type="text/css">
-html {
-  height: 100%;
-  background-image: linear-gradient(to top, white, black);
-}
-body {
-  /* background-color: black; */
-  /* color: white; */
-}
-
-#main_container {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  margin-right: -50%;
-  transform: translate(-50%, 0);
-}
-
-#message_box_message.warning_message {
-  background-color: #ffffcc;
-}
-#message_box_message.error_message {
-  background-color: #f7432f;
-}
-
-#viewport_container.selected {
-    border: 1px solid cyan;
-}
-
-#overlay_image.selected {
-    border: 2px solid cyan;
-}
-
-div.speed_value {
-  display: inline-block;
-  font-size: 8px;
-}
-
-div#pilot_drive_values > p {
-  margin-block-start: 0;
-  margin-block-end: 0;
-  text-align: right;
-}
-
-div#debug_drive_values > p.drive_value_text {
-    display: inline-block;
-    margin-left: 10px;
-}
-
-div#stream_links > a {
-    font-family: "Lucida Console";
-    font-size: 16px;
-}
-div#stream_links > a:link, a:visited {
-    text-decoration: none;
-}
-div#stream_links > a:hover {
-    color: blue;
-}
-div#stream_links > a.inactive {
-    color: white;
-}
-div#stream_links > a:hover, a:active, a.active {
-    color: lightblue;
-}
-
-img.caret_img {
-    cursor: pointer;
-    background: white;
-    width: 15px;
-    height: 15px;
-}
-
-img.preview_img {
-    height: 60px;
-    border-radius: 3px;
-    border: 1px solid grey;
-}
-
-div#navigation_route_container > p {
-  margin-block-start: 0;
-  margin-block-end: 0;
-  text-align: center;
-}
-
-div.overlay_distance {
-    position: absolute;
-    z-index: 25;
-    text-align: center;
-    color: rgba(0, 0, 0, 0.5);
-}
-    </style>
-    <script src="jquery/jquery-3.4.1.min.js"></script>
-    <script src="jquery/jquery-ui-1.12.1.min.js"></script>
-   <!-- <script src="jmuxer/jmuxer-21.07.min.js"></script>-->
-    <script src="live-player/http-live-player.js?v=0.65.0"></script>
-    <script src="performance-polyfill.js?v=0.65.0"></script>
-	<script src="index_a_utils.js?v=0.65.41"></script>
-	<script src="index_b_gamepad.js?v=0.65.41"></script>
-	<script src="index_c_screen.js?v=0.65.50"></script>
-	<script src="index_d_navigator.js?v=0.65.50"></script>
-	<script src="index_e_teleop.js?v=0.65.41"></script>
-	<script src="index_video_hlp.js?v=0.65.0"></script>
-    <script src="index_video_mjpeg.js?v=0.65.0"></script>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
+
 <body>
-<div id="main_container">
-    <div style="float: left;">
-        <div id="debug_drive_bar"
-             style="height: 30px;
-                    color: white; font-size: 15px;
-                    padding: 10px 0 0 10px;
-                    font-family: Lucida Console;"
-             title="Drive values">
-            <div id="debug_drive_values" style="margin-top: -14px;">
-                <p class="drive_value_text" style="min-width:80px;">front&nbsp;<span id="front_camera_framerate">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">rear&nbsp;<span id="rear_camera_framerate">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">inference&nbsp;<span id="inference_fps">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">st-mu&nbsp;<span id="inference_surprise">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">st-cri&nbsp;<span id="inference_critic">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">ob-mu&nbsp;<span id="inference_brake_critic">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">ob&nbsp;<span id="inference_obstacle">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">ds&nbsp;<span id="inference_desired_speed">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">lat&nbsp;<span id="navigation_geo_lat">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">lon&nbsp;<span id="navigation_geo_long">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">bea&nbsp;<span id="navigation_heading">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">dist&nbsp;<span id="navigation_match_image_distance">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">cmd&nbsp;<span id="navigation_current_command">0</span></p>
-                <p class="drive_value_text" style="min-width:80px;">dir&nbsp;<span id="navigation_direction">0</span></p>
-                <p class="drive_value_text" style="min-width:0; float:right; font-size: 12px; margin: 15px 8px 0 10p;">
+    <div id="main_container">
+        <div id="debug_drive_bar" title="Drive values">
+            <div id="debug_drive_values">
+                <p>front
+                    <span id="front_camera_framerate">0</span>
+                </p>
+                <p>rear
+                    <span id="rear_camera_framerate">0</span>
+                </p>
+                <p>inference
+                    <span id="inference_fps">0</span>
+                </p>
+                <p>st-mu
+                    <span id="inference_surprise">0</span>
+                </p>
+                <p>st-cri
+                    <span id="inference_critic">0</span>
+                </p>
+                <p>ob-mu
+                    <span id="inference_brake_critic">0</span>
+                </p>
+                <p>ob
+                    <span id="inference_obstacle">0</span>
+                </p>
+                <p>ds
+                    <span id="inference_desired_speed">0</span>
+                </p>
+                <p>lat
+                    <span id="navigation_geo_lat">0</span>
+                </p>
+                <p>lon
+                    <span id="navigation_geo_long">0</span>
+                </p>
+                <p>bea
+                    <span id="navigation_heading">0</span>
+                </p>
+                <p>dist
+                    <span id="navigation_match_image_distance">0</span>
+                </p>
+                <p>cmd
+                    <span id="navigation_current_command">0</span>
+                </p>
+                <p>dir
+                    <span id="navigation_direction">0</span>
+                </p>
+                <p>
                     <span id="debug_screen_dimension"></span>
                 </p>
             </div>
         </div>
-        <div id="message_box_container" style="display: flex;">
+        <div id="message_box_container">
             <div style="flex: 1;">
-                <input id="message_box_button_take_control"
-                       type="button"
-                       value="Take over control"
-                       style="height: 100%; font-size: 18; text-align: center;">
+                <input id="message_box_button_take_control" type="button" value="Take over control">
             </div>
-            <div id="message_box_message"
-                 style="height: 30px; width: 100%;
-                    color: #000; font-family: Verdana; font-size: 13px;
-                    border: 1px solid #ccc;
-                    padding: 8px 0 0 8px;">
-            </div>
+            <div id="message_box_message"></div>
         </div>
-        <div id="horizontal_bar"
-             style="overflow: hidden; width: 100% !important;
-                    text-align: center; color: white; font-family: Verdana;">
-            <div id="home_menu"
-                 style="float: left;"
-                 title="Settings">
+        <div id="horizontal_bar">
+            <div id="home_menu" title="Settings">
                 <a href="/user_menu.htm?v=0.65.32">
-                    <img id="home_menu_icon"
-                         src='./assets/index-menu.png?v=0.65.0'
-                         style="margin: 10px 0 0 0; width: 50px; height: 50px;"/>
+                    <img id="home_menu_icon" src='./assets/index-menu.png?v=0.65.0' />
                 </a>
             </div>
-            <div id="stream_links" style="float: left; padding-top: 20px; text-align: left;">
-                <a id="video_stream_h264" href="#"
-                   title="Display the main camera video-stream">h264</a>
+            <div id="stream_links">
+                <a id="video_stream_h264" href="#" title="Display the main camera video-stream">h264</a>
                 <br/>
-                <a id="video_stream_mjpeg" href="#"
-                   title="Display the main camera motion jpeg stream (attempt manual latency control)">mjpeg</a>
+                <a id="video_stream_mjpeg" href="#"title="Display the main camera motion jpeg stream (attempt manual latency control)">mjpeg</a>
             </div>
-            <div id="mjpeg_stream_controls"
-                 style="float: left; padding: 38px 0 0 10px; font-family: 'Lucida Console'; font-size: 15px;">
+            <div id="mjpeg_stream_controls">
                 <span id="mjpeg_quality_val">0</span>
                 <img id="caret_down" src='./assets/caret.png?v=0.65.0' class="caret_img"
-                     title="Decrease motion jpeg quality"/>
-                <img id="caret_up" src='caret.png?v=0.65.0' class="caret_img" style="transform: rotate(180deg);"
-                     title="Increase motion jpeg quality"/>
+                    title="Decrease motion jpeg quality" />
+                <img id="caret_up" src='caret.png?v=0.65.0' class="caret_img" title="Increase motion jpeg quality" />
             </div>
-            <div id="preview_container"
-                 style="float: left; margin: 5px 0 5px 5px;"
-                 title="Show this camera on the main display">
-                <img id="mjpeg_camera_preview_image" class="preview_img" style="width: 240px; cursor: pointer;"/>
+            <div id="preview_container" title="Show this camera on the main display">
+                <img id="mjpeg_camera_preview_image" class="preview_img" />
             </div>
-            <div id="overlay_control_container"
-                 style="float: left; margin: 5px 0 0 5px;"
-                 title="Expand or collapse the camera overlay">
-                <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0" width="30" height="30"
-                     style="border-radius: 5px; background: white;"/>
+            <div id="overlay_control_container" title="Expand or collapse the camera overlay">
+                <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0" width="30" height="30" />
             </div>
-            <div id="dashboard" style="float: left; padding: 0 0 5px 15%;">
-                <span id="autopilot_status" style="display: inline-block; font-size: 24px;"></span>
-                <img id="arrow" style="padding-top: 10px;"/>
-                <div id="alpha_speed" class="speed_value" style="padding: 5px 10px 0 20px;">
-                    <div id="alpha_speed_value" style="font-size: 30px;">0</div>
+            <div id="dashboard">
+                <span id="autopilot_status"></span>
+                <img id="arrow" />
+                <div id="alpha_speed" class="speed_value">
+                    <div id="alpha_speed_value">0</div>
                     <div id="alpha_speed_label"></div>
                 </div>
-                <img id="steeringWheel" style="transform: scale(0.8);"/>
-                <div id="beta_speed"
-                     class="speed_value"
-                     style="padding: 10px 10px 0 10px;">
-                    <div id="beta_speed_value" style="font-size: 30px;">0</div>
+                <img id="steeringWheel" />
+                <div id="beta_speed" class="speed_value">
+                    <div id="beta_speed_value">0</div>
                     <div id="beta_speed_label">km/h</div>
                 </div>
             </div>
-            <div id="pilot_drive_values"
-                 style="float: right; margin: 30px 0 1px 50px;
-                        color: white; font-family: Lucida Console; font-size: 11px;"
-                 title="Toggle debug values">
-                <p style="min-width: 50px;"><span id="pilot_steering">0</span>&nbsp;ste</p>
-                <p style="min-width: 50px;"><span id="pilot_throttle">0</span>&nbsp;thr</p>
+            <div id="pilot_drive_values" title="Toggle debug values">
+                <p><span id="pilot_steering">0</span>ste</p>
+                <p><span id="pilot_throttle">0</span>thr</p>
             </div>
-            <div id="navigation_image_container"
-                 style="float: right; visibility: hidden; margin: 6px 0 0 5px;">
+            <div id="navigation_image_container">
                 <img id="current_navigation_image" class="preview_img"
-                     title="Start or pause the selected route. This image is the most recent recognized navigation point."
-                     style="width: 90px; cursor: pointer;"
-                />
+                    title="Start or pause the selected route. This image is the most recent recognized navigation point." />
                 <img id="next_navigation_image" class="preview_img"
-                     title="This image is the next expected navigation point."
-                     style="width: 90px;"
-                />
+                    title="This image is the next expected navigation point." />
             </div>
             <div id="navigation_route_container"
-                 title="Navigation points and their images will be displayed when matched"
-                 style="float:right; visibility: hidden; margin: 15px 20px 0 0; font-family: 'Lucida Console'; font-size: 15px;">
+                title="Navigation points and their images will be displayed when matched">
                 <p>
-                    <span id="navigation_route_sel_prev"
-                          style="cursor: pointer; display: none;"
-                          title="Select the previous route, if any">
-                        <img src='./assets/caret.png?v=0.65.0' class="caret_img" style="transform: rotate(90deg);"/>
+                    <span id="navigation_route_sel_prev" title="Select the previous route, if any">
+                        <img src='./assets/caret.png?v=0.65.0' class="caret_img" />
                     </span>
                     <span id="navigation_route_name"></span>
-                    <span id="navigation_route_sel_next"
-                          style="cursor: pointer;"
-                          title="Select the next route, if any">
-                        <img src='./assets/caret.png?v=0.65.0' class="caret_img" style="transform: rotate(-90deg);"/>
+                    <span id="navigation_route_sel_next" title="Select the next route, if any">
+                        <img src='./assets/caret.png?v=0.65.0' class="caret_img" />
                     </span>
                 </p>
-                <p><span id="navigation_point_name"></span></p>
+                <p>
+                    <span id="navigation_point_name"></span>
+                </p>
             </div>
         </div>
-        <div id="viewport_container" style="width: calc(99vw - 0px); position: relative;">
-            <canvas id="viewport_canvas" width="640" height="480"
-                    style="width: 100% !important; height: 100% !important; position: absolute;">
+        <div id="viewport_container">
+            <canvas id="viewport_canvas" width="640" height="480">
             </canvas>
-            <div id="overlay_image_container" style="position: absolute; z-index: 50;">
-                <img id="overlay_image" width="320" height="240"
-                     style="margin: 5px 0 0 5px; border-radius: 5px;"/>
+            <div id="overlay_image_container">
+                <img id="overlay_image" width="320" height="240" />
             </div>
-            <div id="overlay_center_distance0" class="overlay_distance"
-                 style="width: 360px; left: calc(50vw - 180px);">1.0
-            </div>
-            <div id="overlay_center_distance1" class="overlay_distance"
-                 style="width: 600px; left: calc(50vw - 300px);">0.5
-            </div>
-            <div id="overlay_left_marker0" class="overlay_distance"
-                 style="width: 40px; left: 0;">0.5
-            </div>
-            <div id="overlay_left_marker1" class="overlay_distance"
-                 style="width: 35px; left: 0;">0.25
-            </div>
-            <div id="overlay_right_marker0" class="overlay_distance"
-                 style="width: 40px; right: 0;">0.5
-            </div>
-            <div id="overlay_right_marker1" class="overlay_distance"
-                 style="width: 35px; right: 0;">0.25
-            </div>
+            <div id="overlay_center_distance0" class="overlay_distance">1.0</div>
+            <div id="overlay_center_distance1" class="overlay_distance">0.5</div>
+            <div id="overlay_left_marker0" class="overlay_distance">0.5</div>
+            <div id="overlay_left_marker1" class="overlay_distance">0.25</div>
+            <div id="overlay_right_marker0" class="overlay_distance">0.5</div>
+            <div id="overlay_right_marker1" class="overlay_distance">0.25</div>
         </div>
     </div>
-</div>
-<script type="text/javascript">
-// Set the name of the hidden property and the change event for visibility
-var hidden, visibilityChange;
-if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support
-  hidden = "hidden";
-  visibilityChange = "visibilitychange";
-} else if (typeof document.msHidden !== "undefined") {
-  hidden = "msHidden";
-  visibilityChange = "msvisibilitychange";
-} else if (typeof document.webkitHidden !== "undefined") {
-  hidden = "webkitHidden";
-  visibilityChange = "webkitvisibilitychange";
-}
+    <script type="text/javascript">
+        // Set the name of the hidden property and the change event for visibility
+        var hidden, visibilityChange;
+        if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support
+            hidden = "hidden";
+            visibilityChange = "visibilitychange";
+        } else if (typeof document.msHidden !== "undefined") {
+            hidden = "msHidden";
+            visibilityChange = "msvisibilitychange";
+        } else if (typeof document.webkitHidden !== "undefined") {
+            hidden = "webkitHidden";
+            visibilityChange = "webkitvisibilitychange";
+        }
 
-function start_all_handlers() {
-    navigator_start_all();
-    teleop_start_all();
-    mjpeg_start_all();
-    h264_start_all();
-}
+        function start_all_handlers() {
+            navigator_start_all();
+            teleop_start_all();
+            mjpeg_start_all();
+            h264_start_all();
+        }
 
-function stop_all_handlers() {
-    navigator_stop_all();
-    teleop_stop_all();
-    mjpeg_stop_all();
-    h264_stop_all();
-}
+        function stop_all_handlers() {
+            navigator_stop_all();
+            teleop_stop_all();
+            mjpeg_stop_all();
+            h264_stop_all();
+        }
 
-function handleVisibilityChange() {
-  if (document[hidden]) {
-    stop_all_handlers();
-  } else {
-    start_all_handlers();
-  }
-}
+        function handleVisibilityChange() {
+            if (document[hidden]) {
+                stop_all_handlers();
+            } else {
+                start_all_handlers();
+            }
+        }
 
-$(function () {
-    if (!dev_tools.is_develop()) {
-        window.history.pushState({}, 'application_index_loaded', '/');
-    }
-    document.addEventListener(visibilityChange, handleVisibilityChange, false);
-    window.addEventListener('focus', start_all_handlers);
-    window.addEventListener('blur', stop_all_handlers);
-    start_all_handlers();
-});
-</script>
+        $(function () {
+            if (!dev_tools.is_develop()) {
+                window.history.pushState({}, 'application_index_loaded', '/');
+            }
+            document.addEventListener(visibilityChange, handleVisibilityChange, false);
+            window.addEventListener('focus', start_all_handlers);
+            window.addEventListener('blur', stop_all_handlers);
+            start_all_handlers();
+        });
+    </script>
+
+    <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads, which can prevent errors, and speed up website response time. -->
+    <script src="live-player/http-live-player.js?v=0.65.0"></script>
+    <script src="performance-polyfill.js?v=0.65.0"></script>
+    <script src="index_a_utils.js?v=0.65.41"></script>
+    <script src="index_b_gamepad.js?v=0.65.41"></script>
+    <script src="index_c_screen.js?v=0.65.50"></script>
+    <script src="index_d_navigator.js?v=0.65.50"></script>
+    <script src="index_e_teleop.js?v=0.65.41"></script>
+    <script src="index_video_hlp.js?v=0.65.0"></script>
+    <script src="index_video_mjpeg.js?v=0.65.0"></script>
 </body>
+
 </html>

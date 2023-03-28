@@ -1,0 +1,348 @@
+html {
+  height: 100%;
+  background-image: linear-gradient(to top, white, black);
+}
+
+body {
+  /* background-color: black; */
+  /* color: white; */
+}
+
+#main_container {
+  float: left;
+  position: absolute;
+  top: 0;
+  left: 50%;
+  margin-right: -50%;
+  transform: translate(-50%, 0);
+}
+
+#message_box_message.warning_message {
+  background-color: #ffffcc;
+}
+
+#message_box_message.error_message {
+  background-color: #f7432f;
+}
+
+#viewport_container.selected {
+  border: 1px solid cyan;
+}
+
+#overlay_image.selected {
+  border: 2px solid cyan;
+}
+
+div.speed_value {
+  display: inline-block;
+  font-size: 8px;
+}
+
+div#pilot_drive_values>p {
+  margin-block-start: 0;
+  margin-block-end: 0;
+  text-align: right;
+}
+
+div#stream_links>a {
+  font-family: "Lucida Console";
+  font-size: 16px;
+}
+
+div#stream_links>a:link,
+a:visited {
+  text-decoration: none;
+}
+
+div#stream_links>a:hover {
+  color: blue;
+}
+
+div#stream_links>a.inactive {
+  color: white;
+}
+
+div#stream_links>a:hover,
+a:active,
+a.active {
+  color: lightblue;
+}
+
+img.caret_img {
+  cursor: pointer;
+  background: white;
+  width: 15px;
+  height: 15px;
+}
+
+img.preview_img {
+  height: 60px;
+  border-radius: 3px;
+  border: 1px solid grey;
+}
+
+div#navigation_route_container>p {
+  margin-block-start: 0;
+  margin-block-end: 0;
+  text-align: center;
+}
+
+div.overlay_distance {
+  position: absolute;
+  z-index: 25;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
+}
+
+#message_box_container>div {
+  flex: 1;
+}
+
+#overlay_control_container>img {
+  border-radius: 5px;
+  background: white;
+}
+
+#pilot_drive_values>p {
+  min-width: 50px;
+}
+
+#pilot_drive_values>p {
+  min-width: 50px;
+}
+
+#debug_drive_bar {
+  height: 30px;
+  color: white;
+  font-size: 15px;
+  padding: 10px 0 0 10px;
+  font-family: Lucida Console;
+}
+
+#debug_drive_values {
+  margin-top: -14px;
+}
+
+#front_camera_framerate {}
+
+#message_box_container {
+  display: flex;
+}
+
+#message_box_button_take_control {
+  height: 100%;
+  font-size: 18;
+  text-align: center;
+}
+
+#message_box_message {
+  height: 30px;
+  width: 100%;
+  color: #000;
+  font-family: Verdana;
+  font-size: 13px;
+  border: 1px solid #ccc;
+  padding: 8px 0 0 8px;
+}
+
+#horizontal_bar {
+  overflow: hidden;
+  width: 100% !important;
+  text-align: center;
+  color: white;
+  font-family: Verdana;
+}
+
+#home_menu {
+  float: left;
+}
+
+#home_menu_icon {
+  margin: 10px 0 0 0;
+  width: 50px;
+  height: 50px;
+}
+
+#stream_links {
+  float: left;
+  padding-top: 20px;
+  text-align: left;
+}
+
+#video_stream_h264 {}
+
+#video_stream_mjpeg {}
+
+#mjpeg_stream_controls {
+  float: left;
+  padding: 38px 0 0 10px;
+  font-family: 'Lucida Console';
+  font-size: 15px;
+}
+
+#mjpeg_quality_val {}
+
+#caret_down {}
+
+#caret_up {
+  transform: rotate(180deg);
+}
+
+#preview_container {
+  float: left;
+  margin: 5px 0 5px 5px;
+}
+
+#mjpeg_camera_preview_image {
+  width: 240px;
+  cursor: pointer;
+}
+
+#overlay_control_container {
+  float: left;
+  margin: 5px 0 0 5px;
+}
+
+#dashboard {
+  float: left;
+  padding: 0 0 5px 15%;
+}
+
+#autopilot_status {
+  display: inline-block;
+  font-size: 24px;
+}
+
+#arrow {
+  padding-top: 10px;
+}
+
+#alpha_speed {
+  padding: 5px 10px 0 20px;
+}
+
+#alpha_speed_value {
+  font-size: 30px;
+}
+
+#alpha_speed_label {}
+
+#steeringWheel {
+  transform: scale(0.8);
+}
+
+#beta_speed {
+  padding: 10px 10px 0 10px;
+}
+
+#beta_speed_value {
+  font-size: 30px;
+}
+
+#beta_speed_label {}
+
+#pilot_drive_values {
+  float: right;
+  margin: 30px 0 1px 50px;
+  color: white;
+  font-family: Lucida Console;
+  font-size: 11px;
+}
+
+#pilot_steering {}
+
+#pilot_throttle {}
+
+#navigation_image_container {
+  float: right;
+  visibility: hidden;
+  margin: 6px 0 0 5px;
+}
+
+#current_navigation_image {
+  width: 90px;
+  cursor: pointer;
+}
+
+#next_navigation_image {
+  width: 90px;
+}
+
+#navigation_route_container {
+  float: right;
+  visibility: hidden;
+  margin: 15px 20px 0 0;
+  font-family: 'Lucida Console';
+  font-size: 15px;
+}
+
+#navigation_route_sel_prev {
+  cursor: pointer;
+  display: none;
+}
+
+
+#navigation_route_sel_next {
+  cursor: pointer;
+}
+
+#viewport_container {
+  width: calc(99vw - 0px);
+  position: relative;
+}
+
+#viewport_canvas {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute;
+}
+
+#overlay_image_container {
+  position: absolute;
+  z-index: 50;
+}
+
+#overlay_image {
+  margin: 5px 0 0 5px;
+  border-radius: 5px;
+}
+
+#overlay_center_distance0 {
+  width: 360px;
+  left: calc(50vw - 180px);
+}
+
+#overlay_center_distance1 {
+  width: 600px;
+  left: calc(50vw - 300px);
+}
+
+#overlay_left_marker0 {
+  width: 40px;
+  left: 0;
+}
+
+#overlay_left_marker1 {
+  width: 35px;
+  left: 0;
+}
+
+#overlay_right_marker0 {
+  width: 40px;
+  right: 0;
+}
+
+#overlay_right_marker1 {
+  width: 35px;
+  right: 0;
+}
+
+#debug_drive_values p {
+  display: inline-block;
+  margin-left: 10px;
+  min-width: 80px;
+}
+
+.caret_img {
+  transform: rotate(90deg);
+}
