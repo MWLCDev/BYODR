@@ -98,10 +98,6 @@ div.overlay_distance {
   flex: 1;
 }
 
-#overlay_control_container>img {
-  border-radius: 5px;
-  background: white;
-}
 
 #pilot_drive_values>p {
   min-width: 50px;
@@ -123,7 +119,6 @@ div.overlay_distance {
   margin-top: -14px;
 }
 
-#front_camera_framerate {}
 
 #message_box_container {
   display: flex;
@@ -199,8 +194,15 @@ div.overlay_distance {
 }
 
 #overlay_control_container {
+  display:grid;
   float: left;
   margin: 5px 0 0 5px;
+}
+#overlay_control_container img {
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  background: white;
 }
 
 #dashboard {
