@@ -194,15 +194,20 @@ div.overlay_distance {
 }
 
 #overlay_control_container {
-  display:grid;
+  display: grid;
   float: left;
   margin: 5px 0 0 5px;
 }
-#overlay_control_container img {
+
+#overlay_control_container *:first-child {
   width: 30px;
   height: 30px;
   border-radius: 5px;
   background: white;
+}
+
+#overlay_control_container button {
+  padding: 0
 }
 
 #dashboard {

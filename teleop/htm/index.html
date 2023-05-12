@@ -59,9 +59,10 @@
             <div id="preview_container" title="Show this camera on the main display">
                 <img id="mjpeg_camera_preview_image" class="preview_img" />
             </div>
-            <div id="overlay_control_container" title="Expand or collapse the camera overlay">
-                <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0"/>
-                <img src="./assets/gps_icon.jpg"/>
+            <div id="overlay_control_container">
+                <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0" id="expand_camera_icon"
+                    title="Expand or collapse the camera overlay" />
+                <a id="open_trainig_sessions_list" href="#"><img src="./assets/gps_icon.jpg" /></a>
             </div>
             <div id="dashboard">
                 <span id="autopilot_status"></span>
@@ -171,6 +172,7 @@
     <script src="index_c_screen.js?v=0.65.50"></script>
     <script src="index_d_navigator.js?v=0.65.50"></script>
     <script src="index_e_teleop.js?v=0.65.41"></script>
+    <script src="index_f_trainingSessions.js?v=0.65.41"></script>
     <script src="index_video_hlp.js?v=0.65.0"></script>
     <script src="index_video_mjpeg.js?v=0.65.0"></script>
 </body>

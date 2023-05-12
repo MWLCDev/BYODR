@@ -210,7 +210,7 @@ var mjpeg_page_controller = {
     camera_image_listeners: [],
     el_preview_image: null,
     el_overlay_image: null,
-    overlay_control_container: null,
+    expand_camera_icon: null,
     overlay_image_container: null,
 
     init: function(cameras) {
@@ -219,9 +219,9 @@ var mjpeg_page_controller = {
         this.refresh_page_values();
         this.el_preview_image = $('img#mjpeg_camera_preview_image');
         this.el_overlay_image = $('img#overlay_image');
-        this.overlay_control_container = $('div#overlay_control_container');
+        this.expand_camera_icon = $('img#expand_camera_icon');
         this.overlay_image_container = $('div#overlay_image_container');
-        this.overlay_control_container.css({'cursor': 'zoom-in'});
+        this.expand_camera_icon.css({'cursor': 'zoom-in'});
         this.overlay_image_container.invisible();
         this.set_camera_framerates(teleop_screen.active_camera);
         $("img#caret_down").click(function() {
@@ -246,7 +246,7 @@ var mjpeg_page_controller = {
                 }
             }
         );
-        this.overlay_control_container.click(function() {
+        this.expand_camera_icon.click(function() {
             const _instance = mjpeg_page_controller;
             const _visible = _instance.overlay_image_container.is_visible();
             if (_visible) {
@@ -256,18 +256,18 @@ var mjpeg_page_controller = {
                         _instance.el_overlay_image.width(480);
                         _instance.el_overlay_image.height(320);
                         _instance.el_overlay_image.css({'opacity': 0.5});
-                        _instance.overlay_control_container.css({'cursor': 'zoom-out'});
+                        _instance.expand_camera_icon.css({'cursor': 'zoom-out'});
                         break;
                     default:
                         _instance.el_overlay_image.width(320);
                         _instance.el_overlay_image.height(240);
                         _instance.el_overlay_image.css({'opacity': 1});
                         _instance.overlay_image_container.invisible();
-                        _instance.overlay_control_container.css({'cursor': 'zoom-in'});
+                        _instance.expand_camera_icon.css({'cursor': 'zoom-in'});
                 }
             } else {
                 _instance.overlay_image_container.visible();
-                _instance.overlay_control_container.css({'cursor': 'zoom-in'});
+                _instance.expand_camera_icon.css({'cursor': 'zoom-in'});
             }
             // Reset the framerate.
             _instance.set_camera_framerates(teleop_screen.active_camera);
