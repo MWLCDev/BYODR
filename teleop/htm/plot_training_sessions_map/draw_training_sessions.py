@@ -32,34 +32,16 @@ class FindCSV:
     then move them to a folder with the name being the date of training session "2023Apr06"
     """
 
-    def store_sessions_folder(self):
-        global SESSION_DATE
-        """store in "CSV_FILES_LOCATION" the location for the training sessions 
-        where the .CSV files are moved from the compressed file of training sessions
-        """
-        if len(CSV_FILES_LOCATION) == 0:
-            CSV_FILES_LOCATION.append(
-                "{0}\\{1}".format(
-                    pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
-                )
-            )
-        elif not SESSION_DATE[-1] in CSV_FILES_LOCATION[-1]:
-            CSV_FILES_LOCATION.append(
-                "{0}\\{1}".format(
-                    pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
-                )
-            )
-
     def extract_files_by_extension(self):
         global SESSION_DATE
         for file in ZIP_FILES_LOCATION:
+            filename_only =  os.path.basename(file)
+            date_from_filename_only = filename_only.split("T")[0]
             # To get the date of session only, from the CSV file
             if len(SESSION_DATE) == 0:
-                SESSION_DATE.append(os.path.basename(file)[:9])
-            elif not os.path.basename(file)[:9] in SESSION_DATE[-1]:
-                SESSION_DATE.append(os.path.basename(file)[:9])
-
-            # SESSION_DATE = os.path.basename(file)[:9]
+                SESSION_DATE.append(date_from_filename_only)
+            elif not date_from_filename_only in SESSION_DATE[-1]:
+                SESSION_DATE.append(date_from_filename_only)
 
             self.create_sessions_folder(SESSION_DATE[-1])
 
@@ -77,6 +59,23 @@ class FindCSV:
                         )
                         os.rename(extracted_path, new_file_path)
 
+    def store_sessions_folder(self):
+        global SESSION_DATE
+        """store in "CSV_FILES_LOCATION" the location for the training sessions 
+        where the .CSV files are moved from the compressed file of training sessions
+        """
+        if len(CSV_FILES_LOCATION) == 0:
+            CSV_FILES_LOCATION.append(
+                "{0}\\{1}".format(
+                    pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
+                )
+            )
+        elif not SESSION_DATE[-1] in CSV_FILES_LOCATION[-1]:
+            CSV_FILES_LOCATION.append(
+                "{0}\\{1}".format(
+                    pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
+                )
+            )
     def create_sessions_folder(self, session_data):
         """Create a folder with the date of the sessions"""
         if not os.path.exists(session_data):
@@ -169,7 +168,7 @@ class PlotMap:
             self.draw_map_line(map_obj, coordinates)
 
             # Save the map to an HTML file
-            map_path = os.path.join("training_maps",f"{file[1]}.html")
+            map_path = os.path.join("training_maps", f"{file[1]}.html")
             os.makedirs(os.path.dirname(map_path), exist_ok=True)
             map_obj.save(map_path)
             print(f"created the training route of session {file[1]}")
