@@ -1,5 +1,5 @@
 window.onload = function () {
-    var a = document.getElementById("open_trainig_sessions_list");
+    var a = document.getElementById("open_training_sessions_list");
     var popup = document.getElementById("popupWindow");
     a.onclick = function () {
         // alert("I am an alert box!");

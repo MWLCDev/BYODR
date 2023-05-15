@@ -164,9 +164,6 @@ div.overlay_distance {
   text-align: left;
 }
 
-#video_stream_h264 {}
-
-#video_stream_mjpeg {}
 
 #mjpeg_stream_controls {
   float: left;
@@ -175,9 +172,6 @@ div.overlay_distance {
   font-size: 15px;
 }
 
-#mjpeg_quality_val {}
-
-#caret_down {}
 
 #caret_up {
   transform: rotate(180deg);
@@ -210,17 +204,29 @@ div.overlay_distance {
   padding: 0
 }
 
-.popup {
+#popupWindow {
   display: none;
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);
+  transform: translate(-50%, -50%);  
   width: 50vw;
   height: 30vh;
   background-color: #f1f1f1;
   padding: 20px;
   border: 1px solid #ccc;
+}
+
+#popupWindow #close {
+  position: fixed;
+  top: 5%;
+  left: 95%;
+  background: none;
+  color: inherit;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  outline: inherit;
 }
 
 #dashboard {
@@ -245,8 +251,6 @@ div.overlay_distance {
   font-size: 30px;
 }
 
-#alpha_speed_label {}
-
 #steeringWheel {
   transform: scale(0.8);
 }
@@ -259,8 +263,6 @@ div.overlay_distance {
   font-size: 30px;
 }
 
-#beta_speed_label {}
-
 #pilot_drive_values {
   float: right;
   margin: 30px 0 1px 50px;
@@ -268,11 +270,6 @@ div.overlay_distance {
   font-family: Lucida Console;
   font-size: 11px;
 }
-
-#pilot_steering {}
-
-#pilot_throttle {}
-
 #navigation_image_container {
   float: right;
   visibility: hidden;

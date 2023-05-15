@@ -62,8 +62,9 @@
             <div id="overlay_control_container">
                 <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0" id="expand_camera_icon"
                     title="Expand or collapse the camera overlay" />
-                <a id="open_trainig_sessions_list" href="#"><img src="./assets/gps_icon.jpg" /></a>
-                
+                <a id="open_training_sessions_list" href="#"><img src="./assets/gps_icon.jpg"
+                        title="Show training sessions" /></a>
+
             </div>
             <div id="dashboard">
                 <span id="autopilot_status"></span>
@@ -116,18 +117,24 @@
             <div id="overlay_left_marker1" class="overlay_distance">0.25</div>
             <div id="overlay_right_marker0" class="overlay_distance">0.5</div>
             <div id="overlay_right_marker1" class="overlay_distance">0.25</div>
-            <div id="popupWindow" class="popup">
+            <div id="popupWindow">
                 <h2>Pop-up Window</h2>
-                <p>This is a pop-up window.</p>
-                <button onclick="hidePopup()">Close</button>
-              </div>
+                <p>Lorem ipsum, dolor sit amet consectetur adipisicing elit. Quod, nihil dolores. Ipsum harum explicabo nam nostrum, blanditiis velit molestias alias laboriosam assumenda! Facere dolorem nam ut dolores provident est quisquam?.</p>
+                <ul id="fileList">
+
+                </ul>
+                <button id="reload_training_sessions_files" onclick="show_training_sessions()">Reload</button>
+                <button id="close" onclick="hidePopup()">X</button>
+            </div>
         </div>
     </div>
 
     <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads, which can prevent errors, and speed up website response time. -->
-    <script src="live-player/http-live-player.js?v=0.65.0"></script>
     <script src="index.js"></script>
+    <script src="fetch_training_sessions.js"></script>
+
     <script src="performance-polyfill.js?v=0.65.0"></script>
+    <script src="live-player/http-live-player.js?v=0.65.0"></script>
     <script src="index_a_utils.js?v=0.65.41"></script>
     <script src="index_b_gamepad.js?v=0.65.41"></script>
     <script src="index_c_screen.js?v=0.65.50"></script>
