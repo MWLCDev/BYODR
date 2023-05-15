@@ -210,6 +210,19 @@ div.overlay_distance {
   padding: 0
 }
 
+.popup {
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 50vw;
+  height: 30vh;
+  background-color: #f1f1f1;
+  padding: 20px;
+  border: 1px solid #ccc;
+}
+
 #dashboard {
   float: left;
   padding: 0 0 5px 15%;
