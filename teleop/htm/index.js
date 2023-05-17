@@ -13,7 +13,7 @@ function show_training_sessions() {
               const link = document.createElement('a');
               link.href = 'plot_training_sessions_map/training_maps/' + file;
               link.target = '_blank';
-              link.textContent = file;
+              link.textContent = file.substring(0, file.length - 5);
               listItem.appendChild(link);
               fileList.appendChild(listItem);
             });
