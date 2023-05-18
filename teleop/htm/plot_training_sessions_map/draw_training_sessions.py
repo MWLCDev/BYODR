@@ -20,11 +20,17 @@ ZIP_FILES_LOCATION = glob.glob(f"{TRAINING_SESSION_LOCATION}**/*.zip", recursive
 # To store the name of the day the session took place in it.
 SESSION_DATE = []
 
-# List for the location of the resultant .CSVs made in a day.
+# List for the location (in absolute path) of the resultant .CSVs made in a day.
 MERGED_CSV_FILES_LOCATION = []
 
 # Store the folder of sessions
 CSV_FILES_LOCATION = []
+
+CURRENT_DIRECTORY = os.path.dirname(os.path.abspath(__file__))
+
+
+def return_absolute_path(additional_path):
+    return CURRENT_DIRECTORY + "/" + additional_path
 
 
 class FindCSV:
@@ -35,7 +41,7 @@ class FindCSV:
     def extract_files_by_extension(self):
         global SESSION_DATE
         for file in ZIP_FILES_LOCATION:
-            filename_only =  os.path.basename(file)
+            filename_only = os.path.basename(file)
             date_from_filename_only = filename_only.split("T")[0]
             # To get the date of session only, from the CSV file
             if len(SESSION_DATE) == 0:
@@ -52,12 +58,9 @@ class FindCSV:
                 for file_info in zip_ref.infolist():
                     if file_info.filename.endswith(".csv"):
                         extracted_path = zip_ref.extract(
-                            file_info, path=SESSION_DATE[-1]
+                            file_info,
+                            path=os.path.join(CURRENT_DIRECTORY, SESSION_DATE[-1]),
                         )
-                        new_file_path = os.path.join(
-                            SESSION_DATE[-1], file_info.filename
-                        )
-                        os.rename(extracted_path, new_file_path)
 
     def store_sessions_folder(self):
         global SESSION_DATE
@@ -76,10 +79,12 @@ class FindCSV:
                     pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
                 )
             )
+
     def create_sessions_folder(self, session_data):
+        session_directory = os.path.join(CURRENT_DIRECTORY, session_data)
         """Create a folder with the date of the sessions"""
-        if not os.path.exists(session_data):
-            os.makedirs(session_data)
+        if not os.path.exists(session_directory):
+            os.makedirs(session_directory)
 
 
 class ProcessCSVtoGPX:
@@ -119,16 +124,16 @@ class ProcessCSVtoGPX:
 
     def convert_to_CSV(self, session_data):
         self.merged_csv_files = f"{session_data}\\resultant_{session_data}.csv"
-        MERGED_CSV_FILES_LOCATION.append(os.path.abspath(self.merged_csv_files))
-        self.df.to_csv(self.merged_csv_files, index=False)
+        MERGED_CSV_FILES_LOCATION.append(return_absolute_path(self.merged_csv_files))
+        self.df.to_csv(MERGED_CSV_FILES_LOCATION[-1], index=False)
         print(f"CSV file saved as {self.merged_csv_files}")
 
     def convert_to_GPX(self, session_data):
         gpx_file_name = f"{session_data}.gpx"
-        Converter(input_file=self.merged_csv_files).csv_to_gpx(
+        Converter(input_file=MERGED_CSV_FILES_LOCATION[-1]).csv_to_gpx(
             lats_colname=KEEP_COL[0],
             longs_colname=KEEP_COL[1],
-            output_file=gpx_file_name,
+            output_file=return_absolute_path(gpx_file_name),
         )
         print(f"GPX file saved as {gpx_file_name}")
 
