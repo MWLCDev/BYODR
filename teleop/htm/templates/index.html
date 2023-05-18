@@ -6,8 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>teleop</title>
-    <link rel="stylesheet" href="jquery/jquery-ui-1.12.1.min.css">
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='/css/style.css') }}">
     <script src="https://code.jquery.com/jquery-3.6.4.min.js"></script>
 </head>
 
@@ -62,7 +61,7 @@
             <div id="overlay_control_container">
                 <img src="./assets/expand-collapse-icon-8.jpg?v=0.65.0" id="expand_camera_icon"
                     title="Expand or collapse the camera overlay" />
-                <a id="open_training_sessions_list" href="#"><img src="./assets/gps_icon.jpg"
+                <a id="open_training_sessions_list" href="#"><img src="{{ url_for('static', filename='/assets/gps_icon.jpg') }}"
                         title="Show training sessions" /></a>
 
             </div>
@@ -129,19 +128,32 @@
     </div>
 
     <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads, which can prevent errors, and speed up website response time. -->
-    <script src="index.js"></script>
-    <script src="fetch_training_sessions.js"></script>
-
-    <script src="performance-polyfill.js?v=0.65.0"></script>
-    <script src="live-player/http-live-player.js?v=0.65.0"></script>
-    <script src="index_a_utils.js?v=0.65.41"></script>
-    <script src="index_b_gamepad.js?v=0.65.41"></script>
-    <script src="index_c_screen.js?v=0.65.50"></script>
-    <script src="index_d_navigator.js?v=0.65.50"></script>
-    <script src="index_e_teleop.js?v=0.65.41"></script>
-    <script src="index_f_trainingSessions.js?v=0.65.41"></script>
-    <script src="index_video_hlp.js?v=0.65.0"></script>
-    <script src="index_video_mjpeg.js?v=0.65.0"></script>
+    <script src="{{ url_for('static', filename='/JS/index.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/fetch_training_sessions.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/performance-polyfill.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/http-live-player.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_a_utils.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_b_gamepad.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_c_screen.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_d_navigator.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_d_navigator.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_e_teleop.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_f_trainingSessions.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_video_hlp.js') }}"></script>
+    <script src="{{ url_for('static', filename='/JS/index_video_mjpeg.js') }}"></script>
+<!-- 
+    <script src="static\JS\fetch_training_sessions.js"></script>
+    <script src="static\JS\performance-polyfill.js?v=0.65.0"></script>
+    <script src="static\JS\live-player/http-live-player.js?v=0.65.0"></script>
+    <script src="static\JS\index_a_utils.js?v=0.65.41"></script>
+    <script src="static\JS\index_b_gamepad.js?v=0.65.41"></script>
+    <script src="static\JS\index_c_screen.js?v=0.65.50"></script>
+    <script src="static\JS\index_d_navigator.js?v=0.65.50"></script>
+    <script src="static\JS\index_d_navigator.js?v=0.65.50"></script>
+    <script src="static\JS\index_e_teleop.js?v=0.65.41"></script>
+    <script src="static\JS\index_f_trainingSessions.js?v=0.65.41"></script>
+    <script src="static\JS\index_video_hlp.js?v=0.65.0"></script>
+    <script src="static\JS\index_video_mjpeg.js?v=0.65.0"></script> -->
 </body>
 
 </html>

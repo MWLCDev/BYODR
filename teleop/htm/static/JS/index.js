@@ -1,3 +1,16 @@
+
+function run_draw_map_python() {
+    fetch('/run_draw_map_python')
+        .then(response => {
+            if (response.ok) {
+                alert('Script executed successfully!');
+                show_training_sessions()
+            } else {
+                alert('Error executing the script.');
+            }
+        });
+};
+
 // Fetch the files from the server
 function show_training_sessions() {
     // 3000 is the same port used in 'fetch_training_sessions.js' for the json response
@@ -9,13 +22,13 @@ function show_training_sessions() {
             fileList.innerHTML = ''; // Clear existing file list
 
             files.forEach(file => {
-              const listItem = document.createElement('li');
-              const link = document.createElement('a');
-              link.href = 'plot_training_sessions_map/training_maps/' + file;
-              link.target = '_blank';
-              link.textContent = file.substring(0, file.length - 5);
-              listItem.appendChild(link);
-              fileList.appendChild(listItem);
+                const listItem = document.createElement('li');
+                const link = document.createElement('a');
+                link.href = 'plot_training_sessions_map/training_maps/' + file;
+                link.target = '_blank';
+                link.textContent = file.substring(0, file.length - 5);
+                listItem.appendChild(link);
+                fileList.appendChild(listItem);
             });
         })
         .catch(error => {

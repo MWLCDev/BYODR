@@ -210,8 +210,9 @@ div.overlay_distance {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);  
-  width: 50vw;
-  height: 30vh;
+  width: 30vw;
+  height: fit-content;
+  max-height: 80vh;
   background-color: #f1f1f1;
   padding: 20px;
   border: 1px solid #ccc;
@@ -227,6 +228,10 @@ div.overlay_distance {
   padding: 0;
   cursor: pointer;
   outline: inherit;
+}
+
+#popupWindow a:visited {
+  color: blue;
 }
 
 #dashboard {
