@@ -174,7 +174,8 @@ class PlotMap:
             self.draw_map_line(map_obj, coordinates)
 
             # Save the map to an HTML file
-            map_path = os.path.join("training_maps", f"{file[1]}.html")
+            training_map_folder = CURRENT_DIRECTORY + "/training_maps"
+            map_path = os.path.join(training_map_folder, f"{file[1]}.html")
             os.makedirs(os.path.dirname(map_path), exist_ok=True)
             map_obj.save(map_path)
             print(f"created the training route of session {file[1]}")
