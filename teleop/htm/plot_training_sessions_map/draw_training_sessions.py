@@ -192,8 +192,14 @@ class PlotMap:
         ).add_to(map_obj)
 
 
+def main():
 FindCSV().extract_files_by_extension()
 
 ProcessCSVtoGPX().create_resultant_CSV()
 
 PlotMap().plot_map()
+    return SESSION_DATE
+
+
+if __name__ == "__main__":
+    main()
