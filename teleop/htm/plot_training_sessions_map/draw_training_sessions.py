@@ -7,6 +7,7 @@ import glob
 import folium
 import pandas as pd
 import pathlib
+import shutil
 
 
 # Filtered columns that will be used in the resultant .CSV file.
@@ -192,12 +193,28 @@ class PlotMap:
         ).add_to(map_obj)
 
 
+class MapFolder:
+    def move_folder(self):
+        """Copy the map .HTML file from the '/plot_training_sessions_map' folder to the static folder, to be discoverable by Flask"""
+        source_dir = CURRENT_DIRECTORY + "/training_maps"
+        target_dir = CURRENT_DIRECTORY + "/../static/training_maps"
+
+        file_names = os.listdir(source_dir)
+        try:
+            os.makedirs(target_dir)
+        except OSError:
+            # The directory already existed, nothing to do
+            pass
+        for file_name in file_names:
+            shutil.copy(os.path.join(source_dir, file_name), target_dir)
+        print("moved the map folder successfully")
+
+
 def main():
-FindCSV().extract_files_by_extension()
-
-ProcessCSVtoGPX().create_resultant_CSV()
-
-PlotMap().plot_map()
+    FindCSV().extract_files_by_extension()
+    ProcessCSVtoGPX().create_resultant_CSV()
+    PlotMap().plot_map()
+    MapFolder().move_folder()
     return SESSION_DATE
 
 
