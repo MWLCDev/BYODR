@@ -1,35 +1,22 @@
-
 function run_draw_map_python() {
     fetch('/run_draw_map_python')
-        .then(response => {
-            if (response.ok) {
-                alert('Script executed successfully!');
-                show_training_sessions()
-            } else {
-                alert('Error executing the script.');
-            }
-        });
-};
-
-// Fetch the files from the server
-function show_training_sessions() {
-    // 3000 is the same port used in 'fetch_training_sessions.js' for the json response
-    const apiUrl = `http://localhost:3000/api/training_sessions`;
-    fetch(apiUrl)
         .then(response => response.json())
-        .then(files => {
+        //'map_date_href' is the returned data from 'run_draw_map_python' endpoint in server.py
+        // it contains the date and the related path of the map .html 
+        .then(map_date_href => {
+            console.log(map_date_href)
             const fileList = document.getElementById('fileList');
-            fileList.innerHTML = ''; // Clear existing file list
-
-            files.forEach(file => {
+            fileList.innerHTML = '';
+            for (var map_date in map_date_href) {
                 const listItem = document.createElement('li');
                 const link = document.createElement('a');
-                link.href = 'plot_training_sessions_map/training_maps/' + file;
+                link.href = map_date_href[map_date];
                 link.target = '_blank';
-                link.textContent = file.substring(0, file.length - 5);
+                link.textContent = map_date;
                 listItem.appendChild(link);
                 fileList.appendChild(listItem);
-            });
+                // console.log( map_date, map_date_href[map_date] );
+            }
         })
         .catch(error => {
             console.error('Error:', error);
