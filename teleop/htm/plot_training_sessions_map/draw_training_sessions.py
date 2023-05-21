@@ -40,6 +40,7 @@ class FindCSV:
 
     def extract_files_by_extension(self):
         global SESSION_DATE
+        SESSION_DATE.clear()
         for file in ZIP_FILES_LOCATION:
             filename_only = os.path.basename(file)
             date_from_filename_only = filename_only.split("T")[0]
