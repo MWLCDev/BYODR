@@ -13,7 +13,7 @@ import shutil
 # Filtered columns that will be used in the resultant .CSV file.
 KEEP_COL = ["x_coord", "y_coord", "vehicle_conf"]
 
-TRAINING_SESSION_LOCATION = "D:/Job/Byodr/__myStuff/routeAccu/trainingSession/"
+TRAINING_SESSION_LOCATION = "/sessions/autopilot/"
 
 # Get all the compressed files in a folder
 ZIP_FILES_LOCATION = glob.glob(f"{TRAINING_SESSION_LOCATION}**/*.zip", recursive=True)
