@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 volumes:
   volume_zerotier_config:
   volume_wireguard_config:
@@ -15,7 +15,7 @@ services:
     restart: always
     network_mode: host
     devices:
-      - '/dev/net/tun'
+      - "/dev/net/tun"
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
@@ -29,7 +29,7 @@ services:
     restart: always
     network_mode: host
     devices:
-      - '/dev/net/tun'
+      - "/dev/net/tun"
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
@@ -94,7 +94,12 @@ services:
       context: .
       dockerfile: teleop/Dockerfile
     restart: always
-    command: ["python3", "-m", "teleop.app", "--name", "teleop", "--routes", "/sessions/routes"]
+    command:
+      [
+        "sh",
+        "-c",
+        "python3 -m teleop.app --name teleop --routes /sessions/routes",
+      ]
     network_mode: host
     environment:
       LD_PRELOAD: libgomp.so.1
@@ -109,7 +114,7 @@ services:
       dockerfile: vehicles/rover/rover_vehicle.dockerfile
     restart: always
     command: ["python", "app.py", "--name", "vehicle"]
-    privileged: true  # NvMedia device creation for omx decoder.
+    privileged: true # NvMedia device creation for omx decoder.
     network_mode: host
     environment:
       LD_PRELOAD: libgomp.so.1
@@ -122,8 +127,17 @@ services:
       context: .
       dockerfile: pilot/Dockerfile
     restart: always
-    privileged: true  # Access to usb devices without udev rules.
-    command: ["python3", "-m", "pilot.app", "--name", "pilot", "--routes", "/sessions/routes"]
+    privileged: true # Access to usb devices without udev rules.
+    command:
+      [
+        "python3",
+        "-m",
+        "pilot.app",
+        "--name",
+        "pilot",
+        "--routes",
+        "/sessions/routes",
+      ]
     ports:
       - "8082:8082"
     environment:
@@ -139,7 +153,16 @@ services:
       dockerfile: inference/runtime-cp36-jp441.dockerfile
     restart: always
     privileged: true
-    command: ["python3", "-m", "inference.app", "--user", "/sessions/models", "--routes", "/sessions/routes"]
+    command:
+      [
+        "python3",
+        "-m",
+        "inference.app",
+        "--user",
+        "/sessions/models",
+        "--routes",
+        "/sessions/routes",
+      ]
     environment:
       LD_PRELOAD: libgomp.so.1
       OMP_PLACES: "{3}"

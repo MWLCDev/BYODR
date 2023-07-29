@@ -249,8 +249,10 @@ It also hosts the site design files necessary to draw the Web App.
 **Output 2:** Creates list with any errors and capabilities of the simulated segment. The list will be send to the Teleop service upon request.
 
 **Q1**: Is this process exclusively used to send data to the CARLA simulator, and nothing else regarding the driving of the robot?
-**Q2**: Where is the CARLA simulation hosted?
+**Q2**: Where is the CARLA simulation hosted? in the headless high-power PC
 **Q3**: What do the video streams created in the server do exactly?
+This is meant as an abstraction to run byodr on different robot 'platforms', we also had different hardware platforms in the past, such as the EXR1 tank robot, or the Mule before that
+
 
 ### ROS Node
 

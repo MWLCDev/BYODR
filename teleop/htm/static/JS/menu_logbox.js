@@ -87,7 +87,7 @@ var menu_logbox = {
             _cnt += "src='api/datalog/event/v10/image?object_id=" + object_id + "'/>";
             return _cnt;
         } else {
-            return "<img src='im_no_image_available.png?v=0.65.0'/>";
+            return "<img src='./assets/im_no_image_available.png'/>";
         }
     },
 

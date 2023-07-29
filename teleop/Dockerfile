@@ -1,12 +1,28 @@
 FROM centipede2donald/ubuntu-bionic:python36-opencv32-gstreamer10
 
-RUN pip3 install "pymongo==4.0.1"
-RUN pip3 install "tornado==6.1"
+
+RUN apt-get update && apt-get install -y \
+    build-essential \
+    libssl-dev \
+    libffi-dev \
+    python3-dev \
+    python3-pip \
+    libxml2-dev \
+    libxslt1-dev
+
+RUN python3 -m pip install -U pip
+
+RUN pip3 install pymongo
+RUN pip3 install tornado
+RUN pip3 install folium
+RUN pip3 install Flask
+RUN pip3 install flask_socketio
+
 
 COPY ./common common/
 COPY ./teleop app/
 WORKDIR /app
 
-EXPOSE 9100
+EXPOSE 8080 5000
 
 ENV PYTHONPATH "${PYTHONPATH}:/common"
