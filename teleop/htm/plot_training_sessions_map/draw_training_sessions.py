@@ -2,12 +2,19 @@ import os
 import zipfile
 import glob
 import pandas as pd
-from gpx_converter import Converter
+import json
+
+# from gpx_converter import Converter
 import glob
 import folium
 import pandas as pd
 import pathlib
 import shutil
+import logging
+
+logger = logging.getLogger(__name__)
+
+log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
 
 
 # Filtered columns that will be used in the resultant .CSV file.
@@ -20,6 +27,9 @@ ZIP_FILES_LOCATION = glob.glob(f"{TRAINING_SESSION_LOCATION}**/*.zip", recursive
 
 # To store the name of the day the session took place in it.
 SESSION_DATE = []
+
+# To store the directory of the session after being moved to static/ folder.
+SESSION_HTML_DIRECTORY = ""
 
 # List for the location (in absolute path) of the resultant .CSVs made in a day.
 MERGED_CSV_FILES_LOCATION = []
@@ -35,6 +45,7 @@ def return_absolute_path(additional_path):
 
 
 class FindCSV:
+
     """Find the .ZIP compressed folder and get the .CSVs from it
     then move them to a folder with the name being the date of training session "2023Apr06"
     """
@@ -55,14 +66,27 @@ class FindCSV:
 
             self.store_sessions_folder()
 
-            with zipfile.ZipFile(file, "r") as zip_ref:
-                # Get all the files in the chosen compressed file
-                for file_info in zip_ref.infolist():
-                    if file_info.filename.endswith(".csv"):
-                        extracted_path = zip_ref.extract(
-                            file_info,
-                            path=os.path.join(CURRENT_DIRECTORY, SESSION_DATE[-1]),
-                        )
+            try:
+                with zipfile.ZipFile(file, "r") as zip_ref:
+                    # Get all the files in the chosen compressed file
+                    for file_info in zip_ref.infolist():
+                        if file_info.filename.endswith(".csv"):
+                            try:
+                                extracted_path = zip_ref.extract(
+                                    file_info,
+                                    path=os.path.join(
+                                        CURRENT_DIRECTORY, SESSION_DATE[-1]
+                                    ),
+                                )
+                            except Exception as e:
+                                print(
+                                    f"Error occurred while extracting {file_info.filename}: {e}"
+                                )
+                                continue
+            except zipfile.BadZipFile as bz:
+                logger.info(f"Error: The zip file is invalid or corrupted: {bz}")
+            except Exception as e:
+                logger.info(f"Error occurred while processing the zip file: {e}")
 
     def store_sessions_folder(self):
         global SESSION_DATE
@@ -71,13 +95,13 @@ class FindCSV:
         """
         if len(CSV_FILES_LOCATION) == 0:
             CSV_FILES_LOCATION.append(
-                "{0}\\{1}".format(
+                "{0}/{1}".format(
                     pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
                 )
             )
         elif not SESSION_DATE[-1] in CSV_FILES_LOCATION[-1]:
             CSV_FILES_LOCATION.append(
-                "{0}\\{1}".format(
+                "{0}/{1}".format(
                     pathlib.Path(__file__).parent.resolve(), SESSION_DATE[-1]
                 )
             )
@@ -104,7 +128,7 @@ class ProcessCSVtoGPX:
         # keep only the coordinates columns in them
         for folder in zip(CSV_FILES_LOCATION, SESSION_DATE):
             self.dataframe_data.clear()
-            CSV_files = glob.glob(f"{folder[0]}\\*.csv")
+            CSV_files = glob.glob(f"{folder[0]}/*.csv")
             for file in CSV_files:
                 # Read every .CSV file in the folder
                 read_file = pd.read_csv(file)
@@ -114,13 +138,13 @@ class ProcessCSVtoGPX:
             self.df = pd.concat(self.dataframe_data, ignore_index=True)
             self.clean_dataframe()
             self.convert_to_CSV(folder[1])
-            self.convert_to_GPX(folder[1])
+            # self.convert_to_GPX(folder[1])
 
     def clean_dataframe(self):
         """Remove duplication from the table."""
         old_count = self.df.shape[0]
         self.df = self.df.drop_duplicates()
-        print(
+        logger.info(
             f"Removed the duplicates in the data from {old_count} to {self.df.shape[0]}"
         )
 
@@ -128,16 +152,7 @@ class ProcessCSVtoGPX:
         self.merged_csv_files = f"{session_data}\\resultant_{session_data}.csv"
         MERGED_CSV_FILES_LOCATION.append(return_absolute_path(self.merged_csv_files))
         self.df.to_csv(MERGED_CSV_FILES_LOCATION[-1], index=False)
-        print(f"CSV file saved as {self.merged_csv_files}")
-
-    def convert_to_GPX(self, session_data):
-        gpx_file_name = f"{session_data}.gpx"
-        Converter(input_file=MERGED_CSV_FILES_LOCATION[-1]).csv_to_gpx(
-            lats_colname=KEEP_COL[0],
-            longs_colname=KEEP_COL[1],
-            output_file=return_absolute_path(gpx_file_name),
-        )
-        print(f"GPX file saved as {gpx_file_name}")
+        logger.info(f"CSV file saved as {self.merged_csv_files}")
 
 
 class PlotMap:
@@ -179,7 +194,7 @@ class PlotMap:
             map_path = os.path.join(training_map_folder, f"{file[1]}.html")
             os.makedirs(os.path.dirname(map_path), exist_ok=True)
             map_obj.save(map_path)
-            print(f"created the training route of session {file[1]}")
+            logger.info(f"created the training route of session {file[1]}")
 
     def draw_map_line(self, map_obj, coordinates):
         """Draw line between the points that are plotted on the map
@@ -195,9 +210,19 @@ class PlotMap:
 
 class MapFolder:
     def move_folder(self):
+        global SESSION_HTML_DIRECTORY
         """Copy the map .HTML file from the '/plot_training_sessions_map' folder to the static folder, to be discoverable by Flask"""
-        source_dir = CURRENT_DIRECTORY + "/training_maps"
-        target_dir = CURRENT_DIRECTORY + "/../static/training_maps"
+        source_dir = os.path.join(
+            os.path.dirname(CURRENT_DIRECTORY),
+            "plot_training_sessions_map",
+            "training_maps",
+        )
+
+        target_dir = os.path.join(
+            os.path.dirname(CURRENT_DIRECTORY), "static", "training_maps"
+        )
+
+        # CURRENT_DIRECTORY + "/../static/training_maps"
 
         file_names = os.listdir(source_dir)
         try:
@@ -207,16 +232,42 @@ class MapFolder:
             pass
         for file_name in file_names:
             shutil.copy(os.path.join(source_dir, file_name), target_dir)
-        print("moved the map folder successfully")
+        logger.info("moved the map folder successfully")
+        SESSION_HTML_DIRECTORY = target_dir
 
 
-def main():
+class GenerateHTML:
+    """Make a list of the sessions Date as the key, and the value is the directory for the .html file generated by Folium"""
+
+    def make_file(self):
+        sent_list = {}
+        for x in SESSION_DATE:
+            new_key = x  # The date of sessions
+            new_age = (
+                SESSION_HTML_DIRECTORY.replace("app/htm/static", "static/")
+                + f"/{x}.html"
+            )  # Generate the .html file from the date
+            sent_list[new_key] = new_age  # Add it to a list
+        json_sent_list = json.dumps(sent_list)  # convert the list to JSON
+        return json_sent_list
+
+
+def draw_training_sessions():
+    logger.info(f"Autopilot folder{os.listdir(TRAINING_SESSION_LOCATION)}")
+    logger.info(f"These are the found {ZIP_FILES_LOCATION}")
     FindCSV().extract_files_by_extension()
     ProcessCSVtoGPX().create_resultant_CSV()
     PlotMap().plot_map()
     MapFolder().move_folder()
-    return SESSION_DATE
+    training_sessions_directory_json = GenerateHTML().make_file()
+    logger.info(
+        f"JSON list before sending the respond to app.py {training_sessions_directory_json}"
+    )
+    print(training_sessions_directory_json)
+    return training_sessions_directory_json
 
 
 if __name__ == "__main__":
-    main()
+    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
+    logging.getLogger().setLevel(logging.INFO)
+    draw_training_sessions()

@@ -9,7 +9,6 @@ __pycache__/
 # Distribution / packaging
 .Python
 build/
-/teleop/htm/node_modules/
 develop-eggs/
 dist/
 downloads/
@@ -107,6 +106,7 @@ venv.bak/
 
 # folders
 data_root
+docs/
 
 # Google protocol buffers
 *.pb

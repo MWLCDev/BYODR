@@ -1,4 +1,4 @@
-version: '2'
+version: "2"
 volumes:
   volume_zerotier_config:
   volume_wireguard_config:
@@ -15,7 +15,7 @@ services:
     restart: always
     network_mode: host
     devices:
-      - '/dev/net/tun'
+      - "/dev/net/tun"
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
@@ -29,7 +29,7 @@ services:
     restart: always
     network_mode: host
     devices:
-      - '/dev/net/tun'
+      - "/dev/net/tun"
     cap_add:
       - SYS_ADMIN
       - NET_ADMIN
@@ -43,7 +43,7 @@ services:
       dockerfile: httpd/Dockerfile
     restart: always
     network_mode: host
-    command: [ "python", "wrap.py" ]
+    command: ["python", "wrap.py"]
     stop_signal: SIGKILL
     volumes:
       - volume_byodr_config:/config:rw
@@ -53,7 +53,7 @@ services:
       context: .
       dockerfile: ftpd/Dockerfile
     restart: always
-    command: [ "python3", "wrap.py" ]
+    command: ["python3", "wrap.py"]
     stop_signal: SIGKILL
     ports:
       - "21:21"
@@ -67,7 +67,7 @@ services:
       context: .
       dockerfile: rosnode/Dockerfile
     restart: always
-    command: [ "python3", "app.py", "--name", "rosnode" ]
+    command: ["python3", "app.py", "--name", "rosnode"]
     network_mode: host
     stop_signal: SIGKILL
     volumes:
@@ -79,7 +79,7 @@ services:
       context: .
       dockerfile: mongodb/Dockerfile
     restart: always
-    command: [ "python3", "wrap.py" ]
+    command: ["python3", "wrap.py"]
     network_mode: host
     stop_signal: SIGKILL
     environment:
@@ -96,13 +96,9 @@ services:
     restart: always
     command:
       [
-        "python3",
-        "-m",
-        "teleop.app",
-        "--name",
-        "teleop",
-        "--routes",
-        "/sessions/routes"
+        "sh",
+        "-c",
+        "python3 -m teleop.app --name teleop --routes /sessions/routes",
       ]
     network_mode: host
     environment:
@@ -117,7 +113,7 @@ services:
       context: .
       dockerfile: vehicles/rover/rover_vehicle.dockerfile
     restart: always
-    command: [ "python", "app.py", "--name", "vehicle" ]
+    command: ["python", "app.py", "--name", "vehicle"]
     privileged: true # NvMedia device creation for omx decoder.
     network_mode: host
     environment:
@@ -140,7 +136,7 @@ services:
         "--name",
         "pilot",
         "--routes",
-        "/sessions/routes"
+        "/sessions/routes",
       ]
     ports:
       - "8082:8082"
@@ -165,7 +161,7 @@ services:
         "--user",
         "/sessions/models",
         "--routes",
-        "/sessions/routes"
+        "/sessions/routes",
       ]
     environment:
       LD_PRELOAD: libgomp.so.1

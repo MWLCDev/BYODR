@@ -18,21 +18,21 @@ var NoneController = {
     arrow_right: 0,
     healthy: false,
 
-    reset: function() {
+    reset: function () {
         this.healthy = false;
     },
 
-    collapse: function(value, zone=0) {
+    collapse: function (value, zone = 0) {
         result = Math.abs(value) <= zone ? 0 : value > 0 ? value - zone : value + zone;
         // Scale back.
         return result / (1 - zone);
     },
 
-    gamepad: function() {
+    gamepad: function () {
         return navigator.getGamepads()[this.gamepad_index];
     },
 
-    set_throttle: function(left_trigger, right_trigger) {
+    set_throttle: function (left_trigger, right_trigger) {
         // Observed gamepads which reported half-full throttle before use of any buttons.
         if (!this.healthy && left_trigger < 0.01 && right_trigger < 0.01) {
             this.healthy = true;
@@ -44,7 +44,7 @@ var NoneController = {
         }
     },
 
-    poll: function() {
+    poll: function () {
         return false;
     }
 }
@@ -52,7 +52,7 @@ var NoneController = {
 var Xbox360StandardController = extend(NoneController, {
     threshold: 0.195,
 
-    poll: function() {
+    poll: function () {
         pad = this.gamepad();
         if (pad != undefined) {
             this.set_throttle(pad.buttons[6].value, pad.buttons[7].value)
@@ -78,7 +78,7 @@ var Xbox360StandardController = extend(NoneController, {
 var PS4StandardController = extend(NoneController, {
     threshold: 0.09,
 
-    poll: function() {
+    poll: function () {
         // On ubuntu 18 under chrome button 17 does not exist - use button 16.
         pad = this.gamepad();
         if (pad != undefined) {
@@ -105,7 +105,7 @@ var PS4StandardController = extend(NoneController, {
 var gamepad_controller = {
     controller: Object.create(NoneController),
 
-    _create_gamepad: function(gamepad) {
+    _create_gamepad: function (gamepad) {
         // 45e-28e-Xbox 360 Wired Controller / Xbox Wireless Controller (STANDARD GAMEPAD Vendor: 045e Product: 02fd)
         // Wireless Controller (STANDARD GAMEPAD Vendor: 054c Product: 09cc)
         var gid = gamepad.id;
@@ -114,12 +114,12 @@ var gamepad_controller = {
             result = Object.create(Xbox360StandardController);
         } else if (gamepad.mapping == 'standard') {
             result = Object.create(PS4StandardController);
-        //
-        // Not to be used yet - without standard mapping the triggers can result in non-zero throttle before use.
-        // } else if (gid.includes('054c')) {
-        //    result = Object.create(PS4Controller);
-        // } else if (gid.includes('045e')) {
-        //    result = Object.create(Xbox360Controller);
+            //
+            // Not to be used yet - without standard mapping the triggers can result in non-zero throttle before use.
+            // } else if (gid.includes('054c')) {
+            //    result = Object.create(PS4Controller);
+            // } else if (gid.includes('045e')) {
+            //    result = Object.create(Xbox360Controller);
         }
         if (result) {
             result.gamepad_index = gamepad.index;
@@ -127,7 +127,7 @@ var gamepad_controller = {
         return result;
     },
 
-    _connect: function(gamepad, connecting) {
+    _connect: function (gamepad, connecting) {
         if (connecting) {
             controller = this._create_gamepad(gamepad);
             if (controller != undefined) {
@@ -142,15 +142,15 @@ var gamepad_controller = {
         }
     },
 
-    is_active: function() {
+    is_active: function () {
         return this.controller.poll();
     },
 
-    reset: function() {
+    reset: function () {
         this.controller.reset();
     },
 
-    get_command: function() {
+    get_command: function () {
         const ct = this.controller;
         // Skip buttons when not pressed to save bandwidth.
         var command = {};
@@ -195,5 +195,5 @@ var gamepad_controller = {
     }
 }
 
-window.addEventListener("gamepadconnected", function(e) { gamepad_controller._connect(e.gamepad, true); }, false);
-window.addEventListener("gamepaddisconnected", function(e) { gamepad_controller._connect(e.gamepad, false); }, false);
+window.addEventListener("gamepadconnected", function (e) { gamepad_controller._connect(e.gamepad, true); }, false);
+window.addEventListener("gamepaddisconnected", function (e) { gamepad_controller._connect(e.gamepad, false); }, false);

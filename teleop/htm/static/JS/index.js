@@ -1,28 +1,3 @@
-function run_draw_map_python() {
-    fetch('/run_draw_map_python')
-        .then(response => response.json())
-        //'map_date_href' is the returned data from 'run_draw_map_python' endpoint in server.py
-        // it contains the date and the related path of the map .html 
-        .then(map_date_href => {
-            console.log(map_date_href)
-            const fileList = document.getElementById('fileList');
-            fileList.innerHTML = '';
-            for (var map_date in map_date_href) {
-                const listItem = document.createElement('li');
-                const link = document.createElement('a');
-                link.href = map_date_href[map_date];
-                link.target = '_blank';
-                link.textContent = map_date;
-                listItem.appendChild(link);
-                fileList.appendChild(listItem);
-                // console.log( map_date, map_date_href[map_date] );
-            }
-        })
-        .catch(error => {
-            console.error('Error:', error);
-        });
-};
-
 // Set the name of the hidden property and the change event for visibility
 var hidden, visibilityChange;
 if (typeof document.hidden !== "undefined") { // Opera 12.10 and Firefox 18 and later support

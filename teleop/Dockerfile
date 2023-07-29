@@ -10,25 +10,19 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     libxslt1-dev
 
+RUN python3 -m pip install -U pip
+
 RUN pip3 install pymongo
 RUN pip3 install tornado
-RUN pip3 install Cython
-RUN pip3 install "markupsafe==1.1.1"
-RUN pip3 install "branca==0.5.0"
+RUN pip3 install folium
 RUN pip3 install Flask
-RUN pip3 install "folium==0.13"
-RUN pip3 install "pandas==1.0.3"
-RUN pip3 install gpx_converter
+RUN pip3 install flask_socketio
+
 
 COPY ./common common/
 COPY ./teleop app/
 WORKDIR /app
 
-
-
-EXPOSE 9100
-EXPOSE 3000
-
-CMD ["python", "./htm/server.py"]
+EXPOSE 8080 5000
 
 ENV PYTHONPATH "${PYTHONPATH}:/common"
