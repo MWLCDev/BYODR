@@ -22,6 +22,7 @@ def _check_config(config_file):
         # Not all routers are at the default ip.
         _ip = re.findall("rover.*:9101", contents)[0][6:-5]
         _ssl = ('ssl crt' in contents)
+        #haproxy is a load balancer
         with open('haproxy_ssl.template' if _ssl else 'haproxy.template', 'r') as _template:
             with open(config_file, 'w') as _file:
                 _file.write(_template.read().replace('192.168.1.32', _ip))

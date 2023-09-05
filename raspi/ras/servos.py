@@ -13,7 +13,7 @@ from abc import ABC, abstractmethod
 from configparser import ConfigParser as SafeConfigParser
 
 import numpy as np
-from gpiozero import AngularServo
+from gpiozero import AngularServo #interfacing with the GPIO pins of the Raspberry Pi
 
 from byodr.utils import timestamp, Application
 from byodr.utils.ipc import JSONPublisher, JSONServerThread

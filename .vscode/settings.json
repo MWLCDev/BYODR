@@ -2,5 +2,7 @@
     "cSpell.words": [
         "teleop"
     ],
-    "python.analysis.typeCheckingMode": "off"
+    "python.analysis.typeCheckingMode": "off",
+    "liveServer.settings.port": 5501,
+    "editor.acceptSuggestionOnEnter": "on"
 }

@@ -27,7 +27,7 @@ def timestamp(value=None):
 
 
 def entropy(x, eps=1e-20):
-    return abs(-np.sum(x * np.log(np.clip(x, eps, 1.))))
+    return abs(-np.sum(x * np.log(np.clip(x, eps, 1.0))))
 
 
 class Profiler(Profile):
@@ -105,7 +105,7 @@ class Application(object):
     def __init__(self, run_hz=10, quit_event=None):
         self.logger = logging.getLogger(__name__)
         self._hz = run_hz
-        self._sleep = .100
+        self._sleep = 0.100
         self.set_hz(run_hz)
         if quit_event is None:
             self.quit_event = multiprocessing.Event()
@@ -123,7 +123,7 @@ class Application(object):
     @staticmethod
     def _latest_or_none(receiver, patience):
         candidate = receiver()
-        _time = 0 if candidate is None else candidate.get('time')
+        _time = candidate.get("time", 0) if candidate is not None else 0
         _on_time = (timestamp() - _time) < patience
         return candidate if _on_time else None
 
@@ -131,11 +131,11 @@ class Application(object):
         return self._hz
 
     def get_actual_hz(self):
-        return (1. / np.mean(self._rt_queue)) if self._rt_queue else 0
+        return (1.0 / np.mean(self._rt_queue)) if self._rt_queue else 0
 
     def set_hz(self, hz):
         self._hz = hz
-        self._sleep = 1. / hz
+        self._sleep = 1.0 / hz
 
     def active(self):
         return not self.quit_event.is_set()
@@ -158,8 +158,8 @@ class Application(object):
             while self.active():
                 _start = time.time()
                 self.step()
-                _duration = (time.time() - _start)
-                time.sleep(max(0., self._sleep - _duration))
+                _duration = time.time() - _start
+                time.sleep(max(0.0, self._sleep - _duration))
                 # Report the actual clock frequency which includes the user specified wait time.
                 self._rt_queue.append(time.time() - _start)
         except Exception as e:

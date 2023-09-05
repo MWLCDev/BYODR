@@ -25,27 +25,27 @@ class ClassificationType(object):
     def __init__(self):
         pass
 
-    UNDETERMINED = 'null'
+    UNDETERMINED = "null"
 
 
 class OriginType(ClassificationType):
     def __init__(self):
         ClassificationType.__init__(self)
 
-    HUMAN = 'src.human'  # Human annotated (regular driving).
-    CONSOLE = 'src.console'  # Recorded (raw) console value (interventions).
-    DAGGER = 'src.dagger'  # Human expert recorded under dropout dagger.
-    CRUISE_CONTROL = 'src.cruise'  # Determined in an automatic fashion.
-    DNN = 'src.dnn'  # Determined by an automated model.
-    DNN_PRE_INTERVENTION = 'src.dnn.pre-intervention'
-    ANALYSED = 'src.analysed'
-    AUGMENTED = 'src.augmented'
-    OPEN_AI_DEEPDRIVE = 'src.open_ai.deepdrive'
-    BACKEND_AUTOPILOT = 'src.backend.autopilot'
+    HUMAN = "src.human"  # Human annotated (regular driving).
+    CONSOLE = "src.console"  # Recorded (raw) console value (interventions).
+    DAGGER = "src.dagger"  # Human expert recorded under dropout dagger.
+    CRUISE_CONTROL = "src.cruise"  # Determined in an automatic fashion.
+    DNN = "src.dnn"  # Determined by an automated model.
+    DNN_PRE_INTERVENTION = "src.dnn.pre-intervention"
+    ANALYSED = "src.analysed"
+    AUGMENTED = "src.augmented"
+    OPEN_AI_DEEPDRIVE = "src.open_ai.deepdrive"
+    BACKEND_AUTOPILOT = "src.backend.autopilot"
 
 
 class AttrDict(dict):
-    """ Access dictionary items through instance attributes."""
+    """Access dictionary items through instance attributes."""
 
     def __init__(self, **kwargs):
         super(AttrDict, self).__init__(**kwargs)
@@ -60,31 +60,31 @@ class Blob(AttrDict):
     def __init__(self, **kwargs):
         super(Blob, self).__init__(**kwargs)
         self.time = timestamp()
-        self.cruise_speed = kwargs.get('cruise_speed')
-        self.desired_speed = kwargs.get('desired_speed')
-        self.driver = kwargs.get('driver')
-        self.driver_activation_time = kwargs.get('driver_activation_time')
-        self.forced_acceleration = kwargs.get('forced_acceleration')
-        self.forced_deceleration = kwargs.get('forced_deceleration')
-        self.forced_steering = kwargs.get('forced_steering')
-        self.forced_throttle = kwargs.get('forced_throttle')
-        self.instruction = kwargs.get('instruction')
-        self.save_event = kwargs.get('save_event')
-        self.speed_driver = kwargs.get('speed_driver')
-        self.steering = kwargs.get('steering', 0)
-        self.steering_scale = kwargs.get('steering_scale', 1)
-        self.steering_driver = kwargs.get('steering_driver')
-        self.throttle = kwargs.get('throttle', 0)
-        self.arrow_up = kwargs.get('arrow_up')
-        self.arrow_down = kwargs.get('arrow_down')
-        self.button_left = kwargs.get('button_left')
-        self.button_right = kwargs.get('button_right')
-        self.navigation_active = kwargs.get('navigation_active')
-        self.navigation_route = kwargs.get('navigation_route')
-        self.navigation_match_image = kwargs.get('navigation_match_image', -1)
-        self.navigation_match_distance = kwargs.get('navigation_match_distance', 1)
-        self.navigation_match_point = kwargs.get('navigation_match_point')
-        self.inference_brake = kwargs.get('inference_brake', 0)
+        self.cruise_speed = kwargs.get("cruise_speed")
+        self.desired_speed = kwargs.get("desired_speed")
+        self.driver = kwargs.get("driver")
+        self.driver_activation_time = kwargs.get("driver_activation_time")
+        self.forced_acceleration = kwargs.get("forced_acceleration")
+        self.forced_deceleration = kwargs.get("forced_deceleration")
+        self.forced_steering = kwargs.get("forced_steering")
+        self.forced_throttle = kwargs.get("forced_throttle")
+        self.instruction = kwargs.get("instruction")
+        self.save_event = kwargs.get("save_event")
+        self.speed_driver = kwargs.get("speed_driver")
+        self.steering = kwargs.get("steering", 0)
+        self.steering_scale = kwargs.get("steering_scale", 1)
+        self.steering_driver = kwargs.get("steering_driver")
+        self.throttle = kwargs.get("throttle", 0)
+        self.arrow_up = kwargs.get("arrow_up")
+        self.arrow_down = kwargs.get("arrow_down")
+        self.button_left = kwargs.get("button_left")
+        self.button_right = kwargs.get("button_right")
+        self.navigation_active = kwargs.get("navigation_active")
+        self.navigation_route = kwargs.get("navigation_route")
+        self.navigation_match_image = kwargs.get("navigation_match_image", -1)
+        self.navigation_match_distance = kwargs.get("navigation_match_distance", 1)
+        self.navigation_match_point = kwargs.get("navigation_match_point")
+        self.inference_brake = kwargs.get("inference_brake", 0)
         if self.forced_steering is None:
             self.forced_steering = _is_forced_value(self.steering)
         if self.forced_throttle is None:
@@ -98,7 +98,7 @@ class Blob(AttrDict):
 class DynamicMomentum(object):
     """Low-pass filter with separate acceleration and deceleration momentum."""
 
-    def __init__(self, up=.1, down=.9, ceiling=1.):
+    def __init__(self, up=0.1, down=0.9, ceiling=1.0):
         self._previous_value = 0
         self._acceleration = up
         self._deceleration = down
@@ -108,14 +108,18 @@ class DynamicMomentum(object):
         self._previous_value = 0
 
     def calculate(self, value):
-        _momentum = self._acceleration if value > self._previous_value else self._deceleration
-        _new_value = min(self._ceiling, _momentum * value + (1. - _momentum) * self._previous_value)
+        _momentum = (
+            self._acceleration if value > self._previous_value else self._deceleration
+        )
+        _new_value = min(
+            self._ceiling, _momentum * value + (1.0 - _momentum) * self._previous_value
+        )
         self._previous_value = _new_value
         return _new_value
 
 
 class LowPassFilter(object):
-    def __init__(self, initial_value=0., alpha=0.90):
+    def __init__(self, initial_value=0.0, alpha=0.90):
         self._value = initial_value
         self._alpha = alpha
 
@@ -123,7 +127,7 @@ class LowPassFilter(object):
         return self._value
 
     def update(self, x):
-        self._value = (self._alpha * x) + (1. - self._alpha) * self._value
+        self._value = (self._alpha * x) + (1.0 - self._alpha) * self._value
         return self._value
 
 
@@ -136,7 +140,7 @@ class AbstractDriverBase(six.with_metaclass(ABCMeta, object)):
         self._activation_timestamp = None
 
     @staticmethod
-    def _apply_dead_zone(value, dead_zone=0.):
+    def _apply_dead_zone(value, dead_zone=0.0):
         if value > 0:
             value += dead_zone
         elif value < 0:
@@ -149,7 +153,7 @@ class AbstractDriverBase(six.with_metaclass(ABCMeta, object)):
         blob.throttle = 0
         blob.cruise_speed = 0
         blob.desired_speed = 0
-        blob.instruction = 'general.fallback'
+        blob.instruction = "general.fallback"
         blob.steering_driver = OriginType.UNDETERMINED
         blob.speed_driver = OriginType.UNDETERMINED
         blob.save_event = False
@@ -199,7 +203,14 @@ class AbstractThrottleControl(six.with_metaclass(ABCMeta, object)):
         self._min_desired_speed = min_desired_speed
         self._max_desired_speed = max_desired_speed
 
-    def calculate_desired_speed(self, desired_speed, throttle, forced_acceleration, forced_deceleration, maximum=None):
+    def calculate_desired_speed(
+        self,
+        desired_speed,
+        throttle,
+        forced_acceleration,
+        forced_deceleration,
+        maximum=None,
+    ):
         maximum = self._max_desired_speed if maximum is None else maximum
         ds = desired_speed
         if forced_acceleration:
@@ -246,9 +257,20 @@ class PidThrottleControl(AbstractThrottleControl):
 
 
 class DirectThrottleControl(AbstractThrottleControl):
-    def __init__(self, min_desired_speed, max_desired_speed, throttle_up_momentum, throttle_down_momentum, throttle_cutoff):
-        super(DirectThrottleControl, self).__init__(min_desired_speed, max_desired_speed)
-        self._moment = DynamicMomentum(up=throttle_up_momentum, down=throttle_down_momentum)
+    def __init__(
+        self,
+        min_desired_speed,
+        max_desired_speed,
+        throttle_up_momentum,
+        throttle_down_momentum,
+        throttle_cutoff,
+    ):
+        super(DirectThrottleControl, self).__init__(
+            min_desired_speed, max_desired_speed
+        )
+        self._moment = DynamicMomentum(
+            up=throttle_up_momentum, down=throttle_down_momentum
+        )
         self._throttle_cut = throttle_cutoff
 
     def reset(self):
@@ -267,31 +289,51 @@ class AbstractCruiseControl(six.with_metaclass(ABCMeta, AbstractDriverBase)):
         self._min_desired_speed = 0
         self._max_desired_speed = 0
         # Internal speed values are in meters per second.
-        self._min_desired_speed = parse_option('driver.cc.static.speed.min', float, (0.1 / 3.6), _errors, **kwargs)
-        self._max_desired_speed = parse_option('driver.cc.static.speed.max', float, (5.0 / 3.6), _errors, **kwargs)
+        self._min_desired_speed = parse_option(
+            "driver.cc.static.speed.min", float, (0.1 / 3.6), _errors, **kwargs
+        )
+        self._max_desired_speed = parse_option(
+            "driver.cc.static.speed.max", float, (5.0 / 3.6), _errors, **kwargs
+        )
         #
-        _control_type = parse_option('driver.cc.control.type', str, 'pid', _errors, **kwargs)
-        if _control_type == 'pid':
-            p = (parse_option('driver.cc.throttle.pid_controller.p', float, 0.002, _errors, **kwargs))
-            i = (parse_option('driver.cc.throttle.pid_controller.i', float, 2.0, _errors, **kwargs))
-            d = (parse_option('driver.cc.throttle.pid_controller.d', float, 0, _errors, **kwargs))
-            stop_p = (parse_option('driver.cc.stop.pid_controller.p', float, 1.0, _errors, **kwargs))
+        _control_type = parse_option(
+            "driver.cc.control.type", str, "pid", _errors, **kwargs
+        )
+        if _control_type == "pid":
+            p = parse_option(
+                "driver.cc.throttle.pid_controller.p", float, 0.002, _errors, **kwargs
+            )
+            i = parse_option(
+                "driver.cc.throttle.pid_controller.i", float, 2.0, _errors, **kwargs
+            )
+            d = parse_option(
+                "driver.cc.throttle.pid_controller.d", float, 0, _errors, **kwargs
+            )
+            stop_p = parse_option(
+                "driver.cc.stop.pid_controller.p", float, 1.0, _errors, **kwargs
+            )
             self._throttle_control = PidThrottleControl(
                 (p, i, d),
                 stop_p=stop_p,
                 min_desired_speed=self._min_desired_speed,
-                max_desired_speed=self._max_desired_speed
+                max_desired_speed=self._max_desired_speed,
             )
         else:
-            _throttle_up_momentum = parse_option('driver.throttle.direct.up.momentum', float, 0.05, _errors, **kwargs)
-            _throttle_down_momentum = parse_option('driver.throttle.direct.down.momentum', float, 1.0, _errors, **kwargs)
-            _throttle_cutoff = parse_option('driver.throttle.direct.minimum', float, 0.002, _errors, **kwargs)
+            _throttle_up_momentum = parse_option(
+                "driver.throttle.direct.up.momentum", float, 0.05, _errors, **kwargs
+            )
+            _throttle_down_momentum = parse_option(
+                "driver.throttle.direct.down.momentum", float, 1.0, _errors, **kwargs
+            )
+            _throttle_cutoff = parse_option(
+                "driver.throttle.direct.minimum", float, 0.002, _errors, **kwargs
+            )
             self._throttle_control = DirectThrottleControl(
                 min_desired_speed=self._min_desired_speed,
                 max_desired_speed=self._max_desired_speed,
                 throttle_up_momentum=_throttle_up_momentum,
                 throttle_down_momentum=_throttle_down_momentum,
-                throttle_cutoff=_throttle_cutoff
+                throttle_cutoff=_throttle_cutoff,
             )
         self._errors = _errors
 
@@ -304,8 +346,17 @@ class AbstractCruiseControl(six.with_metaclass(ABCMeta, AbstractDriverBase)):
     def get_errors(self):
         return self._errors
 
-    def calculate_desired_speed(self, desired_speed, throttle, forced_acceleration, forced_deceleration, maximum=None):
-        return self._throttle_control.calculate_desired_speed(desired_speed, throttle, forced_acceleration, forced_deceleration, maximum)
+    def calculate_desired_speed(
+        self,
+        desired_speed,
+        throttle,
+        forced_acceleration,
+        forced_deceleration,
+        maximum=None,
+    ):
+        return self._throttle_control.calculate_desired_speed(
+            desired_speed, throttle, forced_acceleration, forced_deceleration, maximum
+        )
 
     def calculate_throttle(self, desired_speed, current_speed, trust_odometer=0):
         if None in (desired_speed, current_speed) or not bool(int(trust_odometer)):
@@ -315,7 +366,7 @@ class AbstractCruiseControl(six.with_metaclass(ABCMeta, AbstractDriverBase)):
 
 class RawConsoleDriver(AbstractCruiseControl):
     def __init__(self, **kwargs):
-        super(RawConsoleDriver, self).__init__('driver_mode.teleop.direct', **kwargs)
+        super(RawConsoleDriver, self).__init__("driver_mode.teleop.direct", **kwargs)
 
     def get_action(self, *args):
         blob = args[0]
@@ -329,18 +380,22 @@ class RawConsoleDriver(AbstractCruiseControl):
 
 class StaticCruiseDriver(AbstractCruiseControl):
     def __init__(self, **kwargs):
-        super(StaticCruiseDriver, self).__init__('driver_mode.teleop.cruise', **kwargs)
+        super(StaticCruiseDriver, self).__init__("driver_mode.teleop.cruise", **kwargs)
 
     def get_action(self, *args):
         blob, vehicle = args[:2]
-        blob.desired_speed = self.calculate_desired_speed(desired_speed=blob.cruise_speed,
-                                                          throttle=blob.throttle,
-                                                          forced_acceleration=blob.forced_acceleration,
-                                                          forced_deceleration=blob.forced_deceleration)
+        blob.desired_speed = self.calculate_desired_speed(
+            desired_speed=blob.cruise_speed,
+            throttle=blob.throttle,
+            forced_acceleration=blob.forced_acceleration,
+            forced_deceleration=blob.forced_deceleration,
+        )
         blob.steering = self._apply_dead_zone(blob.steering, dead_zone=0)
-        blob.throttle = self.calculate_throttle(blob.desired_speed,
-                                                current_speed=vehicle.get('velocity'),
-                                                trust_odometer=vehicle.get('trust_velocity'))
+        blob.throttle = self.calculate_throttle(
+            blob.desired_speed,
+            current_speed=vehicle.get("velocity"),
+            trust_odometer=vehicle.get("trust_velocity"),
+        )
         blob.steering_driver = OriginType.HUMAN
         blob.speed_driver = OriginType.HUMAN
         blob.save_event = True
@@ -348,21 +403,29 @@ class StaticCruiseDriver(AbstractCruiseControl):
 
 class BackendAutopilotDriver(AbstractCruiseControl):
     def __init__(self, **kwargs):
-        super(BackendAutopilotDriver, self).__init__('driver_mode.automatic.backend', **kwargs)
-        self._version = 'v2'
+        super(BackendAutopilotDriver, self).__init__(
+            "driver_mode.automatic.backend", **kwargs
+        )
+        self._version = "v2"
         self._desired_speed = 2.0
 
     def get_action(self, *args):
         blob, vehicle, inference = args
-        _do_v1 = inference is None or self._version == 'v1'
-        return self._action_v1(*args) if _do_v1 else self._action_v2(*args) if self._version == 'v2' else self._action_v3(*args)
+        _do_v1 = inference is None or self._version == "v1"
+        return (
+            self._action_v1(*args)
+            if _do_v1
+            else self._action_v2(*args)
+            if self._version == "v2"
+            else self._action_v3(*args)
+        )
 
     @staticmethod
     def _action_v1(*args):
         blob, vehicle = args[:2]
-        blob.desired_speed = vehicle.get('velocity')
-        blob.steering = vehicle.get('auto_steering')
-        blob.throttle = vehicle.get('auto_throttle')
+        blob.desired_speed = vehicle.get("velocity")
+        blob.steering = vehicle.get("auto_steering")
+        blob.throttle = vehicle.get("auto_throttle")
         blob.steering_driver = OriginType.BACKEND_AUTOPILOT
         blob.speed_driver = OriginType.BACKEND_AUTOPILOT
         blob.save_event = True
@@ -370,47 +433,70 @@ class BackendAutopilotDriver(AbstractCruiseControl):
     @staticmethod
     def _action_v2(*args):
         blob, vehicle, inference = args
-        blob.desired_speed = vehicle.get('velocity')
-        blob.steering = vehicle.get('auto_steering')
-        blob.throttle = vehicle.get('auto_throttle')
+        blob.desired_speed = vehicle.get("velocity")
+        blob.steering = vehicle.get("auto_steering")
+        blob.throttle = vehicle.get("auto_throttle")
         blob.steering_driver = OriginType.BACKEND_AUTOPILOT
         blob.speed_driver = OriginType.BACKEND_AUTOPILOT
-        blob.save_event = inference.get('steer_penalty') > .95 or inference.get('surprise_out') > .95
+        blob.save_event = (
+            inference.get("steer_penalty") > 0.95
+            or inference.get("surprise_out") > 0.95
+        )
 
     def _action_v3(self, *args):
         blob, vehicle, inference = args
-        self._desired_speed = min(12., max(2., self._desired_speed * 1.0001))
+        self._desired_speed = min(12.0, max(2.0, self._desired_speed * 1.0001))
         dnn_desired_speed = self._desired_speed
-        dnn_throttle = self.calculate_throttle(desired_speed=dnn_desired_speed, current_speed=vehicle.get('velocity'))
-        if inference.get('critic') < 1:
-            blob.driver = 'driver_mode.inference.dnn'
-            if inference.get('internal') < .050:
-                blob.instruction = 'general.fallback'
-            elif blob.instruction == 'general.fallback' and inference.get('internal') >= .050:
-                blob.instruction = np.random.choice(['intersection.left', 'intersection.ahead', 'intersection.right'])
+        dnn_throttle = self.calculate_throttle(
+            desired_speed=dnn_desired_speed, current_speed=vehicle.get("velocity")
+        )
+        if inference.get("critic") < 1:
+            blob.driver = "driver_mode.inference.dnn"
+            if inference.get("internal") < 0.050:
+                blob.instruction = "general.fallback"
+            elif (
+                blob.instruction == "general.fallback"
+                and inference.get("internal") >= 0.050
+            ):
+                blob.instruction = np.random.choice(
+                    ["intersection.left", "intersection.ahead", "intersection.right"]
+                )
             blob.cruise_speed = dnn_desired_speed
             blob.desired_speed = dnn_desired_speed
-            blob.steering = inference.get('action')
+            blob.steering = inference.get("action")
             blob.throttle = dnn_throttle
             blob.steering_driver = OriginType.DNN
             blob.speed_driver = OriginType.DNN
             blob.save_event = False
         else:
-            backend_active = vehicle.get('auto_active')
-            self._desired_speed = vehicle.get('velocity') if backend_active else self._desired_speed
-            blob.driver = 'driver_mode.automatic.backend'
-            blob.desired_speed = vehicle.get('velocity') if backend_active else dnn_desired_speed
-            blob.steering = vehicle.get('auto_steering') if backend_active else inference.get('action')
-            blob.throttle = vehicle.get('auto_throttle') if backend_active else dnn_throttle
-            blob.steering_driver = OriginType.BACKEND_AUTOPILOT if backend_active else OriginType.DNN
-            blob.speed_driver = OriginType.BACKEND_AUTOPILOT if backend_active else OriginType.DNN
+            backend_active = vehicle.get("auto_active")
+            self._desired_speed = (
+                vehicle.get("velocity") if backend_active else self._desired_speed
+            )
+            blob.driver = "driver_mode.automatic.backend"
+            blob.desired_speed = (
+                vehicle.get("velocity") if backend_active else dnn_desired_speed
+            )
+            blob.steering = (
+                vehicle.get("auto_steering")
+                if backend_active
+                else inference.get("action")
+            )
+            blob.throttle = (
+                vehicle.get("auto_throttle") if backend_active else dnn_throttle
+            )
+            blob.steering_driver = (
+                OriginType.BACKEND_AUTOPILOT if backend_active else OriginType.DNN
+            )
+            blob.speed_driver = (
+                OriginType.BACKEND_AUTOPILOT if backend_active else OriginType.DNN
+            )
             blob.save_event = backend_active
 
 
 class DeepNetworkDriver(AbstractCruiseControl):
-
     def __init__(self, **kwargs):
-        super(DeepNetworkDriver, self).__init__('driver_mode.inference.dnn', **kwargs)
+        super(DeepNetworkDriver, self).__init__("driver_mode.inference.dnn", **kwargs)
         self._piv_count = 0
 
     def _activate(self):
@@ -432,26 +518,41 @@ class DeepNetworkDriver(AbstractCruiseControl):
             self.noop(blob)
             return
 
-        action_out = inference.get('action')
-        _total_penalty = inference.get('total_penalty')
+        action_out = inference.get("action")
+        _total_penalty = inference.get("total_penalty")
         _penalty_override = blob.button_left == 1
         # Handle speed.
-        desired_speed = blob.cruise_speed if _penalty_override else blob.cruise_speed * (1 - _total_penalty)
-        blob.desired_speed = max(0, self.calculate_desired_speed(desired_speed=desired_speed,
-                                                                 throttle=blob.throttle,
-                                                                 forced_acceleration=blob.forced_acceleration,
-                                                                 forced_deceleration=blob.forced_deceleration,
-                                                                 maximum=self._max_desired_speed))
+        desired_speed = (
+            blob.cruise_speed
+            if _penalty_override
+            else blob.cruise_speed * (1 - _total_penalty)
+        )
+        blob.desired_speed = max(
+            0,
+            self.calculate_desired_speed(
+                desired_speed=desired_speed,
+                throttle=blob.throttle,
+                forced_acceleration=blob.forced_acceleration,
+                forced_deceleration=blob.forced_deceleration,
+                maximum=self._max_desired_speed,
+            ),
+        )
         _speed_intervention = blob.forced_acceleration or blob.forced_deceleration
-        blob.speed_driver = OriginType.CONSOLE if _speed_intervention else OriginType.DNN
-        blob.throttle = self.calculate_throttle(desired_speed=blob.desired_speed,
-                                                current_speed=vehicle.get('velocity'),
-                                                trust_odometer=vehicle.get('trust_velocity'))
+        blob.speed_driver = (
+            OriginType.CONSOLE if _speed_intervention else OriginType.DNN
+        )
+        blob.throttle = self.calculate_throttle(
+            desired_speed=blob.desired_speed,
+            current_speed=vehicle.get("velocity"),
+            trust_odometer=vehicle.get("trust_velocity"),
+        )
         # Handle steering.
         if blob.forced_steering or _speed_intervention:
             # Any intervention type is sufficient to set the steering coming in from the user.
             steering = blob.steering
-            blob.save_event = blob.desired_speed > 1e-3 if blob.forced_steering else True
+            blob.save_event = (
+                blob.desired_speed > 1e-3 if blob.forced_steering else True
+            )
             # Mark the first few interventions as such.
             if self._piv_count > 2:
                 steering_driver = OriginType.CONSOLE
@@ -469,18 +570,18 @@ class DeepNetworkDriver(AbstractCruiseControl):
 
 class PilotState(object):
     def __init__(self):
-        self.instruction = 'general.fallback'
+        self.instruction = "general.fallback"
         self.cruise_speed = 0
 
 
 def _translate_navigation_direction(direction):
     if direction == NavigationCommand.LEFT:
-        return 'intersection.left'
+        return "intersection.left"
     elif direction == NavigationCommand.AHEAD:
-        return 'intersection.ahead'
+        return "intersection.ahead"
     elif direction == NavigationCommand.RIGHT:
-        return 'intersection.right'
-    return 'general.fallback'
+        return "intersection.right"
+    return "general.fallback"
 
 
 class Navigator(object):
@@ -532,7 +633,7 @@ class Navigator(object):
     def handle_teleop_state(self, c_teleop):
         # This must run quickly.
         # The teleop service is the authority on route state.
-        route = c_teleop.get('navigator').get('route', None)
+        route = c_teleop.get("navigator").get("route", None)
         if route is None:
             self.close()
         elif route not in self._store.list_routes():
@@ -557,28 +658,32 @@ class Navigator(object):
         # Some overrides are independent of a matched point.
         instructions = None
         _override = self._get_override_request()
-        r_action = None if _override is None else _override.get('action', None)
-        r_point = None if _override is None else _override.get('point', None)
-        r_speed = None if _override is None else _override.get('speed', None)
-        if r_action == 'halt' and r_point is None:
+        r_action = None if _override is None else _override.get("action", None)
+        r_point = None if _override is None else _override.get("point", None)
+        r_speed = None if _override is None else _override.get("speed", None)
+        if r_action == "halt" and r_point is None:
             instructions = NavigationInstructions(commands=NavigationCommand(speed=0))
             self._override_requests.clear()
-        elif r_action == 'resume' and r_speed is not None:
-            instructions = NavigationInstructions(commands=NavigationCommand(speed=float(r_speed)))
+        elif r_action == "resume" and r_speed is not None:
+            instructions = NavigationInstructions(
+                commands=NavigationCommand(speed=float(r_speed))
+            )
             self._override_requests.clear()
         elif self.is_active():
             try:
-                _point_id = c_inference.get('navigation_point')
-                _image_id = c_inference.get('navigation_image')
-                _distance = c_inference.get('navigation_distance', 1.)
+                _point_id = c_inference.get("navigation_point")
+                _image_id = c_inference.get("navigation_image")
+                _distance = c_inference.get("navigation_distance", 1.0)
                 if _point_id >= 0:
                     _point_name = self._store.list_navigation_points()[_point_id]
                     if _point_name != self._match_point:
                         self._match_point = _point_name
                         self._match_image = _image_id
                         self._match_distance = _distance
-                        if r_action == 'halt' and r_point == _point_name:
-                            instructions = NavigationInstructions(commands=NavigationCommand(speed=0))
+                        if r_action == "halt" and r_point == _point_name:
+                            instructions = NavigationInstructions(
+                                commands=NavigationCommand(speed=0)
+                            )
                             self._override_requests.clear()
                         else:
                             instructions = self._store.get_instructions(_point_name)
@@ -611,9 +716,15 @@ class DriverManager(Configurable):
 
     def internal_start(self, **kwargs):
         _errors = []
-        _steer_low_momentum = parse_option('driver.handler.steering.low_pass.momentum', float, 0.40, _errors, **kwargs)
-        self._principal_steer_scale = parse_option('driver.steering.teleop.scale', float, 0.45, _errors, **kwargs)
-        self._cruise_speed_step = parse_option('driver.cc.static.gear.step', float, 0.50, _errors, **kwargs)
+        _steer_low_momentum = parse_option(
+            "driver.handler.steering.low_pass.momentum", float, 0.40, _errors, **kwargs
+        )
+        self._principal_steer_scale = parse_option(
+            "driver.steering.teleop.scale", float, 0.45, _errors, **kwargs
+        )
+        self._cruise_speed_step = parse_option(
+            "driver.cc.static.gear.step", float, 0.50, _errors, **kwargs
+        )
         self._steering_stabilizer = LowPassFilter(alpha=_steer_low_momentum)
         self._navigator.initialize()
         self._driver_cache.clear()
@@ -625,12 +736,18 @@ class DriverManager(Configurable):
 
     def _fill_driver_cache(self, **kwargs):
         _errors = []
-        _names = ('default', 'driver_mode.inference.dnn', 'driver_mode.teleop.cruise', 'driver_mode.automatic.backend')
-        _methods = ((lambda: RawConsoleDriver(**kwargs)),
-                    (lambda: DeepNetworkDriver(**kwargs)),
-                    (lambda: StaticCruiseDriver(**kwargs)),
-                    (lambda: BackendAutopilotDriver(**kwargs))
-                    )
+        _names = (
+            "default",
+            "driver_mode.inference.dnn",
+            "driver_mode.teleop.cruise",
+            "driver_mode.automatic.backend",
+        )
+        _methods = (
+            (lambda: RawConsoleDriver(**kwargs)),
+            (lambda: DeepNetworkDriver(**kwargs)),
+            (lambda: StaticCruiseDriver(**kwargs)),
+            (lambda: BackendAutopilotDriver(**kwargs)),
+        )
         for n, m in zip(_names, _methods):
             _driver = m()
             self._driver_cache[n] = _driver
@@ -638,7 +755,11 @@ class DriverManager(Configurable):
         return _errors
 
     def _get_driver(self, control=None):
-        return self._driver_cache[control] if control in self._driver_cache else self._driver_cache['default']
+        return (
+            self._driver_cache[control]
+            if control in self._driver_cache
+            else self._driver_cache["default"]
+        )
 
     def _activate(self):
         try:
@@ -665,11 +786,16 @@ class DriverManager(Configurable):
         try:
             # Peek the first command in execution order.
             command = self._navigation_queue[0]
-            if command.get_sleep() is None or timestamp() > command.get_time() + command.get_sleep() * 1e6:
+            if (
+                command.get_sleep() is None
+                or timestamp() > command.get_time() + command.get_sleep() * 1e6
+            ):
                 # Execute the command now.
                 command = self._navigation_queue.popleft()
                 if command.get_direction() is not None:
-                    self._set_direction(_translate_navigation_direction(command.get_direction()))
+                    self._set_direction(
+                        _translate_navigation_direction(command.get_direction())
+                    )
                 if command.get_speed() is not None:
                     self.set_cruise_speed(command.get_speed())
         except LookupError:
@@ -678,29 +804,36 @@ class DriverManager(Configurable):
         c_inference = {} if c_inference is None else c_inference
         navigation_instructions = self._navigator.update(c_inference)
         if navigation_instructions is not None:
-            self._navigation_queue.extend([c.set_time(timestamp()) for c in navigation_instructions.get_commands()])
+            self._navigation_queue.extend(
+                [
+                    c.set_time(timestamp())
+                    for c in navigation_instructions.get_commands()
+                ]
+            )
 
     def increase_cruise_speed(self):
-        if self.get_driver_ctl() != 'driver_mode.teleop.direct':
+        if self.get_driver_ctl() != "driver_mode.teleop.direct":
             self.set_cruise_speed(self._cruise_speed_step, relative=True)
 
     def decrease_cruise_speed(self):
-        if self.get_driver_ctl() != 'driver_mode.teleop.direct':
+        if self.get_driver_ctl() != "driver_mode.teleop.direct":
             self.set_cruise_speed(-self._cruise_speed_step, relative=True)
 
     def set_cruise_speed(self, value, relative=False):
         with self._lock:
-            new_val = (value / self._speed_scale)
-            new_val = max(0., self._pilot_state.cruise_speed + new_val if relative else new_val)
+            new_val = value / self._speed_scale
+            new_val = max(
+                0.0, self._pilot_state.cruise_speed + new_val if relative else new_val
+            )
             self._pilot_state.cruise_speed = new_val
             self._driver.on_cruise_speed_change(new_val)
 
-    def _set_direction(self, turn='general.fallback'):
+    def _set_direction(self, turn="general.fallback"):
         pass
         # with self._lock:
         #     self._pilot_state.instruction = turn
 
-    def teleop_direction(self, turn='general.fallback'):
+    def teleop_direction(self, turn="general.fallback"):
         pass
         # with self._lock:
         #     self._pilot_state.instruction = 'general.fallback' if self._pilot_state.instruction == turn else turn
@@ -708,9 +841,15 @@ class DriverManager(Configurable):
     def get_driver_ctl(self):
         return self._driver_ctl
 
-    def switch_ctl(self, control='driver_mode.teleop.direct'):
+    def switch_ctl(self, control="driver_mode.teleop.direct"):
         # self.turn_instruction()
-        if control is not None and control.lower() not in ('none', 'null', 'ignore', '0', 'false'):
+        if control is not None and control.lower() not in (
+            "none",
+            "null",
+            "ignore",
+            "0",
+            "false",
+        ):
             with self._lock:
                 # There is not feedback of this speed in teleop mode. Reset at driver changes.
                 self._pilot_state.cruise_speed = 0
@@ -737,25 +876,35 @@ class DriverManager(Configurable):
             # If downstream processes need the teleop time then use an extra attribute.
             _nav_active = self._navigator.is_active()
             _nav_route = self._navigator.get_navigation_route() if _nav_active else None
-            _nav_match_image = self._navigator.get_match_image_id() if _nav_active else None
-            _nav_match_distance = self._navigator.get_match_distance() if _nav_active else None
-            _nav_match_point = self._navigator.get_match_point() if _nav_active else None
-            _inference_brake = 0. if inference is None else inference.get('obstacle', 0.)
+            _nav_match_image = (
+                self._navigator.get_match_image_id() if _nav_active else None
+            )
+            _nav_match_distance = (
+                self._navigator.get_match_distance() if _nav_active else None
+            )
+            _nav_match_point = (
+                self._navigator.get_match_point() if _nav_active else None
+            )
+            _inference_brake = (
+                0.0 if inference is None else inference.get("obstacle", 0.0)
+            )
             # Report the driver activation time in milliseconds.
             _driver_activation_time = self._driver.get_activation_timestamp()
             if _driver_activation_time is not None:
                 _driver_activation_time = (timestamp() - _driver_activation_time) * 1e-3
-            blob = Blob(driver=self._driver_ctl,
-                        driver_activation_time=_driver_activation_time,
-                        cruise_speed=self._pilot_state.cruise_speed,
-                        instruction=self._pilot_state.instruction,
-                        navigation_active=_nav_active,
-                        navigation_route=_nav_route,
-                        navigation_match_image=_nav_match_image,
-                        navigation_match_distance=_nav_match_distance,
-                        navigation_match_point=_nav_match_point,
-                        inference_brake=_inference_brake,
-                        **teleop)
+            blob = Blob(
+                driver=self._driver_ctl,
+                driver_activation_time=_driver_activation_time,
+                cruise_speed=self._pilot_state.cruise_speed,
+                instruction=self._pilot_state.instruction,
+                navigation_active=_nav_active,
+                navigation_route=_nav_route,
+                navigation_match_image=_nav_match_image,
+                navigation_match_distance=_nav_match_distance,
+                navigation_match_point=_nav_match_point,
+                inference_brake=_inference_brake,
+                **teleop
+            )
             # Scale teleop before interpretation by the driver.
             blob.steering_scale = self._principal_steer_scale
             blob.steering = self._principal_steer_scale * blob.steering
@@ -771,7 +920,7 @@ class CommandProcessor(Configurable):
         self._process_frequency = 10
         self._button_north_ctl = None
         self._button_west_ctl = None
-        self._patience_micro = 1000.
+        self._patience_micro = 1000.0
         self._cache = None
 
     def get_patience_ms(self):
@@ -787,13 +936,25 @@ class CommandProcessor(Configurable):
     def internal_start(self, **kwargs):
         _errors = []
         self._driver.restart(**kwargs)
-        self._process_frequency = parse_option('clock.hz', int, 80, _errors, **kwargs)
-        self._patience_micro = parse_option('patience.ms', int, 200, _errors, **kwargs) * 1000.
-        self._button_north_ctl = parse_option('controller.button.north.mode', str, 'driver_mode.inference.dnn', _errors, **kwargs)
-        self._button_west_ctl = parse_option('controller.button.west.mode', str, 'ignore', _errors, **kwargs)
+        self._process_frequency = parse_option("clock.hz", int, 80, _errors, **kwargs)
+        self._patience_micro = (
+            parse_option("patience.ms", int, 200, _errors, **kwargs) * 1000.0
+        )
+        self._button_north_ctl = parse_option(
+            "controller.button.north.mode",
+            str,
+            "driver_mode.inference.dnn",
+            _errors,
+            **kwargs
+        )
+        self._button_west_ctl = parse_option(
+            "controller.button.west.mode", str, "ignore", _errors, **kwargs
+        )
         # Avoid processing the same command more than once.
         # TTL is specified in seconds.
-        self._cache = cachetools.TTLCache(maxsize=100, ttl=(self._patience_micro * 1e-6))
+        self._cache = cachetools.TTLCache(
+            maxsize=100, ttl=(self._patience_micro * 1e-6)
+        )
         return _errors + self._driver.get_errors()
 
     def _cache_safe(self, key, func, *arguments):
@@ -805,12 +966,26 @@ class CommandProcessor(Configurable):
 
     def _process_ros(self, c_ros):
         # It could be a collection of ros commands.
-        ros_messages = [] if c_ros is None else c_ros if (isinstance(c_ros, tuple) or isinstance(c_ros, list)) else [c_ros]
+        ros_messages = (
+            []
+            if c_ros is None
+            else c_ros
+            if (isinstance(c_ros, tuple) or isinstance(c_ros, list))
+            else [c_ros]
+        )
         for _msg in ros_messages:
-            if 'pilot.driver.set' in _msg:
-                self._cache_safe('ros switch driver', lambda: self._driver.switch_ctl(_msg.get('pilot.driver.set')))
-            if 'pilot.maximum.speed' in _msg:
-                self._cache_safe('ros set cruise speed', lambda: self._driver.set_cruise_speed(_msg.get('pilot.maximum.speed')))
+            if "pilot.driver.set" in _msg:
+                self._cache_safe(
+                    "ros switch driver",
+                    lambda: self._driver.switch_ctl(_msg.get("pilot.driver.set")),
+                )
+            if "pilot.maximum.speed" in _msg:
+                self._cache_safe(
+                    "ros set cruise speed",
+                    lambda: self._driver.set_cruise_speed(
+                        _msg.get("pilot.maximum.speed")
+                    ),
+                )
 
     def _process(self, c_teleop, c_ros, c_inference):
         # r_action = None if c_external is None else c_external.get('action', None)
@@ -825,37 +1000,67 @@ class CommandProcessor(Configurable):
         # Zero out max speed on any intervention as a safety rule for ap and to detect faulty controllers.
         # With the left button this behavior can be overridden to allow for steer corrections.
         c_teleop = {} if c_teleop is None else c_teleop
-        _throttle_override = _is_forced_value(c_teleop.get('throttle'))
-        _steer_override = _is_forced_value(c_teleop.get('steering')) and c_teleop.get('button_left', 0) == 0
+        _throttle_override = _is_forced_value(c_teleop.get("throttle"))
+        _steer_override = (
+            _is_forced_value(c_teleop.get("steering"))
+            and c_teleop.get("button_left", 0) == 0
+        )
         if _throttle_override or _steer_override:
             self._driver.set_cruise_speed(0)
 
         # Continue with teleop instructions which take precedence over the rest.
-        if 'quit' in c_teleop:
+        if "quit" in c_teleop:
             self._driver.switch_ctl()
         #
         # Buttons clockwise: N, E, S, W
         # N
-        elif c_teleop.get('button_y', 0) == 1:
-            self._cache_safe('button north ctl', lambda: self._driver.switch_ctl(self._button_north_ctl))
+        elif c_teleop.get("button_y", 0) == 1:
+            self._cache_safe(
+                "button north ctl",
+                lambda: self._driver.switch_ctl(self._button_north_ctl),
+            )
         # E
-        elif c_teleop.get('button_b', 0) == 1:
-            self._cache_safe('teleop driver', lambda: self._driver.switch_ctl('driver_mode.teleop.direct'))
+        elif c_teleop.get("button_b", 0) == 1:
+            self._cache_safe(
+                "teleop driver",
+                lambda: self._driver.switch_ctl("driver_mode.teleop.direct"),
+            )
         # S
-        elif c_teleop.get('button_x', 0) == 1:
-            self._cache_safe('button west ctl', lambda: self._driver.switch_ctl(self._button_west_ctl))
+        elif c_teleop.get("button_x", 0) == 1:
+            self._cache_safe(
+                "button west ctl",
+                lambda: self._driver.switch_ctl(self._button_west_ctl),
+            )
         #
-        elif c_teleop.get('arrow_up', 0) == 1:
-            self._cache_safe('increase cruise speed', lambda: self._driver.increase_cruise_speed())
-        elif c_teleop.get('arrow_down', 0) == 1:
-            self._cache_safe('decrease cruise speed', lambda: self._driver.decrease_cruise_speed())
+        elif c_teleop.get("arrow_up", 0) == 1:
+            self._cache_safe(
+                "increase cruise speed", lambda: self._driver.increase_cruise_speed()
+            )
+        elif c_teleop.get("arrow_down", 0) == 1:
+            self._cache_safe(
+                "decrease cruise speed", lambda: self._driver.decrease_cruise_speed()
+            )
 
     def _unpack_commands(self, teleop, ros, vehicle, inference):
         _patience, _ts = self._patience_micro, timestamp()
         # The teleop, vehicle or inference commands could be none, old or repeated.
-        teleop = teleop if teleop is not None and (_ts - teleop.get('time') < _patience) else None
-        vehicle = vehicle if vehicle is not None and (_ts - vehicle.get('time') < _patience) else None
-        inference = inference if inference is not None and (_ts - inference.get('time') < _patience) else None
+        teleop_time = 0 if teleop is None else teleop.get("time", 0)
+        vehicle_time = 0 if vehicle is None else vehicle.get("time", 0)
+        inference_time = 0 if inference is None else inference.get("time", 0)
+
+        teleop = (
+            teleop if teleop is not None and (_ts - teleop_time < _patience) else None
+        )
+        vehicle = (
+            vehicle
+            if vehicle is not None and (_ts - vehicle_time < _patience)
+            else None
+        )
+        inference = (
+            inference
+            if inference is not None and (_ts - inference_time < _patience)
+            else None
+        )
         # The external and ros commands need to be handled each occurrence.
         return teleop, ros, vehicle, inference
 
@@ -866,17 +1071,22 @@ class CommandProcessor(Configurable):
         # What to do on message timeout depends on which driver is active.
         _ctl = self._driver.get_driver_ctl()
         # Switch off autopilot on internal errors.
-        if _ctl == 'driver_mode.inference.dnn' and None in (vehicle, inference):
-            self._cache_safe('teleop driver', lambda: self._driver.switch_ctl('driver_mode.teleop.direct'))
+        if _ctl == "driver_mode.inference.dnn" and None in (vehicle, inference):
+            self._cache_safe(
+                "teleop driver",
+                lambda: self._driver.switch_ctl("driver_mode.teleop.direct"),
+            )
             return self._driver.noop()
         # Everything normal or there is no autopilot process but teleop should function normally.
-        if None not in (teleop, vehicle, inference) or (None not in (teleop, vehicle) and _ctl == 'driver_mode.teleop.direct'):
+        if None not in (teleop, vehicle, inference) or (
+            None not in (teleop, vehicle) and _ctl == "driver_mode.teleop.direct"
+        ):
             return self._driver.next_action(teleop, vehicle, inference)
         # Autopilot drives without teleop commands.
-        if None not in (vehicle, inference) and _ctl == 'driver_mode.inference.dnn':
+        if None not in (vehicle, inference) and _ctl == "driver_mode.inference.dnn":
             return self._driver.next_action(dict(), vehicle, inference)
         # Vehicle control by backend.
-        if vehicle is not None and _ctl == 'driver_mode.automatic.backend':
+        if vehicle is not None and _ctl == "driver_mode.automatic.backend":
             return self._driver.next_action(dict(), vehicle, inference)
         # Ignore old or repetitive teleop commands.
         return None

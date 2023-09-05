@@ -13,6 +13,10 @@ logger = logging.getLogger(__name__)
 
 
 class CommandHistory(object):
+    """
+    track the history of commands given to the robot (possibly motor commands). It checks for commands that might be 'missing' based on a certain threshold and can be reset.
+    """
+
     def __init__(self, timeout_seconds=180, hz=25):
         self._threshold = timeout_seconds * hz
         self._num_missing = None
@@ -38,6 +42,11 @@ class CommandHistory(object):
 
 
 class HallRps(object):
+    """This class seems to be related to a Hall sensor (probably for measuring rotations per second, RPS).
+    It monitors a specific GPIO pin (pin=16 by default) for changes, likely detecting rotations.
+    The sensor's detections are used to calculate rotations per second (rps).
+    """
+
     def __init__(self, pin=16, moment=0.05, debug=False):
         self._moment = moment
         self._debug = debug
@@ -69,7 +78,11 @@ class HallRps(object):
             _now = timestamp()
             self._detect_duration = _now - self._detect_time
             _rps = 1e6 / self._detect_duration
-            self._rps = (self._moment * _rps + (1. - self._moment) * self._rps) if self._rps > 0 else _rps
+            self._rps = (
+                (self._moment * _rps + (1.0 - self._moment) * self._rps)
+                if self._rps > 0
+                else _rps
+            )
             self._detect_time = _now
             if self._debug:
                 self._num_detections += 1
@@ -77,10 +90,12 @@ class HallRps(object):
 
 class HallOdometer(object):
     def __init__(self, **kwargs):
-        self._cm_per_revolution = parse_option('odometer.distance.cm_per_revolution', float, 15, **kwargs)
-        self._debug = parse_option('odometer.debug', int, 0, **kwargs) == 1
-        self._alpha = parse_option('odometer.moment.alpha', float, 0.10, **kwargs)
-        self._enabled = parse_option('drive.type', str, **kwargs) == 'gpio_with_hall'
+        self._cm_per_revolution = parse_option(
+            "odometer.distance.cm_per_revolution", float, 15, **kwargs
+        )
+        self._debug = parse_option("odometer.debug", int, 0, **kwargs) == 1
+        self._alpha = parse_option("odometer.moment.alpha", float, 0.10, **kwargs)
+        self._enabled = parse_option("drive.type", str, **kwargs) == "gpio_with_hall"
         self._hall = None
 
     def is_enabled(self):
@@ -89,24 +104,30 @@ class HallOdometer(object):
     def setup(self):
         if self._enabled:
             self._hall = HallRps(moment=self._alpha, debug=self._debug)
-            logger.info("Created hall odometer with cm/rev={:2.2f} alpha={:2.2f} and debug={}.".format(
-                self._cm_per_revolution, self._alpha, self._debug
-            ))
+            logger.info(
+                "Created hall odometer with cm/rev={:2.2f} alpha={:2.2f} and debug={}.".format(
+                    self._cm_per_revolution, self._alpha, self._debug
+                )
+            )
 
     def quit(self):
         self._enabled = False
         self._hall = None
 
     def velocity(self):
-        _velocity = self._hall.rps() * self._cm_per_revolution * 1e-2  # Convert to meters per second.
+        _velocity = (
+            self._hall.rps() * self._cm_per_revolution * 1e-2
+        )  # Convert to meters per second.
         self._hall.tick()
         if self._debug:
-            logger.info("{:2.2f} n={}".format(self._hall.rps(), self._hall.detections()))
+            logger.info(
+                "{:2.2f} n={}".format(self._hall.rps(), self._hall.detections())
+            )
         return _velocity
 
 
 class VESCDrive(object):
-    def __init__(self, serial_port='/dev/ttyACM0', rpm_drive=True, cm_per_pole_pair=1):
+    def __init__(self, serial_port="/dev/ttyACM0", rpm_drive=True, cm_per_pole_pair=1):
         self._port = serial_port
         self._rpm_drive = rpm_drive
         self._cm_per_pp = cm_per_pole_pair
@@ -142,7 +163,9 @@ class VESCDrive(object):
             self._close()
 
     def get_velocity(self):
-        return (self.get_rpm() / 60.) * self._cm_per_pp * 1e-2  # Convert to meters per second.
+        return (
+            (self.get_rpm() / 60.0) * self._cm_per_pp * 1e-2
+        )  # Convert to meters per second.
 
     def get_rpm(self):
         with self._lock:
@@ -153,7 +176,9 @@ class VESCDrive(object):
                         (response, consumed) = pyvesc.decode(self._ser.read(79))
                         return response.rpm
                     else:
-                        raise AssertionError("Protocol violation on the response length.")
+                        raise AssertionError(
+                            "Protocol violation on the response length."
+                        )
                 except serial.serialutil.SerialException:
                     self._close()
                     raise AssertionError("The serial connection is not operational.")
@@ -166,7 +191,9 @@ class VESCDrive(object):
                     if self._rpm_drive:
                         self._ser.write(pyvesc.encode(SetRPM(int(value * 1e3))))
                     else:
-                        self._ser.write(pyvesc.encode(SetDutyCycle(float(value * 1e-1))))
+                        self._ser.write(
+                            pyvesc.encode(SetDutyCycle(float(value * 1e-1)))
+                        )
                 except serial.serialutil.SerialException:
                     self._close()
                     _operational = False

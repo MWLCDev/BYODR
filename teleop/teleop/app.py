@@ -79,6 +79,7 @@ class TeleopApplication(Application):
 
 def run_python_script(script_name):
     import subprocess
+
     result = subprocess.check_output(["python3", script_name], universal_newlines=True)
     result_list = result.strip().split("\n")
     return result_list
@@ -111,6 +112,21 @@ class Index(tornado.web.RequestHandler):
 
     def get(self):
         self.render("../htm/templates/index.html")
+
+
+class UserMenu(tornado.web.RequestHandler):
+    """The user menu setting page"""
+
+    def get(self):
+        print("navigating to the user menu page")
+        self.render("../htm/templates/user_menu.html")
+
+
+class MobileControllerUI(tornado.web.RequestHandler):
+    """Load the user interface for mobile controller"""
+
+    def get(self):
+        self.render("../htm/templates/mobile_controller_ui.html")
 
 
 def main():
@@ -252,6 +268,13 @@ def main():
         main_app = web.Application(
             [
                 (r"/", Index),
+                (r"/user_menu", UserMenu),
+                (r"/mobile_controller_ui", MobileControllerUI),
+                (
+                    r"/ws/send_mobile_controller_commands",
+                    MobileControllerCommands,
+                    dict(fn_control=teleop_publish),
+                ),
                 (r"/run_draw_map_python", RunScriptHandler),
                 (
                     r"/api/datalog/event/v10/table",
@@ -314,9 +337,10 @@ def main():
                     dict(route_store=route_store),
                 ),
                 (
+                    # Path to where the static files are stored (JS,CSS, images)
                     r"/(.*)",
                     web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm")},
+                    {"path": os.path.join(os.path.sep, "app", "htm", "static")},
                 ),
             ]
         )
