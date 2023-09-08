@@ -49,6 +49,13 @@ def _load_nav_image(fname):
 
 class TeleopApplication(Application):
     def __init__(self, event, config_dir=os.getcwd()):
+        """set up configuration directory and a configuration file path
+
+        Args:
+            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
+
+            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its configuration files (specifically .ini files).
+        """
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
@@ -130,6 +137,20 @@ class MobileControllerUI(tornado.web.RequestHandler):
 
 
 def main():
+    """
+    It parses command-line arguments for configuration details and sets up various components:
+      - MongoDB connection and indexing.
+      - Route data source for navigation.
+      - Camera threads for front and rear cameras.
+      - JSON collectors for the pilot, vehicle, and inference data.
+      - LogBox setup for logging.
+      - Threaded applications for logging and packaging data.
+
+    It initializes multiple threads for various components, including cameras, pilot, vehicle, inference, and logging.
+
+    JSON publishers are set up for teleop data and chatter data.
+
+    """
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument(
