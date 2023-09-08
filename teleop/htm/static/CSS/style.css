@@ -121,6 +121,8 @@ div.overlay_distance {
 
 
 #message_box_container {
+  z-index: 3;
+  position: relative;
   display: flex;
 }
 
@@ -152,10 +154,16 @@ div.overlay_distance {
   float: left;
 }
 
+#home_menu a{
+  z-index: 99;
+  position: relative
+}
+
 #home_menu_icon {
   margin: 10px 0 0 0;
   width: 50px;
   height: 50px;
+
 }
 
 #stream_links {
@@ -209,7 +217,7 @@ div.overlay_distance {
   position: fixed;
   top: 50%;
   left: 50%;
-  transform: translate(-50%, -50%);  
+  transform: translate(-50%, -50%);
   width: 30vw;
   height: fit-content;
   max-height: 80vh;
@@ -275,6 +283,7 @@ div.overlay_distance {
   font-family: Lucida Console;
   font-size: 11px;
 }
+
 #navigation_image_container {
   float: right;
   visibility: hidden;
@@ -360,6 +369,8 @@ div.overlay_distance {
 }
 
 #debug_drive_values p {
+  z-index: 1;
+  position: relative;
   display: inline-block;
   margin-left: 10px;
   min-width: 80px;
