@@ -5,7 +5,7 @@ window.addEventListener('load', () => {
   ws = new WebSocket(ws_url);
 
   ws.onopen = function (event) {
-    console.log('WebSocket connection opened', event);
+    console.log('Mobile controller (WS) connection opened');
   };
 
   //Check the respond from the endpoint. If the user is operator or viewer 
@@ -19,10 +19,10 @@ window.addEventListener('load', () => {
   };
 
   ws.onclose = function (event) {
-    console.log('WebSocket connection closed', event);
+    console.log('Mobile controller (WS) connection closed');
   };
 
-  console.log('Created mobile web socket');
+  console.log('Created Mobile controller (WS)');
 });
 
 class Triangle {
@@ -98,7 +98,7 @@ class Dot {
   drawDot(x, y) {
     this.graphics.clear();
     this.graphics.beginFill(0xffffff); // color for the dot
-    this.graphics.drawCircle(x, y, 9); // The radius is 9 (was requested to have diameter of 5mm === 18px)
+    this.graphics.drawCircle(x, y, 18); // The radius is 18 (was requested to have diameter of 10mm === 36px)
     this.graphics.endFill();
   }
 
@@ -143,12 +143,14 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
   // Check if the point is inside the triangle
   return u >= 0 && v >= 0 && u + v < 1;
 }
+
 //The starting y coord when the triangles are relocated ()
 let initialYOffset = 0;
 cursorFollowingDot = new Dot();
 let selectedTriangle = null; // null indicates no triangle is selected yet.
 let throttle_steering_json = {}; // Hold the current value for steering and throttle to be sent through the websocket
 const midScreen = window.innerHeight / 2 + initialYOffset;
+
 /**
  * Prints x,y and distance from the tip of the triangle to the current place of the ball.
  * @param {number} x current position of the ball (same as touch)
@@ -168,19 +170,18 @@ function calculateDistancePercentage(x, y) {
     distance_percentage = ((y - midScreen) / bottomTriangle.height) * 100;
     PrintStatistics(distance_percentage, relativeX, relativeY);
   }
+
   function PrintStatistics(speed, x, y) {
     let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
 
-    // console.log("Distance from tip:", Math.round(speed) + "%",
-    //   "X-coordinate:", Math.round(x),
-    //   "Y-coordinate:", Math.round(y));
+    // console.log("Throttle:", -((y - initialYOffset) / (window.innerHeight / 4)).toFixed(3),
+    //   "Steering:", Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)));
 
     throttle_steering_json = {
       throttle: -((y - initialYOffset) / (window.innerHeight / 4)).toFixed(3),
       steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
       button_b: 1,
     };
-    // console.log(ws)
   }
 }
 
@@ -189,7 +190,7 @@ function calculateDistancePercentage(x, y) {
  * @param {number} x position of the touch
  * @param {number} y position of the touch
  */
-function handleDotMove(x, y) {
+function handleDotMove(touchX, touchY) {
   // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
   const midScreen = window.innerHeight / 2 + initialYOffset;
 
@@ -212,13 +213,16 @@ If the dot's y coordinate is less than the mid-point, then it's inside the top t
     maxY = midScreen + bottomTriangle.height;
     triangle = bottomTriangle;
   }
-
-  y = Math.max(minY, Math.min(y, maxY));
+  let triangleMidX = triangle.baseWidth / 2
+  y = Math.max(minY, Math.min(touchY, maxY));
   const relativeY = (y - midScreen) / triangle.height;
-  const maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
-  x = Math.max(Math.min(x, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  const maxXDeviation = Math.abs(relativeY) * (triangleMidX);
+  x = Math.max(Math.min(touchX, (window.innerWidth / 2) + triangleMidX), (window.innerWidth / 2) - triangleMidX);
 
-  cursorFollowingDot.setPosition(x, y);
+  //X value to limit the movement of the ball, while the calculated one is the x variable
+  xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+
+  cursorFollowingDot.setPosition(xOfDot, y);
   calculateDistancePercentage(x, y);
 }
 
