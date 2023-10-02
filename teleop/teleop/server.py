@@ -65,7 +65,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
         _response = json.dumps(dict(control="viewer"))
         if self._is_operator():
             _response = json.dumps(dict(control="operator"))
-            msg["time"] = timestamp() #add time stamp to the sent command
+            msg["time"] = timestamp()  # add time stamp to the sent command
             self._fn_control(msg)
         else:  # This block might not be needed if every user is always an operator
             if msg.get("_operator") == "force":
@@ -80,9 +80,6 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
             self.write_message(_response)
         except websocket.WebSocketClosedError:
             pass
-
-    def on_close(self):
-        print("mobile controller (WS) is closed")
 
 
 class ControlServerSocket(websocket.WebSocketHandler):
