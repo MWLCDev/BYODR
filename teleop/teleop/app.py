@@ -9,12 +9,16 @@ import signal
 import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
+import configparser
 
 
+from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+import tornado.ioloop
+import tornado.web
 
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
@@ -23,7 +27,9 @@ from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
+
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from .getSSID import fetch_ssid
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +39,8 @@ signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 
 quit_event = multiprocessing.Event()
+# A thread pool to run blocking tasks
+thread_pool = ThreadPoolExecutor()
 
 
 def _interrupt():
@@ -54,7 +62,7 @@ class TeleopApplication(Application):
         Args:
             event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
 
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its configuration files (specifically .ini files).
+            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its .ini configuration files.
         """
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
@@ -92,7 +100,7 @@ def run_python_script(script_name):
     return result_list
 
 
-class RunScriptHandler(tornado.web.RequestHandler):
+class RunDrawMapPython(tornado.web.RequestHandler):
     """Run the python script file and get the response of the sessions date and the Create .HTML file for them to be sent to JS function"""
 
     async def get(self):
@@ -112,6 +120,40 @@ class RunScriptHandler(tornado.web.RequestHandler):
             # logger.info(f"That is coming from the JSON list {result_str}")
             self.write(result_str)
             self.finish()
+
+
+class RunGetSSIDPython(tornado.web.RequestHandler):
+    """Run a python script to get the SSID of current robot"""
+
+    async def get(self):
+        try:
+            # Use the IOLoop to run fetch_ssid in a thread
+            loop = tornado.ioloop.IOLoop.current()
+            
+            config = configparser.ConfigParser()
+            config.read("/config/config.ini")  
+            front_camera_ip = config["camera"]["front.camera.ip"]
+            parts = front_camera_ip.split('.')
+            network_prefix = '.'.join(parts[:3])
+            router_IP = f"{network_prefix}.1"
+            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
+            ssid = await loop.run_in_executor(
+                None,
+                fetch_ssid,
+                router_IP,
+                22,
+                "root",
+                "Modem001",
+                "uci get wireless.@wifi-iface[0].ssid",
+            )
+
+            logger.info(f"SSID of current robot: {ssid}")
+            self.write(ssid)
+        except Exception as e:
+            logger.error(f"Error fetching SSID of current robot: {e}")
+            self.set_status(500)
+            self.write("Error fetching SSID of current robot.")
+        self.finish()
 
 
 class Index(tornado.web.RequestHandler):
@@ -296,7 +338,8 @@ def main():
                     MobileControllerCommands,
                     dict(fn_control=teleop_publish),
                 ),
-                (r"/run_draw_map_python", RunScriptHandler),
+                (r"/run_draw_map_python", RunDrawMapPython),
+                (r"/run_get_SSID", RunGetSSIDPython),
                 (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,

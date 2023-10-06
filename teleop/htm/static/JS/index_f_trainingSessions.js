@@ -23,7 +23,7 @@ window.onload = function () {
   var a = document.getElementById("open_training_sessions_list");
   var popup = document.getElementById("popupWindow");
   a.onclick = function () {
-    popup.style.display = "block";
+    popup.style.display = "flex";
     return false;
   };
 };

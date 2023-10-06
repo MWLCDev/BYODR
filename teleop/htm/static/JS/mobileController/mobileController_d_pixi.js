@@ -1,9 +1,6 @@
 import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shapes.js"
 
-import {
-  setInitialYOffset, setCursorFollowingDot,
-  getInitialYOffset, getCursorFollowingDot,
-} from '/JS/mobileController/mobileController_z_state.js';
+import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
 
 const app = new PIXI.Application({
   width: window.innerWidth,
@@ -29,7 +26,7 @@ function redraw(yOffset = 0) {
   app.stage.addChild(bottomTriangle.graphics);
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-  app.stage.addChild(getCursorFollowingDot().graphics);
+  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
 export { app, redraw }

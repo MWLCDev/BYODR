@@ -1,13 +1,35 @@
 
 import { topTriangle, bottomTriangle } from '/JS/mobileController/mobileController_b_shapes.js';
 
-import {
-  setThrottleSteeringJson, setDetectedTriangle,
-  getInitialYOffset, getCursorFollowingDot,
-  getSelectedTriangle, getMidScreen,
-} from '/JS/mobileController/mobileController_z_state.js';
+import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
 
 import { redraw } from '/JS/mobileController/mobileController_d_pixi.js';
+
+function initializeWS() {
+  let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
+  CTRL_STAT.websocket = new WebSocket(WSurl);
+
+  CTRL_STAT.websocket.onopen = function (event) {
+    console.log('Mobile controller (WS) connection opened');
+  };
+
+  //Check the respond from the endpoint. If the user is operator or viewer 
+  // ws.onmessage = function (event) {
+  //   // Handle the received data as needed
+  //   // console.log('Message received:', event.data);
+  // };
+
+  CTRL_STAT.websocket.onerror = function (error) {
+    console.log('WebSocket Error:', error);
+  };
+
+  CTRL_STAT.websocket.onclose = function (event) {
+    console.log('Mobile controller (WS) connection closed');
+  };
+
+  console.log('Created Mobile controller (WS)');
+}
 
 /**
  * Check if a point is inside a triangle using barycentric
@@ -57,11 +79,11 @@ function deltaCoordinatesFromTip(x, y) {
 
 function SetStatistics(x, y) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
-  setThrottleSteeringJson({
-    throttle: -((y - getInitialYOffset()) / (window.innerHeight / 4)).toFixed(3),
+  CTRL_STAT.throttleSteeringJson = {
+    throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
     steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
     button_b: 1,
-  });
+  };
 }
 
 /**
@@ -72,19 +94,19 @@ function SetStatistics(x, y) {
 function handleDotMove(touchX, touchY) {
   // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
   let minY, maxY, triangle;
-  if (getSelectedTriangle() === 'top') {
-    minY = getMidScreen() - topTriangle.height;
-    maxY = getMidScreen();
+  if (CTRL_STAT.selectedTriangle === 'top') {
+    minY = CTRL_STAT.midScreen - topTriangle.height;
+    maxY = CTRL_STAT.midScreen;
     triangle = topTriangle;
-  } else if (getSelectedTriangle() === 'bottom') {
-    minY = getMidScreen();
-    maxY = getMidScreen() + bottomTriangle.height;
+  } else if (CTRL_STAT.selectedTriangle === 'bottom') {
+    minY = CTRL_STAT.midScreen;
+    maxY = CTRL_STAT.midScreen + bottomTriangle.height;
     triangle = bottomTriangle;
   }
   let triangleMidX = triangle.baseWidth / 2
   let y = Math.max(minY, Math.min(touchY, maxY));
   //represents the fraction of the distance the dot is from the tip of the triangle it is inside
-  const relativeY = (y - getMidScreen()) / triangle.height;
+  const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
   //limit the movement of the ball
   const maxXDeviation = Math.abs(relativeY) * (triangleMidX);
 
@@ -93,7 +115,7 @@ function handleDotMove(touchX, touchY) {
 
   //X value to visually limit the movement of the ball
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-  getCursorFollowingDot().setPosition(xOfDot, y);
+  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
   deltaCoordinatesFromTip(x, y);
 }
 
@@ -106,11 +128,11 @@ function handleDotMove(touchX, touchY) {
 function detectTriangle(x, y) {
   //Lots of spread syntax/ destructuring for the values of vertices in triangles
   if (pointInsideTriangle(x, y, ...topTriangle.vertices[0], ...topTriangle.vertices[1], ...topTriangle.vertices[2])) {
-    setDetectedTriangle('top');
+    CTRL_STAT.detectedTriangle = 'top';
   } else if (pointInsideTriangle(x, y, ...bottomTriangle.vertices[0], ...bottomTriangle.vertices[1], ...bottomTriangle.vertices[2])) {
-    setDetectedTriangle('bottom');
+    CTRL_STAT.detectedTriangle = 'bottom';
   } else {
-    setDetectedTriangle('none');
+    CTRL_STAT.detectedTriangle = 'none';
   }
 }
 /**
@@ -135,4 +157,4 @@ function handleTriangleMove(y) {
 }
 
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS };
