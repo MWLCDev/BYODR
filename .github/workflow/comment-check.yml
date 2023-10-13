@@ -1,0 +1,21 @@
+name: Comment Check
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Check comment percentage
+        run: |
+          ./.github/workflows/check_comments.sh
