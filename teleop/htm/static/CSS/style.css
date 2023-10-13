@@ -218,7 +218,7 @@ div.overlay_distance {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 20vw;
+  width: 30vw;
   height: fit-content;
   max-height: 80vh;
   background-color: #f1f1f1;

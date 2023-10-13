@@ -1,6 +1,7 @@
 //Shared State variables that goes between the files/modules used
 
-import { Dot } from "/JS/mobileController/mobileController_b_shapes.js"
+import { Dot } from "/JS/mobileController/mobileController_b_shape_dot.js"
+import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
 
 class MobileControllerState {
   //The starting y coord when the triangles are relocated ()
@@ -11,6 +12,7 @@ class MobileControllerState {
   #throttleSteeringJson = {};
   //stands for WebSocket
   #ws;
+  #stateErrors;
   #detectedTriangle = "none";
   get midScreen() {
     return window.innerHeight / 2 + this.#initialYOffset;
@@ -37,6 +39,23 @@ class MobileControllerState {
     return this.#selectedTriangle;
   }
 
+  set throttleSteeringJson(value) {
+    this.#throttleSteeringJson = value;
+  }
+  get throttleSteeringJson() {
+    return this.#throttleSteeringJson;
+  }
+
+  set stateErrors(value) {
+    if (this.#stateErrors != value) {
+      this.#stateErrors = value;
+      topTriangle.changeText(value)
+    }
+  }
+
+  get stateErrors() {
+    return this.#stateErrors;
+  }
   set throttleSteeringJson(value) {
     this.#throttleSteeringJson = value;
   }

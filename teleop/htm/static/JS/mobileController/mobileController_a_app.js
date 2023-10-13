@@ -1,13 +1,10 @@
-import { topTriangle, bottomTriangle, Dot } from "/JS/mobileController/mobileController_b_shapes.js"
-
-import { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS }
+import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
+import { Dot } from "/JS/mobileController/mobileController_b_shape_dot.js"
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS }
   from "/JS/mobileController/mobileController_c_logic.js"
 
-// Stands for control state
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
-
+import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
-
 
 
 window.addEventListener('load', () => {
@@ -27,22 +24,32 @@ app.view.addEventListener('touchstart', (event) => {
   detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
   //if condition to make sure it will move only if the user clicks inside one of the two triangles
   if (CTRL_STAT.detectedTriangle !== 'none') {
-    CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
-    CTRL_STAT.cursorFollowingDot = new Dot();
-    handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
-    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-    handleTriangleMove(event.touches[0].clientY);
+    switch (CTRL_STAT.stateErrors) {
+      case "controlError":
+        console.error("Another user has connected. Refresh the page to take control back");
+        break;
+      case "connectionError":
+        console.error("Connection lost with the robot. Please reconnect");
+        break;
+      default:
+        CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
+        CTRL_STAT.cursorFollowingDot = new Dot();
+        handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
+        app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+        handleTriangleMove(event.touches[0].clientY);
 
-    app.view.addEventListener('touchmove', onTouchMove);
-    // Arrow function to send the command through websocket 
-    intervalId = setInterval(() => {
-      if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-        CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-      } else {
-        console.error('WebSocket is not open. Unable to send data.');
-      }
-      // High interval to overcome if the user is controlling from the normal UI with a controller (PS4)
-    }, 1);
+        app.view.addEventListener('touchmove', onTouchMove);
+        // Arrow function to send the command through websocket 
+        intervalId = setInterval(() => {
+          if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
+            CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+          } else {
+            console.error('WebSocket is not open. Unable to send data.');
+          }
+          // High interval to overcome if the user is controlling from the normal UI with a controller (PS4)
+        }, 1);
+        break;
+    }
   } else {
     console.error('Clicked outside the triangles. click inside one of the two triangles to start.');
   }

@@ -1,5 +1,4 @@
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shapes.js"
-
+import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
 import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
 
 const app = new PIXI.Application({

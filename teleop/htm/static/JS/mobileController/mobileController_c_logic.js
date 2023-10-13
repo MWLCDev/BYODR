@@ -1,24 +1,29 @@
 
-import { topTriangle, bottomTriangle } from '/JS/mobileController/mobileController_b_shapes.js';
-
+import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
 import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
-
 import { redraw } from '/JS/mobileController/mobileController_d_pixi.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
+  // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
   let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
   CTRL_STAT.websocket = new WebSocket(WSurl);
-
+  // console.log(CTRL_STAT.websocket)
   CTRL_STAT.websocket.onopen = function (event) {
     console.log('Mobile controller (WS) connection opened');
+    CTRL_STAT.stateErrors = ""
   };
 
-  //Check the respond from the endpoint. If the user is operator or viewer 
-  // ws.onmessage = function (event) {
-  //   // Handle the received data as needed
-  //   // console.log('Message received:', event.data);
-  // };
+  // Check the respond from the endpoint. If the user is operator or viewer 
+  // if it is a viewer, then refresh
+  CTRL_STAT.websocket.onmessage = function (event) {
+    let parsedData = JSON.parse(event.data); // The received data is in string, so I need to convert to JSON 
+    if (parsedData["control"] == "operator") {
+      //Place holder
+    } else if (parsedData["control"] == "viewer") {
+      CTRL_STAT.stateErrors = "controlError"
+    }
+  };
 
   CTRL_STAT.websocket.onerror = function (error) {
     console.log('WebSocket Error:', error);
@@ -26,8 +31,8 @@ function initializeWS() {
 
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
+    CTRL_STAT.stateErrors = "connectionError"
   };
-
   console.log('Created Mobile controller (WS)');
 }
 
@@ -135,6 +140,7 @@ function detectTriangle(x, y) {
     CTRL_STAT.detectedTriangle = 'none';
   }
 }
+
 /**
  * limit the triangles not to go outside the borders of the screen
  * @param {number} y Y-coord where the user's input is 
