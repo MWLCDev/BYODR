@@ -10,6 +10,7 @@ import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
+import user_agents  # Check in the request header if it is a phone or not
 
 
 from concurrent.futures import ThreadPoolExecutor
@@ -129,12 +130,12 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
         try:
             # Use the IOLoop to run fetch_ssid in a thread
             loop = tornado.ioloop.IOLoop.current()
-            
+
             config = configparser.ConfigParser()
-            config.read("/config/config.ini")  
+            config.read("/config/config.ini")
             front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split('.')
-            network_prefix = '.'.join(parts[:3])
+            parts = front_camera_ip.split(".")
+            network_prefix = ".".join(parts[:3])
             router_IP = f"{network_prefix}.1"
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
             ssid = await loop.run_in_executor(
@@ -160,7 +161,18 @@ class Index(tornado.web.RequestHandler):
     """The Main landing page"""
 
     def get(self):
-        self.render("../htm/templates/index.html")
+        user_agent_str = self.request.headers.get("User-Agent")
+        user_agent = user_agents.parse(user_agent_str)
+
+        if user_agent.is_mobile:
+            # if user is on mobile, redirect to the mobile page
+            logger.info(
+                "User is operating through mobile phone. Redirecting to the mobile UI"
+            )
+            self.redirect("/mobile_controller_ui")
+        else:
+            # else render the index page
+            self.render("../htm/templates/index.html")
 
 
 class UserMenu(tornado.web.RequestHandler):
@@ -176,6 +188,13 @@ class MobileControllerUI(tornado.web.RequestHandler):
 
     def get(self):
         self.render("../htm/templates/mobile_controller_ui.html")
+
+
+class TestFeatureUI(tornado.web.RequestHandler):
+    """Load the user interface for mobile controller"""
+
+    def get(self):
+        self.render("../htm/templates/testFeature.html")
 
 
 def main():
@@ -330,15 +349,25 @@ def main():
     try:
         main_app = web.Application(
             [
+                # Landing page
                 (r"/", Index),
-                (r"/user_menu", UserMenu),
-                (r"/mobile_controller_ui", MobileControllerUI),
+                (r"/user_menu", UserMenu),  # Navigate to user menu settings page
                 (
+                    r"/mobile_controller_ui",
+                    MobileControllerUI,
+                ),  # Navigate to Mobile controller UI
+                (r"/testFeature", TestFeatureUI),  # Navigate to a testing page
+                (
+                    r"/run_draw_map_python",
+                    RunDrawMapPython,
+                ),  # Run python script to get list of maps
+                (
+                    # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
                     MobileControllerCommands,
                     dict(fn_control=teleop_publish),
                 ),
-                (r"/run_draw_map_python", RunDrawMapPython),
+                # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (
                     r"/api/datalog/event/v10/table",
@@ -349,7 +378,7 @@ def main():
                     r"/api/datalog/event/v10/image",
                     JPEGImageRequestHandler,
                     dict(mongo_box=_mongo),
-                ),
+                ),  # Get the commands from the controller in normal UI
                 (r"/ws/ctl", ControlServerSocket, dict(fn_control=teleop_publish)),
                 (
                     r"/ws/log",
@@ -378,6 +407,7 @@ def main():
                     ),
                 ),
                 (
+                    # Get or save the options for the user
                     r"/teleop/user/options",
                     ApiUserOptionsHandler,
                     dict(

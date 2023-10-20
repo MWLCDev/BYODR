@@ -19,6 +19,8 @@ RUN pip3 install folium
 RUN pip3 install Flask
 RUN pip3 install flask_socketio
 RUN pip3 install paramiko
+RUN pip3 install user-agents
+
 
 
 COPY ./common common/
