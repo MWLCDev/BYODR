@@ -19,6 +19,7 @@ from byodr.utils import Application
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_video_source
 from byodr.utils.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSocket
+from byodr.utils.ip_getter import get_ip_number
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class CameraApplication(Application):
     def step(self):
         self._stream.check()
 
-
+# Command that encoes the stream from raw jpeg stream to h264
 gst_commands = {
     'h264/rtsp':
         "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 drop-on-latency=true do-retransmission=false ! "
@@ -72,7 +73,7 @@ gst_commands = {
         "video/x-h264,profile=baseline,stream-format=\"byte-stream\" ! queue ! appsink"
 }
 
-
+# Creates the stream and sends it towards the Nano
 def create_stream(config_file):
     parser = SafeConfigParser()
     parser.read(config_file)
@@ -80,15 +81,19 @@ def create_stream(config_file):
     name = os.path.basename(os.path.splitext(config_file)[0])
     _type = parse_option('camera.type', str, **kwargs)
     assert _type in list(gst_commands.keys()), "Unrecognized camera type '{}'.".format(_type)
+    
+    # If the stream type is h264, this is used currently
     if _type == 'h264/rtsp':
         out_width, out_height = [int(x) for x in parse_option('camera.output.shape', str, '640x480', **kwargs).split('x')]
         config = {
-            'ip': (parse_option('camera.ip', str, '192.168.1.64', **kwargs)),
+            'ip': (parse_option('camera.ip', str, '192.168.'+get_ip_number()+'.64', **kwargs)),
             'port': (parse_option('camera.port', int, 554, **kwargs)),
             'user': (parse_option('camera.user', str, 'user1', **kwargs)),
             'password': (parse_option('camera.password', str, 'HaikuPlot876', **kwargs)),
             'path': (parse_option('camera.path', str, '/Streaming/Channels/103', **kwargs))
         }
+
+    # This stream type is not used
     else:
         _type = 'raw/usb/h264/udp'
         src_width, src_height = [int(x) for x in parse_option('camera.source.shape', str, '640x480', **kwargs).split('x')]
@@ -102,7 +107,7 @@ def create_stream(config_file):
             'udp_width': udp_width,
             'udp_height': udp_height,
             'udp_bitrate': (parse_option('camera.udp.bitrate', int, 1024000, **kwargs)),
-            'udp_host': (parse_option('camera.udp.host', str, '192.168.1.100', **kwargs)),
+            'udp_host': (parse_option('camera.udp.host', str, '192.168.'+get_ip_number()+'.100', **kwargs)),
             'udp_port': (parse_option('camera.udp.port', int, 5000, **kwargs)),
             'out_width': out_width,
             'out_height': out_height,
@@ -134,6 +139,7 @@ def main():
         asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
         asyncio.set_event_loop(asyncio.new_event_loop())
 
+        # ?? Starting the web service that the nano requests the streams from ??
         io_loop = ioloop.IOLoop.instance()
         class_ref = HttpLivePlayerVideoSocket if socket_type == 'http-live' else JMuxerVideoStreamSocket
         web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
