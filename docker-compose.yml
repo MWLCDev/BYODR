@@ -185,13 +185,12 @@ services:
         "--name",
         "coms",
       ]
-    ports:
-      - "1112:1112"
     environment:
       LD_PRELOAD: libgomp.so.1
     volumes:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:rw
+    network_mode: "host"
 
   following:
     cpuset: "3"
