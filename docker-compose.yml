@@ -170,3 +170,46 @@ services:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:ro
       - volume_byodr_sessions:/sessions:rw
+  
+  communication:
+    cpuset: "3"
+    build:
+      context: .
+      dockerfile: communication/Dockerfile
+    restart: always
+    command:
+      [
+        "python3",
+        "-m",
+        "communication.app",
+        "--name",
+        "communication",
+      ]
+    ports:
+      - "1112:1112"
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+
+  following:
+    cpuset: "3"
+    build:
+      context: .
+      dockerfile: following/Dockerfile
+    restart: always
+    command:
+      [
+        "python3",
+        "-m",
+        "following.app",
+        "--name",
+        "following",
+      ]
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+
