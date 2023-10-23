@@ -7,12 +7,25 @@ import os
 import re
 import shutil
 import subprocess
+import configparser
 
 logger = logging.getLogger(__name__)
 
 log_format = '%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s'
 
 
+# Declaring the function to get the IP here, because for some reason,
+# it cannot have access to the common/byodr folder where the util functions reside
+def get_ip_number():
+    config = configparser.ConfigParser()
+    config.read("/config/config.ini")
+    front_camera_ip = config["camera"]["front.camera.ip"]
+    parts = front_camera_ip.split('.')
+    
+    return parts[2] 
+
+
+# Reads the haproxy.conf file
 def _check_config(config_file):
     with open(config_file, 'r') as _file:
         contents = _file.read()
@@ -25,7 +38,7 @@ def _check_config(config_file):
         #haproxy is a load balancer
         with open('haproxy_ssl.template' if _ssl else 'haproxy.template', 'r') as _template:
             with open(config_file, 'w') as _file:
-                _file.write(_template.read().replace('192.168.1.32', _ip))
+                _file.write(_template.read().replace('192.168.' + get_ip_number() + '.32', _ip))
         logger.info("Updated the existing proxy configuration using ip '{}'.".format(_ip))
 
 
@@ -35,8 +48,12 @@ def main():
     args = parser.parse_args()
 
     config_file = args.config
+
+    # Check if the file exists
     if os.path.exists(config_file):
         _check_config(config_file)
+    
+    # If it doesnt exist, we create one from an existing template
     else:
         shutil.copyfile('haproxy.template', config_file)
         logger.info("Created a new non ssl proxy configuration.")
