@@ -12,6 +12,7 @@ from byodr.utils import timestamp, Configurable
 from byodr.utils.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector, ReceiverThread
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import parse_option, hash_dict
+from byodr.utils.ip_getter import get_ip_number
 from core import GpsPollerThread, PTZCamera, ConfigurableImageGstSource
 
 logger = logging.getLogger(__name__)
@@ -72,20 +73,25 @@ class Platform(Configurable):
         self._gps = None
         self._geo = GeoTracker()
 
+    # ?? Get the location of the robot inside the simulation ??
     def _track(self):
         latitude, longitude = (None, None) if self._gps is None else (self._gps.get_latitude(), self._gps.get_longitude())
         position = None if None in (latitude, longitude) else (latitude, longitude)
         return self._geo.track(position)
 
+    # ?? Start measuring the speed of the robot inside the simulation ??
     def _start_odometer(self):
         _master_uri, _speed_factor = self._odometer_config
         self._odometer = RasSpeedOdometer(_master_uri, _speed_factor)
         self._odometer.start()
 
+    # ?? Stop measuring the speed of the robot inside the simulation ??
     def _quit_odometer(self):
         if self._odometer is not None:
             self._odometer.quit()
 
+    # ?? Function that returns the state of the robot inside the simulation ??
+    # State: Longitute, latitude, speed, direction and timestamp
     def state(self):
         with self._lock:
             y_vel, trust_velocity = 0, 0
@@ -113,11 +119,11 @@ class Platform(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        _master_uri = parse_option('ras.master.uri', str, 'tcp://192.168.1.32', errors, **kwargs)
+        _master_uri = parse_option('ras.master.uri', str, 'tcp://192.168.'+get_ip_number()+'.32', errors, **kwargs)
         _speed_factor = parse_option('ras.non.sensor.speed.factor', float, 0.50, errors, **kwargs)
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
-        _gps_host = parse_option('gps.provider.host', str, '192.168.1.1', errors, **kwargs)
+        _gps_host = parse_option('gps.provider.host', str, '192.168.'+get_ip_number()+'.1', errors, **kwargs)
         _gps_port = parse_option('gps.provider.port', str, '502', errors, **kwargs)
         self._gps = GpsPollerThread(_gps_host, _gps_port)
         self._gps.start()
@@ -263,6 +269,9 @@ class RoverApplication(Application):
     #         super(RoverApplication, self).run()
     #     profiler.dump_stats('/config/rover.stats')
 
+
+    # Function that is called continuously
+    # Receives commands from pilot and teleop
     def step(self):
         rover, pilot, teleop, publisher = self._handler, self.pilot, self.teleop, self.state_publisher
         c_pilot = self._latest_or_none(pilot, patience=rover.get_patience_micro())
@@ -283,16 +292,21 @@ def main():
     application = RoverApplication(config_dir=args.config)
     quit_event = application.quit_event
 
+    # Sockets used to receive data from pilot and teleop.
     pilot = json_collector(url='ipc:///byodr/pilot.sock', topic=b'aav/pilot/output', event=quit_event)
     teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
     ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
 
+    # Sockets used to send data to other services
     application.state_publisher = JSONPublisher(url='ipc:///byodr/vehicle.sock', topic='aav/vehicle/state')
     application.ipc_server = LocalIPCServer(url='ipc:///byodr/vehicle_c.sock', name='platform', event=quit_event)
+    
+    # Getting data from the received sockets declared above
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
 
+    # Starting the socket threads
     threads = [pilot, teleop, ipc_chatter, application.ipc_server]
     if quit_event.is_set():
         return 0
