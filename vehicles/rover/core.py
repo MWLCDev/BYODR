@@ -14,12 +14,14 @@ from requests.auth import HTTPDigestAuth
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_image_source
+from byodr.utils.ip_getter import get_ip_number
 
 logger = logging.getLogger(__name__)
 
 CH_NONE, CH_THROTTLE, CH_STEERING, CH_BOTH = (0, 1, 2, 3)
 CTL_LAST = 0
 
+# Video encoder commands
 gst_commands = {
     'h264/rtsp':
         "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 drop-on-latency=true do-retransmission=false ! "
@@ -53,23 +55,29 @@ class ConfigurableImageGstSource(Configurable):
                 # ValueError: deque.remove(x): x not in deque
                 pass
 
+    # Publishes an image that will be received by listeners
     def _publish(self, image):
         self._image_publisher.publish(image)
 
+    # ?? Returns the resolution of the stream ??
     def get_shape(self):
         return self._shape
 
+    # ?? Check if the pan and tilt of the camera are enabled ??
     def get_ptz(self):
         return self._ptz
 
+    # ?? Checking the image sink, a listener that will receive images from the publisher ??
     def check(self):
         with self._lock:
             if self._sink is not None:
                 self._sink.check()
 
+    # Stops all functions, so that we can restart everything from scratch
     def internal_quit(self, restarting=False):
         self._close()
 
+    # ?? Function that begins a stream from the robot inside a simulation ??
     def internal_start(self, **kwargs):
         self._close()
         _errors = []
@@ -79,9 +87,10 @@ class ConfigurableImageGstSource(Configurable):
         framerate = (parse_option(self._name + '.camera.framerate', int, framerate, errors=_errors, **kwargs))
         out_width, out_height = [int(x) for x in parse_option(self._name + '.camera.shape', str, '320x240',
                                                               errors=_errors, **kwargs).split('x')]
+        
         if _type == 'h264/rtsp':
             config = {
-                'ip': (parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=_errors, **kwargs)),
+                'ip': (parse_option(self._name + '.camera.ip', str, '192.168.'+get_ip_number()+'.64', errors=_errors, **kwargs)),
                 'port': (parse_option(self._name + '.camera.port', int, 554, errors=_errors, **kwargs)),
                 'user': (parse_option(self._name + '.camera.user', str, 'user1', errors=_errors, **kwargs)),
                 'password': (parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=_errors, **kwargs)),
@@ -98,15 +107,16 @@ class ConfigurableImageGstSource(Configurable):
                 'width': out_width,
                 'framerate': framerate
             }
-        self._shape = (out_height, out_width, 3)
-        self._ptz = parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=_errors, **kwargs)
+        self._shape = (out_height, out_width, 3) # Setting up the resolution of the output stream
+        self._ptz = parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=_errors, **kwargs) # Checking if we enable the ptz, according to the config file
         _command = gst_commands.get(_type).format(**config)
-        self._sink = create_image_source(self._name, shape=self._shape, command=_command)
+        self._sink = create_image_source(self._name, shape=self._shape, command=_command) # ?? Creating a sink that will accept all images produced by the publisher ??
         self._sink.add_listener(self._publish)
         logger.info("Gst '{}' command={}".format(self._name, _command))
         return _errors
 
 
+# Class that controls the camera
 class CameraPtzThread(threading.Thread):
     def __init__(self, url, user, password, preset_duration_sec=3.8, scale=100, speed=1., flip=(1, 1)):
         super(CameraPtzThread, self).__init__()
@@ -158,6 +168,7 @@ class CameraPtzThread(threading.Thread):
             if ret and ret.status_code != 200:
                 logger.warning("Got status {} on operation {}.".format(ret.status_code, operation))
 
+    # ?? Function that moves the camera around according to user commands ??
     def _run(self, operation):
         ret = None
         prev = self._previous
@@ -178,60 +189,69 @@ class CameraPtzThread(threading.Thread):
             ret = requests.put(self._url + '/continuous', data=self._ptz_xml.format(**dict(pan=pan, tilt=tilt)), auth=self._auth)
         return ret
 
+    # ?? Adds a command to be executed, inside a common queue ??
     def add(self, command):
         try:
             self._queue.put_nowait(command)
         except Queue.Full:
             pass
 
+    # Quiting function
     def quit(self):
         self._quit_event.set()
 
+    # ?? Function that moves the camera around ??
     def run(self):
         while not self._quit_event.is_set():
             try:
                 cmd = self._queue.get(block=True, timeout=0.050)
                 with self._lock:
                     operation = (0, 0)
-                    if cmd.get('set_home', 0):
+                    if cmd.get('set_home', 0): # ?? Resetting the camera to its default position ??
                         operation = ('set_home', cmd.get('goto_home', 0))
-                    elif cmd.get('goto_home', 0):
+                    elif cmd.get('goto_home', 0): # ?? Resetting the camera to its default position ??
                         operation = 'goto_home'
-                    elif 'pan' in cmd and 'tilt' in cmd:
+                    elif 'pan' in cmd and 'tilt' in cmd: # ?? Setting the camera to a custom position ??
                         operation = (self._norm(cmd.get('pan')) * self._flip[0], self._norm(cmd.get('tilt')) * self._flip[1])
                     self._perform(operation)
             except Queue.Empty:
                 pass
             except IOError as e:
                 # E.g. a requests ConnectionError to the ip camera.
-                logger.warning("PTZ#run: {}".format(e))
+                logger.warning("PTZ@run: {}".format(e))
 
 
+# Class that represents the camera as a device
 class PTZCamera(Configurable):
     def __init__(self, name):
         super(PTZCamera, self).__init__()
         self._name = name
         self._worker = None
 
+    # ?? Adds a command to be executed, inside a common queue ??
     def add(self, command):
         with self._lock:
             if self._worker and command:
                 self._worker.add(command)
 
+    # Stopping the stream
     def internal_quit(self, restarting=False):
         if self._worker:
             self._worker.quit()
             self._worker.join()
             self._worker = None
 
+    # Starting the stream
     def internal_start(self, **kwargs):
         errors = []
         _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=errors, **kwargs)
         ptz_enabled = _type == 'h264/rtsp' and parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=errors, **kwargs)
+
+        # If we have just established a camera
         if ptz_enabled:
-            _server = parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=errors, **kwargs)
-            _user = parse_option(self._name + '.camera.user', str, 'user1', errors=errors, **kwargs)
-            _password = parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=errors, **kwargs)
+            _server = parse_option(self._name + '.camera.ip', str, '192.168.'+get_ip_number()+'.64', errors=errors, **kwargs) # IP address of the AI camera
+            _user = parse_option(self._name + '.camera.user', str, 'user1', errors=errors, **kwargs) # Login username for the camera website
+            _password = parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=errors, **kwargs) # Login passwor for the camera website
             _protocol = 'http'
             _path = '/ISAPI/PTZCtrl/channels/1'
             _flip = 'tilt'
@@ -252,6 +272,7 @@ class PTZCamera(Configurable):
                 self._worker.set_speed(_speed)
                 self._worker.set_flip(_flipcode)
         # Already under lock.
+        # If we have a camera already established from before
         elif self._worker:
             self._worker.quit()
         return errors
@@ -265,7 +286,7 @@ class GpsPollerThread(threading.Thread):
     https://pymodbus.readthedocs.io/en/v1.3.2/examples/modbus-payload.html
     """
 
-    def __init__(self, host='192.168.1.1', port='502'):
+    def __init__(self, host='192.168.'+get_ip_number()+'.1', port='502'):
         super(GpsPollerThread, self).__init__()
         self._host = host
         self._port = port
@@ -275,12 +296,15 @@ class GpsPollerThread(threading.Thread):
     def quit(self):
         self._quit_event.set()
 
+    # Returns the latitute coordinates of the robot
     def get_latitude(self, default=0):
         return self._queue[0][0] if len(self._queue) > 0 else default
 
+    # Returns the longitute coordinates of the robot
     def get_longitude(self, default=0):
         return self._queue[0][1] if len(self._queue) > 0 else default
 
+    # Main function of the class
     def run(self):
         while not self._quit_event.is_set():
             try:
