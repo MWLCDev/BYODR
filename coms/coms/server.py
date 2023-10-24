@@ -1,5 +1,6 @@
 import socket
 import logging
+import time
 from byodr.utils.ip_getter import get_ip_number
 
 
@@ -27,6 +28,9 @@ def send_data(function_client_socket, function_client_address):
 
     logger.info(f"[NEW CONNECTION] {function_client_address} connected.")
     
+    previous_time_counter = 0
+    time_counter = time.perf_counter()
+
     while True:
         try:
             # Sending test string to the follower segment
@@ -34,7 +38,8 @@ def send_data(function_client_socket, function_client_address):
 
             # Receiving reply from the follower segment
             received_message = function_client_socket.recv(512).decode(FORMAT)
-            logger.info(f"Received reply from follower:<<{received_message}>>")
+            logger.info(f"Received reply from follower. It took {time_counter-previous_time_counter}ms")
+            previous_time_counter = time_counter
 
 
         except ConnectionResetError:

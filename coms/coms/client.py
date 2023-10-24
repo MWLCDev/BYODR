@@ -1,5 +1,6 @@
 import socket
 import logging
+import time
 from byodr.utils.ip_getter import get_ip_number
 
 
@@ -26,16 +27,24 @@ FORMAT = "utf-8"
 # This function will be called after a follower segment connects to the server that starts at line 80
 def receive_data(function_client_socket):
     
-    try:
-        # Receiving data from the lead segment
-        received_message = function_client_socket.recv(512).decode(FORMAT)
-        logger.info(f"Received data from the lead:<<{received_message}>>")
+    previous_time_counter = 0
+    time_counter = time.perf_counter()
 
-        # Sending reply to the lead segment
-        function_client_socket.send(f"This is the follower. I got <<{received_message}>>".encode(FORMAT))
+    while True:
+        try:
+            # Receiving data from the lead segment
+            received_message = function_client_socket.recv(512).decode(FORMAT)
+            logger.info(f"Received data from the lead:<<{received_message}>>")
 
-    except Exception as e:
-        logger.info(f"Got error while sending: {e}")
+            # Sending reply to the lead segment
+            function_client_socket.send(f"This is the follower.".encode(FORMAT))
+
+            logger.info(f"Finished the job. It took {time_counter-previous_time_counter}ms")
+            previous_time_counter = time_counter
+
+
+        except Exception as e:
+            logger.info(f"Got error while sending: {e}")
 
 
 def connect_to_server():
@@ -60,5 +69,4 @@ def connect_to_server():
         except Exception as e:
             logger.info(f"Got error while connecting: {e}")
         else:
-            while True:
-                receive_data(client)
+            receive_data(client)
