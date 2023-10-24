@@ -28,18 +28,19 @@ def send_data(function_client_socket, function_client_address):
 
     logger.info(f"[NEW CONNECTION] {function_client_address} connected.")
     
-    previous_time_counter = 0
-    time_counter = time.perf_counter()
 
     while True:
         try:
+            time_counter = time.perf_counter()
+
             # Sending test string to the follower segment
             function_client_socket.send(f"This is the lead with address {IP}:{PORT}".encode(FORMAT))
 
             # Receiving reply from the follower segment
             received_message = function_client_socket.recv(512).decode(FORMAT)
-            logger.info(f"Received reply from follower. It took {time_counter-previous_time_counter}ms")
-            previous_time_counter = time_counter
+            time_counter_stop = time.perf_counter()
+
+            logger.info(f"Received reply from follower. It took {time_counter_stop-time_counter}ms")
 
 
         except ConnectionResetError:

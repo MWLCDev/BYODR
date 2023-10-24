@@ -27,7 +27,6 @@ FORMAT = "utf-8"
 # This function will be called after a follower segment connects to the server that starts at line 80
 def receive_data(function_client_socket):
     
-    previous_time_counter = 0
     time_counter = time.perf_counter()
 
     while True:
@@ -38,9 +37,10 @@ def receive_data(function_client_socket):
 
             # Sending reply to the lead segment
             function_client_socket.send(f"This is the follower.".encode(FORMAT))
+            time_counter_stop = time.perf_counter()
 
-            logger.info(f"Finished the job. It took {time_counter-previous_time_counter}ms")
-            previous_time_counter = time_counter
+
+            logger.info(f"Finished the job. It took {time_counter_stop-time_counter}ms")
 
 
         except Exception as e:
