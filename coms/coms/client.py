@@ -27,10 +27,10 @@ FORMAT = "utf-8"
 # This function will be called after a follower segment connects to the server that starts at line 80
 def receive_data(function_client_socket):
     
-    time_counter = time.perf_counter()
 
     while True:
         try:
+            time_counter = time.perf_counter()
             # Receiving data from the lead segment
             received_message = function_client_socket.recv(512).decode(FORMAT)
             logger.info(f"Received data from the lead:<<{received_message}>>")
