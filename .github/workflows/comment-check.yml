@@ -1,12 +1,10 @@
-name: Comment Check
+name: Check comments percentage
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - '*'
 
 jobs:
   build:
