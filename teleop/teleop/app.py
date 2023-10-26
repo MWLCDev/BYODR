@@ -140,12 +140,7 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
             ssid = await loop.run_in_executor(
                 None,
                 fetch_ssid,
-                router_IP,
-                22,
-                "root",
-                "Modem001",
-                "uci get wireless.@wifi-iface[0].ssid",
-            )
+                router_IP,22,"root","Modem001","uci get wireless.@wifi-iface[0].ssid",)
 
             logger.info(f"SSID of current robot: {ssid}")
             self.write(ssid)
