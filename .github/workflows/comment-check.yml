@@ -1,12 +1,10 @@
-name: Comment Check
+name: Check comments percentage
 
 on:
   push:
     branches:
       - main
-  pull_request:
-    branches:
-      - main
+      - '*'
 
 jobs:
   build:
@@ -15,6 +13,9 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
+
+      - name: Give execute permission for script
+        run: chmod +x ./.github/workflows/check_comments.sh
 
       - name: Check comment percentage
         run: |
