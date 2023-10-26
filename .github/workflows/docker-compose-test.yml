@@ -20,7 +20,7 @@ jobs:
       # Make sure it would run good for at least 30 seconds
       - name: Docker compose up (root without inference)
         run: |
-          docker-compose -f docker-compose.yml up $(docker-compose -f docker-compose.yml config --services | grep -v inference) -d
+          docker-compose -f docker-compose.yml up -d $(docker-compose -f docker-compose.yml config --services | grep -v inference)
           sleep 30
           docker-compose -f docker-compose.yml down
 
