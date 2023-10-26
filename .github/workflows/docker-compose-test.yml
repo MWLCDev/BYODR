@@ -1,0 +1,36 @@
+name: Docker Compose Test
+
+# Make it rin on any push to any branch
+on:
+  push:
+    branches:
+      - main
+      - '*'
+
+jobs:
+  test_root_docker_compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+      # Give containers some time to start, adjust as needed
+      - name: Docker compose up (root)
+        run: |
+          docker-compose -f docker-compose.yml up -d
+
+          sleep 30  
+          docker-compose -f docker-compose.yml down
+
+  test_raspi_docker_compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v2
+
+      - name: Docker compose up (raspi)
+        run: |
+          docker-compose -f raspi/docker-compose.yml up -d
+          sleep 30  
+          docker-compose -f raspi/docker-compose.yml down
