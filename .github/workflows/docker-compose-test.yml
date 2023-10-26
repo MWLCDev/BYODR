@@ -14,15 +14,16 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v2
       # Exculding inference because it needs .oonx and .ini files, which are private
+      # Add docker-compose.override.yml to overcome CPU higher than 1 in pilot service
       - name: Docker compose build (root without inference)
-        run: docker-compose -f docker-compose.yml build $(docker-compose -f docker-compose.yml config --services | grep -v inference)
+        run: docker-compose -f docker-compose.yml -f docker-compose.override.yml build $(docker-compose -f docker-compose.yml -f docker-compose.override.yml config --services | grep -v inference)
 
       # Make sure it would run good for at least 30 seconds
       - name: Docker compose up (root without inference)
         run: |
-          docker-compose -f docker-compose.yml up -d $(docker-compose -f docker-compose.yml config --services | grep -v inference)
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $(docker-compose -f docker-compose.yml -f docker-compose.override.  yml config --services | grep -v inference)
           sleep 30
-          docker-compose -f docker-compose.yml down
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
   Test_Pi_Docker:
     runs-on: ubuntu-latest
