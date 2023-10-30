@@ -40,7 +40,7 @@ def send_data(function_client_socket, function_client_address):
             received_message = function_client_socket.recv(512).decode(FORMAT)
             time_counter_stop = time.perf_counter()
 
-            logger.info(f"Received reply from follower. It took {time_counter_stop-time_counter}ms")
+            logger.info(f"Received reply from follower. It took {(time_counter_stop-time_counter)*1000}ms")
 
 
         except ConnectionResetError:
@@ -57,7 +57,9 @@ def start_server():
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind((IP, PORT))
 
+    # Start accepting potential clients
     server.listen()
+
     # server.settimeout(1) # We set the timeout to 1 second.
     logger.info(f"Server is listening on {(IP, PORT)}")
 
