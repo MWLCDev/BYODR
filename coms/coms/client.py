@@ -40,7 +40,7 @@ def receive_data(function_client_socket):
             time_counter_stop = time.perf_counter()
 
 
-            logger.info(f"Finished the job. It took {time_counter_stop-time_counter}ms")
+            logger.info(f"Finished the job. It took {(time_counter_stop-time_counter)*1000}ms")
 
 
         except Exception as e:
