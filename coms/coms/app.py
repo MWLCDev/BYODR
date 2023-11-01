@@ -19,13 +19,13 @@ if __name__ == "__main__":
     while True:
 
         arp_list = get_router_arp_table()  
-        logger.info(f"Output whole list: <{arp_list}> from 192.168.{local_third_ip_digit}.1")
+        logger.info(f"Output whole list:\n<{arp_list}> from 192.168.{local_third_ip_digit}.1")
 
-        filtered_list = get_filtered_router_arp_table(arp_list)
+        filtered_list = get_filtered_router_arp_table(arp_list, local_third_ip_digit)
 
         # Created a string for logging due to messy output i had before
         log_string = "IP address".ljust(20) + "Flags\n"
-        for entry in filtered_list[1:]:
+        for entry in filtered_list:
             log_string += entry['IP address'].ljust(20) + entry['Flags'] + "\n"
 
         logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")

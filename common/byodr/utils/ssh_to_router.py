@@ -18,12 +18,13 @@ def get_router_arp_table():
         logger.error(f"An error occurred: {str(e)}")
         return []
 
-def get_filtered_router_arp_table(arp_table):
+def get_filtered_router_arp_table(arp_table, last_digit_of_localIP):
     try:
         filtered_arp_table = []
     
         # Split the ARP table into lines
         arp_lines = arp_table.split('\n')
+        local_ip_prefix = f"192.168.{last_digit_of_localIP}."
 
         # Extract and add "IP address" and "Flags" to the filtered table which is what we need
         for line in arp_lines:
@@ -31,7 +32,8 @@ def get_filtered_router_arp_table(arp_table):
             if len(columns) >= 2:
                 ip = columns[0]
                 flags = columns[2]
-                filtered_arp_table.append({'IP address': ip, 'Flags': flags})
+                if ip.startswith(f'{local_ip_prefix}1') or ip.startswith(f'{local_ip_prefix}2'):
+                    filtered_arp_table.append({'IP address': ip, 'Flags': flags})              
     
         return filtered_arp_table
     except Exception as e:
