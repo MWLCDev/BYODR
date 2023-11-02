@@ -16,26 +16,21 @@ if __name__ == "__main__":
     # Getting the 3rd digit of the IP of the local device
     local_third_ip_digit = get_ip_number()
 
-    while True:
+    arp_list = get_router_arp_table()  
+    filtered_list = get_filtered_router_arp_table(arp_list, local_third_ip_digit)
 
-        arp_list = get_router_arp_table()  
-        logger.info(f"Output whole list:\n<{arp_list}> from 192.168.{local_third_ip_digit}.1")
+    # To be able too see a nice table on logger
+    log_string = "IP address".ljust(20) + "Flags\n"
+    for entry in filtered_list:
+        log_string += entry['IP address'].ljust(20) + entry['Flags'] + "\n"
 
-        filtered_list = get_filtered_router_arp_table(arp_list, local_third_ip_digit)
+    logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")
 
-        # Created a string for logging due to messy output i had before
-        log_string = "IP address".ljust(20) + "Flags\n"
-        for entry in filtered_list:
-            log_string += entry['IP address'].ljust(20) + entry['Flags'] + "\n"
+    # Since robot includes at least 2 segments. 
+    # First one will be server all the time and second one will be a server for the follower one of itself
+    start_server()
 
-        logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")
-
-    # Here we statically assume that if a segment has an ip of 192.168.2.0, its the lead
-    if local_third_ip_digit == "2":
-        logger.info(f"Starting the server code...")
-        start_server()
-
-    # All other ips will be followers
-    else:
+    # All other ips will be clients except the first segment of the robot
+    if local_third_ip_digit != '1':
         logger.info(f"Starting the client code...")
         connect_to_server()

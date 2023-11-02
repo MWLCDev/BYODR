@@ -1,11 +1,23 @@
 import logging
 import subprocess
+import paramiko
 
 # Declaring the logger
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
+
+def fetch_ssid(host, port, username, password, command):
+    # Create an SSH client instance
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    # Connect to the SSH server
+    client.connect(host, port, username, password)
+    stdin, stdout, stderr = client.exec_command(command)
+    output = stdout.read().decode("utf-8")
+    client.close()
+    return output
 
 def get_router_arp_table():
     try:
@@ -32,7 +44,7 @@ def get_filtered_router_arp_table(arp_table, last_digit_of_localIP):
             if len(columns) >= 2:
                 ip = columns[0]
                 flags = columns[2]
-                if ip.startswith(f'{local_ip_prefix}1') or ip.startswith(f'{local_ip_prefix}2'):
+                if ip == f'{local_ip_prefix}1' or ip == f'{local_ip_prefix}2':
                     filtered_arp_table.append({'IP address': ip, 'Flags': flags})              
     
         return filtered_arp_table
