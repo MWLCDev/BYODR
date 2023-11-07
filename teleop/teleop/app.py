@@ -23,7 +23,7 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh_to_router import get_router_data
+from byodr.utils.ssh_to_router import fetch_ssid
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -128,7 +128,7 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
 
     async def get(self):
         try:
-            # Use the IOLoop to run get_router_data in a thread
+            # Use the IOLoop to run fetch_ssid in a thread
             loop = tornado.ioloop.IOLoop.current()
             
             config = configparser.ConfigParser()
@@ -140,7 +140,7 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
             ssid = await loop.run_in_executor(
                 None,
-                get_router_data,
+                fetch_ssid,
                 router_IP,
                 22,
                 "root",
