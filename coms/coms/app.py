@@ -1,4 +1,5 @@
 import logging
+import threading
 from byodr.utils.ip_getter import get_ip_number
 from byodr.utils.ssh_to_router import get_router_arp_table, get_filtered_router_arp_table
 from .server import start_server
@@ -26,11 +27,23 @@ if __name__ == "__main__":
 
     logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")
 
-    # Since robot includes at least 2 segments. 
-    # First one will be server all the time and second one will be a server for the follower one of itself
-    start_server()
 
-    # All other ips will be clients except the first segment of the robot
+    # Threads that will be executing the server and client codes
+    server_thread = threading.Thread( target = start_server )
+    client_thread = threading.Thread( target = connect_to_server )
+
+
+    # Each segment, regardless of IP, will be a server, so that their follower can connect to them.
+    logger.info(f"Starting the server code...")
+    server_thread.start()
+
+    # All other IPs will be clients except the first segment of the robot,
+    # since there is no "0th" segment
     if local_third_ip_digit != '1':
         logger.info(f"Starting the client code...")
-        connect_to_server()
+        client_thread.start()
+
+    # When the threads finish executing they exit
+    #################### We might not need this part###############################
+    server_thread.join()
+    client_thread.join()
