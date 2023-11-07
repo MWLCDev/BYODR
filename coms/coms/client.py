@@ -41,6 +41,8 @@ def receive_data(function_client_socket):
 
 
             logger.info(f"Finished the job. It took {(time_counter_stop-time_counter)*1000}ms")
+            time.sleep(2)
+
 
 
         except Exception as e:
