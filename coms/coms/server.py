@@ -42,6 +42,7 @@ def send_data(function_client_socket, function_client_address):
 
             logger.info(f"Received reply from follower. It took {(time_counter_stop-time_counter)*1000}ms")
 
+            time.sleep(2)
 
         except ConnectionResetError:
             logger.info("Client disconnected.")
