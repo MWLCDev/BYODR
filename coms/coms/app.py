@@ -19,19 +19,19 @@ logger = logging.getLogger(__name__)
 local_third_ip_digit = get_ip_number()
 
 
-# # Declaring the inter-service sockets
-# pilot_publisher = JSONPublisher(url="ipc:///byodr/com.sock", topic="aav/com/commands")
-# teleop_receiver = json_collector(url="ipc:///byodr/teleop.sock",
-#         topic=b"aav/teleop/input",
-#         event=quit_event,
-#         hwm=20)
-# servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:5555',
-#                                  topic=b'ras/drive/status')
+# Declaring the inter-service sockets
+pilot_publisher = JSONPublisher(url="ipc:///byodr/com.sock", topic="aav/com/commands")
+teleop_receiver = json_collector(url="ipc:///byodr/teleop.sock",
+        topic=b"aav/teleop/input",
+        event=quit_event,
+        hwm=20)
+servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:5555',
+                                 topic=b'ras/drive/status')
 
-# # Those socket classes that stephan made, inherit from threading.Thread, so we have to .start()
-# pilot_publisher.start()
-# teleop_receiver.start()
-# servos_receiver.start()
+# Those socket classes that stephan made, inherit from threading.Thread, so we have to .start()
+pilot_publisher.start()
+teleop_receiver.start()
+servos_receiver.start()
 
 
 # Function that will run every time we receive a message from the Servos of Pi
@@ -42,8 +42,8 @@ def servos_listener_function(msg):
 
 def main():
 
-    # # Adding a listener function to the servos listener socket
-    # servos_receiver.add_listener(servos_listener_function)
+    # Adding a listener function to the servos listener socket
+    servos_receiver.add_listener(servos_listener_function)
 
 
     # Getting the 3rd digit of the IP of the local device
@@ -61,10 +61,10 @@ def main():
     logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")
 
 
-    # # Setting test data to the inter-service sockets
-    # pilot_publisher.publish("This is coms")
-    # logger.info(f"Message received from Teleop: {teleop_receiver.get()}")
-    # logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
+    # Setting test data to the inter-service sockets
+    pilot_publisher.publish("This is coms")
+    logger.info(f"Message received from Teleop: {teleop_receiver.get()}")
+    logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
 
 
     # Threads that will be executing the server and client codes
