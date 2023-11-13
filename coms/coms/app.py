@@ -3,7 +3,7 @@ import threading
 import multiprocessing
 from byodr.utils.ip_getter import get_ip_number
 from byodr.utils.ssh_to_router import get_router_arp_table, get_filtered_router_arp_table
-from byodr.utils.ipc import json_collector, JSONPublisher, ReceiverThread
+from byodr.utils.ipc import JSONZmqClient, JSONServerThread, ReceiverThread
 from .server import start_server
 from .client import connect_to_server
 
@@ -20,31 +20,19 @@ local_third_ip_digit = get_ip_number()
 
 
 # Declaring the inter-service sockets
-pilot_publisher = JSONPublisher(url="ipc:///byodr/com.sock", topic="aav/com/commands")
-teleop_receiver = json_collector(url="ipc:///byodr/teleop.sock",
-        topic=b"aav/teleop/input",
-        event=quit_event,
-        hwm=20)
-servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:5555',
-                                 topic=b'ras/drive/status')
+pilot_publisher = JSONZmqClient(urls="ipc:///byodr/coms_to_pilot.sock")
+teleop_receiver = JSONServerThread(url="ipc:///byodr/teleop_to_coms.sock", event=quit_event, receive_timeout_ms=50)
+teleop_receiver.message_to_send = "Coms"
 
-# Those socket classes that stephan made, inherit from threading.Thread, so we have to .start()
-pilot_publisher.start()
+# servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:4444', topic=b'ras/drive/velocity')
+servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:5555', topic=b'ras/drive/status')
+
+
 teleop_receiver.start()
 servos_receiver.start()
 
 
-# Function that will run every time we receive a message from the Servos of Pi
-def servos_listener_function(msg):
-    msg.get()
-
-
-
 def main():
-
-    # Adding a listener function to the servos listener socket
-    servos_receiver.add_listener(servos_listener_function)
-
 
     # Getting the 3rd digit of the IP of the local device
     local_third_ip_digit = get_ip_number()
@@ -62,8 +50,9 @@ def main():
 
 
     # Setting test data to the inter-service sockets
-    pilot_publisher.publish("This is coms")
-    logger.info(f"Message received from Teleop: {teleop_receiver.get()}")
+    reply_from_pilot = pilot_publisher.call("Coms")
+    logger.info(f"Message received from Pilot: {reply_from_pilot}")
+    logger.info(f"Message received from Teleop: {teleop_receiver.pop_latest()}")
     logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
 
 
