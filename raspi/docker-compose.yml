@@ -46,7 +46,6 @@ services:
 #      - /dev/bus/usb:/dev/bus/usb  # not allowed by balena os
 #      - /dev:/dev  # not allowed by balena os
       - volume_local_config:/config:rw
-      - volume_byodr_sockets:/byodr:rw
   stream0:
     build:
       context: .
@@ -61,7 +60,6 @@ services:
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
-      - volume_byodr_sockets:/byodr:rw
   stream1:
     build:
       context: .
@@ -76,5 +74,4 @@ services:
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
-      - volume_byodr_sockets:/byodr:rw
 
