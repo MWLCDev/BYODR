@@ -48,12 +48,12 @@ def main():
         log_string += entry['IP address'].ljust(20) + entry['Flags'] + "\n"
     logger.info(f"Output filtered list:\n{log_string}from 192.168.{local_third_ip_digit}.1")
 
-
-    # Setting test data to the inter-service sockets
-    reply_from_pilot = pilot_publisher.call("Coms")
-    logger.info(f"Message received from Pilot: {reply_from_pilot}")
-    logger.info(f"Message received from Teleop: {teleop_receiver.pop_latest()}")
-    logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
+    while True:
+        # Setting test data to the inter-service sockets
+        reply_from_pilot = pilot_publisher.call("Coms")
+        logger.info(f"Message received from Pilot: {reply_from_pilot}")
+        logger.info(f"Message received from Teleop: {teleop_receiver.pop_latest()}")
+        logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
 
 
     # Threads that will be executing the server and client codes
