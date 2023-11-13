@@ -15,7 +15,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from byodr.utils import Application, ApplicationExit
-from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
+from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector, JSONServerThread
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
 from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
@@ -50,6 +50,7 @@ class PilotApplication(Application):
         self.ros = None
         self.vehicle = None
         self.inference = None
+        self.coms = None
         self._init(relay)
 
     def _init(self, _relay):
@@ -112,6 +113,8 @@ class PilotApplication(Application):
         commands = (teleop, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
         self._monitor.step(pilot, teleop)
+        self.logger.info(f"Data received from the Coms service {self.coms.pop_latest()}.")
+
         if pilot is not None:
             self.publisher.publish(pilot)
         chat = self.ipc_chatter()
@@ -146,7 +149,10 @@ def main():
     application.ipc_chatter = lambda: ipc_chatter.get()
     application.publisher = JSONPublisher(url='ipc:///byodr/pilot.sock', topic='aav/pilot/output')
     application.ipc_server = LocalIPCServer(url='ipc:///byodr/pilot_c.sock', name='pilot', event=quit_event)
-    threads = [teleop, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
+    application.coms = JSONServerThread(url='ipc:///byodr/coms_to_pilot.sock', event=quit_event, receive_timeout_ms=50)
+    application.coms.message_to_send = "Pilot"
+
+    threads = [teleop, ros, vehicle, inference, ipc_chatter, application.ipc_server,  application.coms, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 
