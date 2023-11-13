@@ -302,8 +302,6 @@ def main():
         ]
     )
 
-    coms = JSONZmqClient(url="ipc:///byodr/teleop_to_coms.sock")
-
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
         application.setup()
@@ -321,9 +319,6 @@ def main():
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
         teleop_publisher.publish(cmd)
-
-        reply_from_coms = coms.call("Teleop")
-        logger.info(f"Message received from Pilot: {reply_from_coms}")
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
