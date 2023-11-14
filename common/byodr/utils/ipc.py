@@ -244,7 +244,7 @@ class JSONServerThread(threading.Thread):
     def serve(self, reply):
         if reply is None:
             return {}
-        return {reply}
+        return {'reply': reply}
 
     # Main function of the class.
     # Receives data from the client, and sends back a reply based on self.message_to_send
