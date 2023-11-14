@@ -31,14 +31,26 @@ servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:
 teleop_receiver.start()
 servos_receiver.start()
 
+def _on_message(message):
+        logger.info(f"Data received from the Teleop service, Listener: {message}.")
+
+
+def _on_receive(message):
+        logger.info(f"Data received from the Servos service, Listener: {message}.")
+
+
 
 def main():
+
+    teleop_receiver.add_listener(_on_message)
+    servos_receiver.add_listener(_on_receive)
+
 
     # Getting the 3rd digit of the IP of the local device
     local_third_ip_digit = get_ip_number()
 
 
-    arp_list = get_router_arp_table()  
+    arp_list = get_router_arp_table()
     filtered_list = get_filtered_router_arp_table(arp_list, local_third_ip_digit)
 
 
@@ -50,7 +62,7 @@ def main():
 
     while True:
         # Setting test data to the inter-service sockets
-        reply_from_pilot = pilot_publisher.call("Coms")
+        reply_from_pilot = pilot_publisher.call(dict(data = "Coms"))
         logger.info(f"Message received from Pilot: {reply_from_pilot}")
         logger.info(f"Message received from Teleop: {teleop_receiver.pop_latest()}")
         logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
