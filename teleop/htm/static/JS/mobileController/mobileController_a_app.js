@@ -42,7 +42,13 @@ app.view.addEventListener('touchstart', (event) => {
         // Arrow function to send the command through websocket 
         intervalId = setInterval(() => {
           if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-            CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+            if (throttleSteeringJson != null) {
+              CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+            }
+            else{
+              emptyJSON = { "0": 0 }
+              CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.emptyJSON));
+            }
           } else {
             console.error('WebSocket is not open. Unable to send data.');
           }
