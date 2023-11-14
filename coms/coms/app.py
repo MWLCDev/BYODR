@@ -19,32 +19,30 @@ logger = logging.getLogger(__name__)
 local_third_ip_digit = get_ip_number()
 
 
+def _on_receive(message):
+        logger.info(f"Data received from the Servos service, Listener: {message}.")
+
+def _on_message(message):
+    logger.info(f"Data received from the Teleop service, Listener: {message}.")
+
+
 # Declaring the inter-service sockets
 pilot_publisher = JSONZmqClient(urls="ipc:///byodr/coms_to_pilot.sock")
+
 teleop_receiver = JSONServerThread(url="ipc:///byodr/teleop_to_coms.sock", event=quit_event, receive_timeout_ms=50)
 teleop_receiver.message_to_send = "Coms"
+teleop_receiver.add_listener(_on_message)
 
 # servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:4444', topic=b'ras/drive/velocity')
 servos_receiver = ReceiverThread('tcp://192.168.' + local_third_ip_digit + '.32:5555', topic=b'ras/drive/status')
+servos_receiver.add_listener(_on_receive)
 
 
 teleop_receiver.start()
 servos_receiver.start()
 
-def _on_message(message):
-        logger.info(f"Data received from the Teleop service, Listener: {message}.")
-
-
-def _on_receive(message):
-        logger.info(f"Data received from the Servos service, Listener: {message}.")
-
-
 
 def main():
-
-    teleop_receiver.add_listener(_on_message)
-    servos_receiver.add_listener(_on_receive)
-
 
     # Getting the 3rd digit of the IP of the local device
     local_third_ip_digit = get_ip_number()
@@ -64,8 +62,6 @@ def main():
         # Setting test data to the inter-service sockets
         reply_from_pilot = pilot_publisher.call(dict(data = "Coms"))
         logger.info(f"Message received from Pilot: {reply_from_pilot}")
-        logger.info(f"Message received from Teleop: {teleop_receiver.pop_latest()}")
-        logger.info(f"Message received from Servos: {servos_receiver.pop_latest()}")
 
 
     # Threads that will be executing the server and client codes
