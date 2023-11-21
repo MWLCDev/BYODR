@@ -323,10 +323,10 @@ def main():
         logger.info(f"Command to be send to Coms: {cmd}")
 
         teleop_publisher.publish(cmd)
-        
 
         reply_from_coms = coms.call(dict(data = "Teleop"))
         logger.info(f"Message received from Pilot: {reply_from_coms}")
+
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
