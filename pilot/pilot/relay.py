@@ -171,9 +171,10 @@ class RealMonitoringRelay(AbstractRelay):
         logger.info("Processing pi at uri '{}'.".format(_pi_uri))
         self._pi_config = _pi_uri
         self._pi_client = self._client_factory.create(_pi_uri)
-        self._pi_status = self._status_factory.create(_pi_uri)
-        self._pi_status.add_listener(self._on_receive)
-        self._pi_status.start()
+        # These are commented so that the socket data is sent to coms, and not pilot    XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
+        # self._pi_status = self._status_factory.create(_pi_uri)
+        # self._pi_status.add_listener(self._on_receive)
+        # self._pi_status.start()
 
         # Resending the config to the Pi
         _steering_offset = parse_option('ras.driver.steering.offset', float, 0.0, errors, **_config)

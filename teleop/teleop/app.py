@@ -323,7 +323,6 @@ def main():
         logger.info(f"Command to be send to Coms: {cmd}")
 
         teleop_publisher.publish(cmd)
-        # TODO see why the commands do not reach pilot
         
 
         reply_from_coms = coms.call(dict(data = "Teleop"))

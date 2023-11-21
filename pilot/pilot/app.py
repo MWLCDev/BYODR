@@ -119,6 +119,7 @@ class PilotApplication(Application):
         teleop = self.teleop()
         commands = (teleop, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
+        logger.info(f"Sending command to relay.py: {pilot}, {teleop}.")
         self._monitor.step(pilot, teleop)
 
         if pilot is not None:
