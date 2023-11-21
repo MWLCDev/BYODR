@@ -45,10 +45,6 @@ app.view.addEventListener('touchstart', (event) => {
             if (throttleSteeringJson != null) {
               CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
             }
-            else{
-              emptyJSON = { "0": 0 }
-              CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.emptyJSON));
-            }
           } else {
             console.error('WebSocket is not open. Unable to send data.');
           }
