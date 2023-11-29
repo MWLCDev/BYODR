@@ -6,7 +6,7 @@ class Dot {
 
   drawDot(x, y) {
     this.graphics.clear();
-    this.graphics.beginFill(0xffffff); // color for the dot
+    this.graphics.beginFill(0xff8fff); // color for the dot
     this.graphics.drawCircle(x, y, 18); // The radius is 18 (was requested to have diameter of 10mm === 36px)
     this.graphics.endFill();
   }
@@ -20,4 +20,4 @@ class Dot {
   }
 }
 
-export { Dot };
+export {Dot};

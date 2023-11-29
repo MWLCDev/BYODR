@@ -57,7 +57,6 @@ function sendJSONCommand() {
   } else {
     console.error('WebSocket is not open. Unable to send data.');
   }
-
   setTimeout(sendJSONCommand, 1); // or adjust the delay as needed
 }
 

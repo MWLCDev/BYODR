@@ -341,6 +341,7 @@ class CameraMJPegSocket(websocket.WebSocketHandler):
                     ).tobytes(),
                     binary=True,
                 )
+            
         except Exception as e:
             logger.error(
                 "Camera socket@on_message: {} {}".format(e, traceback.format_exc())

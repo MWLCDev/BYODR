@@ -11,9 +11,11 @@ const app = new PIXI.Application({
 // Add a 10px margin to the top and bottom of the canvas
 app.view.style.marginTop = '10px';
 app.view.style.marginBottom = '10px';
+app.view.style.position = 'relative'; 
+app.view.style.zIndex = '3'; 
 document.body.appendChild(app.view);
 
-//Then add them to the canvas 9it is called stage in PiXi)
+//Then add them to the canvas (it is called stage in PiXi)
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 

@@ -17,6 +17,7 @@ from byodr.utils.video import create_image_source
 
 logger = logging.getLogger(__name__)
 
+
 CH_NONE, CH_THROTTLE, CH_STEERING, CH_BOTH = (0, 1, 2, 3)
 CTL_LAST = 0
 

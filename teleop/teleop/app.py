@@ -157,8 +157,8 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
         self.finish()
 
 
-class Index(tornado.web.RequestHandler):
-    """The Main landing page"""
+class DirectingUser(tornado.web.RequestHandler):
+    """Directing the user based on their used device"""
 
     def get(self):
         user_agent_str = self.request.headers.get("User-Agent")
@@ -171,15 +171,21 @@ class Index(tornado.web.RequestHandler):
             )
             self.redirect("/mobile_controller_ui")
         else:
-            # else render the index page
-            self.render("../htm/templates/index.html")
+            # else redirect to normal control page
+            self.redirect("/normalcontrol")
+
+
+class NormalControlUI(tornado.web.RequestHandler):
+    """The normal user interface"""
+
+    def get(self):
+        self.render("../htm/templates/index.html")
 
 
 class UserMenu(tornado.web.RequestHandler):
     """The user menu setting page"""
 
     def get(self):
-        print("navigating to the user menu page")
         self.render("../htm/templates/user_menu.html")
 
 
@@ -191,7 +197,7 @@ class MobileControllerUI(tornado.web.RequestHandler):
 
 
 class TestFeatureUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
+    """Load the user interface for testing"""
 
     def get(self):
         self.render("../htm/templates/testFeature.html")
@@ -350,7 +356,8 @@ def main():
         main_app = web.Application(
             [
                 # Landing page
-                (r"/", Index),
+                (r"/", DirectingUser),
+                (r"/normalcontrol", NormalControlUI),
                 (r"/user_menu", UserMenu),  # Navigate to user menu settings page
                 (
                     r"/mobile_controller_ui",
@@ -436,7 +443,8 @@ def main():
                     web.StaticFileHandler,
                     {"path": os.path.join(os.path.sep, "app", "htm", "static")},
                 ),
-            ]
+            ],  # Disable request logging with an empty lambda expression
+            log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)
         port_number = 8080
