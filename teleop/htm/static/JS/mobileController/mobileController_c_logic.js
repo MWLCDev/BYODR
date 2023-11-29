@@ -8,7 +8,7 @@ function initializeWS() {
   // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
   let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
   CTRL_STAT.websocket = new WebSocket(WSurl);
-  // console.log(CTRL_STAT.websocket)
+
   CTRL_STAT.websocket.onopen = function (event) {
     console.log('Mobile controller (WS) connection opened');
     CTRL_STAT.stateErrors = ""
@@ -19,7 +19,7 @@ function initializeWS() {
   CTRL_STAT.websocket.onmessage = function (event) {
     let parsedData = JSON.parse(event.data); // The received data is in string, so I need to convert to JSON 
     if (parsedData["control"] == "operator") {
-      //Place holder
+      //Place holder until implementation with multi segment is over
     } else if (parsedData["control"] == "viewer") {
       CTRL_STAT.stateErrors = "controlError"
     }
@@ -162,5 +162,15 @@ function handleTriangleMove(y) {
   redraw(yOffset);
 }
 
+function sendJSONCommand() {
+  intervalId = setInterval(() => {
+    if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
+      CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+    } else {
+      console.error('WebSocket is not open. Unable to send data.');
+    }
+    // High interval to overcome if the user is controlling from the normal UI with a controller (PS4)
+  }, 1);
+}
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS,sendJSONCommand };
