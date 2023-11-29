@@ -24,13 +24,15 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.ssh import Router
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
-from .getSSID import fetch_ssid
+
+router = Router(ip="192.168.1.1")
 
 logger = logging.getLogger(__name__)
 
@@ -140,11 +142,7 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
             ssid = await loop.run_in_executor(
                 None,
-                fetch_ssid,
-                router_IP,
-                22,
-                "root",
-                "Modem001",
+                router.fetch_ssid,
                 "uci get wireless.@wifi-iface[0].ssid",
             )
 
@@ -152,6 +150,7 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
             self.write(ssid)
         except Exception as e:
             logger.error(f"Error fetching SSID of current robot: {e}")
+            logger.error(traceback.format_exc())  # This will pri
             self.set_status(500)
             self.write("Error fetching SSID of current robot.")
         self.finish()
