@@ -1,139 +1,102 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Menu</title>
-		<link rel="stylesheet" href="external/jquery-ui-1.12.1.min.css" />
-		<link rel="stylesheet" href="external/radioslider-1.0.0_b1.min.css" />
-		<link rel="stylesheet" href="external/datatables/datatables-1.11.5.min.css" />
-		<link rel="stylesheet" href="external/datatables/fixedheader-3.2.2.min.css" />
-    <link rel="shortcut icon" href="#">
-		<style type="text/css">
-			.application {
-				display: flex;
-				min-height: 100vh;
-				flex-direction: column;
-			}
 
-			.application-body {
-				display: flex;
-				flex: 1;
-			}
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu</title>
+  <link rel="stylesheet" href="external/jquery-ui-1.12.1.min.css" />
+  <link rel="stylesheet" href="external/radioslider-1.0.0_b1.min.css" />
+  <link rel="stylesheet" href="external/datatables/datatables-1.11.5.min.css" />
+  <link rel="stylesheet" href="external/datatables/fixedheader-3.2.2.min.css" />
+  <link rel="stylesheet" type="text/css" href="CSS/user_menu.css" />
 
-			.application-content {
-				flex: 1;
-				padding: 20px;
-				font-family: 'Arial';
-				background: whitesmoke;
-			}
+  <link rel="shortcut icon" href="#">
 
-			.application-nav {
-				/* last value is the width of the columns */
-				flex: 0 0 12em;
-				border-right: 1px solid gray;
-			}
+</head>
 
-			.application-nav a {
-				font-family: 'Arial';
-				font-size: 20px;
-				color: darkblue;
-			}
+<body>
+  <div class="application-body">
+    <nav class="application-nav">
+      <p style="padding-bottom: 50px">
+        <a id="home_link" href="#">Home</a>
+      </p>
+      <p><a id="settings_link" href="#">Settings</a></p>
+      <p><a id="controls_link" href="#">Controls</a></p>
+      <p><a id="logbox_link" href="#">Events</a></p>
+      <p><a id="phone_controller_link" href="/mobile_controller_ui">Phone Controller</a></p>
+      <p><a id="admin_settings_link" href="#">Admin settings</a></p>
+    </nav>
+    <main class="application-content">
+      <div id="application-content-container"></div>
+    </main>
+  </div>
+  <script src="external/jquery-3.4.1.min.js"></script>
+  <script src="external/jquery-ui-1.12.1.min.js"></script>
+  <script src="external/jquery.radioslider-1.0.0_b1.min.js"></script>
+  <script src="external/datatables/datatables-1.11.5.min.js"></script>
+  <script src="external/datatables/fixedheader-3.2.2.min.js"></script>
+  <script src="JS/index_a_utils.js"></script>
+  <script src="JS/menu_settings.js"></script>
+  <script src="JS/menu_controls.js"></script>
+  <script src="JS/menu_logbox.js"></script>
+</body>
 
-			.application-nav a:link,
-			a:visited {
-				text-decoration: none;
-			}
-
-			.application-nav a:hover {
-				text-decoration: underline;
-			}
-
-			.application-nav a.active {
-				font-weight: bold;
-			}
-
-			table#logbox td {
-				white-space: nowrap;
-			}
-		</style>
-	</head>
-
-	<body class="application">
-		<header></header>
-		<div class="application-body">
-			<nav class="application-nav">
-				<p style="padding-bottom: 50px">
-					<a id="home_link" href="#">Home</a>
-				</p>
-				<p><a id="settings_link" href="#">Settings</a></p>
-				<p><a id="controls_link" href="#">Controls</a></p>
-				<p><a id="logbox_link" href="#">Events</a></p>
-				<p><a id="logbox_link" href="/mobile_controller_ui">Phone Controller</a></p>
-			</nav>
-			<main class="application-content">
-				<div id="application-content-container"></div>
-			</main>
-		</div>
-		<footer></footer>
-    <script src="external/jquery-3.4.1.min.js"></script>
-		<script src="external/jquery-ui-1.12.1.min.js"></script>
-		<script src="external/jquery.radioslider-1.0.0_b1.min.js"></script>
-		<script src="external/datatables/datatables-1.11.5.min.js"></script>
-		<script src="external/datatables/fixedheader-3.2.2.min.js"></script>
-		<script src="JS/index_a_utils.js"></script>
-		<script src="JS/menu_settings.js"></script>
-		<script src="JS/menu_controls.js"></script>
-		<script src="JS/menu_logbox.js"></script>
-	</body>
 </html>
 <script type="text/javascript">
-	function _user_menu_route_screen(screen) {
-		$('.application-nav a').each(function () {
-			$(this).removeClass('active');
-		});
+  function _user_menu_route_screen(screen) {
+    $('.application-nav a').each(function () {
+      $(this).removeClass('active');
+    });
 
-		const el_parent = $('main.application-content');
-		const el_container = $('<div/>', { id: 'application-content-container' });
-		el_parent.find('div#application-content-container').remove();
-		el_parent.append(el_container);
+    const el_parent = $('main.application-content');
+    const el_container = $('<div/>', { id: 'application-content-container' });
+    el_parent.find('div#application-content-container').remove();
+    el_parent.append(el_container);
 
-		window.localStorage.setItem('user.menu.screen', screen);
-		switch (screen) {
-			case 'controls':
-				$('a#controls_link').addClass('active');
-				menu_user_controls_main(el_container);
-				break;
-			case 'logbox':
-				$('a#logbox_link').addClass('active');
-				menu_user_logbox_main(el_container);
-				break;
-			default:
-				$('a#settings_link').addClass('active');
-				menu_user_settings_main(el_container);
-		}
-	}
+    window.localStorage.setItem('user.menu.screen', screen);
+    switch (screen) {
+      case 'controls':
+        $('a#controls_link').addClass('active');
+        menu_user_controls_main(el_container);
+        break;
+      case 'logbox':
+        $('a#logbox_link').addClass('active');
+        menu_user_logbox_main(el_container);
+        break;
+      case 'admin_settings_link':
+        $('a#admin_settings_link').addClass('active');
+        menu_user_logbox_main(el_container);
+        break;
+      default:
+        $('a#settings_link').addClass('active');
+        menu_user_settings_main(el_container);
+    }
+  }
 
-	document.addEventListener('DOMContentLoaded', function () {
-		// Set up the click handlers.
-		$('a#home_link').click(function () {
-			location = dev_tools.is_develop() ? '/index.htm?develop=' + dev_tools.is_develop() : '/';
-		});
-		$('a#settings_link').click(function () {
-			_user_menu_route_screen('settings');
-		});
-		$('a#controls_link').click(function () {
-			_user_menu_route_screen('controls');
-		});
-		$('a#logbox_link').click(function () {
-			_user_menu_route_screen('logbox');
-		});
+  document.addEventListener('DOMContentLoaded', function () {
+    // Set up the click handlers.
+    $('a#home_link').click(function () {
+      location = dev_tools.is_develop() ? '/index.htm?develop=' + dev_tools.is_develop() : '/';
+    });
+    $('a#settings_link').click(function () {
+      _user_menu_route_screen('settings');
+    });
+    $('a#controls_link').click(function () {
+      _user_menu_route_screen('controls');
+    });
+    $('a#logbox_link').click(function () {
+      _user_menu_route_screen('logbox');
+    });
+    $('a#admin_settings_link').click(function () {
+      _user_menu_route_screen('admin_settings_link');
+    });
 
-		// Activate the selected screen.
-		var screen = window.localStorage.getItem('user.menu.screen');
-		if (screen == null) {
-			screen = 'settings';
-		}
-		_user_menu_route_screen(screen);
-	});
+    // Activate the selected screen.
+    var screen = window.localStorage.getItem('user.menu.screen');
+    if (screen == null) {
+      screen = 'settings';
+    }
+    _user_menu_route_screen(screen);
+  });
 </script>

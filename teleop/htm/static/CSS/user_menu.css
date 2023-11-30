@@ -1,0 +1,46 @@
+body {
+  margin: 0;
+}
+
+.application-body {
+  display: flex;
+  height: 100vh;
+  flex-direction: row;
+}
+
+.application-content {
+  flex: 1;
+  padding: 20px;
+  font-family: 'Arial';
+  background: whitesmoke;
+}
+
+.application-nav {
+  /* last value is the width of the columns */
+  flex: 0 0 12em;
+  padding: 1em 0 0 1em;
+  border-right: 1px solid gray;
+}
+
+.application-nav a {
+  font-family: 'Arial';
+  font-size: 20px;
+  color: darkblue;
+}
+
+.application-nav a:link,
+a:visited {
+  text-decoration: none;
+}
+
+.application-nav a:hover {
+  text-decoration: underline;
+}
+
+.application-nav a.active {
+  font-weight: bold;
+}
+
+table#logbox td {
+  white-space: nowrap;
+}
