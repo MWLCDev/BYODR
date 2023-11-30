@@ -1,5 +1,6 @@
 import logging
-import paramiko, time, re
+import paramiko, time, re, json
+from ipaddress import ip_address
 
 # Declaring the logger
 logging.basicConfig(
@@ -26,6 +27,37 @@ class Router:
         output = stdout.read().decode("utf-8")
         client.close()
         return output
+
+    def fetch_ip_and_mac(self):
+        client = paramiko.SSHClient()
+        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        try:
+            client.connect("192.168.1.1", int(22), "root", "Modem001")
+            stdin, stdout, stderr = client.exec_command("ip neigh")
+            output = stdout.read().decode("utf-8")
+            error = stderr.read().decode("utf-8")
+            if error:
+                print("Command error output: %s", error)
+        except Exception as e:
+            print("Error during SSH connection or command execution: %s", e)
+            return
+        finally:
+            client.close()
+
+        devices = []
+        for line in output.splitlines():
+            #  it looks for a pattern like number.number.number.number
+            #  It looks for a pattern of six groups of two hexadecimal digits that are separated by either : or -
+            match = re.search(
+                r"(\d+\.\d+\.\d+\.\d+).+?([0-9A-Fa-f]{2}(?:[:-][0-9A-Fa-f]{2}){5})",
+                line,
+            )
+            if match:
+                ip, mac_address = match.groups()
+                devices.append({"ip": ip, "mac": mac_address})
+        sorted_devices = sorted(devices, key=lambda x: ip_address(x['ip']))
+
+        print("Devices found: ", sorted_devices)
 
     def get_router_arp_table():
         try:
