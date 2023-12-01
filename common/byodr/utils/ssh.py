@@ -29,6 +29,7 @@ class Router:
         return output
 
     def fetch_ip_and_mac(self):
+        """Get list of all connected devices to the current segment"""
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         try:
@@ -147,7 +148,7 @@ class Router:
                     current_network["IE Information"] = {}
 
                 ie_data = line.strip().split(": ", 2)[-1]
-                ie_key, ie_value = parse_ie_data(ie_data)
+                ie_key, ie_value = self.parse_ie_data(ie_data)
                 if ie_key:
                     current_network["IE Information"][ie_key] = ie_value
 
@@ -213,6 +214,10 @@ class Router:
 
 
 class Cameras:
+    """Class to deal with the SSH for the camera
+    Functions: get_interface_info()
+    """
+
     def __init__(
         self, segment_network_prefix, username="admin", password="SteamGlamour4"
     ):
@@ -222,12 +227,19 @@ class Cameras:
         self.password = password
 
     def get_interface_info(self):
+        """Fetch current network details from the camera
+
+        Returns:
+            JSON: Internet Address, Broadcast Address and Subnet Mask.
+        """
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         client.connect(self.ip_front, username=self.username, password=self.password)
 
         channel = client.invoke_shell()
-        time.sleep(1)  # Wait for the shell to initialize
+        time.sleep(
+            1
+        )  # Wait for the shell to initialize. IMPORTANT WHEN WORKING WITH THE CAMERA
         channel.send("ifconfig eth0\n")
         time.sleep(1)
         channel.send("exit\n")
