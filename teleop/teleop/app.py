@@ -33,7 +33,6 @@ from .server import *
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
 router = Router(ip="192.168.1.1")
-
 logger = logging.getLogger(__name__)
 
 log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
@@ -443,6 +442,7 @@ def main():
                     {"path": os.path.join(os.path.sep, "app", "htm", "static")},
                 ),
             ],  # Disable request logging with an empty lambda expression
+            # Always restart after you change path of folder/file
             log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)

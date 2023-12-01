@@ -22,6 +22,14 @@ body {
   border-right: 1px solid gray;
 }
 
+.application-nav p:first-child {
+  padding-bottom: 50px
+}
+
+.application-nav p:last-child {
+  padding-top: 50px
+}
+
 .application-nav a {
   font-family: 'Arial';
   font-size: 20px;
