@@ -114,7 +114,13 @@ class Router:
             stdin, stdout, stderr = client.exec_command(command)
             output = stdout.read().decode("utf-8")
 
-            return self.parse_iwlist_output(output)
+            scanned_networks = self.parse_iwlist_output(output)
+            # DEBUGGING
+            # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
+
+            # for network in scanned_networks:
+            #    print(network.get("ESSID"), network.get("MAC"), end="\n")
+            return scanned_networks
         finally:
             client.close()
 
