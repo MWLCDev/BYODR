@@ -7,18 +7,7 @@
   <link rel="stylesheet" type="text/css" href="CSS/user_admin.css" />
   <title>Document</title>
   <style>
-    /* Style for the drag handle */
-    td:first-child {
-      cursor: grab;
-    }
 
-    /* Optional: Style to indicate a draggable area */
-    td:first-child::before {
-      content: '☰';
-      display: inline-block;
-      padding-right: 10px;
-      cursor: grab;
-    }
   </style>
 </head>
 
@@ -53,19 +42,19 @@
   <script>
     // Function to enable row dragging
     function enableDragAndDrop() {
-      const table = document.querySelector('table');
+      const tbody = document.querySelector('table tbody'); // Select only tbody
       let draggedElement = null;
 
-      table.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
-      table.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
-      table.addEventListener('touchend', () => handleDragEnd(), false);
+      tbody.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
+      tbody.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
+      tbody.addEventListener('touchend', () => handleDragEnd(), false);
 
-      table.addEventListener('mousedown', (e) => handleDragStart(e.target.closest('tr')), false);
-      table.addEventListener('mousemove', (e) => handleDragMove(e), false);
-      table.addEventListener('mouseup', () => handleDragEnd(), false);
+      tbody.addEventListener('mousedown', (e) => handleDragStart(e.target.closest('tr')), false);
+      tbody.addEventListener('mousemove', (e) => handleDragMove(e), false);
+      tbody.addEventListener('mouseup', () => handleDragEnd(), false);
 
       function handleDragStart(row) {
-        if (row) {
+        if (row && row.parentNode === tbody) { // Ensure the row is part of tbody
           draggedElement = row;
         }
       }
@@ -73,14 +62,10 @@
       function handleDragMove(event) {
         if (!draggedElement) return;
 
-        const targetElement = ('clientX' in event)
-          ? document.elementFromPoint(event.clientX, event.clientY)
-          : document.elementFromPoint(event.pageX, event.pageY);
-
+        const targetElement = document.elementFromPoint(event.clientX, event.clientY);
         const targetRow = targetElement?.closest('tr');
 
-        if (targetRow && targetRow !== draggedElement) {
-          // Swap rows
+        if (targetRow && targetRow.parentNode === tbody && targetRow !== draggedElement) {
           swapRows(draggedElement, targetRow);
         }
       }

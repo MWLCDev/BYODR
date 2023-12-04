@@ -16,6 +16,15 @@ table {
   /* Standard syntax */
 }
 
-.drag-handle {
-  cursor: move;
+/* Style for the drag handle */
+td:first-child {
+  cursor: grab;
+}
+
+/* Optional: Style to indicate a draggable area */
+td:first-child::before {
+  content: '☰';
+  display: inline-block;
+  padding-right: 10px;
+  cursor: grab;
 }
