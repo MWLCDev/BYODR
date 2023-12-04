@@ -341,7 +341,7 @@ class CameraMJPegSocket(websocket.WebSocketHandler):
                     ).tobytes(),
                     binary=True,
                 )
-            
+
         except Exception as e:
             logger.error(
                 "Camera socket@on_message: {} {}".format(e, traceback.format_exc())
@@ -373,7 +373,26 @@ class NavImageHandler(web.RequestHandler):
         self.write(chunk.tobytes())
 
 
-class UserOptions(object):
+class ConfigManager(object):
+    """
+    Read from and write to a configuration file, manage sections and options within the file, and handle the reloading and saving of changes.
+
+    Attributes:
+        _fname (str): File name/path of the configuration file.
+        _parser (SafeConfigParser): Parser object to read and write configuration data.
+
+    Methods:
+        list_sections(): Lists all sections in the configuration file except 'inference'.
+        get_options(section): Retrieves all options (as a dictionary) for a given section.
+        get_option(section, name): Retrieves the value of a specific option in a given section.
+        set_option(section, name, value): Sets the value of a specific option in a given section.
+        reload(): Reloads the configuration data from the file.
+        save(): Saves the current configuration back to the file.
+
+    Args:
+        fname (str): File name/path of the configuration file to be managed.
+    """
+
     def __init__(self, fname):
         self._fname = fname
         self._parser = SafeConfigParser()

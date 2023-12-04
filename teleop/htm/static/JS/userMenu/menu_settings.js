@@ -109,7 +109,7 @@ var menu_settings = {
       el_table.append($("<caption/>").text(section).css('font-weight', 'bold').css('text-align', 'left'));
       var section_a = Object.keys(data[section]).sort();
       section_a.forEach(name => {
-        //This data is from UserOptions function in server.py
+        //This data is from ConfigManager function in server.py
         var value = data[section][name];
         var el_row = $("<tr/>");
         el_row.append($("<td/>").text(name));

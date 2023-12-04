@@ -76,8 +76,8 @@ class TeleopApplication(Application):
     def _check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         if len(_candidates) > 0:
-            self._user_config_file = _candidates[0]
-            self._robot_config_file = _candidates[1]
+            self._robot_config_file = _candidates[0]
+            self._user_config_file = _candidates[1]
 
     def _config(self):
         parser = SafeConfigParser()
@@ -191,6 +191,13 @@ class UserMenu(tornado.web.RequestHandler):
 
     def get(self):
         self.render("../htm/templates/user_menu.html")
+
+
+class AdminUI(tornado.web.RequestHandler):
+    """Load the admin user interface"""
+
+    def get(self):
+        self.render("../htm/templates/user_admin.html")
 
 
 class MobileControllerUI(tornado.web.RequestHandler):
@@ -363,6 +370,7 @@ def main():
                 (r"/", DirectingUser),
                 (r"/normalcontrol", NormalControlUI),
                 (r"/user_menu", UserMenu),  # Navigate to user menu settings page
+                (r"/user_admin", AdminUI),
                 (
                     r"/mobile_controller_ui",
                     MobileControllerUI,
@@ -422,16 +430,20 @@ def main():
                     r"/teleop/user/options",
                     ApiUserOptionsHandler,
                     dict(
-                        user_options=(UserOptions(application.get_user_config_file())),
+                        user_options=(
+                            ConfigManager(application.get_user_config_file())
+                        ),
                         fn_on_save=on_options_save,
                     ),
                 ),
                 (
-                    # Get or save the options for the user
+                    # Get or save the options for the robot
                     r"/teleop/robot/options",
                     ApiUserOptionsHandler,
                     dict(
-                        user_options=(UserOptions(application.get_robot_config_file())),
+                        user_options=(
+                            ConfigManager(application.get_robot_config_file())
+                        ),
                         fn_on_save=on_options_save,
                     ),
                 ),
@@ -458,7 +470,7 @@ def main():
                 ),
             ],  # Disable request logging with an empty lambda expression
             # Always restart after you change path of folder/file
-            log_function=lambda *args, **kwargs: None,
+            # log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)
         port_number = 8080
