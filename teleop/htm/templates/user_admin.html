@@ -1,11 +1,104 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="stylesheet" type="text/css" href="CSS/user_admin.css" />
   <title>Document</title>
+  <style>
+    /* Style for the drag handle */
+    td:first-child {
+      cursor: grab;
+    }
+
+    /* Optional: Style to indicate a draggable area */
+    td:first-child::before {
+      content: '☰';
+      display: inline-block;
+      padding-right: 10px;
+      cursor: grab;
+    }
+  </style>
 </head>
+
 <body>
-  hi there
+  <table>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Position</th>
+        <th>WiFi network name</th>
+        <th>IP number</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td></td>
+        <td>1</td>
+        <td>jhon@gmail.com</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>2</td>
+        <td>123@yahoo.com</td>
+      </tr>
+      <tr>
+        <td></td>
+        <td>3</td>
+        <td>321@yahoo.com</td>
+      </tr>
+    </tbody>
+  </table>
+  <script>
+    // Function to enable row dragging
+    function enableDragAndDrop() {
+      const table = document.querySelector('table');
+      let draggedElement = null;
+
+      table.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
+      table.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
+      table.addEventListener('touchend', () => handleDragEnd(), false);
+
+      table.addEventListener('mousedown', (e) => handleDragStart(e.target.closest('tr')), false);
+      table.addEventListener('mousemove', (e) => handleDragMove(e), false);
+      table.addEventListener('mouseup', () => handleDragEnd(), false);
+
+      function handleDragStart(row) {
+        if (row) {
+          draggedElement = row;
+        }
+      }
+
+      function handleDragMove(event) {
+        if (!draggedElement) return;
+
+        const targetElement = ('clientX' in event)
+          ? document.elementFromPoint(event.clientX, event.clientY)
+          : document.elementFromPoint(event.pageX, event.pageY);
+
+        const targetRow = targetElement?.closest('tr');
+
+        if (targetRow && targetRow !== draggedElement) {
+          // Swap rows
+          swapRows(draggedElement, targetRow);
+        }
+      }
+
+      function handleDragEnd() {
+        draggedElement = null;
+      }
+
+      function swapRows(row1, row2) {
+        const parentNode = row1.parentNode;
+        const nextSibling = row1.nextElementSibling === row2 ? row1 : row1.nextElementSibling;
+        parentNode.insertBefore(row2, nextSibling);
+      }
+    }
+
+    enableDragAndDrop();
+  </script>
+
 </body>
+
 </html>

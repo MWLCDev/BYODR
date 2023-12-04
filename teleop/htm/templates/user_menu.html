@@ -37,7 +37,6 @@
   <script src="JS/userMenu/menu_settings.js"></script>
   <script src="JS/userMenu/menu_controls.js"></script>
   <script src="JS/userMenu/menu_logbox.js"></script>
-  <script src="JS/userMenu/menu_admin.js"></script>
 </body>
 
 </html>
@@ -66,7 +65,6 @@
         $('a#admin_settings_link').addClass('active');
         $('#application-content-container').load('/user_admin');
         break;
-
       default:
         $('a#settings_link').addClass('active');
         menu_user_settings_main(el_container);
