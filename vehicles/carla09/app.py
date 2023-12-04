@@ -13,7 +13,12 @@ from tornado.httpserver import HTTPServer
 
 from byodr.utils import Application
 from byodr.utils import Configurable
-from byodr.utils.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector
+from byodr.utils.ipc import (
+    JSONPublisher,
+    ImagePublisher,
+    LocalIPCServer,
+    json_collector,
+)
 from byodr.utils.option import parse_option
 from byodr.utils.websocket import HttpLivePlayerVideoSocket
 from vehicle import CarlaHandler
@@ -22,8 +27,12 @@ from video import NumpyImageVideoSource
 logger = logging.getLogger(__name__)
 
 io_loop = ioloop.IOLoop.instance()
-signal.signal(signal.SIGINT, lambda sig, frame: io_loop.add_callback_from_signal(_interrupt))
-signal.signal(signal.SIGTERM, lambda sig, frame: io_loop.add_callback_from_signal(_interrupt))
+signal.signal(
+    signal.SIGINT, lambda sig, frame: io_loop.add_callback_from_signal(_interrupt)
+)
+signal.signal(
+    signal.SIGTERM, lambda sig, frame: io_loop.add_callback_from_signal(_interrupt)
+)
 
 quit_event = multiprocessing.Event()
 
@@ -63,9 +72,11 @@ class CarlaRunner(Configurable):
     def __init__(self, image_publisher):
         super(CarlaRunner, self).__init__()
         self._process_frequency = 10
-        self._patience_micro = 1000.
+        self._patience_micro = 1000.0
         self._publisher = image_publisher
-        self._vehicle = CarlaHandler((lambda img, route: image_publisher.publish(img, route=route)))
+        self._vehicle = CarlaHandler(
+            (lambda img, route: image_publisher.publish(img, route=route))
+        )
 
     def get_process_frequency(self):
         with self._lock:
@@ -84,8 +95,10 @@ class CarlaRunner(Configurable):
         self._vehicle.restart(**kwargs)
         _errors = self._vehicle.get_errors()
         _errors += self._publisher.restart(**kwargs)
-        self._process_frequency = parse_option('clock.hz', int, 80, _errors, **kwargs)
-        self._patience_micro = parse_option('patience.ms', int, 100, _errors, **kwargs) * 1000.
+        self._process_frequency = parse_option("clock.hz", int, 80, _errors, **kwargs)
+        self._patience_micro = (
+            parse_option("patience.ms", int, 100, _errors, **kwargs) * 1000.0
+        )
         return _errors
 
     def reset_agent(self):
@@ -112,40 +125,56 @@ class CarlaApplication(Application):
         self.teleop = None
         self.ipc_server = None
 
-    def _check_user_file(self):
-        # One user configuration file is optional and can be used to persist settings.
-        _candidates = glob.glob(os.path.join(self._config_dir, '*.ini'))
-        if len(_candidates) == 0:
-            shutil.copyfile('config.template', os.path.join(self._config_dir, 'config.ini'))
-            logger.info("Created a new user configuration file from template.")
+    def _check_configuration_files(self):
+        """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
+        # FOR DEBUGGING
+        # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
+        # print(_candidates)
+        required_files = ["config.ini", "robot_config.ini"]
+        template_files = {
+            "config.ini": "config.template",
+            "robot_config.ini": "robot_config.template",
+        }
+
+        for file in required_files:
+            file_path = os.path.join(self._config_dir, file)
+            if not os.path.exists(file_path):
+                template_file = template_files[file]
+                shutil.copyfile(template_file, file_path)
+                logger.info("Created {} from template.".format(file))
 
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        cfg = dict(parser.items('platform')) if parser.has_section('platform') else {}
-        cfg.update(dict(parser.items('vehicle')) if parser.has_section('vehicle') else {})
-        cfg.update(dict(parser.items('camera')) if parser.has_section('camera') else {})
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+        cfg = dict(parser.items("platform")) if parser.has_section("platform") else {}
+        cfg.update(
+            dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
+        )
+        cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
         self.logger.info(cfg)
         return cfg
 
     @staticmethod
     def _capabilities():
         # The video dimensions are determined by the websocket services.
-        return {
-            'vehicle': 'carla1',
-            'video': {'front': {'ptz': 0}, 'rear': {'ptz': 0}}
-        }
+        return {"vehicle": "carla1", "video": {"front": {"ptz": 0}, "rear": {"ptz": 0}}}
 
     def setup(self):
         if self.active():
-            self._check_user_file()
+            self._check_configuration_files()
             _restarted = self._runner.restart(**self._config())
             if _restarted:
-                self.ipc_server.register_start(self._runner.get_errors(), self._capabilities())
+                self.ipc_server.register_start(
+                    self._runner.get_errors(), self._capabilities()
+                )
                 _process_frequency = self._runner.get_process_frequency()
                 _patience_micro = self._runner.get_patience_micro()
                 self.set_hz(_process_frequency)
-                self.logger.info("Processing at {} Hz and a patience of {} ms.".format(_process_frequency, _patience_micro / 1000))
+                self.logger.info(
+                    "Processing at {} Hz and a patience of {} ms.".format(
+                        _process_frequency, _patience_micro / 1000
+                    )
+                )
 
     def finish(self):
         self._runner.quit()
@@ -158,10 +187,16 @@ class CarlaApplication(Application):
     #     profiler.dump_stats('/config/carla.stats')
 
     def step(self):
-        runner, pilot, teleop, ipc_chatter, ipc_server = self._runner, self.pilot, self.teleop, self.ipc_chatter, self.ipc_server
+        runner, pilot, teleop, ipc_chatter, ipc_server = (
+            self._runner,
+            self.pilot,
+            self.teleop,
+            self.ipc_chatter,
+            self.ipc_server,
+        )
         c_pilot = self._latest_or_none(pilot, patience=(runner.get_patience_micro()))
         c_teleop = self._latest_or_none(teleop, patience=(runner.get_patience_micro()))
-        if c_teleop is not None and c_teleop.get('button_a', 0):
+        if c_teleop is not None and c_teleop.get("button_a", 0):
             runner.reset_agent()
         if c_pilot is not None:
             runner.drive(c_pilot)
@@ -169,31 +204,50 @@ class CarlaApplication(Application):
             runner.noop()
         self.publisher.publish(runner.state())
         chat = self.ipc_chatter()
-        if chat and chat.get('command') == 'restart':
+        if chat and chat.get("command") == "restart":
             self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Carla vehicle client.')
-    parser.add_argument('--name', type=str, default='none', help='Process name.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
+    parser = argparse.ArgumentParser(description="Carla vehicle client.")
+    parser.add_argument("--name", type=str, default="none", help="Process name.")
+    parser.add_argument(
+        "--config", type=str, default="/config", help="Config directory path."
+    )
     args = parser.parse_args()
 
-    front_camera = ImagePublisher(url='ipc:///byodr/camera_0.sock', topic='aav/camera/0')
-    rear_camera = ImagePublisher(url='ipc:///byodr/camera_1.sock', topic='aav/camera/1')
+    front_camera = ImagePublisher(
+        url="ipc:///byodr/camera_0.sock", topic="aav/camera/0"
+    )
+    rear_camera = ImagePublisher(url="ipc:///byodr/camera_1.sock", topic="aav/camera/1")
 
-    front_stream = NumpyImageVideoSource(name='front')
-    rear_stream = NumpyImageVideoSource(name='rear')
+    front_stream = NumpyImageVideoSource(name="front")
+    rear_stream = NumpyImageVideoSource(name="rear")
 
-    image_router = RoutingImagePublisher(cameras=(front_camera, rear_camera), streams=(front_stream, rear_stream))
+    image_router = RoutingImagePublisher(
+        cameras=(front_camera, rear_camera), streams=(front_stream, rear_stream)
+    )
     application = CarlaApplication(image_router=image_router, config_dir=args.config)
 
-    pilot = json_collector(url='ipc:///byodr/pilot.sock', topic=b'aav/pilot/output', event=quit_event)
-    teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
-    ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
+    pilot = json_collector(
+        url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event
+    )
+    teleop = json_collector(
+        url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event
+    )
+    ipc_chatter = json_collector(
+        url="ipc:///byodr/teleop_c.sock",
+        topic=b"aav/teleop/chatter",
+        pop=True,
+        event=quit_event,
+    )
 
-    application.publisher = JSONPublisher(url='ipc:///byodr/vehicle.sock', topic='aav/vehicle/state')
-    application.ipc_server = LocalIPCServer(url='ipc:///byodr/vehicle_c.sock', name='platform', event=quit_event)
+    application.publisher = JSONPublisher(
+        url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state"
+    )
+    application.ipc_server = LocalIPCServer(
+        url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event
+    )
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
@@ -207,11 +261,15 @@ def main():
 
     try:
         class_ref = HttpLivePlayerVideoSocket
-        front_app = web.Application([(r"/", class_ref, dict(video_source=front_stream, io_loop=io_loop))])
+        front_app = web.Application(
+            [(r"/", class_ref, dict(video_source=front_stream, io_loop=io_loop))]
+        )
         front_server = HTTPServer(front_app, xheaders=True)
         front_server.bind(9101)
         front_server.start()
-        rear_app = web.Application([(r"/", class_ref, dict(video_source=rear_stream, io_loop=io_loop))])
+        rear_app = web.Application(
+            [(r"/", class_ref, dict(video_source=rear_stream, io_loop=io_loop))]
+        )
         rear_server = HTTPServer(rear_app, xheaders=True)
         rear_server.bind(9102)
         rear_server.start()
@@ -225,6 +283,9 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(
+        format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s",
+        datefmt="%Y%m%d:%H:%M:%S %p %Z",
+    )
     logging.getLogger().setLevel(logging.INFO)
     main()

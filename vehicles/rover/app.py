@@ -265,14 +265,23 @@ class RoverApplication(Application):
         self.teleop = None
         self.ipc_chatter = None
 
-    def _check_user_file(self):
-        # One user configuration file is optional and can be used to persist settings.
-        _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) == 0:
-            shutil.copyfile(
-                "config.template", os.path.join(self._config_dir, "config.ini")
-            )
-            logger.info("Created a new user configuration file from template.")
+    def _check_configuration_files(self):
+        """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
+        # FOR DEBUGGING
+        # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
+        # print(_candidates)
+        required_files = ["config.ini", "robot_config.ini"]
+        template_files = {
+            "config.ini": "config.template",
+            "robot_config.ini": "robot_config.template",
+        }
+
+        for file in required_files:
+            file_path = os.path.join(self._config_dir, file)
+            if not os.path.exists(file_path):
+                template_file = template_files[file]
+                shutil.copyfile(template_file, file_path)
+                logger.info("Created {} from template.".format(file))
 
     def _config(self):
         parser = SafeConfigParser()
@@ -291,7 +300,7 @@ class RoverApplication(Application):
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
-                self._check_user_file()
+                self._check_configuration_files()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
                     self.ipc_server.register_start(
