@@ -24,7 +24,7 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router
+from byodr.utils.ssh import Router, Cameras
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -33,6 +33,7 @@ from .server import *
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
 router = Router(ip="192.168.1.1")
+cameras = Cameras(segment_network_prefix="192.168.1")
 logger = logging.getLogger(__name__)
 
 log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
@@ -69,12 +70,14 @@ class TeleopApplication(Application):
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
+        self._robot_config_file = os.path.join(self._config_dir, "robotConfig.ini")
         self._config_hash = -1
 
-    def _check_user_config(self):
+    def _check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         if len(_candidates) > 0:
             self._user_config_file = _candidates[0]
+            self._robot_config_file = _candidates[1]
 
     def _config(self):
         parser = SafeConfigParser()
@@ -85,9 +88,12 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
+    def get_robot_config_file(self):
+        return self._robot_config_file
+
     def setup(self):
         if self.active():
-            self._check_user_config()
+            self._check_configuration_files()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
@@ -417,6 +423,15 @@ def main():
                     ApiUserOptionsHandler,
                     dict(
                         user_options=(UserOptions(application.get_user_config_file())),
+                        fn_on_save=on_options_save,
+                    ),
+                ),
+                (
+                    # Get or save the options for the user
+                    r"/teleop/robot/options",
+                    ApiUserOptionsHandler,
+                    dict(
+                        user_options=(UserOptions(application.get_robot_config_file())),
                         fn_on_save=on_options_save,
                     ),
                 ),
