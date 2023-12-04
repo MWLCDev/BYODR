@@ -179,39 +179,22 @@ class DirectingUser(tornado.web.RequestHandler):
             self.redirect("/normalcontrol")
 
 
-class NormalControlUI(tornado.web.RequestHandler):
-    """The normal user interface"""
+class TemplateRenderer(tornado.web.RequestHandler):
+    _TEMPLATES = {
+        "normalcontrol": "index.html",
+        "user_menu": "user_menu.html",
+        "user_admin": "user_admin.html",
+        "mobile_controller_ui": "mobile_controller_ui.html",
+        "testFeature": "testFeature.html",
+    }
 
-    def get(self):
-        self.render("../htm/templates/index.html")
-
-
-class UserMenu(tornado.web.RequestHandler):
-    """The user menu setting page"""
-
-    def get(self):
-        self.render("../htm/templates/user_menu.html")
-
-
-class AdminUI(tornado.web.RequestHandler):
-    """Load the admin user interface"""
-
-    def get(self):
-        self.render("../htm/templates/user_admin.html")
-
-
-class MobileControllerUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
-
-    def get(self):
-        self.render("../htm/templates/mobile_controller_ui.html")
-
-
-class TestFeatureUI(tornado.web.RequestHandler):
-    """Load the user interface for testing"""
-
-    def get(self):
-        self.render("../htm/templates/testFeature.html")
+    def get(self, page_name):
+        template_name = self._TEMPLATES.get(page_name)
+        if template_name:
+            self.render(f"../htm/templates/{template_name}")
+        else:
+            self.set_status(404)
+            self.write("Page not found.")
 
 
 def main():
@@ -368,14 +351,17 @@ def main():
             [
                 # Landing page
                 (r"/", DirectingUser),
-                (r"/normalcontrol", NormalControlUI),
-                (r"/user_menu", UserMenu),  # Navigate to user menu settings page
-                (r"/user_admin", AdminUI),
+                (r"/(normalcontrol)", TemplateRenderer),
                 (
-                    r"/mobile_controller_ui",
-                    MobileControllerUI,
+                    r"/(user_menu)",
+                    TemplateRenderer,
+                ),  # Navigate to user menu settings page
+                (r"/(user_admin)", TemplateRenderer),
+                (
+                    r"/(mobile_controller_ui)",
+                    TemplateRenderer,
                 ),  # Navigate to Mobile controller UI
-                (r"/testFeature", TestFeatureUI),  # Navigate to a testing page
+                (r"/(testFeature)", TemplateRenderer),  # Navigate to a testing page
                 (
                     r"/run_draw_map_python",
                     RunDrawMapPython,
@@ -470,7 +456,7 @@ def main():
                 ),
             ],  # Disable request logging with an empty lambda expression
             # Always restart after you change path of folder/file
-            # log_function=lambda *args, **kwargs: None,
+            log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)
         port_number = 8080
