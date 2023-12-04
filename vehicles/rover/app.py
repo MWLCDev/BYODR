@@ -12,7 +12,6 @@ from byodr.utils import timestamp, Configurable
 from byodr.utils.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector, ReceiverThread
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import parse_option, hash_dict
-from byodr.utils.ip_getter import get_ip_number
 from core import GpsPollerThread, PTZCamera, ConfigurableImageGstSource
 
 logger = logging.getLogger(__name__)
@@ -119,11 +118,11 @@ class Platform(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        _master_uri = parse_option('ras.master.uri', str, 'tcp://192.168.'+get_ip_number()+'.32', errors, **kwargs)
+        _master_uri = parse_option('ras.master.uri', str, 'tcp://192.168.1.32', errors, **kwargs)
         _speed_factor = parse_option('ras.non.sensor.speed.factor', float, 0.50, errors, **kwargs)
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
-        _gps_host = parse_option('gps.provider.host', str, '192.168.'+get_ip_number()+'.1', errors, **kwargs)
+        _gps_host = parse_option('gps.provider.host', str, '192.168.1.1', errors, **kwargs)
         _gps_port = parse_option('gps.provider.port', str, '502', errors, **kwargs)
         self._gps = GpsPollerThread(_gps_host, _gps_port)
         self._gps.start()
