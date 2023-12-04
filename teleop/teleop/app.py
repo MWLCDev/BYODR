@@ -352,20 +352,19 @@ def main():
                 # Landing page
                 (r"/", DirectingUser),
                 (r"/(normalcontrol)", TemplateRenderer),
-                (
-                    r"/(user_menu)",
-                    TemplateRenderer,
-                ),  # Navigate to user menu settings page
+                # Navigate to user menu settings page
+                (r"/(user_menu)", TemplateRenderer),
+                # Navigate to admin section in user menu
                 (r"/(user_admin)", TemplateRenderer),
-                (
-                    r"/(mobile_controller_ui)",
-                    TemplateRenderer,
-                ),  # Navigate to Mobile controller UI
-                (r"/(testFeature)", TemplateRenderer),  # Navigate to a testing page
+                # Navigate to Mobile controller UI
+                (r"/(mobile_controller_ui)", TemplateRenderer),
+                # Navigate to a testing page
+                (r"/(testFeature)", TemplateRenderer),
+                # Run python script to get list of maps
                 (
                     r"/run_draw_map_python",
                     RunDrawMapPython,
-                ),  # Run python script to get list of maps
+                ),
                 (
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
