@@ -192,6 +192,7 @@ class Cameras:
     def __init__(
         self, segment_network_prefix, username="admin", password="SteamGlamour4"
     ):
+        # IPS SHOULD BE DEFINED FROM THE CONFIG FILE
         self.ip_front = f"{segment_network_prefix}.64"
         self.ip_back = f"{segment_network_prefix}.65"
         self.username = username
@@ -208,15 +209,13 @@ class Cameras:
         client.connect(self.ip_front, username=self.username, password=self.password)
 
         channel = client.invoke_shell()
-        time.sleep(
-            1
-        )  # Wait for the shell to initialize. IMPORTANT WHEN WORKING WITH THE CAMERA
+        # Wait for the shell to initialize. IMPORTANT WHEN WORKING WITH THE CAMERA
+        time.sleep(1)
         channel.send("ifconfig eth0\n")
         time.sleep(1)
         channel.send("exit\n")
-        output = channel.recv(
-            65535
-        ).decode()  # Huge amount of bytes to read, because it captures everything since the shell is open, and not the result of command only
+        # Huge amount of bytes to read, because it captures everything since the shell is open, and not the result of command only
+        output = channel.recv(65535).decode()
 
         client.close()
 
@@ -231,3 +230,37 @@ class Cameras:
         )
 
         return json_output
+
+    def set_camera_ip(self, new_ip, camera="front", subnet_mask="255.255.255.0"):
+        """
+        Set the IP address of the specified camera.
+
+        :param new_ip: New IP address to set.
+        :param camera: Specify 'front' or 'back' camera.
+        :param subnet_mask: Subnet mask to use, defaults to '255.255.255.0'.
+        """
+        if camera not in ["front", "back"]:
+            raise ValueError("Camera must be either 'front' or 'back'")
+
+        camera_ip = self.ip_front if camera == "front" else self.ip_back
+
+        try:
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(camera_ip, username=self.username, password=self.password)
+
+            channel = client.invoke_shell()
+            time.sleep(1)
+            set_ip_command = f"setIp {new_ip}:{subnet_mask}\n"
+            channel.send(set_ip_command)
+            time.sleep(1)  # Wait for command to execute
+
+            channel.send("exit\n")
+            output = channel.recv(65535).decode()
+            # print(output)  # Printing the output for verification
+            client.close()
+
+        except Exception as e:
+            print(f"An error occurred: {e}")
+            if client:
+                client.close()
