@@ -253,7 +253,77 @@ config interface '{network_name}'
             if ssh:
                 ssh.close()
 
+    def delete_network(self, keyword):
+        """Remove network from `wireless.config` or `network.config`
 
+        Args:
+            keyword (str): The keyword to look for
+
+         Example:
+            >> delete_network("CP_Davide")`.
+
+        """
+        # It works by splitting these two files into sections based on the empty line. Then look for the section that has the keyword in it, make a temp file without the section that has the keyword, move the temp file instead of the original one
+        try:
+            # Create an SSH client instance
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            # Connect to the router
+            client.connect(self.ip, self.port, self.username, self.password)
+
+            for dir_location in ["wireless", "network"]:
+                # Read the content of config file
+                stdin, stdout, stderr = client.exec_command(
+                    f"cat /etc/config/{dir_location}"
+                )
+                file_content = stdout.read().decode()
+                error = stderr.read().decode()
+
+                if error:
+                    print("Error reading file:", error)
+                    return
+
+                # Split the file into sections based on empty lines
+                sections = file_content.split("\n\n")
+                updated_content = ""
+                section_to_delete = None
+
+                for section in sections:
+                    if keyword in section:
+                        section_to_delete = section
+                        break
+                    else:
+                        updated_content += section + "\n\n"
+
+                if section_to_delete:
+                    # Delete the specific section
+                    updated_content = updated_content.replace(
+                        section_to_delete, ""
+                    ).strip()
+
+                    # Write the updated content back to the file
+                    temp_file = f"/tmp/{dir_location}.conf"
+                    with client.open_sftp() as sftp:
+                        with sftp.file(temp_file, "w") as file:
+                            file.write(updated_content)
+
+                    # Move the temp file to overwrite the original
+                    client.exec_command(f"mv {temp_file} /etc/config/{dir_location}")
+                    print(
+                        f"{keyword} section deleted successfully from {dir_location}."
+                    )
+                else:
+                    print(f"{keyword} not found in any {dir_location} section.")
+
+            # Close the connection
+            client.close()
+
+        except Exception as e:
+            print("An error occurred:", e)
+
+
+# add_wireless_network
 class Cameras:
     """Class to deal with the SSH for the camera
     Functions: get_interface_info()
