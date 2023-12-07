@@ -58,9 +58,28 @@ class Router:
             )
             if match:
                 ip, mac_address = match.groups()
-                devices.append({"ip": ip, "mac": mac_address})
-        sorted_devices = sorted(devices, key=lambda x: ip_address(x["ip"]))
 
+                # Determine the label based on IP address
+                label = ""
+                # MicroController
+                if ip.endswith(".32"):
+                    label = "mc_pi"
+                elif ip.endswith(".64"):
+                    label = "front camera"
+                elif ip.endswith(".65"):
+                    label = "back camera"
+                elif ip.endswith(".100"):
+                    label = "mc_nano"
+
+                device_info = (
+                    {"label": label, "ip": ip, "mac": mac_address}
+                    if label
+                    else {"ip": ip, "mac": mac_address}
+                )
+
+                devices.append(device_info)
+
+        sorted_devices = sorted(devices, key=lambda x: ip_address(x["ip"]))
         print("Devices found: ", sorted_devices)
 
     class WifiNetworkScanner:
