@@ -19,12 +19,14 @@ class Router:
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
 
-    def fetch_ssid(self, command):
+    def fetch_ssid(self):
         client = paramiko.SSHClient()
         client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
         # Connect to the SSH server
         client.connect(self.ip, self.port, self.username, self.password)
-        stdin, stdout, stderr = client.exec_command(command)
+        stdin, stdout, stderr = client.exec_command(
+            "uci get wireless.@wifi-iface[0].ssid"
+        )
         output = stdout.read().decode("utf-8")
         client.close()
         return output
