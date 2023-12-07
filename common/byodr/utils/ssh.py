@@ -200,12 +200,15 @@ class Router:
         return self.wifi_scanner.fetch_wifi_networks()
 
     def connect_to_network(self, network_name, network_mac, network_password):
-        """connect to another network from the current segment
-        Add wireless network to wireless.config and interface.config
+        """Add wireless network to `wireless.config` and `interface.config`
+
         Args:
-        network_name (str): Name of new network.
-        network_mac (str): MAC address for the new network.
-        network_password (str): password for the new network.
+            network_name (str): Name of new network.
+            network_mac (str): MAC address for the new network.
+            network_password (str): password for the new network.
+        
+        Example
+            >> connect_to_network("CP_Davide", "{MAC_ADDRESS}", "{PASSWORD}")
         """
 
         wireless_config = f"""
