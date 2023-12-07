@@ -17,6 +17,7 @@ class Router:
         self.username = username
         self.password = password
         self.port = int(port)  # Default value for SSH port
+        self.wifi_scanner = self.WifiNetworkScanner(self)
 
     def fetch_ssid(self, command):
         client = paramiko.SSHClient()
@@ -60,128 +61,145 @@ class Router:
 
         print("Devices found: ", sorted_devices)
 
-    # Functions fetch_wifi_networks, parse_iwlist_output, parse_ie_data, extract_security_info all are working together
-    def fetch_wifi_networks(self):
-        """
-        Connects to an SSH server and retrieves a list of available Wi-Fi networks.
-        Parses the output from the 'iwlist wlan0 scan' command to extract network details.
+    class WifiNetworkScanner:
+        def __init__(self, router):
+            self.router = router
 
-        Returns:
-            list of dict: A list containing information about each network, including (ESSID, MAC, channel, security, IE information).
-        """
-        command = "iwlist wlan0 scan"
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+        # Functions fetch_wifi_networks, parse_iwlist_output, parse_ie_data, extract_security_info all are working together
+        def fetch_wifi_networks(self):
+            """
+            Connects to an SSH server and retrieves a list of available Wi-Fi networks.
+            Parses the output from the 'iwlist wlan0 scan' command to extract network details.
 
-        try:
-            # Connect to the SSH server
-            client.connect(self.ip, self.port, self.username, self.password)
-            stdin, stdout, stderr = client.exec_command(command)
-            output = stdout.read().decode("utf-8")
+            Returns:
+                list of dict: A list containing information about each network, including (ESSID, MAC, channel, security, IE information).
+            """
+            command = "iwlist wlan0 scan"
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-            scanned_networks = self.parse_iwlist_output(output)
-            # DEBUGGING
-            # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
+            try:
+                # Connect to the SSH server
+                client.connect(
+                    self.router.ip,
+                    self.router.port,
+                    self.router.username,
+                    self.router.password,
+                )
+                stdin, stdout, stderr = client.exec_command(command)
+                output = stdout.read().decode("utf-8")
 
-            # for network in scanned_networks:
-            #    print(network.get("ESSID"), network.get("MAC"), end="\n")
-            return scanned_networks
-        finally:
-            client.close()
+                scanned_networks = self.parse_iwlist_output(output)
+                # DEBUGGING
+                # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
 
-    def parse_iwlist_output(self, output):
-        """Parses the output from the 'iwlist wlan0 scan' command.
+                # for network in scanned_networks:
+                #    print(network.get("ESSID"), network.get("MAC"), end="\n")
+                return (scanned_networks)
+            finally:
+                client.close()
 
-        Args:
-              output (str): The raw output string from the 'iwlist wlan0 scan' command.
+        def parse_iwlist_output(self, output):
+            """Parses the output from the 'iwlist wlan0 scan' command.
+            Args:
+                  output (str): The raw output string from the 'iwlist wlan0 scan' command.
 
-        Returns:
-            list of dict: A list of dictionaries, each representing a network with information such as (ESSID, MAC, channel, security, and IE info).
-        """
-        networks = []
-        current_network = {}
+            Returns:
+                list of dict: A list of dictionaries, each representing a network with information such as (ESSID, MAC, channel, security, and IE info).
+            """
+            networks = []
+            current_network = {}
 
-        for line in output.splitlines():
-            if "Cell" in line and "Address" in line:
-                if current_network:
-                    networks.append(current_network)
-                    current_network = {}
-                current_network["MAC"] = line.split()[-1]
-            elif "ESSID:" in line:
-                current_network["ESSID"] = line.split('"')[1]
-            elif "Channel:" in line:
-                current_network["Channel"] = line.split(":")[-1]
-            elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                security_info = self.extract_security_info(line, output.splitlines())
-                current_network["Security"] = security_info
-            elif line.strip().startswith("IE: Unknown"):
-                if "IE Information" not in current_network:
-                    current_network["IE Information"] = {}
+            for line in output.splitlines():
+                if "Cell" in line and "Address" in line:
+                    if current_network:
+                        networks.append(current_network)
+                        current_network = {}
+                    current_network["MAC"] = line.split()[-1]
+                elif "ESSID:" in line:
+                    current_network["ESSID"] = line.split('"')[1]
+                elif "Channel:" in line:
+                    current_network["Channel"] = line.split(":")[-1]
+                elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
+                    security_info = self.extract_security_info(
+                        line, output.splitlines()
+                    )
+                    current_network["Security"] = security_info
+                elif line.strip().startswith("IE: Unknown"):
+                    if "IE Information" not in current_network:
+                        current_network["IE Information"] = {}
 
-                ie_data = line.strip().split(": ", 2)[-1]
-                ie_key, ie_value = self.parse_ie_data(ie_data)
-                if ie_key:
-                    current_network["IE Information"][ie_key] = ie_value
+                    ie_data = line.strip().split(": ", 2)[-1]
+                    ie_key, ie_value = self.parse_ie_data(ie_data)
+                    if ie_key:
+                        current_network["IE Information"][ie_key] = ie_value
 
-        # Reorder the dictionary to show ESSID first
-        ordered_networks = []
-        for network in networks:
-            ordered_network = {
-                k: network[k]
-                for k in ["ESSID", "MAC", "Channel", "Security", "IE Information"]
-                if k in network
-            }
-            ordered_networks.append(ordered_network)
+            # Reorder the dictionary to show ESSID first
+            ordered_networks = []
+            for network in networks:
+                ordered_network = {
+                    k: network[k]
+                    for k in ["ESSID", "MAC", "Channel", "Security", "IE Information"]
+                    if k in network
+                }
+                ordered_networks.append(ordered_network)
 
-        return ordered_networks
+            return ordered_networks
 
-    def parse_ie_data(self, ie_data):
-        """Parses and interprets a single Information Element (IE) data entry.
+        def parse_ie_data(self, ie_data):
+            """Parses and interprets a single Information Element (IE) data entry.
 
-        Args:
-            ie_data (str): A string representing an IE data entry.
+            Args:
+                ie_data (str): A string representing an IE data entry.
 
-        Returns:
-            tuple: A key-value pair representing the IE type and its data.
-            Returns (None, None) if the IE type is unrecognized.
-        """
-        # This function can be expanded to interpret more IE types
-        ie_type = ie_data[:2]
-        if ie_type == "00":
-            return "Vendor Specific IE", ie_data[2:]
-        elif ie_type == "01":
-            return "Supported Rates", ie_data[2:]
-        elif ie_type == "03":
-            return "DS Parameter Set (Channel Information)", ie_data[2:]
-        elif ie_type == "07":
-            return "Country Information", ie_data[2:]
+            Returns:
+                tuple: A key-value pair representing the IE type and its data.
+                Returns (None, None) if the IE type is unrecognized.
+            """
+            # This function can be expanded to interpret more IE types
+            ie_type = ie_data[:2]
+            if ie_type == "00":
+                return "Vendor Specific IE", ie_data[2:]
+            elif ie_type == "01":
+                return "Supported Rates", ie_data[2:]
+            elif ie_type == "03":
+                return "DS Parameter Set (Channel Information)", ie_data[2:]
+            elif ie_type == "07":
+                return "Country Information", ie_data[2:]
 
-        return None, None  # Return None if IE type is not recognized
+            return None, None  # Return None if IE type is not recognized
 
-    def extract_security_info(self, start_line, all_lines):
-        """Returns a JSON for the security information in the security line of scanned networks
+        def extract_security_info(self, start_line, all_lines):
+            """Returns a JSON for the security information in the security line of scanned networks
 
-        Args:
-            start_line (str): The line where security information starts in the output.
-            all_lines (list of str): All lines of the scan output.
+            Args:
+                start_line (str): The line where security information starts in the output.
+                all_lines (list of str): All lines of the scan output.
 
-        Returns:
-            dict: A dictionary with security information such as WPA2 version, group cipher, pairwise ciphers, and authentication suites.
-        """
-        security_info = {}
-        index = all_lines.index(start_line)
-        for line in all_lines[index:]:
-            if line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                security_info["WPA2 Version"] = line.split(":")[-1].strip()
-            elif line.strip().startswith("Group Cipher"):
-                security_info["Group Cipher"] = line.split(":")[-1].strip()
-            elif line.strip().startswith("Pairwise Ciphers"):
-                security_info["Pairwise Ciphers"] = line.split(":")[-1].strip()
-            elif line.strip().startswith("Authentication Suites"):
-                security_info["Authentication Suites"] = line.split(":")[-1].strip()
-            elif line.strip().startswith("IE:"):
-                break  # Stop at the next IE
-        return security_info
+            Returns:
+                dict: A dictionary with security information such as WPA2 version, group cipher, pairwise ciphers, and authentication suites.
+            """
+            security_info = {}
+            index = all_lines.index(start_line)
+            for line in all_lines[index:]:
+                if line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
+                    security_info["WPA2 Version"] = line.split(":")[-1].strip()
+                elif line.strip().startswith("Group Cipher"):
+                    security_info["Group Cipher"] = line.split(":")[-1].strip()
+                elif line.strip().startswith("Pairwise Ciphers"):
+                    security_info["Pairwise Ciphers"] = line.split(":")[-1].strip()
+                elif line.strip().startswith("Authentication Suites"):
+                    security_info["Authentication Suites"] = line.split(":")[-1].strip()
+                elif line.strip().startswith("IE:"):
+                    break  # Stop at the next IE
+            return security_info
+
+    def get_wifi_networks(self):
+        return self.wifi_scanner.fetch_wifi_networks()
+
+    def connect_to_network(self):
+        """connect to another network from the current segment"""
+        pass
 
 
 class Cameras:
