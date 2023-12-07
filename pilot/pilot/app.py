@@ -102,7 +102,7 @@ class PilotApplication(Application):
 
     def _on_message(self, message):
         msg_from_com = message
-        self.logger.info(f"Data received from the Coms service, Listener: {msg_from_com}.")
+        # self.logger.info(f"Data received from the Coms service, Listener: {msg_from_com}.")
 
     def finish(self):
         self._monitor.quit()
@@ -119,7 +119,7 @@ class PilotApplication(Application):
         teleop = self.teleop()
         commands = (teleop, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        logger.info(f"Sending command to relay.py: {pilot}, {teleop}.")
+        # logger.info(f"Sending command to relay.py: {pilot}, {teleop}.")
         self._monitor.step(pilot, teleop)
 
         if pilot is not None:
