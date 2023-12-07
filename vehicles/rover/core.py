@@ -107,10 +107,10 @@ class ConfigurableImageGstSource(Configurable):
                 'width': out_width,
                 'framerate': framerate
             }
-        self._shape = (out_height, out_width, 3) # Setting up the resolution of the output stream
-        self._ptz = parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=_errors, **kwargs) # Checking if we enable the ptz, according to the config file
+        self._shape = (out_height, out_width, 3)
+        self._ptz = parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=_errors, **kwargs)
         _command = gst_commands.get(_type).format(**config)
-        self._sink = create_image_source(self._name, shape=self._shape, command=_command) # ?? Creating a sink that will accept all images produced by the publisher ??
+        self._sink = create_image_source(self._name, shape=self._shape, command=_command)
         self._sink.add_listener(self._publish)
         logger.info("Gst '{}' command={}".format(self._name, _command))
         return _errors
@@ -207,18 +207,18 @@ class CameraPtzThread(threading.Thread):
                 cmd = self._queue.get(block=True, timeout=0.050)
                 with self._lock:
                     operation = (0, 0)
-                    if cmd.get('set_home', 0): # ?? Resetting the camera to its default position ??
+                    if cmd.get('set_home', 0):
                         operation = ('set_home', cmd.get('goto_home', 0))
-                    elif cmd.get('goto_home', 0): # ?? Resetting the camera to its default position ??
+                    elif cmd.get('goto_home', 0):
                         operation = 'goto_home'
-                    elif 'pan' in cmd and 'tilt' in cmd: # ?? Setting the camera to a custom position ??
+                    elif 'pan' in cmd and 'tilt' in cmd:
                         operation = (self._norm(cmd.get('pan')) * self._flip[0], self._norm(cmd.get('tilt')) * self._flip[1])
                     self._perform(operation)
             except Queue.Empty:
                 pass
             except IOError as e:
                 # E.g. a requests ConnectionError to the ip camera.
-                logger.warning("PTZ@run: {}".format(e))
+                logger.warning("PTZ#run: {}".format(e))
 
 
 # Class that represents the camera as a device
