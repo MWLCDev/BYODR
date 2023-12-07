@@ -32,29 +32,34 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
-        CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
-        CTRL_STAT.cursorFollowingDot = new Dot();
-        handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
-        app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-        handleTriangleMove(event.touches[0].clientY);
-
+        startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
         // Arrow function to send the command through websocket 
-        intervalId = setInterval(() => {
-          if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-            CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-            console.log(CTRL_STAT.throttleSteeringJson);
-          } else {
-            console.error('WebSocket is not open. Unable to send data.');
-          }
-          // High interval to overcome if the user is controlling from the normal UI with a controller (PS4)
-        }, 1);
+        sendJSONCommand()
         break;
     }
   } else {
     console.error('Clicked outside the triangles. click inside one of the two triangles to start.');
   }
 });
+
+function startOperating(event) {
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
+  CTRL_STAT.cursorFollowingDot = new Dot();
+  handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
+  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  handleTriangleMove(event.touches[0].clientY);
+}
+
+function sendJSONCommand() {
+  if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
+    CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+  } else {
+    console.error('WebSocket is not open. Unable to send data.');
+  }
+
+  setTimeout(sendJSONCommand, 1); // or adjust the delay as needed
+}
 
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
