@@ -31,6 +31,7 @@ class RasSpeedOdometer(object):
         self._motor_effort_speed_factor = speed_factor
         self._values = collections.deque(maxlen=1)
         self._receiver = None
+        self.velocity_to_coms = JSONPublisher(url='ipc:///byodr/velocity_to_coms.sock', topic='ras/drive/velocity')
         # Initialize the queue with the startup time.
         self._values.append((0, timestamp()))
 
@@ -39,11 +40,19 @@ class RasSpeedOdometer(object):
         # If velocity is not part of the ras message try to come up with a proxy for speed.
         if 'velocity' in msg.keys():
             value = float(msg.get('velocity'))
+            # logger.info("Have velocity from msg: {}".format(value))
         else:
             # The motor effort is calculated as the motor scale * the actual throttle.
             # In case the robot's maximum speed is hardware limited to 10km/h and the motor scale is 4
             # the speed factor is set to 10 / 4 / 3.6.
             value = float(msg.get('motor_effort')) * self._motor_effort_speed_factor
+            # logger.info("Have velocity from effort: {}".format(value))
+
+        # Checking if the message from the Pi includes velocity
+        # logger.info("Sending data to Coms: {}".format(dict(velocity = value)))
+        if value != 0:
+            self.velocity_to_coms.publish( data = dict(velocity = value) )
+
         self._values.append((value, timestamp()))
 
     def get(self):
