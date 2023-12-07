@@ -95,7 +95,7 @@ class Router:
 
                 # for network in scanned_networks:
                 #    print(network.get("ESSID"), network.get("MAC"), end="\n")
-                return (scanned_networks)
+                return scanned_networks
             finally:
                 client.close()
 
@@ -197,9 +197,61 @@ class Router:
     def get_wifi_networks(self):
         return self.wifi_scanner.fetch_wifi_networks()
 
-    def connect_to_network(self):
-        """connect to another network from the current segment"""
-        pass
+    def connect_to_network(self, network_name, network_mac, network_password):
+        """connect to another network from the current segment
+        Add wireless network to wireless.config and interface.config
+        Args:
+        network_name (str): Name of new network.
+        network_mac (str): MAC address for the new network.
+        network_password (str): password for the new network.
+        """
+
+        wireless_config = f"""
+config wifi-iface
+    option key '{network_password}'
+    option ssid '{network_name}'
+    option encryption 'psk2'
+    option device 'radio0'
+    option mode 'sta'
+    option bssid '{network_mac}'
+    option network '{network_name}'
+    option skip_inactivity_poll '0'
+    option disassoc_low_ack '0'
+    option short_preamble '0'
+"""
+
+        interface_config = f"""
+config interface '{network_name}'
+    option metric '7'
+    option proto 'dhcp'
+    option defaultroute '1'
+    option delegate '1'
+    option force_link '0'
+"""
+
+        try:
+            # Establish an SSH connection
+            ssh = paramiko.SSHClient()
+            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            ssh.connect(self.ip, self.port, self.username, self.password)
+
+            # Open, modify, and save the wireless, interface configuration file
+            commands = [
+                f"echo '{wireless_config}' >> /etc/config/wireless",
+                f"echo '{interface_config}' >> /etc/config/network",
+                "wifi reload",
+            ]
+
+            for command in commands:
+                stdin, stdout, stderr = ssh.exec_command(command)
+                print(stdout.read().decode())  # You can also handle stderr if needed
+
+        except Exception as e:
+            print(f"An error occurred while adding {network_name} network: {e}")
+        finally:
+            print(f"finished connecting to {network_name} network")
+            if ssh:
+                ssh.close()
 
 
 class Cameras:
