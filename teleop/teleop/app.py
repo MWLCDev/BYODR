@@ -130,7 +130,7 @@ class RunDrawMapPython(tornado.web.RequestHandler):
             self.finish()
 
 
-class RunGetSSIDPython(tornado.web.RequestHandler):
+class GetSegmentSSID(tornado.web.RequestHandler):
     """Run a python script to get the SSID of current robot"""
 
     async def get(self):
@@ -148,7 +148,6 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
             ssid = await loop.run_in_executor(
                 None,
                 router.fetch_ssid,
-                "uci get wireless.@wifi-iface[0].ssid",
             )
 
             logger.info(f"SSID of current robot: {ssid}")
@@ -372,7 +371,7 @@ def main():
                     dict(fn_control=teleop_publish),
                 ),
                 # Run python script to get the SSID for the current segment
-                (r"/run_get_SSID", RunGetSSIDPython),
+                (r"/run_get_SSID", GetSegmentSSID),
                 (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,
