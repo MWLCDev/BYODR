@@ -451,7 +451,7 @@ def main():
                     # Path to where the static files are stored (JS,CSS, images)
                     r"/(.*)",
                     web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm", "static")},
+                    {"path": os.path.join(os.path.sep, "app", "htm")},
                 ),
             ],  # Disable request logging with an empty lambda expression
             # Always restart after you change path of folder/file
