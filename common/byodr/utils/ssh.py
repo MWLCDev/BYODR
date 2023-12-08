@@ -1,6 +1,8 @@
 import logging
 import paramiko, time, re, json
 from ipaddress import ip_address
+import paramiko
+import traceback
 
 # Declaring the logger
 logging.basicConfig(
@@ -19,35 +21,75 @@ class Router:
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
 
+    def __execute_ssh_command(self, command, file_path=None, file_contents=None):
+        """
+        Executes a command on the router via SSH and returns the result.
+        Optionally, can write to a file on the router using SFTP.
+
+        Args:
+            command (str): Command to be executed on the router.
+            file_path (str, optional): Path to the file to be written via SFTP.
+            file_contents (str, optional): Contents to write to the file.
+
+        Returns:
+            str: The output of the command execution, or None in case of SFTP.
+        """
+        try:
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            client.connect(self.ip, self.port, self.username, self.password)
+
+            if file_path and file_contents is not None:
+                # Handle SFTP file write operation
+                with client.open_sftp() as sftp:
+                    with sftp.file(file_path, "w") as file:
+                        file.write(file_contents)
+                client.close()
+                # No command output in case of SFTP operation
+                return None
+
+            # Execute the SSH command
+            stdin, stdout, stderr = client.exec_command(command)
+            result = stdout.read().decode()
+            error = stderr.read().decode()
+
+            client.close()
+
+            if error:
+                raise Exception(error)
+
+            return result
+
+        except Exception as e:
+            # Get the name of the caller function
+            caller = traceback.extract_stack(None, 2)[0][2]
+            print(f"Error occurred in {caller}: {e}")
+            return None
+
     def fetch_ssid(self):
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        # Connect to the SSH server
-        client.connect(self.ip, self.port, self.username, self.password)
-        stdin, stdout, stderr = client.exec_command(
-            "uci get wireless.@wifi-iface[0].ssid"
+        """Get SSID of current segment"""
+        output = self.__execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
+        return output
+
+    def fetch_segment_ip(self):
+        output = self.__execute_ssh_command(
+            "ip addr show br-lan | grep 'inet ' | awk '{print $2}' | cut -d/ -f1"
         )
-        output = stdout.read().decode("utf-8")
-        client.close()
         return output
 
     def fetch_ip_and_mac(self):
-        """Get list of all connected devices to the current segment"""
-        client = paramiko.SSHClient()
-        client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-        try:
-            client.connect(self.ip, self.port, self.username, self.password)
-            stdin, stdout, stderr = client.exec_command("ip neigh")
-            output = stdout.read().decode("utf-8")
-            error = stderr.read().decode("utf-8")
-            if error:
-                print("Command error output: %s", error)
-        except Exception as e:
-            print("Error during SSH connection or command execution: %s", e)
-            return
-        finally:
-            client.close()
+        """Get list of all connected devices to the current segment
 
+        Example
+          >>>connected_devices= fetch_ip_and_mac()
+          data = json.loads(connected_devices)
+
+          # Access the MAC addresses by specifying the index of each item
+          mac_address_type1 = data[0]['MAC']
+          mac_address_type2 = data[1]['MAC']
+        """
+
+        output = self.__execute_ssh_command("ip neigh")
         devices = []
         for line in output.splitlines():
             #  it looks for a pattern like number.number.number.number
@@ -95,30 +137,13 @@ class Router:
             Returns:
                 list of dict: A list containing information about each network, including (ESSID, MAC, channel, security, IE information).
             """
-            command = "iwlist wlan0 scan"
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            try:
-                # Connect to the SSH server
-                client.connect(
-                    self.router.ip,
-                    self.router.port,
-                    self.router.username,
-                    self.router.password,
-                )
-                stdin, stdout, stderr = client.exec_command(command)
-                output = stdout.read().decode("utf-8")
-
-                scanned_networks = self.parse_iwlist_output(output)
-                # DEBUGGING
-                # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
-
-                # for network in scanned_networks:
-                #    print(network.get("ESSID"), network.get("MAC"), end="\n")
-                return scanned_networks
-            finally:
-                client.close()
+            output = self.__execute_ssh_command("iwlist wlan0 scan")
+            scanned_networks = self.parse_iwlist_output(output)
+            # DEBUGGING
+            # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
+            # for network in scanned_networks:
+            #    print(network.get("ESSID"), network.get("MAC"), end="\n")
+            return scanned_networks
 
         def parse_iwlist_output(self, output):
             """Parses the output from the 'iwlist wlan0 scan' command.
@@ -225,11 +250,11 @@ class Router:
             network_name (str): Name of new network.
             network_mac (str): MAC address for the new network.
             network_password (str): password for the new network.
-        
+
         Example
             >> connect_to_network("CP_Davide", "{MAC_ADDRESS}", "{PASSWORD}")
         """
-
+        # Empty line at the beginning of config is important
         wireless_config = f"""
 config wifi-iface
     option key '{network_password}'
@@ -254,11 +279,6 @@ config interface '{network_name}'
 """
 
         try:
-            # Establish an SSH connection
-            ssh = paramiko.SSHClient()
-            ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            ssh.connect(self.ip, self.port, self.username, self.password)
-
             # Open, modify, and save the wireless, interface configuration file
             commands = [
                 f"echo '{wireless_config}' >> /etc/config/wireless",
@@ -267,15 +287,13 @@ config interface '{network_name}'
             ]
 
             for command in commands:
-                stdin, stdout, stderr = ssh.exec_command(command)
-                print(stdout.read().decode())  # You can also handle stderr if needed
+                output = self.__execute_ssh_command(command)
+                print(output)  # You can also handle stderr if needed
 
         except Exception as e:
             print(f"An error occurred while adding {network_name} network: {e}")
         finally:
             print(f"finished connecting to {network_name} network")
-            if ssh:
-                ssh.close()
 
     def delete_network(self, keyword):
         """Remove network from `wireless.config` or `network.config`
@@ -289,24 +307,10 @@ config interface '{network_name}'
         """
         # It works by splitting these two files into sections based on the empty line. Then look for the section that has the keyword in it, make a temp file without the section that has the keyword, move the temp file instead of the original one
         try:
-            # Create an SSH client instance
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-
-            # Connect to the router
-            client.connect(self.ip, self.port, self.username, self.password)
-
             for dir_location in ["wireless", "network"]:
                 # Read the content of config file
-                stdin, stdout, stderr = client.exec_command(
-                    f"cat /etc/config/{dir_location}"
-                )
-                file_content = stdout.read().decode()
-                error = stderr.read().decode()
-
-                if error:
-                    print("Error reading file:", error)
-                    return
+                output = self.__execute_ssh_command(f"cat /etc/config/{dir_location}")
+                file_content = output
 
                 # Split the file into sections based on empty lines
                 sections = file_content.split("\n\n")
@@ -321,33 +325,31 @@ config interface '{network_name}'
                         updated_content += section + "\n\n"
 
                 if section_to_delete:
-                    # Delete the specific section
+                    # Prepare the temp file path and content
+                    temp_file = f"/tmp/{dir_location}.conf"
                     updated_content = updated_content.replace(
                         section_to_delete, ""
                     ).strip()
 
-                    # Write the updated content back to the file
-                    temp_file = f"/tmp/{dir_location}.conf"
-                    with client.open_sftp() as sftp:
-                        with sftp.file(temp_file, "w") as file:
-                            file.write(updated_content)
+                    # Write the updated content back to the file using SFTP
+                    self.__execute_ssh_command(
+                        None, file_path=temp_file, file_contents=updated_content
+                    )
 
                     # Move the temp file to overwrite the original
-                    client.exec_command(f"mv {temp_file} /etc/config/{dir_location}")
+                    self.__execute_ssh_command(
+                        f"mv {temp_file} /etc/config/{dir_location}"
+                    )
                     print(
                         f"{keyword} section deleted successfully from {dir_location}."
                     )
                 else:
                     print(f"{keyword} not found in any {dir_location} section.")
 
-            # Close the connection
-            client.close()
-
         except Exception as e:
             print("An error occurred:", e)
 
 
-# add_wireless_network
 class Cameras:
     """Class to deal with the SSH for the camera
     Functions: get_interface_info()
