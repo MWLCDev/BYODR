@@ -436,6 +436,7 @@ def main():
                         fn_on_save=on_options_save,
                     ),
                 ),
+                (r"/ssh/router", RouterSSHHandler),
                 (
                     r"/teleop/system/state",
                     JSONMethodDumpRequestHandler,

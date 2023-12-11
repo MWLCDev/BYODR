@@ -19,6 +19,10 @@ from tornado import web, websocket
 from tornado.gen import coroutine
 
 from byodr.utils import timestamp
+from byodr.utils.ssh import Router, Cameras
+
+router = Router(ip="192.168.1.1")
+# router.get_wifi_networks()
 
 logger = logging.getLogger(__name__)
 
@@ -26,6 +30,31 @@ logger = logging.getLogger(__name__)
 import tornado.websocket
 
 latest_message = {}
+
+import json
+
+
+class RouterSSHHandler(tornado.web.RequestHandler):
+    def get(self):
+        action = self.get_argument("action", None)
+        print(action)
+        if action == "fetch_ssid":
+            data = router.fetch_ssid()
+        elif action == "fetch_segment_ip":
+            data = router.fetch_ip_and_mac()
+        elif action == "get_wifi_networks":
+            data = router.get_wifi_networks()
+            # Convert the list to JSON string before sending
+            self.write(json.dumps(data))
+            return
+        else:
+            self.write("Invalid function parameter.")
+            return
+
+        if isinstance(data, dict):
+            self.write(data)
+        else:
+            self.write({"message": data})
 
 
 class MobileControllerCommands(tornado.websocket.WebSocketHandler):

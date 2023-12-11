@@ -4,7 +4,6 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" type="text/css" href="../static/CSS/user_admin.css" />
   <title>Document</title>
   <style>
   </style>
@@ -13,8 +12,8 @@
 <body>
   <div id="container_admin_settings">
     <div id="container_segment_table">
-      <p id="Segments_header">Segments order</p>
-      <table>
+      <p id="segments_header">Segments order</p>
+      <table id="segment_table">
         <thead>
           <tr>
             <th></th>
@@ -54,6 +53,35 @@
         </tbody>
       </table>
     </div>
+
+    <div id="container_connectable_networks_table">
+      <p id="header_found_segments">Found segments</p>
+      <table id="connectable_networks_table">
+        <thead>
+          <tr>
+            <th>Segment name</th>
+            <th>Add</th>
+          </tr>
+        </thead>
+        <!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
+        <tbody>
+          <tr>
+            <td>CP_Carl</td>
+            <td><button type="button">Add</button></td>
+          </tr>
+          <tr>
+            <td>CP_Davide</td>
+            <td><button type="button">Add</button></td>
+          </tr>
+          <tr>
+            <td>CP_Earl</td>
+            <td><button type="button">Add</button></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p id="dummy_text"></p>
   </div>
 </body>
 

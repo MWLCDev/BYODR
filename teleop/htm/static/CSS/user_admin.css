@@ -1,12 +1,23 @@
-td,
-tr,
-th {
+#container_admin_settings {
+  /* it is overridden by other code parts*/
+  font-family: Helvetica, sans-serif;
+  padding-left: 1vw;
+}
+
+#segments_header,
+#header_found_segments {
+  font-size: xx-large;
+}
+
+#segment_table td,
+#segment_table tr,
+#segment_table sth {
   border: 1px solid rgb(160, 160, 160);
   border-collapse: collapse;
   cursor: all-scroll;
 }
 
-table {
+#segment_table table {
   border-collapse: collapse;
   -webkit-user-select: none;
   /* Safari */
@@ -17,12 +28,12 @@ table {
 }
 
 /* Style for the drag handle */
-td:first-child {
+#segment_table td:first-child {
   cursor: grab;
 }
 
 /* Optional: Style to indicate a draggable area */
-td:first-child::before {
+#segment_table td:first-child::before {
   content: '☰';
   display: inline-block;
   padding-right: 10px;
