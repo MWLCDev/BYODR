@@ -168,9 +168,7 @@ class Router:
                 elif "Channel:" in line:
                     current_network["Channel"] = line.split(":")[-1]
                 elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                    security_info = self.extract_security_info(
-                        line, output.splitlines()
-                    )
+                    security_info = self.extract_security_info(line, output.splitlines())
                     current_network["Security"] = security_info
                 elif line.strip().startswith("IE: Unknown"):
                     if "IE Information" not in current_network:
@@ -181,6 +179,7 @@ class Router:
                     if ie_key:
                         current_network["IE Information"][ie_key] = ie_value
 
+            networks = self.filter_networks_by_ssid(networks)
             # Reorder the dictionary to show ESSID first
             ordered_networks = []
             for network in networks:
@@ -193,6 +192,18 @@ class Router:
 
             return ordered_networks
 
+
+        def filter_networks_by_ssid(self, networks):
+            """Filters networks by SSID prefixes.
+
+            Args:
+                networks (list of dict): List of network dictionaries.
+
+            Returns:
+                list of dict: Filtered networks with SSID starting with 'MWLC_' or 'CP_'.
+            """
+            filtered_networks = [net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))]
+            return filtered_networks
         def parse_ie_data(self, ie_data):
             """Parses and interprets a single Information Element (IE) data entry.
 
