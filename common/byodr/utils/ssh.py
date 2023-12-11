@@ -21,7 +21,8 @@ class Router:
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
 
-    def __execute_ssh_command(self, command, file_path=None, file_contents=None):
+    # Protected function for internal use but can still be accessed from inner classes or subclasses
+    def _execute_ssh_command(self, command, file_path=None, file_contents=None):
         """
         Executes a command on the router via SSH and returns the result.
         Optionally, can write to a file on the router using SFTP.
@@ -137,7 +138,7 @@ class Router:
             Returns:
                 list of dict: A list containing information about each network, including (ESSID, MAC, channel, security, IE information).
             """
-            output = self.__execute_ssh_command("iwlist wlan0 scan")
+            output = self.router._execute_ssh_command("iwlist wlan0 scan")
             scanned_networks = self.parse_iwlist_output(output)
             # DEBUGGING
             # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
