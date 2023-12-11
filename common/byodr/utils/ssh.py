@@ -3,6 +3,7 @@ import paramiko, time, re, json
 from ipaddress import ip_address
 import paramiko
 import traceback
+import subprocess
 
 # Declaring the logger
 logging.basicConfig(
@@ -129,7 +130,6 @@ class Router:
         def __init__(self, router):
             self.router = router
 
-        # Functions fetch_wifi_networks, parse_iwlist_output, parse_ie_data, extract_security_info all are working together
         def fetch_wifi_networks(self):
             """
             Connects to an SSH server and retrieves a list of available Wi-Fi networks.
@@ -168,7 +168,9 @@ class Router:
                 elif "Channel:" in line:
                     current_network["Channel"] = line.split(":")[-1]
                 elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                    security_info = self.extract_security_info(line, output.splitlines())
+                    security_info = self.extract_security_info(
+                        line, output.splitlines()
+                    )
                     current_network["Security"] = security_info
                 elif line.strip().startswith("IE: Unknown"):
                     if "IE Information" not in current_network:
@@ -192,7 +194,6 @@ class Router:
 
             return ordered_networks
 
-
         def filter_networks_by_ssid(self, networks):
             """Filters networks by SSID prefixes.
 
@@ -202,8 +203,11 @@ class Router:
             Returns:
                 list of dict: Filtered networks with SSID starting with 'MWLC_' or 'CP_'.
             """
-            filtered_networks = [net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))]
+            filtered_networks = [
+                net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))
+            ]
             return filtered_networks
+
         def parse_ie_data(self, ie_data):
             """Parses and interprets a single Information Element (IE) data entry.
 
@@ -442,3 +446,22 @@ class Cameras:
             print(f"An error occurred: {e}")
             if client:
                 client.close()
+
+
+class Nano:
+    def get_ip_address(self):
+        try:
+            ip_addresses = (
+                subprocess.check_output(
+                    "hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'",
+                    shell=True,
+                )
+                .decode()
+                .strip()
+            )
+            # Split in case there are multiple local IP addresses
+            print(ip_addresses)
+            return ip_addresses
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
