@@ -33,7 +33,12 @@ from .server import *
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
 router = Router(ip="192.168.1.1")
+# router.fetch_ip_and_mac()
+# router.fetch_segment_ip
+# router.get_wifi_networks()
 cameras = Cameras(segment_network_prefix="192.168.1")
+# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77", "Orangebachcps1n4")
+# router.delete_network("CP_Davide")
 logger = logging.getLogger(__name__)
 
 log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"

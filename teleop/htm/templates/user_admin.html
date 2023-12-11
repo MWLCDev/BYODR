@@ -7,14 +7,12 @@
   <link rel="stylesheet" type="text/css" href="../static/CSS/user_admin.css" />
   <title>Document</title>
   <style>
-
   </style>
 </head>
 
 <body>
   <div id="container_admin_settings">
     <div id="container_segment_table">
-
       <p id="Segments_header">Segments order</p>
       <table>
         <thead>
@@ -23,36 +21,40 @@
             <th>Position</th>
             <th>WiFi network name</th>
             <th>IP number</th>
+            <th>Main segment</th>
+            <th>Remove</th>
           </tr>
         </thead>
+        <!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
         <tbody>
           <tr>
             <td></td>
             <td></td>
-            <td>jhon@gmail.com</td>
+            <td>CP_Carl</td>
+            <td>192.168.2.1</td>
+            <td><input type="radio" name="mainSegment"></td>
+            <td><button type="button">Remove</button></td>
           </tr>
           <tr>
             <td></td>
             <td></td>
-            <td>123@yahoo.com</td>
+            <td>CP_Davide</td>
+            <td>192.168.2.2</td>
+            <td><input type="radio" name="mainSegment"></td>
+            <td><button type="button">Remove</button></td>
           </tr>
           <tr>
             <td></td>
             <td></td>
-            <td>321@yahoo.com</td>
+            <td>CP_Earl</td>
+            <td>192.168.2.3</td>
+            <td><input type="radio" name="mainSegment"></td>
+            <td><button type="button">Remove</button></td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
-  <script src="../static/JS/userMenu/menu_admin.js"></script>
-
 </body>
 
 </html>
-<script type="text/javascript">
-  // Function to enable row dragging
-  enableDragAndDrop();
-  const adminSettings = new AdminMenu();
-  adminSettings.fetchDataAndDisplay()
-</script>

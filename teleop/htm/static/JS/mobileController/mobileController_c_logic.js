@@ -5,7 +5,6 @@ import { redraw } from './mobileController_d_pixi.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
   let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
   CTRL_STAT.websocket = new WebSocket(WSurl);
 
