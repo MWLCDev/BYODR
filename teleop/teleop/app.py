@@ -24,7 +24,7 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router, Cameras
+from byodr.utils.ssh import Router, Cameras, Nano
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -32,7 +32,7 @@ from .server import *
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
-router = Router(ip="192.168.1.1")
+
 # router.fetch_ip_and_mac()
 # router.fetch_segment_ip
 # router.get_wifi_networks()
@@ -96,9 +96,15 @@ class TeleopApplication(Application):
     def get_robot_config_file(self):
         return self._robot_config_file
 
+    def __get_nano_IP(self):
+        nano = Nano()
+        data = nano.get_ip_address()
+        self.router = Router(data)
+
     def setup(self):
         if self.active():
             self._check_configuration_files()
+            self.__get_nano_IP()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
