@@ -4,6 +4,7 @@ import glob
 import logging
 import os
 import shutil
+import subprocess
 
 from ConfigParser import SafeConfigParser
 
@@ -130,8 +131,9 @@ class Platform(Configurable):
     def internal_start(self, **kwargs):
         errors = []
         _master_uri = parse_option(
-            "ras.master.uri", str, "tcp://192.168.1.32", errors, **kwargs
+            "ras.master.uri", str, "192.168.1.32", errors, **kwargs
         )
+        _master_uri = "tcp://{}".format(_master_uri)
         _speed_factor = parse_option(
             "ras.non.sensor.speed.factor", float, 0.50, errors, **kwargs
         )
@@ -147,8 +149,9 @@ class Platform(Configurable):
 
 
 class RoverHandler(Configurable):
-    def __init__(self):
+    def __init__(self, config_dir):
         super(RoverHandler, self).__init__()
+        self._config_dir = config_dir
         self._platform = Platform()
         self._process_frequency = 10
         self._patience_micro = 100.0
@@ -193,8 +196,8 @@ class RoverHandler(Configurable):
                 ConfigurableImageGstSource("rear", image_publisher=rear_camera)
             )
         if not self._ptz_cameras:
-            self._ptz_cameras.append(PTZCamera("front"))
-            self._ptz_cameras.append(PTZCamera("rear"))
+            self._ptz_cameras.append(PTZCamera("front", self._config_dir))
+            self._ptz_cameras.append(PTZCamera("rear", self._config_dir))
         for item in self._gst_sources + self._ptz_cameras:
             item.restart(**kwargs)
             errors.extend(item.get_errors())
@@ -257,7 +260,9 @@ class RoverApplication(Application):
     def __init__(self, handler=None, config_dir=os.getcwd()):
         super(RoverApplication, self).__init__()
         self._config_dir = config_dir
-        self._handler = RoverHandler() if handler is None else handler
+        self._handler = (
+            RoverHandler(config_dir=self._config_dir) if handler is None else handler
+        )
         self._config_hash = -1
         self.state_publisher = None
         self.ipc_server = None
@@ -275,7 +280,7 @@ class RoverApplication(Application):
             "config.ini": "config.template",
             "robot_config.ini": "robot_config.template",
         }
-
+        # Local mode => ./mnt/data/docker/volumes/1_volume_byodr_config/_data/robot_config.ini
         for file in required_files:
             file_path = os.path.join(self._config_dir, file)
             if not os.path.exists(file_path):
@@ -301,6 +306,7 @@ class RoverApplication(Application):
             if _hash != self._config_hash:
                 self._config_hash = _hash
                 self._check_configuration_files()
+                self._check_segment_ip_robot_config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
                     self.ipc_server.register_start(
@@ -312,13 +318,6 @@ class RoverApplication(Application):
 
     def finish(self):
         self._handler.quit()
-
-    # def run(self):
-    #     from byodr.utils import Profiler
-    #     profiler = Profiler()
-    #     with profiler():
-    #         super(RoverApplication, self).run()
-    #     profiler.dump_stats('/config/rover.stats')
 
     def step(self):
         rover, pilot, teleop, publisher = (

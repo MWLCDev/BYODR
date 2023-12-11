@@ -230,8 +230,8 @@ class PTZCamera(Configurable):
         _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=errors, **kwargs)
         ptz_enabled = _type == 'h264/rtsp' and parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=errors, **kwargs)
         if ptz_enabled:
-            _server = parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=errors, **kwargs)
-            _user = parse_option(self._name + '.camera.user', str, 'user1', errors=errors, **kwargs)
+            _server = parse_option(
+                self._name + ".camera.ip", str, self._camera_ip, errors=errors, **kwargs
             _password = parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=errors, **kwargs)
             _protocol = 'http'
             _path = '/ISAPI/PTZCtrl/channels/1'
