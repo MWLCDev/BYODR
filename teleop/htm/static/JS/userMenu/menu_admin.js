@@ -1,8 +1,10 @@
 class AdminMenu {
   constructor() {
     // Automatically call the method when an instance is created
-    // this.fetchDataAndDisplay();
     this.enableDragAndDrop();
+    // this.fetchDataAndDisplay();
+    // this.getSSID();
+    this.getWifiNetworks();
   }
   // Method to fetch data from the API and display it
   async fetchDataAndDisplay() {
@@ -12,7 +14,7 @@ class AdminMenu {
       const jsonData = await response.json();
 
       // Call a function to update the table with segment in robot data
-      console.log(jsonData)
+      console.log(jsonData);
       this.updateTable(jsonData);
     } catch (error) {
       console.error('There has been a problem with your fetch operation:', error);
@@ -37,7 +39,58 @@ class AdminMenu {
     }
   }
 
+  async callRouterApi(action) {
+    try {
+      const response = await fetch(`/ssh/router?action=${action}`);
+      const contentType = response.headers.get("content-type");
 
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json(); // Handle JSON response
+      } else {
+        return await response.text(); // Handle plain text response
+      }
+    } catch (error) {
+      console.error('Error while calling router endpoint:', error);
+      return null;
+    }
+  }
+
+  async getSSID() {
+    const data = await this.callRouterApi("fetch_ssid"); // Calls fetch_ssid function in Router class
+    const showSSID = document.getElementById("dummy_text");
+    showSSID.innerHTML = data
+
+  }
+
+  async getWifiNetworks() {
+    try {
+      let data = await this.callRouterApi("get_wifi_networks");
+
+      // Parse data if it's a string
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
+
+      const tbody = document.querySelector('#connectable_networks_table tbody');
+
+      // Clear existing content only after successful data retrieval
+      tbody.innerHTML = '';
+
+      data.forEach(network => {
+        const ssid = network['ESSID'];
+        const mac = network['MAC']; // Assuming you treat MAC as IP for display
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${ssid}</td>
+          <td><button type="button">Add</button></td>
+        `;
+        tbody.appendChild(tr);
+      });
+    } catch (error) {
+      console.error('Error fetching WiFi networks:', error);
+    }
+  }
 
   enableDragAndDrop() {
     const tbody = document.querySelector('table tbody'); // Select only tbody
