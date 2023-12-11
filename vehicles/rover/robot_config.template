@@ -1,5 +1,5 @@
 [segment1]
-position=
-ip.number=
-wifi.name=
-main=
+position = 1
+ip.number = 192.168.1.100
+wifi.name = CP_Earl
+main = yes
