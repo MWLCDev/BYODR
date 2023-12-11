@@ -288,6 +288,25 @@ class RoverApplication(Application):
                 shutil.copyfile(template_file, file_path)
                 logger.info("Created {} from template.".format(file))
 
+    def _check_segment_ip_robot_config(self):
+        parser = SafeConfigParser()
+        robot_config_path = os.path.join(self._config_dir, "robot_config.ini")
+        parser.read(robot_config_path)
+        config_ip_number = parser.get("segment1", "ip.number")
+
+        ip_addresses = (
+            subprocess.check_output(
+                "hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'",
+                shell=True,
+            )
+            .decode()
+            .strip()
+        )
+        if config_ip_number != ip_addresses:
+            parser.set("segment1", "ip.number", ip_addresses)
+            parser.write(robot_config_path.open("w"))
+            logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
+
     def _config(self):
         parser = SafeConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
