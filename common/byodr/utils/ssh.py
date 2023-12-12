@@ -70,28 +70,26 @@ class Router:
 
     def fetch_ssid(self):
         """Get SSID of current segment"""
-        output = self.__execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
+        output = self._execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
         return output
 
     def fetch_segment_ip(self):
-        output = self.__execute_ssh_command(
-            "ip addr show br-lan | grep 'inet ' | awk '{print $2}' | cut -d/ -f1"
-        )
+        output = self._execute_ssh_command("ip addr show br-lan | grep 'inet ' | awk '{print $2}' | cut -d/ -f1")
         return output
 
     def fetch_ip_and_mac(self):
         """Get list of all connected devices to the current segment
 
         Example
-          >>>connected_devices= fetch_ip_and_mac()
+          >>>connected_devices= fetch_ip_and_mac() \n
           data = json.loads(connected_devices)
 
-          # Access the MAC addresses by specifying the index of each item
-          mac_address_type1 = data[0]['MAC']
+          # Access the MAC addresses by specifying the index of each item \n
+          mac_address_type1 = data[0]['MAC'] \n
           mac_address_type2 = data[1]['MAC']
         """
 
-        output = self.__execute_ssh_command("ip neigh")
+        output = self._execute_ssh_command("ip neigh")
         devices = []
         for line in output.splitlines():
             #  it looks for a pattern like number.number.number.number
@@ -115,11 +113,7 @@ class Router:
                 elif ip.endswith(".100"):
                     label = "mc_nano"
 
-                device_info = (
-                    {"label": label, "ip": ip, "mac": mac_address}
-                    if label
-                    else {"ip": ip, "mac": mac_address}
-                )
+                device_info = {"label": label, "ip": ip, "mac": mac_address} if label else {"ip": ip, "mac": mac_address}
 
                 devices.append(device_info)
 
@@ -142,8 +136,8 @@ class Router:
             scanned_networks = self.parse_iwlist_output(output)
             # DEBUGGING
             # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
-            # for network in scanned_networks:
-            #    print(network.get("ESSID"), network.get("MAC"), end="\n")
+            for network in scanned_networks:
+               print(network.get("ESSID"), network.get("MAC"), end="\n")
             return scanned_networks
 
         def parse_iwlist_output(self, output):
@@ -168,9 +162,7 @@ class Router:
                 elif "Channel:" in line:
                     current_network["Channel"] = line.split(":")[-1]
                 elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                    security_info = self.extract_security_info(
-                        line, output.splitlines()
-                    )
+                    security_info = self.extract_security_info(line, output.splitlines())
                     current_network["Security"] = security_info
                 elif line.strip().startswith("IE: Unknown"):
                     if "IE Information" not in current_network:
@@ -185,11 +177,7 @@ class Router:
             # Reorder the dictionary to show ESSID first
             ordered_networks = []
             for network in networks:
-                ordered_network = {
-                    k: network[k]
-                    for k in ["ESSID", "MAC", "Channel", "Security", "IE Information"]
-                    if k in network
-                }
+                ordered_network = {k: network[k] for k in ["ESSID", "MAC", "Channel", "Security", "IE Information"] if k in network}
                 ordered_networks.append(ordered_network)
 
             return ordered_networks
@@ -203,9 +191,7 @@ class Router:
             Returns:
                 list of dict: Filtered networks with SSID starting with 'MWLC_' or 'CP_'.
             """
-            filtered_networks = [
-                net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))
-            ]
+            filtered_networks = [net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))]
             return filtered_networks
 
         def parse_ie_data(self, ie_data):
@@ -303,7 +289,7 @@ config interface '{network_name}'
             ]
 
             for command in commands:
-                output = self.__execute_ssh_command(command)
+                output = self._execute_ssh_command(command)
                 print(output)  # You can also handle stderr if needed
 
         except Exception as e:
@@ -325,7 +311,7 @@ config interface '{network_name}'
         try:
             for dir_location in ["wireless", "network"]:
                 # Read the content of config file
-                output = self.__execute_ssh_command(f"cat /etc/config/{dir_location}")
+                output = self._execute_ssh_command(f"cat /etc/config/{dir_location}")
                 file_content = output
 
                 # Split the file into sections based on empty lines
@@ -343,22 +329,14 @@ config interface '{network_name}'
                 if section_to_delete:
                     # Prepare the temp file path and content
                     temp_file = f"/tmp/{dir_location}.conf"
-                    updated_content = updated_content.replace(
-                        section_to_delete, ""
-                    ).strip()
+                    updated_content = updated_content.replace(section_to_delete, "").strip()
 
                     # Write the updated content back to the file using SFTP
-                    self.__execute_ssh_command(
-                        None, file_path=temp_file, file_contents=updated_content
-                    )
+                    self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
 
                     # Move the temp file to overwrite the original
-                    self.__execute_ssh_command(
-                        f"mv {temp_file} /etc/config/{dir_location}"
-                    )
-                    print(
-                        f"{keyword} section deleted successfully from {dir_location}."
-                    )
+                    self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
+                    print(f"{keyword} section deleted successfully from {dir_location}.")
                 else:
                     print(f"{keyword} not found in any {dir_location} section.")
 
@@ -371,9 +349,7 @@ class Cameras:
     Functions: get_interface_info()
     """
 
-    def __init__(
-        self, segment_network_prefix, username="admin", password="SteamGlamour4"
-    ):
+    def __init__(self, segment_network_prefix, username="admin", password="SteamGlamour4"):
         # IPS SHOULD BE DEFINED FROM THE CONFIG FILE
         self.ip_front = f"{segment_network_prefix}.64"
         self.ip_back = f"{segment_network_prefix}.65"
@@ -407,9 +383,7 @@ class Cameras:
             return "No matching interface information found."
 
         # Create JSON string directly
-        json_output = '{{"inet addr": "{}", "Bcast": "{}", "Mask": "{}"}}'.format(
-            match.group(1), match.group(2), match.group(3)
-        )
+        json_output = '{{"inet addr": "{}", "Bcast": "{}", "Mask": "{}"}}'.format(match.group(1), match.group(2), match.group(3))
 
         return json_output
 
@@ -460,7 +434,6 @@ class Nano:
                 .strip()
             )
             # Split in case there are multiple local IP addresses
-            print(ip_addresses)
             return ip_addresses
         except subprocess.CalledProcessError as e:
             print(f"An error occurred: {e}")
