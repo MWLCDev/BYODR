@@ -15,12 +15,26 @@ logger = logging.getLogger(__name__)
 
 
 class Router:
-    def __init__(self, ip, username="root", password="Modem001", port=22):
-        self.ip = ip
+    def __init__(self, username="root", password="Modem001", port=22):
+        self.ip = self.__get_nano_third_octet()
         self.username = username
         self.password = password
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
+
+    def __get_nano_third_octet(self):
+        try:
+            # Fetch the IP address
+            ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+
+            # Trim off the last segment of the IP address
+            parts = ip_address.split(".")
+            network_prefix = ".".join(parts[:3]) + "."
+            router_ip = f"{network_prefix}1"
+            return (router_ip)
+        except subprocess.CalledProcessError as e:
+            print(f"An error occurred: {e}")
+            return None
 
     # Protected function for internal use but can still be accessed from inner classes or subclasses
     def _execute_ssh_command(self, command, file_path=None, file_contents=None):
