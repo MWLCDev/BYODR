@@ -176,7 +176,7 @@ def main():
         logger.info("Waiting on threads to stop.")
         [t.join() for t in threads]
     else:
-        shutil.copyfile("camera.template", config_file)
+        shutil.copyfile("/app/stream/camera.template", config_file)
         logger.info("Created a new camera configuration file from template.")
         while not quit_event.is_set():
             time.sleep(1)
