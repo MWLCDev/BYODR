@@ -10,6 +10,10 @@ import shutil
 import signal
 import threading
 import time
+import subprocess
+import re
+import glob
+
 from configparser import ConfigParser as SafeConfigParser
 
 from tornado import web, ioloop
@@ -60,53 +64,72 @@ gst_commands = {
 }
 
 
+def change_segment_config(config_dir):
+    """Change the ips in all the config files the segment is using them.
+    It will change the cert file also
+    It will count on the ip of the nano"""
+    # Get the local IP address's third octet
+    ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+    third_octet_new = ip_address.split(".")[2]
+    print(config_dir)
+
+    # Regular expression to match IP addresses
+    ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
+
+    with open(config_dir, "r") as f:
+        content = f.readlines()
+
+    updated_content = []
+    changes_made = []
+    changes_made_in_file = False  # Flag to track changes in the current file
+
+    for line in content:
+        match = ip_regex.search(line)
+        if match:
+            third_octet_old = match.group(2)
+            if third_octet_old != third_octet_new:
+                # Replace the third octet
+                new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
+                updated_content.append(new_line)
+                changes_made.append((third_octet_old, third_octet_new))
+                changes_made_in_file = True
+
+                continue
+        updated_content.append(line)
+
+    # Write changes back to the file
+    with open(config_dir, "w") as f:
+        f.writelines(updated_content)
+
+    # Print changes made
+    if changes_made_in_file:
+        print("Updated {} with a new ip address of {}".format(config_dir, third_octet_new))
+    else:
+        print("No changes needed for {}.".format(config_dir))
+
+
 def create_stream(config_file):
+    change_segment_config(config_file)
     parser = SafeConfigParser()
     parser.read(config_file)
     kwargs = dict(parser.items("camera"))
     name = os.path.basename(os.path.splitext(config_file)[0])
     _type = parse_option("camera.type", str, **kwargs)
-    assert _type in list(gst_commands.keys()), "Unrecognized camera type '{}'.".format(
-        _type
-    )
+    assert _type in list(gst_commands.keys()), "Unrecognized camera type '{}'.".format(_type)
     if _type == "h264/rtsp":
-        out_width, out_height = [
-            int(x)
-            for x in parse_option(
-                "camera.output.shape", str, "640x480", **kwargs
-            ).split("x")
-        ]
+        out_width, out_height = [int(x) for x in parse_option("camera.output.shape", str, "640x480", **kwargs).split("x")]
         config = {
             "ip": (parse_option("camera.ip", str, "192.168.1.64", **kwargs)),
             "port": (parse_option("camera.port", int, 554, **kwargs)),
             "user": (parse_option("camera.user", str, "user1", **kwargs)),
-            "password": (
-                parse_option("camera.password", str, "HaikuPlot876", **kwargs)
-            ),
-            "path": (
-                parse_option("camera.path", str, "/Streaming/Channels/103", **kwargs)
-            ),
+            "password": (parse_option("camera.password", str, "HaikuPlot876", **kwargs)),
+            "path": (parse_option("camera.path", str, "/Streaming/Channels/103", **kwargs)),
         }
     else:
         _type = "raw/usb/h264/udp"
-        src_width, src_height = [
-            int(x)
-            for x in parse_option(
-                "camera.source.shape", str, "640x480", **kwargs
-            ).split("x")
-        ]
-        udp_width, udp_height = [
-            int(x)
-            for x in parse_option("camera.udp.shape", str, "320x240", **kwargs).split(
-                "x"
-            )
-        ]
-        out_width, out_height = [
-            int(x)
-            for x in parse_option(
-                "camera.output.shape", str, "480x320", **kwargs
-            ).split("x")
-        ]
+        src_width, src_height = [int(x) for x in parse_option("camera.source.shape", str, "640x480", **kwargs).split("x")]
+        udp_width, udp_height = [int(x) for x in parse_option("camera.udp.shape", str, "320x240", **kwargs).split("x")]
+        out_width, out_height = [int(x) for x in parse_option("camera.output.shape", str, "480x320", **kwargs).split("x")]
         config = {
             "uri": (parse_option("camera.uri", str, "/dev/video0", **kwargs)),
             "src_width": src_width,
@@ -115,21 +138,15 @@ def create_stream(config_file):
             "udp_width": udp_width,
             "udp_height": udp_height,
             "udp_bitrate": (parse_option("camera.udp.bitrate", int, 1024000, **kwargs)),
-            "udp_host": (
-                parse_option("camera.udp.host", str, "192.168.1.100", **kwargs)
-            ),
+            "udp_host": (parse_option("camera.udp.host", str, "192.168.1.100", **kwargs)),
             "udp_port": (parse_option("camera.udp.port", int, 5000, **kwargs)),
             "out_width": out_width,
             "out_height": out_height,
-            "out_bitrate": (
-                parse_option("camera.output.bitrate", int, 1024000, **kwargs)
-            ),
+            "out_bitrate": (parse_option("camera.output.bitrate", int, 1024000, **kwargs)),
         }
     _command = gst_commands.get(_type).format(**config)
     _socket_ref = parse_option("camera.output.class", str, "http-live", **kwargs)
-    logger.info(
-        "Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command)
-    )
+    logger.info("Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command))
     return (
         create_video_source(name, shape=(out_height, out_width, 3), command=_command),
         _socket_ref,
@@ -138,9 +155,7 @@ def create_stream(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description="Camera web-socket server.")
-    parser.add_argument(
-        "--config", type=str, default="/config/stream.ini", help="Configuration file."
-    )
+    parser.add_argument("--config", type=str, default="/config/stream.ini", help="Configuration file.")
     parser.add_argument("--port", type=int, default=9101, help="Socket port.")
     args = parser.parse_args()
 
@@ -159,14 +174,8 @@ def main():
         asyncio.set_event_loop(asyncio.new_event_loop())
 
         io_loop = ioloop.IOLoop.instance()
-        class_ref = (
-            HttpLivePlayerVideoSocket
-            if socket_type == "http-live"
-            else JMuxerVideoStreamSocket
-        )
-        web_app = web.Application(
-            [(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))]
-        )
+        class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
+        web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
         rear_server = web.HTTPServer(web_app, xheaders=True)
         rear_server.bind(args.port)
         rear_server.start()
