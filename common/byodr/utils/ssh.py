@@ -334,7 +334,6 @@ config interface '{network_name}'
 
     def delete_network(self, keyword):
         """Remove network from `wireless.config` or `network.config`
-
         Args:
             keyword (str): The keyword to look for
 
@@ -344,39 +343,54 @@ config interface '{network_name}'
         """
         # It works by splitting these two files into sections based on the empty line. Then look for the section that has the keyword in it, make a temp file without the section that has the keyword, move the temp file instead of the original one
         try:
-            for dir_location in ["wireless", "network"]:
+            for dir_location in ["wireless", "network", "firewall"]:
                 # Read the content of config file
                 output = self._execute_ssh_command(f"cat /etc/config/{dir_location}")
                 file_content = output
+                if dir_location != "firewall":
+                    # Split the file into sections based on empty lines
+                    sections = file_content.split("\n\n")
+                    updated_content = ""
+                    section_to_delete = None
 
-                # Split the file into sections based on empty lines
-                sections = file_content.split("\n\n")
-                updated_content = ""
-                section_to_delete = None
+                    for section in sections:
+                        if keyword in section:
+                            section_to_delete = section
+                            break
+                        else:
+                            updated_content += section + "\n\n"
 
-                for section in sections:
-                    if keyword in section:
-                        section_to_delete = section
-                        break
+                    if section_to_delete:
+                        # Prepare the temp file path and content
+                        temp_file = f"/tmp/{dir_location}.conf"
+                        updated_content = updated_content.replace(section_to_delete, "").strip()
+
+                        # Write the updated content back to the file using SFTP
+                        self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
+
+                        # Move the temp file to overwrite the original
+                        self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
+                        print(f"{keyword} section deleted successfully from {dir_location}.")
                     else:
-                        updated_content += section + "\n\n"
-
-                if section_to_delete:
-                    # Prepare the temp file path and content
-                    temp_file = f"/tmp/{dir_location}.conf"
-                    updated_content = updated_content.replace(section_to_delete, "").strip()
-
-                    # Write the updated content back to the file using SFTP
-                    self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
-
-                    # Move the temp file to overwrite the original
-                    self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
-                    print(f"{keyword} section deleted successfully from {dir_location}.")
+                        print(f"{keyword} not found in any {dir_location} section.")
                 else:
-                    print(f"{keyword} not found in any {dir_location} section.")
+                    # New functionality for firewall
+                    if keyword in file_content:
+                        updated_content = file_content.replace(keyword, "").strip()
+                        temp_file = f"/tmp/{dir_location}.conf"
 
+                        # Write the updated content back to the file using SFTP
+                        self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
+
+                        # Move the temp file to overwrite the original
+                        self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
+                        print(f"{keyword} deleted successfully from {dir_location}.")
+                    else:
+                        print(f"{keyword} not found in {dir_location}.")
         except Exception as e:
             print("An error occurred:", e)
+        finally:
+            self._execute_ssh_command(f"wifi reload")
 
 
 class Cameras:
