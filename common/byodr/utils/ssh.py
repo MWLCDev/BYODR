@@ -21,6 +21,7 @@ class Router:
         self.password = password
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
+        self.wifi_connect = self.ConnectToNetwork(self)
 
     def __get_nano_third_octet(self):
         try:
@@ -31,7 +32,7 @@ class Router:
             parts = ip_address.split(".")
             network_prefix = ".".join(parts[:3]) + "."
             router_ip = f"{network_prefix}1"
-            return (router_ip)
+            return router_ip
         except subprocess.CalledProcessError as e:
             print(f"An error occurred: {e}")
             return None
@@ -150,8 +151,8 @@ class Router:
             scanned_networks = self.parse_iwlist_output(output)
             # DEBUGGING
             # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
-            for network in scanned_networks:
-               print(network.get("ESSID"), network.get("MAC"), end="\n")
+            # for network in scanned_networks:
+            #    print(network.get("ESSID"), network.get("MAC"), end="\n")
             return scanned_networks
 
         def parse_iwlist_output(self, output):
@@ -259,19 +260,23 @@ class Router:
     def get_wifi_networks(self):
         return self.wifi_scanner.fetch_wifi_networks()
 
-    def connect_to_network(self, network_name, network_mac, network_password):
-        """Add wireless network to `wireless.config` and `interface.config`
+    class ConnectToNetwork:
+        def __init__(self, router_instance):
+            self.router = router_instance
 
-        Args:
-            network_name (str): Name of new network.
-            network_mac (str): MAC address for the new network.
-            network_password (str): password for the new network.
+        def connect_to_network(self, network_name, network_mac, network_password):
+            """Add wireless network to `wireless.config` and `interface.config`
 
-        Example
-            >> connect_to_network("CP_Davide", "{MAC_ADDRESS}", "{PASSWORD}")
-        """
-        # Empty line at the beginning of config is important
-        wireless_config = f"""
+            Args:
+                network_name (str): Name of new network.
+                network_mac (str): MAC address for the new network.
+                network_password (str): password for the new network.
+
+            Example
+                >> connect_to_network("CP_Davide", "{MAC_ADDRESS}", "{PASSWORD}")
+            """
+
+            wireless_config = f"""\n
 config wifi-iface
     option key '{network_password}'
     option ssid '{network_name}'
@@ -282,34 +287,50 @@ config wifi-iface
     option network '{network_name}'
     option skip_inactivity_poll '0'
     option disassoc_low_ack '0'
-    option short_preamble '0'
+    option short_preamble '0' 
 """
 
-        interface_config = f"""
+            interface_config = f"""\n
 config interface '{network_name}'
-    option metric '7'
+    option metric '3'
     option proto 'dhcp'
     option defaultroute '1'
     option delegate '1'
-    option force_link '0'
+    option force_link '0' 
 """
+            try:
+                # Open, modify, and save the wireless, interface configuration file
+                commands = [f'echo "{wireless_config}" >> /etc/config/wireless', f'echo "{interface_config}" >> /etc/config/network', "wifi reload"]
+                for command in commands:
+                    self.router._execute_ssh_command(command)
+                self._update_firewall_config(network_name)
+            except Exception as e:
+                logger.info(f"An error occurred while adding {network_name} network: {e}")
+            finally:
+                logger.info(f"Finished connecting to {network_name} network")
 
-        try:
-            # Open, modify, and save the wireless, interface configuration file
-            commands = [
-                f"echo '{wireless_config}' >> /etc/config/wireless",
-                f"echo '{interface_config}' >> /etc/config/network",
-                "wifi reload",
-            ]
+        def _update_firewall_config(self, network_name):
+            firewall_config_path = "/etc/config/firewall"
+            updated_config = ""
 
-            for command in commands:
-                output = self._execute_ssh_command(command)
-                print(output)  # You can also handle stderr if needed
+            current_config = self.router._execute_ssh_command(f"cat {firewall_config_path}")
+            for line in current_config.split("\n"):
+                if "config zone" in line and "'3'" in line:
+                    updated_config += line + "\n"
+                    continue
 
-        except Exception as e:
-            print(f"An error occurred while adding {network_name} network: {e}")
-        finally:
-            print(f"finished connecting to {network_name} network")
+                if "option network" in line and "wan" in line:
+                    updated_line = re.sub(r"option network '(.+?)'", f"option network '\\1 {network_name}'", line)
+                    updated_config += updated_line + "\n"
+                    continue
+
+                updated_config += line + "\n"
+
+            self.router._execute_ssh_command(command=None, file_path=firewall_config_path, file_contents=updated_config)
+
+    def connect_to_network(self, *args, **kwargs):
+        # Delegating the call to the ConnectToNetwork instance
+        return self.wifi_connect.connect_to_network(*args, **kwargs)
 
     def delete_network(self, keyword):
         """Remove network from `wireless.config` or `network.config`
