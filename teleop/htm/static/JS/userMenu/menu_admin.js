@@ -102,30 +102,54 @@ class AdminMenu {
     try {
       let data = await this.callRouterApi("get_wifi_networks");
 
-      // Parse data if it's a string
       if (typeof data === 'string') {
         data = JSON.parse(data);
       }
 
       const tbody = document.querySelector('#connectable_networks_table tbody');
-
-      // Clear existing content only after successful data retrieval
       tbody.innerHTML = '';
 
-      data.forEach(network => {
+      data.forEach((network, index) => {
         const ssid = network['ESSID'];
-        const mac = network['MAC']; // Assuming you treat MAC as IP for display
+        const mac = network['MAC'];
 
         const tr = document.createElement('tr');
-        tr.innerHTML = `
-          <td>${ssid}</td>
-          <td><button type="button">Add</button></td>
-        `;
+        const button = document.createElement('button');
+        button.type = "button";
+        button.textContent = "Add";
+
+        button.addEventListener('click', () => {
+          const generatedString = this.generateStringFromSSID(ssid);
+          console.log(`Generated String: ${generatedString}`);
+          this.callRouterApi("add_network", { ssid: ssid, mac: mac, password: generatedString });
+        });
+
+        tr.innerHTML = `<td>${ssid}</td><td></td>`;
+        tr.children[1].appendChild(button);
+
+        // Add animation with a delay
+        tr.style.animationDelay = `${index * 0.1}s`;
+        tr.classList.add('fade-in-left');
+
         tbody.appendChild(tr);
       });
     } catch (error) {
       console.error('Error fetching WiFi networks:', error);
     }
+  }
+
+
+  generateStringFromSSID(ssid) {
+    const baseString = "Orangebachcps1n";
+    const splitSSID = ssid.split('_');
+
+    if (splitSSID.length > 1) {
+      const letter = splitSSID[1].charAt(0).toUpperCase();
+      const position = letter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
+      return baseString + position;
+    }
+
+    return baseString;
   }
 
   enableDragAndDrop() {
