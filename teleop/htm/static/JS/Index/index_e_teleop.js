@@ -36,7 +36,7 @@ class RealServerSocket {
         };
         ws.onmessage = function (evt) {
           var message = JSON.parse(evt.data);
-          // console.log(message);
+          // console.log(ws, message); //DEBUGGING
           setTimeout(function () { _instance._capture(); }, 40);
           setTimeout(function () {
             _instance._notify_server_message_listeners(screen_utils._decorate_server_message(message));
@@ -137,7 +137,6 @@ class RealGamepadSocket {
   }
   _send(command) {
     if (this.socket != undefined && this.socket.readyState == 1) {
-      console.log("command")
       this.socket.send(JSON.stringify(command));
     }
   }

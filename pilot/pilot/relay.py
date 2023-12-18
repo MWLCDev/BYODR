@@ -80,19 +80,13 @@ class NoopMonitoringRelay(AbstractRelay):
 
 
 class RealMonitoringRelay(AbstractRelay):
-    def __init__(
-        self, relay, client_factory=None, status_factory=None, config_dir=os.getcwd()
-    ):
+    def __init__(self, relay, client_factory=None, status_factory=None, config_dir=os.getcwd()):
         super(RealMonitoringRelay, self).__init__()
         self._relay = relay
         self._config_dir = config_dir
         self._integrity = MessageStreamProtocol()
-        self._status_factory = (
-            StatusReceiverThreadFactory() if status_factory is None else status_factory
-        )
-        self._client_factory = (
-            PiClientFactory() if client_factory is None else client_factory
-        )
+        self._status_factory = StatusReceiverThreadFactory() if status_factory is None else status_factory
+        self._client_factory = PiClientFactory() if client_factory is None else client_factory
         self._relay_closed_calltrace = collections.deque(maxlen=1)
         self._patience_micro = 100.0
         self._config_hash = -1
@@ -103,9 +97,7 @@ class RealMonitoringRelay(AbstractRelay):
 
     def _send_config(self, data):
         if self._pi_client is not None and data is not None:
-            self._pi_client.call(
-                dict(time=timestamp(), method="ras/driver/config", data=data)
-            )
+            self._pi_client.call(dict(time=timestamp(), method="ras/driver/config", data=data))
 
     def _send_drive(self, throttle=0.0, steering=0.0, reverse_gear=False, wakeup=False):
         if self._pi_client is not None:
@@ -161,13 +153,9 @@ class RealMonitoringRelay(AbstractRelay):
     def _reboot(self):
         errors = []
         _config = self._config()
-        self._patience_micro = (
-            parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
-        )
+        self._patience_micro = parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
         # This is holder for default value if it doesn't exist in the config file under [vehicle]
-        _pi_uri = parse_option(
-            "ras.master.uri", str, "192.168.1.32", errors, **_config
-        )
+        _pi_uri = parse_option("ras.master.uri", str, "192.168.1.32", errors, **_config)
         _pi_uri = f"tcp://{_pi_uri}"
         if self._pi_client is not None:
             self._pi_client.quit()
@@ -179,15 +167,9 @@ class RealMonitoringRelay(AbstractRelay):
         self._pi_status = self._status_factory.create(_pi_uri)
         self._pi_status.add_listener(self._on_receive)
         self._pi_status.start()
-        _steering_offset = parse_option(
-            "ras.driver.steering.offset", float, 0.0, errors, **_config
-        )
-        _motor_scale = parse_option(
-            "ras.driver.motor.scale", float, 1.0, errors, **_config
-        )
-        self._servo_config = dict(
-            app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale
-        )
+        _steering_offset = parse_option("ras.driver.steering.offset", float, 0.0, errors, **_config)
+        _motor_scale = parse_option("ras.driver.motor.scale", float, 1.0, errors, **_config)
+        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale)
         self._integrity.reset()
         self._send_config(self._servo_config)
         return errors
@@ -199,10 +181,7 @@ class RealMonitoringRelay(AbstractRelay):
     def _close_relay(self):
         # In normal operation the relay is constantly asked to close.
         now = timestamp()
-        if (
-            len(self._relay_closed_calltrace) == 0
-            or (now - self._relay_closed_calltrace[-1]) > 30 * 1e6
-        ):
+        if len(self._relay_closed_calltrace) == 0 or (now - self._relay_closed_calltrace[-1]) > 30 * 1e6:
             self._relay.close()
             self._relay_closed_calltrace.append(now)
 
@@ -236,9 +215,7 @@ def main():
     subparsers = parser.add_subparsers(help="Methods.")
 
     parser_a = subparsers.add_parser("exec", help="Open or close the relay.")
-    parser_a.add_argument(
-        "--cmd", type=str, required=True, help="Open or close the relay."
-    )
+    parser_a.add_argument("--cmd", type=str, required=True, help="Open or close the relay.")
     parser_a.set_defaults(func=execute)
 
     args = parser.parse_args()

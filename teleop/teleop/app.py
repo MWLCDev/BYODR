@@ -224,18 +224,9 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
-    parser.add_argument(
-        "--config", type=str, default="/config", help="Config directory path."
-    )
-    parser.add_argument(
-        "--routes",
-        type=str,
-        default="/routes",
-        help="Directory with the navigation routes.",
-    )
-    parser.add_argument(
-        "--sessions", type=str, default="/sessions", help="Sessions directory."
-    )
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
+    parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
+    parser.add_argument("--sessions", type=str, default="/sessions", help="Sessions directory.")
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
@@ -254,12 +245,8 @@ def main():
     application = TeleopApplication(event=quit_event, config_dir=args.config)
     application.setup()
 
-    camera_front = CameraThread(
-        url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event
-    )
-    camera_rear = CameraThread(
-        url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event
-    )
+    camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
+    camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(
         url="ipc:///byodr/pilot.sock",
         topic=b"aav/pilot/output",
@@ -313,13 +300,9 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
-    )
+    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
-    chatter = JSONPublisher(
-        url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter"
-    )
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(
         urls=[
             "ipc:///byodr/pilot_c.sock",
@@ -383,31 +366,16 @@ def main():
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", GetSegmentSSID),
-                (
-                    r"/api/datalog/event/v10/table",
-                    DataTableRequestHandler,
-                    dict(mongo_box=_mongo),
-                ),
-                (
-                    r"/api/datalog/event/v10/image",
-                    JPEGImageRequestHandler,
-                    dict(mongo_box=_mongo),
-                ),  # Get the commands from the controller in normal UI
+                (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),
+                (r"/api/datalog/event/v10/image", JPEGImageRequestHandler, dict(mongo_box=_mongo)),
+                # Get the commands from the controller in normal UI
                 (r"/ws/ctl", ControlServerSocket, dict(fn_control=teleop_publish)),
                 (
                     r"/ws/log",
                     MessageServerSocket,
-                    dict(
-                        fn_state=(
-                            lambda: (pilot.peek(), vehicle.peek(), inference.peek())
-                        )
-                    ),
+                    dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek()))),
                 ),
-                (
-                    r"/ws/cam/front",
-                    CameraMJPegSocket,
-                    dict(image_capture=(lambda: camera_front.capture())),
-                ),
+                (r"/ws/cam/front", CameraMJPegSocket, dict(image_capture=(lambda: camera_front.capture()))),
                 (
                     r"/ws/cam/rear",
                     CameraMJPegSocket,
@@ -416,18 +384,14 @@ def main():
                 (
                     r"/ws/nav",
                     NavImageHandler,
-                    dict(
-                        fn_get_image=(lambda image_id: get_navigation_image(image_id))
-                    ),
+                    dict(fn_get_image=(lambda image_id: get_navigation_image(image_id))),
                 ),
                 (
                     # Get or save the options for the user
                     r"/teleop/user/options",
                     ApiUserOptionsHandler,
                     dict(
-                        user_options=(
-                            ConfigManager(application.get_user_config_file())
-                        ),
+                        user_options=(ConfigManager(application.get_user_config_file())),
                         fn_on_save=on_options_save,
                     ),
                 ),
@@ -436,9 +400,7 @@ def main():
                     r"/teleop/robot/options",
                     ApiUserOptionsHandler,
                     dict(
-                        user_options=(
-                            ConfigManager(application.get_robot_config_file())
-                        ),
+                        user_options=(ConfigManager(application.get_robot_config_file())),
                         fn_on_save=on_options_save,
                     ),
                 ),
