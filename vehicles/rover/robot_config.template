@@ -1,5 +1,6 @@
 [segment1]
-position = 1
 ip.number = 192.168.1.100
+mac.address = 
 wifi.name = CP_Earl
+v.number = 
 main = yes
