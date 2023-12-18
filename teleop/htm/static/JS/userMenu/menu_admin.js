@@ -5,6 +5,14 @@ class AdminMenu {
     // this.fetchDataAndDisplay();
     // this.getSSID();
     this.getWifiNetworks();
+    this.setupWifiNetworksButton();
+  }
+
+  setupWifiNetworksButton() {
+    const wifiButton = document.getElementById('scanWifiNetworks');
+    wifiButton.addEventListener('click', () => {
+      this.getWifiNetworks();
+    });
   }
   // Method to fetch data from the API and display it
   async fetchDataAndDisplay() {
