@@ -148,24 +148,16 @@ class GetSegmentSSID(tornado.web.RequestHandler):
         try:
             # Use the IOLoop to run fetch_ssid in a thread
             loop = tornado.ioloop.IOLoop.current()
+            router = Router()
 
-            config = configparser.ConfigParser()
-            config.read("/config/config.ini")
-            front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split(".")
-            network_prefix = ".".join(parts[:3])
-            router_IP = f"{network_prefix}.1"
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(
-                None,
-                router.fetch_ssid,
-            )
+            ssid = await loop.run_in_executor(None, router.fetch_ssid)
 
             logger.info(f"SSID of current robot: {ssid}")
             self.write(ssid)
         except Exception as e:
             logger.error(f"Error fetching SSID of current robot: {e}")
-            logger.error(traceback.format_exc())  # This will pri
+            logger.error(traceback.format_exc())
             self.set_status(500)
             self.write("Error fetching SSID of current robot.")
         self.finish()
