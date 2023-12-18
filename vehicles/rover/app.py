@@ -63,9 +63,7 @@ class RasSpeedOdometer(object):
 
     def start(self):
         # The receiver thread is not restartable.
-        self._receiver = ReceiverThread(
-            url=("{}:5555".format(self._ras_uri)), topic=b"ras/drive/status"
-        )
+        self._receiver = ReceiverThread(url=("{}:5555".format(self._ras_uri)), topic=b"ras/drive/status")
         self._receiver.add_listener(self._on_receive)
         self._receiver.start()
 
@@ -83,11 +81,7 @@ class Platform(Configurable):
         self._geo = GeoTracker()
 
     def _track(self):
-        latitude, longitude = (
-            (None, None)
-            if self._gps is None
-            else (self._gps.get_latitude(), self._gps.get_longitude())
-        )
+        latitude, longitude = (None, None) if self._gps is None else (self._gps.get_latitude(), self._gps.get_longitude())
         position = None if None in (latitude, longitude) else (latitude, longitude)
         return self._geo.track(position)
 
@@ -110,9 +104,7 @@ class Platform(Configurable):
                 except RasRemoteError as rre:
                     # After 5 seconds do a hard reboot of the remote connection.
                     if rre.timeout > 5000:
-                        logger.info(
-                            "Hard odometer reboot at {} ms timeout.".format(rre.timeout)
-                        )
+                        logger.info("Hard odometer reboot at {} ms timeout.".format(rre.timeout))
                         self._quit_odometer()
                         self._start_odometer()
             return dict(
@@ -131,18 +123,12 @@ class Platform(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        _master_uri = parse_option(
-            "ras.master.uri", str, "192.168.1.32", errors, **kwargs
-        )
+        _master_uri = parse_option("ras.master.uri", str, "192.168.1.32", errors, **kwargs)
         _master_uri = "tcp://{}".format(_master_uri)
-        _speed_factor = parse_option(
-            "ras.non.sensor.speed.factor", float, 0.50, errors, **kwargs
-        )
+        _speed_factor = parse_option("ras.non.sensor.speed.factor", float, 0.50, errors, **kwargs)
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
-        _gps_host = parse_option(
-            "gps.provider.host", str, "192.168.1.1", errors, **kwargs
-        )
+        _gps_host = parse_option("gps.provider.host", str, "192.168.1.1", errors, **kwargs)
         _gps_port = parse_option("gps.provider.port", str, "502", errors, **kwargs)
         self._gps = GpsPollerThread(_gps_host, _gps_port)
         self._gps.start()
@@ -178,24 +164,14 @@ class RoverHandler(Configurable):
     def internal_start(self, **kwargs):
         errors = []
         self._process_frequency = parse_option("clock.hz", int, 80, errors, **kwargs)
-        self._patience_micro = (
-            parse_option("patience.ms", int, 100, errors, **kwargs) * 1000.0
-        )
+        self._patience_micro = parse_option("patience.ms", int, 100, errors, **kwargs) * 1000.0
         self._platform.restart(**kwargs)
         errors.extend(self._platform.get_errors())
         if not self._gst_sources:
-            front_camera = ImagePublisher(
-                url="ipc:///byodr/camera_0.sock", topic="aav/camera/0"
-            )
-            rear_camera = ImagePublisher(
-                url="ipc:///byodr/camera_1.sock", topic="aav/camera/1"
-            )
-            self._gst_sources.append(
-                ConfigurableImageGstSource("front", image_publisher=front_camera)
-            )
-            self._gst_sources.append(
-                ConfigurableImageGstSource("rear", image_publisher=rear_camera)
-            )
+            front_camera = ImagePublisher(url="ipc:///byodr/camera_0.sock", topic="aav/camera/0")
+            rear_camera = ImagePublisher(url="ipc:///byodr/camera_1.sock", topic="aav/camera/1")
+            self._gst_sources.append(ConfigurableImageGstSource("front", image_publisher=front_camera))
+            self._gst_sources.append(ConfigurableImageGstSource("rear", image_publisher=rear_camera))
         if not self._ptz_cameras:
             self._ptz_cameras.append(PTZCamera("front", self._config_dir))
             self._ptz_cameras.append(PTZCamera("rear", self._config_dir))
@@ -225,10 +201,7 @@ class RoverHandler(Configurable):
             c_camera = c_teleop.get("camera_id", -1)
             # Lower camera is 0 and upper is 1
             _north_pressed = bool(c_teleop.get("button_y", 0))
-            _is_teleop = (
-                c_pilot is not None
-                and c_pilot.get("driver") == "driver_mode.teleop.direct"
-            )
+            _is_teleop = c_pilot is not None and c_pilot.get("driver") == "driver_mode.teleop.direct"
             if _north_pressed:
                 # North =  Triangle in PS4 controller
                 self._ptz_cameras[0].add({"goto_home": 1})
@@ -240,9 +213,7 @@ class RoverHandler(Configurable):
                 _read_pan = _west_pressed or c_camera > 0
                 tilt_value = c_teleop.get("tilt", 0)
                 pan_value = c_teleop.get("pan", 0) if _read_pan else 0
-                _set_home = (
-                    _west_pressed and abs(tilt_value) < 1e-2 and abs(pan_value) < 1e-2
-                )
+                _set_home = _west_pressed and abs(tilt_value) < 1e-2 and abs(pan_value) < 1e-2
                 command = {
                     "pan": pan_value,
                     "tilt": tilt_value,
@@ -261,9 +232,7 @@ class RoverApplication(Application):
     def __init__(self, handler=None, config_dir=os.getcwd()):
         super(RoverApplication, self).__init__()
         self._config_dir = config_dir
-        self._handler = (
-            RoverHandler(config_dir=self._config_dir) if handler is None else handler
-        )
+        self._handler = RoverHandler(config_dir=self._config_dir) if handler is None else handler
         self._config_hash = -1
         self.state_publisher = None
         self.ipc_server = None
@@ -281,7 +250,7 @@ class RoverApplication(Application):
             "config.ini": "config.template",
             "robot_config.ini": "robot_config.template",
         }
-        # Local mode => ./mnt/data/docker/volumes/1_volume_byodr_config/_data/robot_config.ini
+        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/robot_config.ini
         for file in required_files:
             file_path = os.path.join(self._config_dir, file)
             if not os.path.exists(file_path):
@@ -329,8 +298,56 @@ class RoverApplication(Application):
         )
         if config_ip_number != ip_addresses:
             parser.set("segment1", "ip.number", ip_addresses)
-            parser.write(robot_config_path.open("w"))
+            with open(robot_config_path, "w") as config_file:
+                parser.write(config_file)
             logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
+        else:
+            logger.info("no need to change IP")
+
+    def _change_segment_config(self):
+        """Change the ips in all the config files the segment is using them.
+        It will change the cert file also
+        It will count on the ip of the nano"""
+        # Get the local IP address's third octet
+        ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+        third_octet_new = ip_address.split(".")[2]
+
+        _candidates = glob.glob(os.path.join(self._config_dir, "config.ini"))
+
+        # Regular expression to match IP addresses
+        ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
+
+        for file in _candidates:
+            with open(file, "r") as f:
+                content = f.readlines()
+
+            updated_content = []
+            changes_made = []
+            changes_made_in_file = False  # Flag to track changes in the current file
+
+            for line in content:
+                match = ip_regex.search(line)
+                if match:
+                    third_octet_old = match.group(2)
+                    if third_octet_old != third_octet_new:
+                        # Replace the third octet
+                        new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
+                        updated_content.append(new_line)
+                        changes_made.append((third_octet_old, third_octet_new))
+                        changes_made_in_file = True
+
+                        continue
+                updated_content.append(line)
+
+            # Write changes back to the file
+            with open(file, "w") as f:
+                f.writelines(updated_content)
+
+            # Print changes made
+            if changes_made_in_file:
+                print("Updated {} with new ip address".format(file))
+            else:
+                print("No changes needed for {}.".format(file))
 
     def _config(self):
         parser = SafeConfigParser()
@@ -351,11 +368,11 @@ class RoverApplication(Application):
                 self._config_hash = _hash
                 self._check_configuration_files()
                 self._check_segment_ip_robot_config()
+                self._change_segment_config()
+                _config = self._config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
-                    self.ipc_server.register_start(
-                        self._handler.get_errors(), self._capabilities()
-                    )
+                    self.ipc_server.register_start(self._handler.get_errors(), self._capabilities())
                     _frequency = self._handler.get_process_frequency()
                     self.set_hz(_frequency)
                     self.logger.info("Processing at {} Hz.".format(_frequency))
@@ -382,20 +399,14 @@ class RoverApplication(Application):
 def main():
     parser = argparse.ArgumentParser(description="Rover main.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
-    parser.add_argument(
-        "--config", type=str, default="/config", help="Config directory path."
-    )
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     args = parser.parse_args()
 
     application = RoverApplication(config_dir=args.config)
     quit_event = application.quit_event
 
-    pilot = json_collector(
-        url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event
-    )
-    teleop = json_collector(
-        url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event
-    )
+    pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
+    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
     ipc_chatter = json_collector(
         url="ipc:///byodr/teleop_c.sock",
         topic=b"aav/teleop/chatter",
@@ -403,12 +414,8 @@ def main():
         event=quit_event,
     )
 
-    application.state_publisher = JSONPublisher(
-        url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state"
-    )
-    application.ipc_server = LocalIPCServer(
-        url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event
-    )
+    application.state_publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
+    application.ipc_server = LocalIPCServer(url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event)
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
