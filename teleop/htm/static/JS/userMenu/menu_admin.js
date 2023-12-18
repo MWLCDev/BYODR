@@ -14,6 +14,36 @@ class AdminMenu {
       this.getWifiNetworks();
     });
   }
+
+  async callRouterApi(action, params = {}) {
+    try {
+      const options = {
+        method: Object.keys(params).length === 0 ? 'GET' : 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      };
+
+      // Add body only for POST requests
+      if (options.method === 'POST') {
+        options.body = JSON.stringify(params);
+      }
+
+      const response = await fetch(`/ssh/router?action=${action}`, options);
+      const contentType = response.headers.get("content-type");
+
+      if (contentType && contentType.includes("application/json")) {
+        return await response.json(); // Handle JSON response
+      } else {
+        return await response.text(); // Handle plain text response
+      }
+    } catch (error) {
+      console.error('Error while calling router endpoint:', error);
+      return null;
+    }
+  }
+
+
   // Method to fetch data from the API and display it
   async fetchSegmentDataAndDisplay() {
     try {
