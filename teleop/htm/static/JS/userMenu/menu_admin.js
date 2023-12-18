@@ -3,8 +3,7 @@ class AdminMenu {
     // Automatically call the method when an instance is created
     this.enableDragAndDrop();
     this.fetchSegmentDataAndDisplay();
-    // this.getSSID();
-    this.getWifiNetworks();
+    this.getNanoIP();
     this.setupWifiNetworksButton();
   }
 
@@ -75,27 +74,11 @@ class AdminMenu {
     }
   }
 
-  async callRouterApi(action) {
-    try {
-      const response = await fetch(`/ssh/router?action=${action}`);
-      const contentType = response.headers.get("content-type");
-
-      if (contentType && contentType.includes("application/json")) {
-        return await response.json(); // Handle JSON response
-      } else {
-        return await response.text(); // Handle plain text response
-      }
-    } catch (error) {
-      console.error('Error while calling router endpoint:', error);
-      return null;
-    }
-  }
-
-  async getSSID() {
-    const data = await this.callRouterApi("fetch_ssid"); // Calls fetch_ssid function in Router class
+  async getNanoIP() {
+    const data = await this.callRouterApi("get_nano_ip"); // Calls fetch_ssid function in Router class
     const showSSID = document.getElementById("dummy_text");
-    showSSID.innerHTML = data
-
+    console.log(data)
+    showSSID.innerHTML = data.message
   }
 
   async getWifiNetworks() {
