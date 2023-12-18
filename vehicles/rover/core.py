@@ -266,7 +266,7 @@ class GpsPollerThread(threading.Thread):
     https://pymodbus.readthedocs.io/en/v1.3.2/examples/modbus-payload.html
     """
 
-    def __init__(self, host='192.168.1.1', port='502'):
+    def __init__(self, host, port="502"):
         super(GpsPollerThread, self).__init__()
         self._host = host
         self._port = port
