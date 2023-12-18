@@ -35,15 +35,39 @@ import json
 
 
 class RouterSSHHandler(tornado.web.RequestHandler):
+    def initialize(self):
+        self.router = Router()
+
+    def post(self):
+        try:
+            data = tornado.escape.json_decode(self.request.body)
+            action = self.get_argument("action", None)
+
+            if action == "add_network":
+                ssid = data.get("ssid")
+                mac = data.get("mac")
+                password = data.get("password")
+                # Assuming there's a function to add network
+                print(f"passed parameters", ssid, mac, password)
+                self.router.connect_to_network(ssid, mac, password)
+
+                self.write({"Add network successfully"})
+            else:
+                self.write("Invalid function parameter.")
+        except Exception as e:
+            self.write({"error": str(e)})
+
     def get(self):
+        nano = Nano()
         action = self.get_argument("action", None)
-        print(action)
         if action == "fetch_ssid":
-            data = router.fetch_ssid()
+            data = self.router.fetch_ssid()
         elif action == "fetch_segment_ip":
-            data = router.fetch_ip_and_mac()
+            data = self.router.fetch_ip_and_mac()
+        elif action == "get_nano_ip":
+            data = nano.get_ip_address()
         elif action == "get_wifi_networks":
-            data = router.get_wifi_networks()
+            data = self.router.get_wifi_networks()
             # Convert the list to JSON string before sending
             self.write(json.dumps(data))
             return
