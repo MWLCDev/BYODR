@@ -2,7 +2,7 @@ class AdminMenu {
   constructor() {
     // Automatically call the method when an instance is created
     this.enableDragAndDrop();
-    // this.fetchDataAndDisplay();
+    this.fetchSegmentDataAndDisplay();
     // this.getSSID();
     this.getWifiNetworks();
     this.setupWifiNetworksButton();
@@ -15,21 +15,19 @@ class AdminMenu {
     });
   }
   // Method to fetch data from the API and display it
-  async fetchDataAndDisplay() {
+  async fetchSegmentDataAndDisplay() {
     try {
-      console.log("hi")
       const response = await fetch('/teleop/robot/options');
       const jsonData = await response.json();
-
+      console.log(jsonData)
       // Call a function to update the table with segment in robot data
-      console.log(jsonData);
-      this.updateTable(jsonData);
+      this.updateSegmentsTable(jsonData);
     } catch (error) {
       console.error('There has been a problem with your fetch operation:', error);
     }
   }
 
-  updateTable(data) {
+  updateSegmentsTable(data) {
     const tbody = document.querySelector('#container_segment_table table tbody');
     tbody.innerHTML = ''; // Clear existing rows
     for (const segment in data) {
@@ -37,12 +35,12 @@ class AdminMenu {
       const tr = document.createElement('tr');
 
       tr.innerHTML = `
-        <td> </td>
-        <td>${row.position}</td>
+        <td></td>
+        <td></td>
         <td>${row['wifi.name']}</td>
-        <td>${row['ip.number']}</td>
+        <td><input type="radio" name="mainSegment"></td>
+        <td><button type="button">Remove</button></td>
       `;
-
       tbody.appendChild(tr);
     }
   }
