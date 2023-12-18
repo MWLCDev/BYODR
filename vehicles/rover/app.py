@@ -5,6 +5,7 @@ import logging
 import os
 import shutil
 import subprocess
+import re
 
 from ConfigParser import SafeConfigParser
 
@@ -288,7 +289,31 @@ class RoverApplication(Application):
                 shutil.copyfile(template_file, file_path)
                 logger.info("Created {} from template.".format(file))
 
+            # Verify and add missing keys
+            self._verify_and_add_missing_keys(file_path, template_files[file])
+
+    def _verify_and_add_missing_keys(self, ini_file, template_file):
+        config = SafeConfigParser()
+        template_config = SafeConfigParser()
+
+        config.read(ini_file)
+        template_config.read(template_file)
+
+        # Loop through each section and key in the template
+        for section in template_config.sections():
+            if not config.has_section(section):
+                config.add_section(section)
+            for key, value in template_config.items(section):
+                if not config.has_option(section, key):
+                    config.set(section, key, value)
+                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+
+        # Write changes to the ini file
+        with open(ini_file, "w") as configfile:
+            config.write(configfile)
+
     def _check_segment_ip_robot_config(self):
+        """change the ip current segment in the robot_config.ini"""
         parser = SafeConfigParser()
         robot_config_path = os.path.join(self._config_dir, "robot_config.ini")
         parser.read(robot_config_path)
