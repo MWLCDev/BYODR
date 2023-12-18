@@ -19,10 +19,8 @@ from tornado import web, websocket
 from tornado.gen import coroutine
 
 from byodr.utils import timestamp
-from byodr.utils.ssh import Router, Cameras
+from byodr.utils.ssh import Router, Nano
 
-router = Router(ip="192.168.1.1")
-# router.get_wifi_networks()
 
 logger = logging.getLogger(__name__)
 
@@ -107,9 +105,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
     def on_close(self):
         if self._is_operator():
             self.operators.clear()
-            logger.info(
-                "Mobile operator {} disconnected.".format(self.request.remote_ip)
-            )
+            logger.info("Mobile operator {} disconnected.".format(self.request.remote_ip))
         else:
             logger.info("Mobile viewer {} disconnected.".format(self.request.remote_ip))
 
@@ -124,11 +120,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
             if msg.get("_operator") == "force":
                 self.operators.clear()
                 self.operators.add(self)
-                logger.info(
-                    "Mobile viewer {} took over control and is now operator.".format(
-                        self.request.remote_ip
-                    )
-                )
+                logger.info("Mobile viewer {} took over control and is now operator.".format(self.request.remote_ip))
         try:
             self.write_message(_response)
         except websocket.WebSocketClosedError:
@@ -182,11 +174,7 @@ class ControlServerSocket(websocket.WebSocketHandler):
         elif msg.get("_operator") == "force":
             self.operators.clear()
             self.operators.add(self)
-            logger.info(
-                "Viewer {} took over control and is now operator.".format(
-                    self.request.remote_ip
-                )
-            )
+            logger.info("Viewer {} took over control and is now operator.".format(self.request.remote_ip))
         try:
             self.write_message(_response)
         except websocket.WebSocketClosedError:
@@ -251,9 +239,7 @@ class MessageServerSocket(websocket.WebSocketHandler):
             return 0, [0] * scope
         assert len(path) > scope
         _x = len(path) // scope
-        return np.mean(path), [
-            np.mean(path[i * _x : (i + 1) * _x]) for i in range(scope)
-        ]
+        return np.mean(path), [np.mean(path[i * _x : (i + 1) * _x]) for i in range(scope)]
 
     def on_message(self, *args):
         try:
@@ -263,70 +249,36 @@ class MessageServerSocket(websocket.WebSocketHandler):
             inference = None if state is None else state[2]
             recorder = None
             speed_scale = 3.6
-            pilot_navigation_active = (
-                0 if pilot is None else int(pilot.get("navigation_active", False))
-            )
-            pilot_match_image = (
-                -1 if pilot is None else pilot.get("navigation_match_image", -1)
-            )
-            pilot_match_distance = (
-                1 if pilot is None else pilot.get("navigation_match_distance", 1)
-            )
-            pilot_match_point = (
-                "" if pilot is None else pilot.get("navigation_match_point", "")
-            )
-            inference_current_image = (
-                -1 if inference is None else inference.get("navigation_image", -1)
-            )
-            inference_current_distance = (
-                -1 if inference is None else inference.get("navigation_distance", -1)
-            )
-            inference_command = (
-                -1 if inference is None else inference.get("navigation_command", -1)
-            )
-            inference_path = (
-                None if inference is None else inference.get("navigation_path")
-            )
+            pilot_navigation_active = 0 if pilot is None else int(pilot.get("navigation_active", False))
+            pilot_match_image = -1 if pilot is None else pilot.get("navigation_match_image", -1)
+            pilot_match_distance = 1 if pilot is None else pilot.get("navigation_match_distance", 1)
+            pilot_match_point = "" if pilot is None else pilot.get("navigation_match_point", "")
+            inference_current_image = -1 if inference is None else inference.get("navigation_image", -1)
+            inference_current_distance = -1 if inference is None else inference.get("navigation_distance", -1)
+            inference_command = -1 if inference is None else inference.get("navigation_command", -1)
+            inference_path = None if inference is None else inference.get("navigation_path")
             nav_direction, nav_path = self._translate_navigation_path(inference_path)
             response = {
                 "ctl": self._translate_driver(pilot, inference),
-                "ctl_activation": 0
-                if pilot is None
-                else pilot.get("driver_activation_time", 0),
-                "inf_brake_critic": 0
-                if inference is None
-                else inference.get("brake_critic_out"),
+                "ctl_activation": 0 if pilot is None else pilot.get("driver_activation_time", 0),
+                "inf_brake_critic": 0 if inference is None else inference.get("brake_critic_out"),
                 "inf_brake": 0 if inference is None else inference.get("obstacle"),
-                "inf_total_penalty": 0
-                if inference is None
-                else inference.get("total_penalty"),
-                "inf_steer_penalty": 0
-                if inference is None
-                else inference.get("steer_penalty"),
-                "inf_brake_penalty": 0
-                if inference is None
-                else inference.get("brake_penalty"),
-                "inf_surprise": 0
-                if inference is None
-                else inference.get("surprise_out"),
+                "inf_total_penalty": 0 if inference is None else inference.get("total_penalty"),
+                "inf_steer_penalty": 0 if inference is None else inference.get("steer_penalty"),
+                "inf_brake_penalty": 0 if inference is None else inference.get("brake_penalty"),
+                "inf_surprise": 0 if inference is None else inference.get("surprise_out"),
                 "inf_critic": 0 if inference is None else inference.get("critic_out"),
                 "inf_hz": 0 if inference is None else inference.get("_fps"),
                 "rec_act": False if recorder is None else recorder.get("active"),
                 "rec_mod": self._translate_recorder(recorder),
                 "ste": 0 if pilot is None else pilot.get("steering"),
                 "thr": 0 if pilot is None else pilot.get("throttle"),
-                "vel_y": 0
-                if vehicle is None
-                else vehicle.get("velocity") * speed_scale,
+                "vel_y": 0 if vehicle is None else vehicle.get("velocity") * speed_scale,
                 "geo_lat": 0 if vehicle is None else vehicle.get("latitude_geo"),
                 "geo_long": 0 if vehicle is None else vehicle.get("longitude_geo"),
                 "geo_head": 0 if vehicle is None else vehicle.get("heading"),
-                "des_speed": 0
-                if pilot is None
-                else pilot.get("desired_speed") * speed_scale,
-                "max_speed": 0
-                if pilot is None
-                else pilot.get("cruise_speed") * speed_scale,
+                "des_speed": 0 if pilot is None else pilot.get("desired_speed") * speed_scale,
+                "max_speed": 0 if pilot is None else pilot.get("cruise_speed") * speed_scale,
                 "head": 0 if vehicle is None else vehicle.get("heading"),
                 "nav_active": pilot_navigation_active,
                 "nav_point": pilot_match_point,
@@ -339,9 +291,7 @@ class MessageServerSocket(websocket.WebSocketHandler):
             }
             self.write_message(json.dumps(response))
         except Exception:
-            logger.error(
-                "MessageServerSocket:on_message:{}".format(traceback.format_exc())
-            )
+            logger.error("MessageServerSocket:on_message:{}".format(traceback.format_exc()))
             raise
 
 
@@ -369,9 +319,7 @@ class CameraMJPegSocket(websocket.WebSocketHandler):
         md = self._fn_capture()[0]
         if md is not None:
             _height, _width, _channels = md["shape"]
-        self.write_message(
-            json.dumps(dict(action="init", width=_width, height=_height))
-        )
+        self.write_message(json.dumps(dict(action="init", width=_width, height=_height)))
 
     def on_close(self):
         pass
@@ -389,16 +337,12 @@ class CameraMJPegSocket(websocket.WebSocketHandler):
                 # Always send something so the client is able to resume polling.
                 self._calltrace.append(_timestamp)
                 self.write_message(
-                    jpeg_encode(
-                        (self._black_img if img is None else img), quality
-                    ).tobytes(),
+                    jpeg_encode((self._black_img if img is None else img), quality).tobytes(),
                     binary=True,
                 )
 
         except Exception as e:
-            logger.error(
-                "Camera socket@on_message: {} {}".format(e, traceback.format_exc())
-            )
+            logger.error("Camera socket@on_message: {} {}".format(e, traceback.format_exc()))
             logger.error("JSON message:---\n{}\n---".format(message))
 
 
@@ -495,14 +439,7 @@ class ApiUserOptionsHandler(JSONRequestHandler):
 
     def get(self):
         self._options.reload()
-        self.write(
-            json.dumps(
-                {
-                    s: self._options.get_options(s)
-                    for s in (self._options.list_sections())
-                }
-            )
-        )
+        self.write(json.dumps({s: self._options.get_options(s) for s in (self._options.list_sections())}))
 
     def post(self):
         data = json.loads(self.request.body)
@@ -571,10 +508,7 @@ class JSONNavigationHandler(JSONRequestHandler):
         action = data.get("action")
         selected_route = data.get("route")
         _active = len(self._store) > 0
-        if action == "start" or (
-            action == "toggle"
-            and (not _active or self._store.get_selected_route() != selected_route)
-        ):
+        if action == "start" or (action == "toggle" and (not _active or self._store.get_selected_route() != selected_route)):
             delayed_open(self._store, selected_route)
         elif action in ("close", "toggle"):
             self._store.close()

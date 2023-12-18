@@ -24,21 +24,23 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router, Cameras, Nano
+from byodr.utils.ssh import Router
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
+from .robot_comm import *
+
+# subscribe_data()
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
-
+# router = Router()
+# router.delete_network("CP_Davide")
+# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77", "Orangebachcps1n4")
 # router.fetch_ip_and_mac()
 # router.fetch_segment_ip
 # router.get_wifi_networks()
-cameras = Cameras(segment_network_prefix="192.168.1")
-# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77", "Orangebachcps1n4")
-# router.delete_network("CP_Davide")
 logger = logging.getLogger(__name__)
 
 log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
@@ -96,10 +98,9 @@ class TeleopApplication(Application):
     def get_robot_config_file(self):
         return self._robot_config_file
 
+    # Private function to init router class with the nano's IP
     def __get_nano_IP(self):
-        nano = Nano()
-        data = nano.get_ip_address()
-        self.router = Router(data)
+        self.router = Router()
 
     def setup(self):
         if self.active():
@@ -127,9 +128,7 @@ class RunDrawMapPython(tornado.web.RequestHandler):
         with concurrent.futures.ProcessPoolExecutor() as executor:
             future = executor.submit(run_python_script, script_name)
             # Use the `await` keyword to asynchronously wait for the result.
-            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(
-                None, future.result
-            )
+            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(None, future.result)
 
             # Print the list before sending it to the JavaScript function.
             logger.info("Python script result: ", result_list)
@@ -172,9 +171,7 @@ class DirectingUser(tornado.web.RequestHandler):
 
         if user_agent.is_mobile:
             # if user is on mobile, redirect to the mobile page
-            logger.info(
-                "User is operating through mobile phone. Redirecting to the mobile UI"
-            )
+            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
             self.redirect("/mobile_controller_ui")
         else:
             # else redirect to normal control page
@@ -268,15 +265,12 @@ def main():
         ),
         hz=16,
     )
-    log_application = LogApplication(
-        _mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config
-    )
-    package_application = PackageApplication(
-        _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
-    )
+    log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
+    package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
+    teleop_robot_thread = threading.Thread(target=subscribe_data)
 
     threads = [
         camera_front,
@@ -286,6 +280,7 @@ def main():
         inference,
         logbox_thread,
         package_thread,
+        teleop_robot_thread,
     ]
     if quit_event.is_set():
         return 0
@@ -346,10 +341,7 @@ def main():
                 # Navigate to a testing page
                 (r"/(testFeature)", TemplateRenderer),
                 # Run python script to get list of maps
-                (
-                    r"/run_draw_map_python",
-                    RunDrawMapPython,
-                ),
+                (r"/run_draw_map_python", RunDrawMapPython),
                 (
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
@@ -387,8 +379,8 @@ def main():
                         fn_on_save=on_options_save,
                     ),
                 ),
+                # Get or save the options for the robot
                 (
-                    # Get or save the options for the robot
                     r"/teleop/robot/options",
                     ApiUserOptionsHandler,
                     dict(
@@ -397,27 +389,11 @@ def main():
                     ),
                 ),
                 (r"/ssh/router", RouterSSHHandler),
-                (
-                    r"/teleop/system/state",
-                    JSONMethodDumpRequestHandler,
-                    dict(fn_method=list_process_start_messages),
-                ),
-                (
-                    r"/teleop/system/capabilities",
-                    JSONMethodDumpRequestHandler,
-                    dict(fn_method=list_service_capabilities),
-                ),
-                (
-                    r"/teleop/navigation/routes",
-                    JSONNavigationHandler,
-                    dict(route_store=route_store),
-                ),
-                (
-                    # Path to where the static files are stored (JS,CSS, images)
-                    r"/(.*)",
-                    web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm")},
-                ),
+                (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=list_process_start_messages)),
+                (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=list_service_capabilities)),
+                (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
+                # Path to where the static files are stored (JS,CSS, images)
+                (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
             ],  # Disable request logging with an empty lambda expression
             # Always restart after you change path of folder/file
             log_function=lambda *args, **kwargs: None,
