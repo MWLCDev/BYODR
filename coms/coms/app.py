@@ -4,6 +4,8 @@ import multiprocessing
 import time
 from byodr.utils.ip_getter import get_ip_number
 from byodr.utils.ipc import JSONPublisher, json_collector
+from byodr.utils.ssh import Nano
+seg_ip = Nano.get_ip_address()
 from .server import start_server
 from .client import connect_to_server
 
