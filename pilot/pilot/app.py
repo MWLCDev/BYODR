@@ -50,7 +50,8 @@ class PilotApplication(Application):
         self.ros = None
         self.vehicle = None
         self.inference = None
-        self.coms = None
+        self.coms_receiver = None
+        self.movement_commands = None
         self._init(relay)
 
     def _init(self, _relay):
@@ -86,9 +87,6 @@ class PilotApplication(Application):
         return self._holder
 
     def setup(self):
-        self.coms.add_listener(self._on_message)
-
-
         if self.active():
             _cfg = self._config()
             self._set_pulse_channels(**_cfg)
@@ -99,10 +97,6 @@ class PilotApplication(Application):
                 _frequency = self._processor.get_frequency()
                 self.set_hz(_frequency)
                 self.logger.info("Processing at {} Hz - patience is {:2.2f} ms.".format(_frequency, self._processor.get_patience_ms()))
-
-    def _on_message(self, message):
-        msg_from_com = message
-        # self.logger.info(f"Data received from the Coms service, Listener: {msg_from_com}.")
 
     def finish(self):
         self._monitor.quit()
@@ -116,11 +110,11 @@ class PilotApplication(Application):
     #     profiler.dump_stats('/config/pilot.stats')
 
     def step(self):
-        teleop = self.teleop()
-        commands = (teleop, self.ros(), self.vehicle(), self.inference())
+        coms = self.coms_receiver()
+        commands = (coms, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        # logger.info(f"Sending command to relay.py: {pilot}, {teleop}.")
-        self._monitor.step(pilot, teleop)
+        # logger.info(f"Sending command to relay.py: {pilot}, {coms}.")
+        self._monitor.step(pilot, coms)
 
         if pilot is not None:
             self.publisher.publish(pilot)
@@ -143,23 +137,22 @@ def main():
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)
 
-    teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
+    coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
     ros = json_collector(url='ipc:///byodr/ros.sock', topic=b'aav/ros/input', hwm=10, pop=True, event=quit_event)
     vehicle = json_collector(url='ipc:///byodr/vehicle.sock', topic=b'aav/vehicle/state', event=quit_event)
     inference = json_collector(url='ipc:///byodr/inference.sock', topic=b'aav/inference/state', event=quit_event)
     ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
 
-    application.teleop = lambda: teleop.get()
+    application.coms_receiver = lambda: coms_receiver.get()
     application.ros = lambda: ros.get()
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
     application.publisher = JSONPublisher(url='ipc:///byodr/pilot.sock', topic='aav/pilot/output')
     application.ipc_server = LocalIPCServer(url='ipc:///byodr/pilot_c.sock', name='pilot', event=quit_event)
-    application.coms = JSONServerThread(url='ipc:///byodr/coms_to_pilot.sock', event=quit_event, receive_timeout_ms=50)
-    application.coms.message_to_send = "Pilot"
 
-    threads = [teleop, ros, vehicle, inference, ipc_chatter, application.ipc_server, application.coms, threading.Thread(target=application.run)]
+
+    threads = [coms_receiver, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 
