@@ -56,14 +56,13 @@ class RouterSSHHandler(tornado.web.RequestHandler):
             self.write({"error": str(e)})
 
     def get(self):
-        nano = Nano()
         action = self.get_argument("action", None)
         if action == "fetch_ssid":
             data = self.router.fetch_ssid()
         elif action == "fetch_segment_ip":
             data = self.router.fetch_ip_and_mac()
         elif action == "get_nano_ip":
-            data = nano.get_ip_address()
+            data = Nano.get_ip_address()
         elif action == "get_wifi_networks":
             data = self.router.get_wifi_networks()
             # Convert the list to JSON string before sending
