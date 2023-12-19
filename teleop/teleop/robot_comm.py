@@ -12,44 +12,49 @@ logger = logging.getLogger(__name__)
 # This file will have the ZMQ socket and dealing with the robot configuration file
 
 
-def subscribe_data(ip="192.168.1.100", sub_port=5454, req_port=5455):
-    context = zmq.Context()
-    subscriber_ip = Nano.get_ip_address()
-    # REQ socket for sending connection and disconnection messages
-    req_socket = context.socket(zmq.REQ)
-    req_socket.connect(f"tcp://{ip}:{req_port}")
+class DataSubscriberThread(threading.Thread):
+    def __init__(self, ip, event, sub_port=5454, req_port=5455):
+        # Set up necessary attributes and methods that DataSubscriberThread inherits from Thread.
+        # Use the thread control methods like start(), join(), is_alive().
+        super(DataSubscriberThread, self).__init__()
+        self._ip = ip
+        self._sub_port = sub_port
+        self._req_port = req_port
+        self._quit_event = event
 
-    # Notify the publisher of the connection
-    req_socket.send_string(f"CONNECT {subscriber_ip}")
-    req_socket.recv()  # Wait for acknowledgement
+        self.context = zmq.Context()
+        self.req_socket = self.context.socket(zmq.REQ)
+        self.req_socket.connect(f"tcp://{self._ip}:{self._req_port}")
 
-    # SUB socket for receiving data
-    sub_socket = context.socket(zmq.SUB)
-    sub_socket.connect(f"tcp://{ip}:{sub_port}")
-    sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        self.sub_socket = self.context.socket(zmq.SUB)
+        self.sub_socket.connect(f"tcp://{self._ip}:{self._sub_port}")
+        self.sub_socket.setsockopt_string(zmq.SUBSCRIBE, "")
+        self.poller = zmq.Poller()
+        self.poller.register(self.sub_socket, zmq.POLLIN)
 
-    # Poller for non-blocking wait
-    poller = zmq.Poller()
-    poller.register(sub_socket, zmq.POLLIN)
+    def run(self):
+        subscriber_ip = Nano.get_ip_address()
+        self.req_socket.send_string(f"CONNECT {subscriber_ip}")
+        self.req_socket.recv()  # Wait for acknowledgement
 
-    try:
-        while True:
-            # Non-blocking wait for a message
-            socks = dict(poller.poll(0))  # Timeout is 0 for non-blocking
-            if sub_socket in socks and socks[sub_socket] == zmq.POLLIN:
-                message = sub_socket.recv_string()
-                print(f"Received: {message}")
-                # Your message processing logic here
-    except KeyboardInterrupt:
-        print("Interrupted, closing socket.")
-    finally:
-        # Notify the publisher of the disconnection
-        req_socket.send_string(f"DISCONNECT {subscriber_ip}")
-        req_socket.recv()
+        try:
+            while not self._quit_event.is_set():
+                socks = dict(self.poller.poll(1000))  # Check every 1000 ms
+                if self.sub_socket in socks and socks[self.sub_socket] == zmq.POLLIN:
+                    message = self.sub_socket.recv_string()
+                    print(f"Received: {message}")
+                    # Process message here
+        finally:
+            self.req_socket.send_string(f"DISCONNECT {subscriber_ip}")
+            logging.info("DataSubscriberThread is about to close")
 
-        sub_socket.close()
-        req_socket.close()
-        context.term()
+            self.req_socket.recv()
+            self.cleanup()
+
+    def cleanup(self):
+        self.sub_socket.close()
+        self.req_socket.close()
+        self.context.term()
 
 
 def process_message(message):
@@ -62,7 +67,7 @@ def process_message(message):
 
 
 class DataPublisher:
-    def __init__(self, robot_config_dir, message, sleep_time=5, pub_port=5454, rep_port=5455):
+    def __init__(self, robot_config_dir, message=" ", sleep_time=5, pub_port=5454, rep_port=5455):
         self.ip = Nano.get_ip_address()
         self.pub_port = pub_port
         self.rep_port = rep_port
@@ -72,6 +77,7 @@ class DataPublisher:
         self.context = zmq.Context()
         self.pub_socket = self.context.socket(zmq.PUB)
         self.pub_socket.bind(f"tcp://{self.ip}:{self.pub_port}")
+        # Reply socket to get announcement message when a subscriber connects or disconnects
         self.rep_socket = self.context.socket(zmq.REP)
         self.rep_socket.bind(f"tcp://{self.ip}:{self.rep_port}")
         self.subscriber_ips = set()
@@ -79,6 +85,7 @@ class DataPublisher:
     def start_publishing(self):
         try:
             while True:
+                self.check_subscribers()
                 # Read .ini file
                 config = configparser.ConfigParser()
                 config.read(self.robot_config_dir)
