@@ -472,7 +472,8 @@ class Cameras:
 
 
 class Nano:
-    def get_ip_address(self):
+    @staticmethod
+    def get_ip_address():
         try:
             ip_addresses = (
                 subprocess.check_output(
