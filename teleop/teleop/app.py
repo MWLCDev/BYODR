@@ -268,18 +268,13 @@ def main():
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-    teleop_robot_thread = threading.Thread(target=subscribe_data)
 
-    threads = [
-        camera_front,
-        camera_rear,
-        pilot,
-        vehicle,
-        inference,
-        logbox_thread,
-        package_thread,
-        teleop_robot_thread,
-    ]
+    data = {"segment1": {"position": "1", "ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "main": "yes"}}
+    publisher = DataPublisher("192.168.1.100", 5454, 5455, data, "change segment order", 5)
+    zmq_publisher_thread = threading.Thread(target=publisher.start_publishing)
+
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, zmq_publisher_thread]
+
     if quit_event.is_set():
         return 0
 
