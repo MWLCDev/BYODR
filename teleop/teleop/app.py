@@ -29,7 +29,6 @@ from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
 from .robot_comm import *
 
-# subscribe_data()
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
@@ -39,14 +38,14 @@ from htm.plot_training_sessions_map.draw_training_sessions import draw_training_
 # router.fetch_ip_and_mac()
 # router.fetch_segment_ip
 # router.get_wifi_networks()
-logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+# Tells Python to call the _interrupt function when a SIGINT is received.
+signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())  # It's a request to interrupt the process.
+signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())  #  Sent by OS commands to request termination of a process.
 
-signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
-signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
-
+# A synchronization primitive used to signal between processes or threads. It's used to communicate a shutdown signal to various running threads
 quit_event = multiprocessing.Event()
+
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
 
