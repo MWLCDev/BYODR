@@ -122,7 +122,7 @@ class RealMonitoringRelay(AbstractRelay):
                                       data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup)))
 
 
-    def _drive(self, pilot, teleop):
+    def _drive(self, pilot, coms):
         pi_status = None if self._pi_status is None else self._pi_status.pop_latest()
 
         # Checking if the Pi is setup according to the configuration we sent
@@ -133,8 +133,8 @@ class RealMonitoringRelay(AbstractRelay):
         if pilot is None:
             self._send_drive()
         else:
-            _reverse = teleop and teleop.get('arrow_down', 0)
-            _wakeup = teleop and teleop.get('button_b', 0)
+            _reverse = coms and coms.get('arrow_down', 0)
+            _wakeup = coms and coms.get('button_b', 0)
             self._send_drive(steering=pilot.get('steering'), throttle=pilot.get('throttle'), reverse_gear=_reverse, wakeup=_wakeup)
 
     def _config(self):
@@ -205,17 +205,19 @@ class RealMonitoringRelay(AbstractRelay):
             self._pi_status.quit()
 
     # Function that will be executed in a loop. It is called in the app.py file, not here
-    # Gets commands from teleop and pilot and then checks for any communication errors between itsef and the Pi
-    def step(self, pilot, teleop):
+    # Gets commands from coms and pilot and then checks for any communication errors between itsef and the Pi
+    def step(self, pilot, coms):
         # Always consume the latest commands.
         c_pilot = self._latest_or_none(pilot, patience=self._patience_micro)
-        c_teleop = self._latest_or_none(teleop, patience=self._patience_micro)
+        c_coms = self._latest_or_none(coms, patience=self._patience_micro)
+        # logger.info(f"Processing with : {c_pilot}, {c_coms}.")
+
         n_violations = self._integrity.check()
 
         # If the Pi is responding normally
         if n_violations < -5:
             self._close_relay()
-            self._drive(c_pilot, c_teleop)
+            self._drive(c_pilot, c_coms)
         # If the Pi is not responding
         elif n_violations > 200:
             # ZeroMQ ipc over tcp does not allow connection timeouts to be set - while the timeout is too high.
