@@ -6,10 +6,8 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
-import configparser
 import user_agents  # Check in the request header if it is a phone or not
 
 
@@ -416,7 +414,18 @@ def main():
     [t.join() for t in threads]
 
 
+def reset_logging():
+    logging.shutdown()
+    root_logger = logging.getLogger()
+    handlers = root_logger.handlers[:]
+    for handler in handlers:
+        root_logger.removeHandler(handler)
+
+
 if __name__ == "__main__":
-    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
-    logging.getLogger().setLevel(logging.INFO)
+    reset_logging()
+    log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
+    logging.basicConfig(format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
     main()
