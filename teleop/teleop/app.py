@@ -219,13 +219,7 @@ def main():
     _mongo = MongoLogBox(MongoClient())
     _mongo.ensure_indexes()
 
-    route_store = ReloadableDataSource(
-        FileSystemRouteDataSource(
-            directory=args.routes,
-            fn_load_image=_load_nav_image,
-            load_instructions=False,
-        )
-    )
+    route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
     application = TeleopApplication(event=quit_event, config_dir=args.config)
@@ -233,42 +227,18 @@ def main():
 
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
-    pilot = json_collector(
-        url="ipc:///byodr/pilot.sock",
-        topic=b"aav/pilot/output",
-        event=quit_event,
-        hwm=20,
-    )
-    vehicle = json_collector(
-        url="ipc:///byodr/vehicle.sock",
-        topic=b"aav/vehicle/state",
-        event=quit_event,
-        hwm=20,
-    )
-    inference = json_collector(
-        url="ipc:///byodr/inference.sock",
-        topic=b"aav/inference/state",
-        event=quit_event,
-        hwm=20,
-    )
+    pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
+    vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
+    inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
 
     logbox_user = SharedUser()
-    logbox_state = SharedState(
-        channels=(
-            camera_front,
-            (lambda: pilot.get()),
-            (lambda: vehicle.get()),
-            (lambda: inference.get()),
-        ),
-        hz=16,
-    )
+    logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
 
-    data = {"segment1": {"position": "1", "ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "main": "yes"}}
     publisher = DataPublisher(application.get_robot_config_file(), "change segment order")
     zmq_publisher_thread = threading.Thread(target=publisher.start_publishing)
 
@@ -280,7 +250,6 @@ def main():
     [t.start() for t in threads]
 
     teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
-    # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(
         urls=[
