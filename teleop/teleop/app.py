@@ -270,7 +270,7 @@ def main():
     package_thread = threading.Thread(target=package_application.run)
 
     data = {"segment1": {"position": "1", "ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "main": "yes"}}
-    publisher = DataPublisher("192.168.1.100", 5454, 5455, data, "change segment order", 5)
+    publisher = DataPublisher(application.get_robot_config_file(), "change segment order")
     zmq_publisher_thread = threading.Thread(target=publisher.start_publishing)
 
     threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, zmq_publisher_thread]

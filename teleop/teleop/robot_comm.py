@@ -1,8 +1,9 @@
 import zmq
 import json
 import threading, time
-from byodr.utils.ssh import Router
+from byodr.utils.ssh import Router, Nano
 import logging
+import configparser
 
 
 logger = logging.getLogger(__name__)
@@ -61,11 +62,11 @@ def process_message(message):
 
 
 class DataPublisher:
-    def __init__(self, ip, pub_port, rep_port, data, message, sleep_time=5):
-        self.ip = ip
+    def __init__(self, robot_config_dir, message, sleep_time=5, pub_port=5454, rep_port=5455):
+        self.ip = Nano.get_ip_address()
         self.pub_port = pub_port
         self.rep_port = rep_port
-        self.data = data
+        self.robot_config_dir = robot_config_dir
         self.message = message
         self.sleep_time = sleep_time
         self.context = zmq.Context()
@@ -78,22 +79,15 @@ class DataPublisher:
     def start_publishing(self):
         try:
             while True:
-                # Check for new subscribers or disconnections
-                try:
-                    notification = self.rep_socket.recv_string(zmq.NOBLOCK)
-                    action, subscriber_ip = notification.split()
-                    if action == "CONNECT":
-                        self.subscriber_ips.add(subscriber_ip)
-                        print(f"Subscriber {subscriber_ip} connected")
-                    elif action == "DISCONNECT":
-                        self.subscriber_ips.discard(subscriber_ip)
-                        print(f"Subscriber {subscriber_ip} disconnected")
-                    self.rep_socket.send(b"ACK")  # Acknowledge the subscriber
-                except zmq.Again:
-                    pass  # No new subscriber or disconnection
+                # Read .ini file
+                config = configparser.ConfigParser()
+                config.read(self.robot_config_dir)
+                ini_data = {section: dict(config.items(section)) for section in config.sections()}
 
-                # Send data to subscribers
-                json_data = json.dumps(self.data)
+                # Convert to JSON
+                json_data = json.dumps(ini_data)
+
+                # Send JSON data to subscribers
                 combined_message = f"{self.message} {json_data}"
                 print(f"Sent {combined_message}")
                 self.pub_socket.send_string(combined_message)
@@ -105,3 +99,17 @@ class DataPublisher:
             self.pub_socket.close()
             self.rep_socket.close()
             self.context.term()
+
+    def check_subscribers(self):
+        try:
+            notification = self.rep_socket.recv_string(zmq.NOBLOCK)
+            action, subscriber_ip = notification.split()
+            if action == "CONNECT":
+                self.subscriber_ips.add(subscriber_ip)
+                logger.info(f"Subscriber {subscriber_ip} connected")
+            elif action == "DISCONNECT":
+                self.subscriber_ips.discard(subscriber_ip)
+                logger.info(f"Subscriber {subscriber_ip} disconnected")
+            self.rep_socket.send(b"ACK")  # Acknowledge the subscriber
+        except zmq.Again:
+            pass  # No new subscriber or disconnection
