@@ -1,8 +1,9 @@
 import logging
 import threading
 import multiprocessing
+import time
 from byodr.utils.ip_getter import get_ip_number
-from byodr.utils.ipc import JSONZmqClient, JSONServerThread, ReceiverThread
+from byodr.utils.ipc import JSONPublisher, json_collector
 from .server import start_server
 from .client import connect_to_server
 
@@ -14,42 +15,46 @@ logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Getting the third octet of the IP of the local machine
+# Getting the third octate of the IP of the local machine
 local_third_ip_digit = get_ip_number()
 
 
-def _on_receive(message):
-    logger.info(f"Data received from the Pilot-relay service, Listener: {message}.")
-
-def _on_message(message):
-    # logger.info(f"Data received from the Teleop service, Listener: {message}.")
-    pass
-
-
 # Declaring the inter-service sockets
-pilot_publisher = JSONZmqClient(urls="ipc:///byodr/coms_to_pilot.sock")
 
-teleop_receiver = JSONServerThread(url="ipc:///byodr/teleop_to_coms.sock", event=quit_event, receive_timeout_ms=50)
-teleop_receiver.message_to_send = "Coms"
-teleop_receiver.add_listener(_on_message)
+# Other socket located on pilot/app.py/140
+coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
-velocity_receiver = ReceiverThread(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity')
-velocity_receiver.add_listener(_on_receive)
+# Other socket located on teleop/app.py/306
+teleop_receiver = json_collector(url='ipc:///byodr/teleop_to_coms.sock', topic=b'aav/teleop/input', event=quit_event)
+
+# Other socket located on vehicles/rover/app.py/34
+vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
 
 def main():
-
+    
     # Getting the 3rd digit of the IP of the local device
     local_third_ip_digit = get_ip_number()
 
     # Starting the receivers
     teleop_receiver.start()
-    velocity_receiver.start()
+    vehicle_receiver.start()
 
     while True:
-        # Setting test data to the inter-service sockets
-        reply_from_pilot = pilot_publisher.call(dict(data = "Coms"))
-        # logger.info(f"Message received from Pilot: {reply_from_pilot}")
+        # Receiving movement commands from Teleop and sending them to Pilot/app
+        movement_commands_from_teleop = teleop_receiver.get()
 
+        # We do not send commands to pilot, if the throttle is 0
+        if not movement_commands_from_teleop == None:
+            if not movement_commands_from_teleop.get('throttle') == 0:
+                # logger.info(f"Sending to pilot: {movement_commands_from_teleop}.")
+                coms_to_pilot_publisher.publish(movement_commands_from_teleop)
+
+
+
+        # Receiving velocity of the motors from Vehicles
+        # logger.info(f"Velocity received: {vehicle_receiver.get()}.")
+
+        time.sleep(1./1000)
 
     # Threads that will be executing the server and client codes
     server_thread = threading.Thread( target = start_server )
