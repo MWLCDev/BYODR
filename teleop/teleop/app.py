@@ -303,8 +303,8 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
+    teleop_to_coms_publisher = JSONPublisher(
+        url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input"
     )
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(
@@ -319,8 +319,6 @@ def main():
             "ipc:///byodr/camera_c.sock",
         ]
     )
-
-    coms = JSONZmqClient(urls="ipc:///byodr/teleop_to_coms.sock")
 
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
@@ -338,13 +336,9 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
+        
         # logger.info(f"Command to be send to Coms: {cmd}")
-
-        teleop_publisher.publish(cmd)
-
-        reply_from_coms = coms.call(dict(data = "Teleop"))
-        # logger.info(f"Message received from Pilot: {reply_from_coms}")
-
+        teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
