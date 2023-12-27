@@ -239,10 +239,18 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
 
-    publisher = DataPublisher(application.get_robot_config_file(), "change segment order")
-    zmq_publisher_thread = threading.Thread(target=publisher.start_publishing)
+    fake_json_data = {
+        "segment_1": {"mac.address": "00:00:11:22:33", "ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "main": "yes"},
+        "segment_2": {"mac.address": "00:22:33:44:55", "ip.number": "192.168.2.100", "wifi.name": "Davide", "main": "false"},
+    }
+    outer_teleop_publisher = DataPublisher(
+        data=fake_json_data,
+        robot_config_dir=application.get_robot_config_file(),
+        event=quit_event,
+        message="Remove",
+    )
 
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, zmq_publisher_thread]
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, outer_teleop_publisher]
 
     if quit_event.is_set():
         return 0
