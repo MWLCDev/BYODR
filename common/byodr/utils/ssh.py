@@ -15,8 +15,8 @@ logger = logging.getLogger(__name__)
 
 
 class Router:
-    def __init__(self, username="root", password="Modem001", port=22):
-        self.ip = self.__get_nano_third_octet()
+    def __init__(self, ip=None, username="root", password="Modem001", port=22):
+        self.ip = ip if ip is not None else self.__get_nano_third_octet()
         self.username = username
         self.password = password
         self.port = int(port)  # Default value for SSH port
@@ -298,6 +298,15 @@ config interface '{network_name}'
     option delegate '1'
     option force_link '0' 
 """
+        #     config interface 'CP_Davide'
+        # option metric '6'
+        # option netmask '255.255.255.0'
+        # option delegate '1'
+        # option force_link '0'
+        # option ipaddr '192.168.1.2'
+        # option proto 'static'
+        # option gateway '192.168.2.1'
+
             try:
                 # Open, modify, and save the wireless, interface configuration file
                 commands = [f'echo "{wireless_config}" >> /etc/config/wireless', f'echo "{interface_config}" >> /etc/config/network', "wifi reload"]
