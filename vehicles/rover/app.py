@@ -240,6 +240,7 @@ class RoverApplication(Application):
         self.teleop = None
         self.ipc_chatter = None
 
+    #### ADD FUNCTION TO FILL THE DATA FOR THE SEGMENT
     def _check_configuration_files(self):
         """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
         # FOR DEBUGGING
@@ -286,7 +287,7 @@ class RoverApplication(Application):
         parser = SafeConfigParser()
         robot_config_path = os.path.join(self._config_dir, "robot_config.ini")
         parser.read(robot_config_path)
-        config_ip_number = parser.get("segment1", "ip.number")
+        config_ip_number = parser.get("segment_1", "ip.number")
 
         ip_addresses = (
             subprocess.check_output(
@@ -297,7 +298,7 @@ class RoverApplication(Application):
             .strip()
         )
         if config_ip_number != ip_addresses:
-            parser.set("segment1", "ip.number", ip_addresses)
+            parser.set("segment_1", "ip.number", ip_addresses)
             with open(robot_config_path, "w") as config_file:
                 parser.write(config_file)
             logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
@@ -345,16 +346,15 @@ class RoverApplication(Application):
 
             # Print changes made
             if changes_made_in_file:
-                print("Updated {} with new ip address".format(file))
+                logger.info("Updated {} with new ip address".format(file))
             else:
-                print("No changes needed for {}.".format(file))
+                logger.info("No changes needed for {}.".format(file))
 
     def _config(self):
         parser = SafeConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
         cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
-        self.logger.info(cfg)
         return cfg
 
     def _capabilities(self):
