@@ -17,3 +17,4 @@ ras.driver.steering.offset = 0
 ras.driver.motor.scale = 2
 ras.master.uri = 192.168.1.32
 gps.provider.host = 192.168.1.1
+gps.provider.port = 502
