@@ -228,20 +228,20 @@ class RoverHandler(Configurable):
         return self._platform.state()
 
 
-class RoverApplication(Application):
-    def __init__(self, handler=None, config_dir=os.getcwd()):
-        super(RoverApplication, self).__init__()
+class ConfigFiles:
+    def __init__(self, config_dir):
         self._config_dir = config_dir
-        self._handler = RoverHandler(config_dir=self._config_dir) if handler is None else handler
-        self._config_hash = -1
-        self.state_publisher = None
-        self.ipc_server = None
-        self.pilot = None
-        self.teleop = None
-        self.ipc_chatter = None
+        self.__set_parsers()
 
-    #### ADD FUNCTION TO FILL THE DATA FOR THE SEGMENT
-    def _check_configuration_files(self):
+    def __set_parsers(self):
+        self.robot_config_dir = os.path.join(self._config_dir, "robot_config.ini")
+        self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
+        self.robot_config_parser = SafeConfigParser()
+        self.segment_config_parser = SafeConfigParser()
+        self.robot_config_parser.read(self.robot_config_dir)
+        self.segment_config_parser.read(self.segment_config_dir)
+
+    def check_configuration_files(self):
         """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
         # FOR DEBUGGING
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -282,13 +282,25 @@ class RoverApplication(Application):
         with open(ini_file, "w") as configfile:
             config.write(configfile)
 
-    def _check_segment_ip_robot_config(self):
-        """change the ip current segment in the robot_config.ini"""
-        parser = SafeConfigParser()
-        robot_config_path = os.path.join(self._config_dir, "robot_config.ini")
-        parser.read(robot_config_path)
-        config_ip_number = parser.get("segment_1", "ip.number")
+    def update_robot_config(self):
+        """Check and update the IP address in robot_config.ini."""
+        # Count the number of 'segment_' sections
+        segment_count = sum(1 for section in self.robot_config_parser.sections() if section.startswith("segment_"))
+        print(segment_count)
+        if segment_count != 1:
+            print("This segment is part of a robot. No changes to be made in robot_config.ini")
+            return
 
+        ip_changed = self.__update_ip_address()
+
+        if not ip_changed:
+            logger.info("No need to change IP in robot_config.ini")
+        else:
+            logger.info("Updated robot_config.ini")
+
+    def __update_ip_address(self):
+        """Update the IP address in robot_config.ini if necessary."""
+        config_ip_number = self.robot_config_parser.get("segment_1", "ip.number")
         ip_addresses = (
             subprocess.check_output(
                 "hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'",
@@ -298,16 +310,27 @@ class RoverApplication(Application):
             .strip()
         )
         if config_ip_number != ip_addresses:
-            parser.set("segment_1", "ip.number", ip_addresses)
-            with open(robot_config_path, "w") as config_file:
-                parser.write(config_file)
+            self.robot_config_parser.set("segment_1", "ip.number", ip_addresses)
+            with open(self.robot_config_dir, "w") as config_file:
+                self.robot_config_parser.write(config_file)
             logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
-        else:
-            logger.info("no need to change IP")
+            return True
+        return False
 
-    def _change_segment_config(self):
+    # def __update_mac_address(self):
+    #     """Update the MAC address in robot_config.ini if necessary."""
+    #     config_mac_address = self.segment_config_parser.get("segment_1", "mac.address")
+    #     router_mac_address = self._segment_router.fetch_router_mac()
+    #     if config_mac_address != router_mac_address:
+    #         self.parser.set("segment_1", "mac.address", router_mac_address)
+    #         with open(self.robot_config_path, "w") as config_file:
+    #             self.parser.write(config_file)
+    #         logger.info("Changed MAC address in robot_config.ini to {}".format(router_mac_address))
+    #         return True
+    #     return False
+
+    def change_segment_config(self):
         """Change the ips in all the config files the segment is using them.
-        It will change the cert file also
         It will count on the ip of the nano"""
         # Get the local IP address's third octet
         ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
@@ -350,6 +373,20 @@ class RoverApplication(Application):
             else:
                 logger.info("No changes needed for {}.".format(file))
 
+
+class RoverApplication(Application):
+    def __init__(self, handler=None, config_dir=os.getcwd()):
+        super(RoverApplication, self).__init__()
+        self._config_dir = config_dir
+        self._handler = RoverHandler(config_dir=self._config_dir) if handler is None else handler
+        self._config_hash = -1
+        self.state_publisher = None
+        self.ipc_server = None
+        self.pilot = None
+        self.teleop = None
+        self.ipc_chatter = None
+        self._config_files_class = ConfigFiles(self._config_dir)
+
     def _config(self):
         parser = SafeConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
@@ -366,9 +403,9 @@ class RoverApplication(Application):
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
-                self._check_configuration_files()
-                self._check_segment_ip_robot_config()
-                self._change_segment_config()
+                self._config_files_class.check_configuration_files()
+                self._config_files_class.change_segment_config()
+                self._config_files_class.update_robot_config()
                 _config = self._config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
