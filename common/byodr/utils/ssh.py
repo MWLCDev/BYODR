@@ -89,7 +89,12 @@ class Router:
         return output
 
     def fetch_segment_ip(self):
+        """Return an ip of .100"""
         output = self._execute_ssh_command("ip addr show br-lan | grep 'inet ' | awk '{print $2}' | cut -d/ -f1")
+        return output
+
+    def fetch_router_mac(self):
+        output = self._execute_ssh_command("ifconfig wlan0 | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}'")
         return output
 
     def fetch_ip_and_mac(self):
