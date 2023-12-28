@@ -1,6 +1,8 @@
-[segment1]
+[direction]
+forward = segment_1
+
+[segment_1]
 ip.number = 192.168.1.100
-mac.address = 
-wifi.name = CP_Earl
-v.number = 
-main = yes
+wifi.name = CP_01_Earl
+v.number = xx1xxxxxx
+main = True
