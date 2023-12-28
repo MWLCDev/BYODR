@@ -38,7 +38,7 @@ class Router:
             return None
 
     # Protected function for internal use but can still be accessed from inner classes or subclasses
-    def _execute_ssh_command(self, command, file_path=None, file_contents=None):
+    def _execute_ssh_command(self, command, ip=None, file_path=None, file_contents=None):
         """
         Executes a command on the router via SSH and returns the result.
         Optionally, can write to a file on the router using SFTP.
@@ -51,10 +51,13 @@ class Router:
         Returns:
             str: The output of the command execution, or None in case of SFTP.
         """
+        # In case I want to ssh to another router. I can just pass the IP for it and no need to pass the other credentials
+        router_ip = ip if ip is not None else self.ip
+
         try:
             client = paramiko.SSHClient()
             client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(self.ip, self.port, self.username, self.password)
+            client.connect(router_ip, self.port, self.username, self.password)
 
             if file_path and file_contents is not None:
                 # Handle SFTP file write operation
@@ -269,49 +272,58 @@ class Router:
         def __init__(self, router_instance):
             self.router = router_instance
 
-        def connect_to_network(self, network_name, network_mac, network_password):
+        def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
             """Add wireless network to `wireless.config` and `interface.config`
 
             Args:
                 network_name (str): Name of new network.
                 network_mac (str): MAC address for the new network.
-                network_password (str): password for the new network.
 
             Example
-                >> connect_to_network("CP_Davide", "{MAC_ADDRESS}", "{PASSWORD}")
+                >> connect_to_network("CP_02_Davide", "{MAC_ADDRESS}")
             """
+            network_third_octet = network_name.split("_")[1].replace("0", "")
+            network_router_ip = f"192.168.{network_third_octet}.1"
 
+            # AUTO GENERATE THE PASSWORD ON THE FUNCTION CALL
+            network_name_char = network_name.split("_")[-1][0]
+
+            # The IP address of current router when it joins the new router as a client
+            current_router_client_address = f"192.168.{network_third_octet}.{network_forth_octet}"
+
+            # Convert the character to its alphabetical position
+            position = ord(network_name_char.upper()) - ord("A") + 1
+            network_password = f"Orangebachcps1n{position}"
+            option_network = "ifWan1"
             wireless_config = f"""\n
-config wifi-iface
-    option key '{network_password}'
-    option ssid '{network_name}'
-    option encryption 'psk2'
-    option device 'radio0'
-    option mode 'sta'
-    option bssid '{network_mac}'
-    option network '{network_name}'
-    option skip_inactivity_poll '0'
-    option disassoc_low_ack '0'
-    option short_preamble '0' 
+config wifi-iface '1'
+        option key '{network_password}'
+        option ssid '{network_name}'
+        option encryption 'psk2'
+        option device 'radio0'
+        option mode 'sta'
+        option bssid '{network_mac}'
+        option network '{network_name}'
+        option skip_inactivity_poll '0'
+        option _bgscan_enabled '0'
+        option ieee80211r '0'
+        option wds '0'
+        option disassoc_low_ack '0'
+        option short_preamble '0'
 """
 
             interface_config = f"""\n
 config interface '{network_name}'
-    option metric '3'
-    option proto 'dhcp'
-    option defaultroute '1'
-    option delegate '1'
-    option force_link '0' 
+        option metric '6'
+        option area_type 'wan'
+        option ipaddr '{current_router_client_address}'
+        option netmask '255.255.255.0'
+        option delegate '1'
+        option force_link '0'
+        option proto 'static'
+        option name '{network_name}'
+        option gateway '{network_router_ip}'
 """
-        #     config interface 'CP_Davide'
-        # option metric '6'
-        # option netmask '255.255.255.0'
-        # option delegate '1'
-        # option force_link '0'
-        # option ipaddr '192.168.1.2'
-        # option proto 'static'
-        # option gateway '192.168.2.1'
-
             try:
                 # Open, modify, and save the wireless, interface configuration file
                 commands = [f'echo "{wireless_config}" >> /etc/config/wireless', f'echo "{interface_config}" >> /etc/config/network', "wifi reload"]
