@@ -318,6 +318,7 @@ config interface '{network_name}'
                 for command in commands:
                     self.router._execute_ssh_command(command)
                 self._update_firewall_config(network_name)
+                self.router.add_static_route(network_router_ip, current_router_client_address)
             except Exception as e:
                 logger.info(f"An error occurred while adding {network_name} network: {e}")
             finally:
@@ -345,6 +346,27 @@ config interface '{network_name}'
     def connect_to_network(self, *args, **kwargs):
         # Delegating the call to the ConnectToNetwork instance
         return self.wifi_connect.connect_to_network(*args, **kwargs)
+
+    def add_static_route(self, network_router_ip, current_router_client_address):
+        # Sleeping time is until the current router connects as a client to the new router
+        time.sleep(20)
+        print(f"Making static route to {network_router_ip}")
+        parts = self.ip.split(".")
+        network_prefix = ".".join(parts[:3]) + "."
+        current_segment_ip = f"{network_prefix}0"
+
+        static_route_config = f"""\n
+config route '1'
+        option table '254'
+        option netmask '255.255.255.0'
+        option interface 'lan'
+        option gateway '{current_router_client_address}'
+        option target '{current_segment_ip}'
+        option metric '1'
+        """
+        commands = [f'echo "{static_route_config}" >> /etc/config/network', "wifi reload"]
+        for command in commands:
+            self._execute_ssh_command(command, ip=network_router_ip)
 
     def delete_network(self, keyword):
         """Remove network from `wireless.config` or `network.config`
