@@ -10,9 +10,6 @@ RUN apt-get update && apt-get install -y \
     libxslt1-dev \
     unzip  
 
-RUN python3 -m pip install -U pip
-RUN pip3 install paramiko
-
 COPY ./common common/
 COPY ./coms app/
 WORKDIR /app
