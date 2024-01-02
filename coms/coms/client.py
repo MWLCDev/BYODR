@@ -1,8 +1,8 @@
 import socket
 import logging
 import time
-from byodr.utils.ip_getter import get_ip_number
-
+from byodr.utils.ssh import Nano
+nano_ip = Nano.get_ip_address()
 
 
 # Declaring the logger
@@ -10,16 +10,10 @@ logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
-# Getting the 3rd digit of the IP of the local device
-local_third_ip_digit = get_ip_number()
-
-# Setting the lead's IP, assuming that it will always be -1 less than the local one
-lead_third_ip_digit = str ( int(local_third_ip_digit) - 1 )
-
 
 # Declaring the info of the server
 SERVER_PORT = 1111
-SERVER_IP = "192.168."+ lead_third_ip_digit +".100"
+SERVER_IP = nano_ip # Change to fit the lead's IP
 FORMAT = "utf-8"
 
 
