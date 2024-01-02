@@ -2,10 +2,9 @@ import logging
 import threading
 import multiprocessing
 import time
-from byodr.utils.ip_getter import get_ip_number
 from byodr.utils.ipc import JSONPublisher, json_collector
 from byodr.utils.ssh import Nano
-seg_ip = Nano.get_ip_address()
+nano_ip = Nano.get_ip_address()
 from .server import start_server
 from .client import connect_to_server
 
@@ -17,8 +16,8 @@ logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Getting the third octate of the IP of the local machine
-local_third_ip_digit = get_ip_number()
+# Getting the IP of the local machine
+nano_ip = Nano.get_ip_address()
 
 
 # Declaring the inter-service sockets
@@ -34,9 +33,6 @@ vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topi
 
 def main():
     
-    # Getting the 3rd digit of the IP of the local device
-    local_third_ip_digit = get_ip_number()
-
     # Starting the receivers
     teleop_receiver.start()
     vehicle_receiver.start()
@@ -45,18 +41,16 @@ def main():
         # Receiving movement commands from Teleop and sending them to Pilot/app
         movement_commands_from_teleop = teleop_receiver.get()
 
-        # We do not send commands to pilot, if the throttle is 0
-        if not movement_commands_from_teleop == None:
-            if not movement_commands_from_teleop.get('throttle') == 0:
-                # logger.info(f"Sending to pilot: {movement_commands_from_teleop}.")
-                coms_to_pilot_publisher.publish(movement_commands_from_teleop)
+        
+        # logger.info(f"Sending to pilot: {movement_commands_from_teleop}.")
+        if movement_commands_from_teleop != None:
+            coms_to_pilot_publisher.publish(movement_commands_from_teleop)
+
 
 
 
         # Receiving velocity of the motors from Vehicles
         # logger.info(f"Velocity received: {vehicle_receiver.get()}.")
-
-        time.sleep(1./1000)
 
     # Threads that will be executing the server and client codes
     server_thread = threading.Thread( target = start_server )
@@ -69,7 +63,7 @@ def main():
 
     # All other IPs will be clients except the first segment of the robot,
     # since there is no "0th" segment
-    if local_third_ip_digit != '1':
+    if nano_ip != "192.168.1.100":
         logger.info(f"Starting the client code...")
         client_thread.start()
 
