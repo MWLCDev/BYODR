@@ -412,7 +412,7 @@ def main():
     quit_event = application.quit_event
 
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
-    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    teleop = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
     ipc_chatter = json_collector(
         url="ipc:///byodr/teleop_c.sock",
         topic=b"aav/teleop/chatter",
