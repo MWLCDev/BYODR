@@ -6,12 +6,10 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
 import user_agents  # Check in the request header if it is a phone or not
-
 
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
@@ -337,8 +335,9 @@ def main():
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
         
-        # logger.info(f"Command to be send to Coms: {cmd}")
-        teleop_to_coms_publisher.publish(cmd)
+        if cmd.get('throttle') != 0:
+            # logger.info(f"Command to be send to Coms: {cmd}")
+            teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
