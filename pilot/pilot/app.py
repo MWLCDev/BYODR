@@ -23,6 +23,7 @@ from .core import CommandProcessor
 from .relay import RealMonitoringRelay, NoopMonitoringRelay
 from .web import RelayControlRequestHandler, RelayConfigRequestHandler
 
+
 logger = logging.getLogger(__name__)
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
@@ -113,7 +114,7 @@ class PilotApplication(Application):
         coms = self.coms_receiver()
         commands = (coms, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        # logger.info(f"Sending command to relay.py: {pilot}, {coms}.")
+        # print(f"Sending command to relay.py: {pilot}, {coms}.")
         self._monitor.step(pilot, coms)
 
         if pilot is not None:
