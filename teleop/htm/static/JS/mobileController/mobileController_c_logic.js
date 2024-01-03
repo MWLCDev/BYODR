@@ -173,4 +173,4 @@ function sendJSONCommand() {
   }, 1);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS,sendJSONCommand };
+  setTimeout(sendJSONCommand, 100);
