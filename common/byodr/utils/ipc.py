@@ -99,7 +99,8 @@ class JSONReceiver(object):
             except zmq.Again:
                 pass
 
-    # Get the value that is stored inside the queue. Has the ability to clear the queue after receiving
+    # Get the value that is stored inside the queue
+    # If pop=True, clears the queue after receiving
     def get(self):
         _view = self._queue[0] if (self._queue and self._unpack) else list(self._queue) if self._queue else None
         if self._pop:
@@ -111,32 +112,38 @@ class JSONReceiver(object):
         return self._queue[0] if self._queue else None
 
 
+# Class that abstracts the methods of JSONReceiver. Method calls from here are executing methods in JSONReceiver
 class CollectorThread(threading.Thread):
     def __init__(self, receivers, event=None, hz=1000):
         super(CollectorThread, self).__init__()
         _list = (isinstance(receivers, tuple) or isinstance(receivers, list))
-        self._receivers = receivers if _list else [receivers]
+        self._receivers = receivers if _list else [receivers] # An instance of JSONReceiver, made in the return inside json_collector
         self._quit_event = multiprocessing.Event() if event is None else event
         self._sleep = 1. / hz
 
+    # Runs .get() of JSONReceiver
     def get(self, index=0):
         # Get the latest message without blocking.
         # _receiver.consume() -- blocks; perform at thread.run()
         return self._receivers[index].get()
 
+    # Runs .peek() of JSONReceiver
     def peek(self, index=0):
         return self._receivers[index].peek()
 
+    # Breaks the loop of .run()
     def quit(self):
         self._quit_event.set()
 
+    # Starts automatically when a json_collector or CollectorThread instance is started by starting the class thread
+    # Runs the .consume() of JSONReceived in a loop
     def run(self):
         while not self._quit_event.is_set():
             # Empty the receiver queues to not block upstream senders.
             list(map(lambda receiver: receiver.consume(), self._receivers))
             time.sleep(self._sleep)
 
-
+# An instance of CollectorThread with JSONReceiver as a _receovers argument.
 def json_collector(url, topic, event, receive_timeout_ms=1000, hwm=1, pop=False):
     return CollectorThread(JSONReceiver(url, topic, hwm=hwm, receive_timeout_ms=receive_timeout_ms, pop=pop), event=event)
 
