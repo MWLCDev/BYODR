@@ -13,6 +13,8 @@ class MobileControllerState {
   //stands for WebSocket
   #ws;
   #stateErrors;
+  #isWebSocketOpen
+
   #detectedTriangle = "none";
   get midScreen() {
     return window.innerHeight / 2 + this.#initialYOffset;
@@ -52,10 +54,10 @@ class MobileControllerState {
       topTriangle.changeText(value)
     }
   }
-
   get stateErrors() {
     return this.#stateErrors;
   }
+
   set throttleSteeringJson(value) {
     this.#throttleSteeringJson = value;
   }
@@ -68,6 +70,13 @@ class MobileControllerState {
   }
   get websocket() {
     return this.#ws;
+  }
+
+  set isWebSocketOpen(value) {
+    this.#isWebSocketOpen = value;
+  }
+  get isWebSocketOpen() {
+    return this.#isWebSocketOpen;
   }
 
   set detectedTriangle(value) {
