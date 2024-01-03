@@ -91,7 +91,7 @@ class AdminMenu {
 
       const tbody = document.querySelector('#connectable_networks_table tbody');
       tbody.innerHTML = '';
-
+      console.log(data)
       data.forEach((network, index) => {
         const ssid = network['ESSID'];
         const mac = network['MAC'];

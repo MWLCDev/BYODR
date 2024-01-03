@@ -91,48 +91,11 @@ class ConfigurableImageGstSource(Configurable):
             ).split("x")
         ]
         if _type == "h264/rtsp":
-            config = {
-                "ip": (
-                    parse_option(
-                        self._name + ".camera.ip",
-                        str,
-                        "192.168.1.64",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "port": (
-                    parse_option(
-                        self._name + ".camera.port", int, 554, errors=_errors, **kwargs
-                    )
-                ),
-                "user": (
-                    parse_option(
-                        self._name + ".camera.user",
-                        str,
-                        "user1",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "password": (
-                    parse_option(
-                        self._name + ".camera.password",
-                        str,
-                        "HaikuPlot876",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "path": (
-                    parse_option(
-                        self._name + ".camera.path",
-                        str,
-                        "/Streaming/Channels/102",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
+            config = {"ip": (parse_option(self._name + ".camera.ip",str,"192.168.1.64",errors=_errors,**kwargs)),
+            "port": (parse_option(self._name + ".camera.port", int, 554, errors=_errors, **kwargs)),
+            "user": (parse_option(self._name + ".camera.user",str,"user1",errors=_errors,**kwargs)),
+                "password": (parse_option(self._name + ".camera.password",str,"HaikuPlot876",errors=_errors,**kwargs)),
+                "path": (parse_option(self._name + ".camera.path",str,"/Streaming/Channels/102",errors=_errors,**kwargs)),
                 "height": out_height,
                 "width": out_width,
                 "framerate": framerate,
@@ -140,11 +103,7 @@ class ConfigurableImageGstSource(Configurable):
         else:
             _type = "h264/udp"
             config = {
-                "port": (
-                    parse_option(
-                        self._name + ".camera.port", int, 5000, errors=_errors, **kwargs
-                    )
-                ),
+                "port": (parse_option(self._name + ".camera.port", int, 5000, errors=_errors, **kwargs)),
                 "height": out_height,
                 "width": out_width,
                 "framerate": framerate,
@@ -158,7 +117,7 @@ class ConfigurableImageGstSource(Configurable):
             self._name, shape=self._shape, command=_command
         )
         self._sink.add_listener(self._publish)
-        logger.info("Gst '{}' command={}".format(self._name, _command))
+        # logger.info("Gst '{}' command={}".format(self._name, _command))
         return _errors
 
 
