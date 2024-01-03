@@ -107,9 +107,7 @@ class RunDrawMapPython(tornado.web.RequestHandler):
         with concurrent.futures.ProcessPoolExecutor() as executor:
             future = executor.submit(run_python_script, script_name)
             # Use the `await` keyword to asynchronously wait for the result.
-            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(
-                None, future.result
-            )
+            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(None, future.result)
 
             # Print the list before sending it to the JavaScript function.
             logger.info("Python script result: ", result_list)
@@ -164,9 +162,7 @@ class Index(tornado.web.RequestHandler):
 
         if user_agent.is_mobile:
             # if user is on mobile, redirect to the mobile page
-            logger.info(
-                "User is operating through mobile phone. Redirecting to the mobile UI"
-            )
+            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
             self.redirect("/mobile_controller_ui")
         else:
             # else render the index page
@@ -212,18 +208,14 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
-    parser.add_argument(
-        "--config", type=str, default="/config", help="Config directory path."
-    )
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     parser.add_argument(
         "--routes",
         type=str,
         default="/routes",
         help="Directory with the navigation routes.",
     )
-    parser.add_argument(
-        "--sessions", type=str, default="/sessions", help="Sessions directory."
-    )
+    parser.add_argument("--sessions", type=str, default="/sessions", help="Sessions directory.")
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
@@ -242,12 +234,8 @@ def main():
     application = TeleopApplication(event=quit_event, config_dir=args.config)
     application.setup()
 
-    camera_front = CameraThread(
-        url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event
-    )
-    camera_rear = CameraThread(
-        url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event
-    )
+    camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
+    camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(
         url="ipc:///byodr/pilot.sock",
         topic=b"aav/pilot/output",
@@ -277,12 +265,8 @@ def main():
         ),
         hz=16,
     )
-    log_application = LogApplication(
-        _mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config
-    )
-    package_application = PackageApplication(
-        _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
-    )
+    log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
+    package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
@@ -301,13 +285,9 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_to_coms_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input"
-    )
+    teleop_to_coms_publisher = JSONPublisher(url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input")
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
-    chatter = JSONPublisher(
-        url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter"
-    )
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(
         urls=[
             "ipc:///byodr/pilot_c.sock",
@@ -334,8 +314,8 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
-        
-        if cmd.get('throttle') != 0:
+
+        if cmd.get("throttle") != 0:
             # logger.info(f"Command to be send to Coms: {cmd}")
             teleop_to_coms_publisher.publish(cmd)
 
@@ -384,11 +364,7 @@ def main():
                 (
                     r"/ws/log",
                     MessageServerSocket,
-                    dict(
-                        fn_state=(
-                            lambda: (pilot.peek(), vehicle.peek(), inference.peek())
-                        )
-                    ),
+                    dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek()))),
                 ),
                 (
                     r"/ws/cam/front",
@@ -403,9 +379,7 @@ def main():
                 (
                     r"/ws/nav",
                     NavImageHandler,
-                    dict(
-                        fn_get_image=(lambda image_id: get_navigation_image(image_id))
-                    ),
+                    dict(fn_get_image=(lambda image_id: get_navigation_image(image_id))),
                 ),
                 (
                     # Get or save the options for the user
@@ -437,7 +411,9 @@ def main():
                     web.StaticFileHandler,
                     {"path": os.path.join(os.path.sep, "app", "htm", "static")},
                 ),
-            ]
+            ],  # Disable request logging with an empty lambda expression
+            # Always restart after you change path of folder/file
+            log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)
         port_number = 8080
