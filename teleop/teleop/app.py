@@ -29,7 +29,6 @@ from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
-from .getSSID import fetch_ssid
 
 logger = logging.getLogger(__name__)
 
