@@ -163,14 +163,13 @@ function handleTriangleMove(y) {
 }
 
 function sendJSONCommand() {
-  intervalId = setInterval(() => {
-    if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-      CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-    } else {
-      console.error('WebSocket is not open. Unable to send data.');
-    }
-    // High interval to overcome if the user is controlling from the normal UI with a controller (PS4)
-  }, 1);
+  if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
+    CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+  } else {
+    console.error('WebSocket is not open. Unable to send data.');
+  }
+
+  setTimeout(sendJSONCommand, 1); // or adjust the delay as needed
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS,sendJSONCommand };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
