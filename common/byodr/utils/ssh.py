@@ -397,8 +397,15 @@ config interface '{self.network_name}'
                     continue
 
                 if "option network" in line and "wan" in line:
-                    updated_line = re.sub(r"option network '(.+?)'", f"option network '\\1 {self.network_name}'", line)
-                    updated_config += updated_line + "\n"
+                    # Check if self.network_name is already in the line
+                    if self.network_name not in line:
+                        # pattern=> what to replace, replacement=> with what, original_string=> where
+                        # This is a RegEx for both pattern and replacement for it.
+                        updated_line = re.sub(r"option network '(.+?)'", f"option network '\\1 {self.network_name}'", line)
+                        updated_config += updated_line + "\n"
+                    else:
+                        # If self.network_name is already there, just add the line as is
+                        updated_config += line + "\n"
                     continue
 
                 updated_config += line + "\n"
@@ -406,7 +413,7 @@ config interface '{self.network_name}'
                 self.router._execute_ssh_command(command=None, file_path=firewall_config_path, file_contents=updated_config)
             except Exception as e:
                 logger.info(f"An error occurred while updating the firewall config with {self.network_name} network: {e}")
-            finally:
+            else:
                 self.router._execute_ssh_command("wifi reload")
                 logger.info(f"updated the firewall config with the new network {self.network_name}")
 
