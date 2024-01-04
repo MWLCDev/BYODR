@@ -293,7 +293,7 @@ class Router:
         def __init__(self, router_instance):
             self.router = router_instance
 
-        def driver(self, network_name, network_mac, network_forth_octet=150):
+        def driver(self, network_name, network_mac, skip_init, network_forth_octet):
             self.network_name = network_name
             self.network_mac = network_mac
             # Will be used when joining the network of target segment
@@ -301,6 +301,7 @@ class Router:
             # The third octet for target network
             self.network_router_third_octet = None
             try:
+                if not self.skip_init:
                 # Step 1: Add the new network to the interface and network config files
                 self.__connect_to_network()
                 # Step 2: Add the new network to the firewall
@@ -313,6 +314,7 @@ class Router:
                 self.current_router_client_address = f"192.168.{self.network_router_third_octet}.{self.network_forth_octet}"
                 # Step 5: Add the updated config to interface
                 self.__update_interface_config()
+                else:
                 # Step 6: SSH to target router and add the static router to the current router
                 self.__add_static_route()
             except Exception as e:
@@ -516,7 +518,9 @@ config route '1'
 
     def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
         # Delegating the call to the ConnectToNetwork instance
-        return self.wifi_connect.driver(network_name, network_mac, network_forth_octet)
+        # It will check if the interface already exists
+                return self.wifi_connect.driver(network_name, network_mac, True, network_forth_octet)
+        return self.wifi_connect.driver(network_name, network_mac, False, network_forth_octet)
 
     def delete_network(self, keyword):
         """Remove network from `wireless.config` or `network.config`
