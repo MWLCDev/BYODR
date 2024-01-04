@@ -365,7 +365,6 @@ config interface '{self.network_name}'
         option proto 'dhcp'
         option metric '5'
         option area_type 'wan'
-        option device 'wlan0'
         option name '{self.network_name}'
         option force_link '0'
 """
