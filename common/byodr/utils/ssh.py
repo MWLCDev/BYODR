@@ -386,37 +386,6 @@ config interface '{self.network_name}'
             finally:
                 self.router._execute_ssh_command("wifi reload")
 
-        def __update_firewall_config(self):
-            firewall_config_path = "/etc/config/firewall"
-            updated_config = ""
-
-            current_config = self.router._execute_ssh_command(f"cat {firewall_config_path}")
-            for line in current_config.split("\n"):
-                if "config zone" in line and "'3'" in line:
-                    updated_config += line + "\n"
-                    continue
-
-                if "option network" in line and "wan" in line:
-                    # Check if self.network_name is already in the line
-                    if self.network_name not in line:
-                        # pattern=> what to replace, replacement=> with what, original_string=> where
-                        # This is a RegEx for both pattern and replacement for it.
-                        updated_line = re.sub(r"option network '(.+?)'", f"option network '\\1 {self.network_name}'", line)
-                        updated_config += updated_line + "\n"
-                    else:
-                        # If self.network_name is already there, just add the line as is
-                        updated_config += line + "\n"
-                    continue
-
-                updated_config += line + "\n"
-            try:
-                self.router._execute_ssh_command(command=None, file_path=firewall_config_path, file_contents=updated_config)
-            except Exception as e:
-                logger.info(f"An error occurred while updating the firewall config with {self.network_name} network: {e}")
-            else:
-                self.router._execute_ssh_command("wifi reload")
-                logger.info(f"updated the firewall config with the new network {self.network_name}")
-
         def __get_IP_new_network(self):
             """Get the third octet of IP that is being used in the new segment's network after joining it as a client"""
             network_router_third_octet_command = "ifconfig wlan0-1 | grep 'inet addr' | awk '{print $2}' | cut -d':' -f2 | cut -d'.' -f3"
@@ -513,6 +482,37 @@ config interface '{self.network_name}'
                 logger.info(f"Finished adding static interface config for {self.network_name} network")
                 logger.info(f"Will restart the current router.")
                 self.router._execute_ssh_command("reboot")
+
+        def __update_firewall_config(self):
+            firewall_config_path = "/etc/config/firewall"
+            updated_config = ""
+
+            current_config = self.router._execute_ssh_command(f"cat {firewall_config_path}")
+            for line in current_config.split("\n"):
+                if "config zone" in line and "'3'" in line:
+                    updated_config += line + "\n"
+                    continue
+
+                if "option network" in line and "wan" in line:
+                    # Check if self.network_name is already in the line
+                    if self.network_name not in line:
+                        # pattern=> what to replace, replacement=> with what, original_string=> where
+                        # This is a RegEx for both pattern and replacement for it.
+                        updated_line = re.sub(r"option network '(.+?)'", f"option network '\\1 {self.network_name}'", line)
+                        updated_config += updated_line + "\n"
+                    else:
+                        # If self.network_name is already there, just add the line as is
+                        updated_config += line + "\n"
+                    continue
+
+                updated_config += line + "\n"
+            try:
+                self.router._execute_ssh_command(command=None, file_path=firewall_config_path, file_contents=updated_config)
+            except Exception as e:
+                logger.info(f"An error occurred while updating the firewall config with {self.network_name} network: {e}")
+            else:
+                self.router._execute_ssh_command("wifi reload")
+                logger.info(f"updated the firewall config with the new network {self.network_name}")
 
         def __add_static_route(self):
             sleeping_time = 1
