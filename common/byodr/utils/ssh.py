@@ -296,30 +296,35 @@ class Router:
         def driver(self, network_name, network_mac, skip_init, network_forth_octet):
             self.network_name = network_name
             self.network_mac = network_mac
+            # Skip the initialization of connection from the current router and go to making the static route immediately
+            self.skip_init = skip_init
             # Will be used when joining the network of target segment
             self.network_forth_octet = network_forth_octet
             # The third octet for target network
-            self.network_router_third_octet = None
+            self.network_router_third_octet = 2
+            # Full IP of the target router
+            self.network_router_ip = None
+            # The IP address of current router when it joins the target router as a client
+            self.current_router_client_address = None
             try:
                 if not self.skip_init:
-                # Step 1: Add the new network to the interface and network config files
-                self.__connect_to_network()
-                # Step 2: Add the new network to the firewall
-                self.__update_firewall_config()
-                # Step 3: Get the IP of current router when it joins as a client to the target segment's router
-                self.__get_IP_new_network()
-                # Step 4: Remove the DHCP connection
-                self.__delete_interface_DHCP_config()
-                # The IP address of current router when it joins the target router as a client
-                self.current_router_client_address = f"192.168.{self.network_router_third_octet}.{self.network_forth_octet}"
-                # Step 5: Add the updated config to interface
-                self.__update_interface_config()
+                    # Step 1: Add the new network to the interface and network config files
+                    self.__connect_to_network()
+                    # Step 2: Add the new network to the firewall
+                    self.__update_firewall_config()
+                    # Step 3: Get the IP of current router when it joins as a client to the target segment's router
+                    self.__get_IP_new_network()
+                    # Step 4: Remove the DHCP connection
+                    self.__delete_interface_DHCP_config()
+                    # Step 5: Add the updated config to interface
+                    self.__update_interface_config()
                 else:
-                # Step 6: SSH to target router and add the static router to the current router
-                self.__add_static_route()
+                    self.__get_IP_new_network()
+                    # Step 6: SSH to target router and add the static router to the current router
+                    self.__add_static_route()
             except Exception as e:
                 logger.info(f"There was a problem while trying to connect to {self.network_name}: {e}")
-            finally:
+            else:
                 logger.info(f"connection to {self.network_name} has been done successfully.")
 
         def __connect_to_network(self):
