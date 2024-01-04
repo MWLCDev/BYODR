@@ -166,6 +166,7 @@ class Router:
     class WifiNetworkScanner:
         def __init__(self, router):
             self.router = router
+            self.networks = None
 
         def fetch_wifi_networks(self):
             """
@@ -173,16 +174,17 @@ class Router:
             Parses the output from the 'iwlist wlan0 scan' command to extract network details.
 
             Returns:
-                list of dict: A list containing information about each network, including (ESSID, MAC, channel, security, IE information).
+                list of dict: A list containing information about each network, including (ESSID and MAC).
             """
             output = self.router._execute_ssh_command("iwlist wlan0 scan")
-            # print(output)
+            self.parse_iwlist_output(output)
             scanned_networks = self.parse_iwlist_output(output)
+
             # DEBUGGING
-            # print(json.dumps(scanned_networks, indent=4))  # Pretty print the JSON
-            # for network in scanned_networks:
+            print(json.dumps(self.networks, indent=4))  # Pretty print the JSON
+            # for network in self.networks:
             #    print(network.get("ESSID"), network.get("MAC"), end="\n")
-            return scanned_networks
+            return self.networks
 
         def parse_iwlist_output(self, output):
             """Parses the output from the 'iwlist wlan0 scan' command.
@@ -190,7 +192,7 @@ class Router:
                   output (str): The raw output string from the 'iwlist wlan0 scan' command.
 
             Returns:
-                list of dict: A list of dictionaries, each representing a network with information such as (ESSID, MAC, channel, security, and IE info).
+                list of dict: A list of dictionaries, each representing a network with information such as (ESSID and MAC).
             """
             networks = []
             current_network = {}
@@ -203,89 +205,28 @@ class Router:
                     current_network["MAC"] = line.split()[-1]
                 elif "ESSID:" in line:
                     current_network["ESSID"] = line.split('"')[1]
-                elif "Channel:" in line:
-                    current_network["Channel"] = line.split(":")[-1]
-                elif line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                    security_info = self.extract_security_info(line, output.splitlines())
-                    current_network["Security"] = security_info
-                elif line.strip().startswith("IE: Unknown"):
-                    if "IE Information" not in current_network:
-                        current_network["IE Information"] = {}
 
-                    ie_data = line.strip().split(": ", 2)[-1]
-                    ie_key, ie_value = self.parse_ie_data(ie_data)
-                    if ie_key:
-                        current_network["IE Information"][ie_key] = ie_value
-
-            networks = self.filter_networks_by_ssid(networks)
             # Reorder the dictionary to show ESSID first
             ordered_networks = []
             for network in networks:
-                ordered_network = {k: network[k] for k in ["ESSID", "MAC", "Channel", "Security", "IE Information"] if k in network}
+                ordered_network = {k: network[k] for k in ["ESSID", "MAC"] if k in network}
                 ordered_networks.append(ordered_network)
 
-            return ordered_networks
+            self.networks = ordered_networks
 
         def filter_networks_by_ssid(self, networks):
-            """Filters networks by SSID prefixes.
-
-            Args:
-                networks (list of dict): List of network dictionaries.
-
-            Returns:
-                list of dict: Filtered networks with SSID starting with 'MWLC_' or 'CP_'.
             """
 
-            filtered_networks = [net for net in networks if net["ESSID"].startswith(("MWLC_", "CP_"))]
-            return filtered_networks
-
-        def parse_ie_data(self, ie_data):
-            """Parses and interprets a single Information Element (IE) data entry.
 
             Args:
                 ie_data (str): A string representing an IE data entry.
 
             Returns:
                 tuple: A key-value pair representing the IE type and its data.
-                Returns (None, None) if the IE type is unrecognized.
-            """
-            # This function can be expanded to interpret more IE types
-            ie_type = ie_data[:2]
-            if ie_type == "00":
-                return "Vendor Specific IE", ie_data[2:]
-            elif ie_type == "01":
-                return "Supported Rates", ie_data[2:]
-            elif ie_type == "03":
-                return "DS Parameter Set (Channel Information)", ie_data[2:]
-            elif ie_type == "07":
-                return "Country Information", ie_data[2:]
-
-            return None, None  # Return None if IE type is not recognized
-
-        def extract_security_info(self, start_line, all_lines):
-            """Returns a JSON for the security information in the security line of scanned networks
-
-            Args:
-                start_line (str): The line where security information starts in the output.
-                all_lines (list of str): All lines of the scan output.
-
-            Returns:
-                dict: A dictionary with security information such as WPA2 version, group cipher, pairwise ciphers, and authentication suites.
             """
             security_info = {}
             index = all_lines.index(start_line)
             for line in all_lines[index:]:
-                if line.strip().startswith("IE: IEEE 802.11i/WPA2 Version 1"):
-                    security_info["WPA2 Version"] = line.split(":")[-1].strip()
-                elif line.strip().startswith("Group Cipher"):
-                    security_info["Group Cipher"] = line.split(":")[-1].strip()
-                elif line.strip().startswith("Pairwise Ciphers"):
-                    security_info["Pairwise Ciphers"] = line.split(":")[-1].strip()
-                elif line.strip().startswith("Authentication Suites"):
-                    security_info["Authentication Suites"] = line.split(":")[-1].strip()
-                elif line.strip().startswith("IE:"):
-                    break  # Stop at the next IE
-            return security_info
 
     def get_wifi_networks(self):
         return self.wifi_scanner.fetch_wifi_networks()
@@ -311,14 +252,14 @@ class Router:
                 if not self.skip_init:
                     # Step 1: Add the new network to the interface and network config files
                     self.__connect_to_network()
-                    # Step 2: Add the new network to the firewall
-                    self.__update_firewall_config()
-                    # Step 3: Get the IP of current router when it joins as a client to the target segment's router
+                    # Step 2: Get the IP of current router when it joins as a client to the target segment's router
                     self.__get_IP_new_network()
-                    # Step 4: Remove the DHCP connection
+                    # Step 3: Remove the DHCP connection
                     self.__delete_interface_DHCP_config()
-                    # Step 5: Add the updated config to interface
+                    # Step 4: Add the updated config to interface
                     self.__update_interface_config()
+                    # Step 5: Add the new network to the firewall
+                    self.__update_firewall_config()
                 else:
                     self.__get_IP_new_network()
                     # Step 6: SSH to target router and add the static router to the current router
@@ -553,8 +494,6 @@ config route '1'
                 logger.info(f"An error occurred while making static route for {self.network_name} network: {e}")
             else:
                 logger.info(f"Finished processing static route for {self.network_name} network")
-
-        # Add ping from the target router to the current nano
 
     def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
         """Delegating the call to the ConnectToNetwork instance"""
