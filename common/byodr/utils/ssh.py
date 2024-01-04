@@ -178,7 +178,7 @@ class Router:
             """
             output = self.router._execute_ssh_command("iwlist wlan0 scan")
             self.parse_iwlist_output(output)
-            scanned_networks = self.parse_iwlist_output(output)
+            self.filter_teltonika_networks()
 
             # DEBUGGING
             print(json.dumps(self.networks, indent=4))  # Pretty print the JSON
@@ -214,19 +214,19 @@ class Router:
 
             self.networks = ordered_networks
 
-        def filter_networks_by_ssid(self, networks):
+        def filter_teltonika_networks(self):
             """
-
+            Filters the list of networks to include only those with MAC addresses belonging to Teltonika.
 
             Args:
-                ie_data (str): A string representing an IE data entry.
+                networks (list of dict): List of networks to be filtered.
 
             Returns:
-                tuple: A key-value pair representing the IE type and its data.
+                list of dict: Filtered list of networks.
             """
-            security_info = {}
-            index = all_lines.index(start_line)
-            for line in all_lines[index:]:
+            teltonika_prefixes = ["20:97:27", "00:1E:42"]
+            filtered_networks = [network for network in self.networks if any(network["MAC"].startswith(prefix) for prefix in teltonika_prefixes)]
+            self.networks = filtered_networks
 
     def get_wifi_networks(self):
         return self.wifi_scanner.fetch_wifi_networks()
