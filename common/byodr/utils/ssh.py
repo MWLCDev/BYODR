@@ -556,9 +556,17 @@ config route '1'
                 logger.info(f"Finished processing static route for {self.network_name} network")
 
     def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
-        # Delegating the call to the ConnectToNetwork instance
+        """Delegating the call to the ConnectToNetwork instance"""
         # It will check if the interface already exists
+        # If the interface exists then it will make the static route from the target router
+
+        file_content = self._execute_ssh_command(f"cat /etc/config/network")
+        sections = file_content.split("\n\n")
+        for section in sections:
+            if f"config interface '{network_name}'" in section:
+                logger.info(f"{network_name} was found. Will make the static route.")
                 return self.wifi_connect.driver(network_name, network_mac, True, network_forth_octet)
+
         return self.wifi_connect.driver(network_name, network_mac, False, network_forth_octet)
 
     def delete_network(self, keyword):
