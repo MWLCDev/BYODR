@@ -540,14 +540,14 @@ config route '1'
 
             try:
                 # Retrieve current network configuration
-                current_network_config = self.router._execute_ssh_command("cat /etc/config/network")
+                current_network_config = self.router._execute_ssh_command(command="cat /etc/config/network", ip=self.network_router_ip)
 
                 # Check if the static route configuration already exists
                 if static_route_config.strip() not in current_network_config:
                     # Append the configuration if it doesn't exist
                     commands = [f'echo "{static_route_config}" >> /etc/config/network', "wifi reload"]
                     for command in commands:
-                        self.router._execute_ssh_command(command)
+                        self.router._execute_ssh_command(command, ip=self.network_router_ip)
                 else:
                     logger.info(f"Static route configuration for {self.network_name} already exists.")
             except Exception as e:
