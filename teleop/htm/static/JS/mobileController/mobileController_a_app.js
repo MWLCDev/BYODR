@@ -1,6 +1,6 @@
 import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
 import { Dot } from "/JS/mobileController/mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS }
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "/JS/mobileController/mobileController_c_logic.js"
 
 import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
@@ -51,15 +51,6 @@ function startOperating(event) {
   handleTriangleMove(event.touches[0].clientY);
 }
 
-function sendJSONCommand() {
-  if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-    CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-  } else {
-    console.error('WebSocket is not open. Unable to send data.');
-  }
-
-  setTimeout(sendJSONCommand, 1); // or adjust the delay as needed
-}
 
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)

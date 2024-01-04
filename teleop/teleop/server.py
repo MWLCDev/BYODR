@@ -61,25 +61,31 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
             logger.info("Mobile viewer {} disconnected.".format(self.request.remote_ip))
 
     def on_message(self, mobileCommand):
-        msg = json.loads(mobileCommand)
-        _response = json.dumps(dict(control="viewer"))
-        if self._is_operator():
-            _response = json.dumps(dict(control="operator"))
-            msg["time"] = timestamp()  # add time stamp to the sent command
-            self._fn_control(msg)
-        else:  # This block might not be needed if every user is always an operator
-            if msg.get("_operator") == "force":
-                self.operators.clear()
-                self.operators.add(self)
-                logger.info(
-                    "Mobile viewer {} took over control and is now operator.".format(
-                        self.request.remote_ip
-                    )
-                )
         try:
+            msg = json.loads(mobileCommand)
+            _response = json.dumps(dict(control="viewer"))
+            if self._is_operator():
+                _response = json.dumps(dict(control="operator"))
+                msg["time"] = timestamp()  # add timestamp to the sent command
+                self._fn_control(msg)
+            else:  # This block might not be needed if every user is always an operator
+                if msg.get("_operator") == "force":
+                    self.operators.clear()
+                    self.operators.add(self)
+                    logger.info(
+                        "Mobile viewer {} took over control and is now operator.".format(
+                            self.request.remote_ip
+                        )
+                    )
+
+            # Attempt to send a message
             self.write_message(_response)
-        except websocket.WebSocketClosedError:
-            pass
+        except tornado.websocket.WebSocketClosedError:
+            logger.error("Attempt to send a message on a closed WebSocket.")
+            # Immediately return from the method to avoid further actions
+            return
+        except Exception as e:
+            logger.error("Error in on_message: {}".format(str(e)))
 
 
 class ControlServerSocket(websocket.WebSocketHandler):
