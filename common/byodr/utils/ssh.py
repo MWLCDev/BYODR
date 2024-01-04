@@ -493,6 +493,7 @@ config interface '{self.network_name}'
         option proto 'static'
         option name '{self.network_name}'
         option gateway '{self.network_router_ip}'
+        option device 'wlan0'
 """
             try:
                 # Retrieve current network configuration
