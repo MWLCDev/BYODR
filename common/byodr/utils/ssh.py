@@ -75,7 +75,7 @@ class Router:
 
             # Execute the SSH command
             stdin, stdout, stderr = client.exec_command(command)
-            result = stdout.read().decode()
+            result = stdout.read().decode().strip()
             error = stderr.read().decode()
 
             client.close()
