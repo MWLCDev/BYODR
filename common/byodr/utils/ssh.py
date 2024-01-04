@@ -147,6 +147,21 @@ class Router:
         sorted_devices = sorted(devices, key=lambda x: ip_address(x["ip"]))
         print("Devices found: ", sorted_devices)
 
+    @staticmethod
+    def check_network_connection(target_ip):
+        response = ping(target_ip, count=6, timeout=1, verbose=False)
+
+        if response.success():
+            # Calculate the total round-trip time of successful responses
+            total_time = sum(resp.time_elapsed for resp in response if resp.success)
+            # Calculate the average round-trip time (in milliseconds)
+            average_time_ms = (total_time / len([resp for resp in response if resp.success])) * 1000
+            logger.info(f"Success: Device at {target_ip} is reachable. Average speed: {average_time_ms:.2f}ms")
+            return True
+        else:
+            logger.info(f"Failure: Device at {target_ip} is not reachable.")
+            return False
+
     class WifiNetworkScanner:
         def __init__(self, router):
             self.router = router
