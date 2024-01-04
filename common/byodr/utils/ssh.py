@@ -4,6 +4,7 @@ from ipaddress import ip_address
 import paramiko
 import traceback
 import subprocess
+from pythonping import ping
 
 # Declaring the logger
 logging.basicConfig(
@@ -480,7 +481,6 @@ config interface '{self.network_name}'
 
         def __update_interface_config(self):
             """Update /etc/config/network with the new config that has a static ip in it"""
-            self.network_router_ip = ".".join(self.router.ip.split(".")[:2] + [str(self.network_router_third_octet)] + self.router.ip.split(".")[3:])
 
             interface_static_config = f"""\n
 config interface '{self.network_name}'
@@ -509,8 +509,10 @@ config interface '{self.network_name}'
                     logger.info(f"Static IP configuration for {self.network_name} already exists.")
             except Exception as e:
                 logger.info(f"An error occurred while updating interface static config for {self.network_name} network: {e}")
-            finally:
-                logger.info(f"Finished processing interface static config for {self.network_name} network")
+            else:
+                logger.info(f"Finished adding static interface config for {self.network_name} network")
+                logger.info(f"Will restart the current router.")
+                self.router._execute_ssh_command("reboot")
 
         def __add_static_route(self):
             sleeping_time = 1
@@ -520,9 +522,6 @@ config interface '{self.network_name}'
                 time.sleep(sleeping_time)
                 sleeping_time += 1
             # Sleeping time until the current router pends all the changes
-            sleeping_time = 60
-            logger.info(f"will wait {sleeping_time} seconds to make the static route to {self.network_name}. The connection needs to be working first")
-            time.sleep(sleeping_time)
 
             # Gets the IP until the third dot
             network_prefix = ".".join(self.router.ip.split(".")[:3]) + "."
@@ -552,8 +551,10 @@ config route '1'
                     logger.info(f"Static route configuration for {self.network_name} already exists.")
             except Exception as e:
                 logger.info(f"An error occurred while making static route for {self.network_name} network: {e}")
-            finally:
+            else:
                 logger.info(f"Finished processing static route for {self.network_name} network")
+
+        # Add ping from the target router to the current nano
 
     def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
         """Delegating the call to the ConnectToNetwork instance"""
