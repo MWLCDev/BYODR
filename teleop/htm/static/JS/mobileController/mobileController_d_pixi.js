@@ -25,7 +25,9 @@ function redraw(yOffset = 0) {
   app.stage.addChild(bottomTriangle.graphics);
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  if (CTRL_STAT.isWebSocketOpen) {
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  }
 }
 
 export { app, redraw }

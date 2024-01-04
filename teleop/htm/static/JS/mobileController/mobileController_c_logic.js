@@ -12,6 +12,7 @@ function initializeWS() {
   CTRL_STAT.websocket.onopen = function (event) {
     console.log('Mobile controller (WS) connection opened');
     CTRL_STAT.stateErrors = ""
+    CTRL_STAT.isWebSocketOpen = true;
   };
 
   // Check the respond from the endpoint. If the user is operator or viewer 
@@ -32,6 +33,7 @@ function initializeWS() {
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
     CTRL_STAT.stateErrors = "connectionError"
+    CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
   console.log('Created Mobile controller (WS)');
 }
@@ -162,14 +164,21 @@ function handleTriangleMove(y) {
   redraw(yOffset);
 }
 
+
+
 function sendJSONCommand() {
   if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
     CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
+    CTRL_STAT.isWebSocketOpen = true; // Set the flag to true when WebSocket is open
   } else {
-    console.error('WebSocket is not open. Unable to send data.');
+    if (CTRL_STAT.isWebSocketOpen) {
+      // Log the error only once when the WebSocket is first closed
+      console.error('WebSocket is not open. Unable to send data.');
+      CTRL_STAT.isWebSocketOpen = false; // Reset the flag
+    }
   }
 
-  setTimeout(sendJSONCommand, 1); // or adjust the delay as needed
+  setTimeout(sendJSONCommand, 1);
 }
 
 export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
