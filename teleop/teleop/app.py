@@ -6,11 +6,11 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
 import user_agents  # Check in the request header if it is a phone or not
+import time
 
 
 from concurrent.futures import ThreadPoolExecutor
@@ -256,6 +256,12 @@ def main():
         event=quit_event,
         hwm=20,
     )
+    following = json_collector(
+        url="ipc:///byodr/following.sock",
+        topic=b"aav/following/controls",
+        event=quit_event,
+        hwm=20,
+    )
     vehicle = json_collector(
         url="ipc:///byodr/vehicle.sock",
         topic=b"aav/vehicle/state",
@@ -293,6 +299,7 @@ def main():
         camera_front,
         camera_rear,
         pilot,
+        following,
         vehicle,
         inference,
         logbox_thread,
@@ -303,9 +310,12 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
+    teleop_to_coms_publisher = JSONPublisher(
+        url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input"
     )
+
+    start_follow_publisher = JSONPublisher(url="ipc:///byodr/startfollow.sock", topic="aav/startfollow/input")
+
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(
         url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter"
@@ -335,8 +345,16 @@ def main():
 
     def teleop_publish(cmd):
         # We are the authority on route state.
-        cmd["navigator"] = dict(route=route_store.get_selected_route())
-        teleop_publisher.publish(cmd)
+        #cmd["navigator"] = dict(route=route_store.get_selected_route())
+        # request = "Do the follow thing"
+        # start_follow_publisher.publish(dict(data=request))
+
+        cmd = following.get()
+        # cmd_filtered = cmd.get("data")
+
+        # logger.info(f"Command to be send to Coms: {cmd[0]}")
+        teleop_to_coms_publisher.publish(cmd[0])
+        #for some reason, this prints with an increasing delay
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())

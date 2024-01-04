@@ -9,33 +9,33 @@ volumes:
   volume_byodr_sockets:
   volume_byodr_sessions:
 services:
-  zerotier:
-    cpuset: '0'
-    image: zyclonite/zerotier:1.6.6
-    restart: always
-    network_mode: host
-    devices:
-      - '/dev/net/tun'
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - CAP_SYS_RAWIO
-    volumes:
-      - volume_zerotier_config:/var/lib/zerotier-one:rw
-  wireguard:
-    cpuset: '0'
-    image: masipcat/wireguard-go
-    container_name: wireguard
-    restart: always
-    network_mode: host
-    devices:
-      - '/dev/net/tun'
-    cap_add:
-      - SYS_ADMIN
-      - NET_ADMIN
-      - CAP_SYS_RAWIO
-    volumes:
-      - volume_wireguard_config:/etc/wireguard:rw
+  # zerotier:
+  #   cpuset: '0'
+  #   image: zyclonite/zerotier:1.6.6
+  #   restart: always
+  #   network_mode: host
+  #   devices:
+  #     - '/dev/net/tun'
+  #   cap_add:
+  #     - SYS_ADMIN
+  #     - NET_ADMIN
+  #     - CAP_SYS_RAWIO
+  #   volumes:
+  #     - volume_zerotier_config:/var/lib/zerotier-one:rw
+  # wireguard:
+  #   cpuset: '0'
+  #   image: masipcat/wireguard-go
+  #   container_name: wireguard
+  #   restart: always
+  #   network_mode: host
+  #   devices:
+  #     - '/dev/net/tun'
+  #   cap_add:
+  #     - SYS_ADMIN
+  #     - NET_ADMIN
+  #     - CAP_SYS_RAWIO
+  #   volumes:
+  #     - volume_wireguard_config:/etc/wireguard:rw
   httpd:
     cpuset: '0'
     build:
@@ -47,32 +47,32 @@ services:
     stop_signal: SIGKILL
     volumes:
       - volume_byodr_config:/config:rw
-  ftpd:
-    cpuset: '0'
-    build:
-      context: .
-      dockerfile: ftpd/Dockerfile
-    restart: always
-    command: ['python3', 'wrap.py']
-    stop_signal: SIGKILL
-    ports:
-      - '21:21'
-      - '30000-30009:30000-30009'
-    volumes:
-      - volume_ftpd_config:/etc/pureftpd:rw
-      - volume_byodr_sessions:/home/ftpuser:rw
-  rosnode:
-    cpuset: '0'
-    build:
-      context: .
-      dockerfile: rosnode/Dockerfile
-    restart: always
-    command: ['python3', 'app.py', '--name', 'rosnode']
-    network_mode: host
-    stop_signal: SIGKILL
-    volumes:
-      - volume_byodr_sockets:/byodr:rw
-      - volume_byodr_config:/config:ro
+  # ftpd:
+  #   cpuset: '0'
+  #   build:
+  #     context: .
+  #     dockerfile: ftpd/Dockerfile
+  #   restart: always
+  #   command: ['python3', 'wrap.py']
+  #   stop_signal: SIGKILL
+  #   ports:
+  #     - '21:21'
+  #     - '30000-30009:30000-30009'
+  #   volumes:
+  #     - volume_ftpd_config:/etc/pureftpd:rw
+  #     - volume_byodr_sessions:/home/ftpuser:rw
+  # rosnode:
+  #   cpuset: "0"
+  #   build:
+  #     context: .
+  #     dockerfile: rosnode/Dockerfile
+  #   restart: always
+  #   command: ["python3", "app.py", "--name", "rosnode"]
+  #   network_mode: host
+  #   stop_signal: SIGKILL
+  #   volumes:
+  #     - volume_byodr_sockets:/byodr:rw
+  #     - volume_byodr_config:/config:ro
   mongodb:
     cpuset: '0'
     build:
@@ -146,3 +146,40 @@ services:
     volumes:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:ro
+      - volume_byodr_sessions:/sessions:rw
+  
+  coms:
+    cpuset: "3"
+    build:
+      context: .
+      dockerfile: coms/Dockerfile
+    restart: always
+    command:
+      [
+        "python3",
+        "-m",
+        "coms.app",
+        "--name",
+        "coms",
+      ]
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+    network_mode: "host"
+
+  following:
+    cpuset: '1'
+    build:
+      context: .
+      dockerfile: following/Dockerfile
+    restart: always
+    # There is no need to start app,p from here. Docker image for service does start it already
+    # command: ['python3', 'app.py', '--name', 'following']
+    network_mode: host
+    # Means it will kill the image immediatly and won't wait for gracefull close
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
