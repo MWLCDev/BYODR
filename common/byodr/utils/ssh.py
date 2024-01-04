@@ -513,6 +513,12 @@ config interface '{self.network_name}'
                 logger.info(f"Finished processing interface static config for {self.network_name} network")
 
         def __add_static_route(self):
+            sleeping_time = 1
+            # self.network_router_ip = "192.168.2.1"
+            while not self.router.check_network_connection(self.network_router_ip):
+                logger.info(f"Retrying in {sleeping_time}seconds")
+                time.sleep(sleeping_time)
+                sleeping_time += 1
             # Sleeping time until the current router pends all the changes
             sleeping_time = 60
             logger.info(f"will wait {sleeping_time} seconds to make the static route to {self.network_name}. The connection needs to be working first")
