@@ -1,6 +1,8 @@
 import socket
 import logging
 import time
+import numpy as np
+import threading
 from byodr.utils.ssh import Nano
 nano_ip = Nano.get_ip_address()
 
@@ -11,58 +13,104 @@ log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 
-# Declaring the info of the server
-SERVER_PORT = 1111
-SERVER_IP = nano_ip # Change to fit the lead's IP
-FORMAT = "utf-8"
+
+class Segment_client(threading.Thread):
+
+    # Method that is called after the class is being initiated, to give it its values
+    def __init__(self, arg_server_ip, arg_server_port, arg_timeout):
+        super(Segment_client, self).__init__()
+        
+        # Giving the class the values from the class call
+        self.server_ip = arg_server_ip # The IP of the server that the client will connect to
+        self.server_port = arg_server_port # The port of the server that the client will connect to
+        self.timeout = arg_timeout # Maybe 100ms
+        self.reply_from_server = "" 
+        self.msg_to_send = "I am the client"
+        self.socket_initialized = False # Variable that keeps track if we have a socket to a server running
+
+        # The client socket that will connect to the server
+        self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 
-# Sending data from this segment to a follower segment
-# This function will be called after a follower segment connects to the server that starts at line 80
-def receive_data(function_client_socket):
-    
+    # Establish the connection to the server
+    def connect_to_server(self):
+            
+            # Try to reconnect to the server until we connect
+            while True:
+                try:
+                    # Close the current socket, if it exists
+                    self.close_connection()
 
-    while True:
-        try:
-            time_counter = time.perf_counter()
-            # Receiving data from the lead segment
-            received_message = function_client_socket.recv(512).decode(FORMAT)
-            logger.info(f"Received data from the lead:<<{received_message}>>")
+                    self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Remake the socket and reconnect
+                    self.client_socket.settimeout(self.timeout) # Set the timeout for all the back and forth between the server/client
+                    self.client_socket.connect((self.server_ip, self.server_port)) # Connect to the server
+                    logger.info("[Client] Connected to server.")
+                    self.socket_initialized = True
+                    break
 
-            # Sending reply to the lead segment
-            function_client_socket.send(f"This is the follower.".encode(FORMAT))
-            time_counter_stop = time.perf_counter()
-
-
-            logger.info(f"Finished the job. It took {(time_counter_stop-time_counter)*1000}ms")
-            time.sleep(2)
-
-
-
-        except Exception as e:
-            logger.info(f"Got error while sending: {e}")
+                except Exception as e:
+                    logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
+                    time.sleep(1)  # Wait for a while before retrying
 
 
-def connect_to_server():
-    
-    # Declaring the local socket
-    client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    logger.info(f"Trying to connect to the server...")
+    # Close the malfunctioning socket if we lose connection to the server.
+    # We will make a new one and try to reconnect
+    def close_connection(self):
+        
+        if self.socket_initialized:
+            try:
+                self.client_socket.shutdown(socket.SHUT_RDWR)
+                self.client_socket.close()
+                self.socket_initialized = False
+            except Exception as e:
+                logger.warning(f"[Client] Error while closing socket: {e}")
 
-    while True:
+
+    # Communicating with the server        
+    def run(self):
+        
         # Connecting to the server
-        try:
-            client.connect((SERVER_IP, SERVER_PORT))
-            logger.info(f"[NEW CONNECTION] Conencted to server.")
+        self.connect_to_server()
 
-        # Error handling
-        except ConnectionRefusedError:
-            logger.info("Connection was refused. Server may not be running.")
-        except TimeoutError:
-            logger.info("Connection attempt timed out. Server may not be responding.")
-        except OSError as e:
-            logger.info(f"Socket error: {e}")
-        except Exception as e:
-            logger.info(f"Got error while connecting: {e}")
-        else:
-            receive_data(client)
+        counter = 0
+        trip_time = np.array([])
+        while True:
+            try:
+
+                time_counter = time.perf_counter()
+                counter = counter + 1
+
+                # Sending test string to the server
+                if counter == 100:
+                    logger.info(f"[Client] Sending data to server: {self.msg_to_send}")
+                self.client_socket.send(self.msg_to_send.encode("utf-8"))
+
+                # Receiving data from the server
+                self.reply_from_server = self.client_socket.recv(512).decode("utf-8")
+                if counter == 100:
+                    logger.info(f"[Client] Received reply from the server: {self.reply_from_server}")
+                
+                time_counter_stop = time.perf_counter()
+
+                trip_time = np.append(trip_time, (time_counter_stop-time_counter)*1000)
+
+                if counter == 100:
+                    logger.info(f"Client ended 100 rounds. It took avg {np.sum(trip_time) / trip_time.size:.3f}ms")
+                    logger.info(f"Client ended 100 rounds. It took max {np.max(trip_time):.3f}ms")
+                    logger.info(f"Client ended 100 rounds. It took min {np.min(trip_time):.3f}ms")
+                    print("\n\n")
+
+                    trip_time = np.array([])
+                    counter = 0
+
+
+            # Catching potential exceptions and attempting to reconnect each time
+            except ConnectionResetError:
+                logger.error("[Client] Server disconnected")
+                self.connect_to_server()
+            except socket.timeout:
+                logger.error("[Client] 100ms passed without receiving data from the server")
+                self.connect_to_server()
+            except Exception as e:
+                logger.error(f"[Client] Got error trying to send to server: {e}")
+                self.connect_to_server()
