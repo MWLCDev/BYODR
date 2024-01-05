@@ -1,12 +1,10 @@
 import logging
-import threading
 import multiprocessing
-import time
 from byodr.utils.ipc import JSONPublisher, json_collector
 from byodr.utils.ssh import Nano
 nano_ip = Nano.get_ip_address()
-from .server import start_server
-from .client import connect_to_server
+from .server import Segment_server
+from .client import Segment_client
 
 quit_event = multiprocessing.Event()
 
@@ -17,7 +15,13 @@ logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Getting the IP of the local machine
-nano_ip = Nano.get_ip_address()
+local_ip = Nano.get_ip_address()
+nano_port = 1111
+
+# Getting the follower/lead IPs from the local IP. (Temporary, until we get the robot config file)
+follower_ip = "192.168." + str( int(local_ip[8])+1 ) + ".100"
+lead_ip = "192.168." + str( int(local_ip[8])-1 ) + ".100"
+
 
 
 # Declaring the inter-service sockets
@@ -33,44 +37,33 @@ vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topi
 
 def main():
     
+    # Creating the segment client and server classes
+    segment_server = Segment_server(local_ip, nano_port, 0.1) # The server that will wait for the lead to connect
+    segment_client = Segment_client(follower_ip, nano_port, 0.1) # The client that will connect to a follower
+
     # Starting the receivers
     teleop_receiver.start()
     vehicle_receiver.start()
 
+    # Starting the server and client
+    segment_server.start()
+    segment_client.start()
+
     while True:
-        # Receiving movement commands from Teleop and sending them to Pilot/app
-        movement_commands_from_teleop = teleop_receiver.get()
-
-        
-        # logger.info(f"Sending to pilot: {movement_commands_from_teleop}.")
-        if movement_commands_from_teleop != None:
-            coms_to_pilot_publisher.publish(movement_commands_from_teleop)
-
-
-
 
         # Receiving velocity of the motors from Vehicles
         # logger.info(f"Velocity received: {vehicle_receiver.get()}.")
 
-    # Threads that will be executing the server and client codes
-    server_thread = threading.Thread( target = start_server )
-    client_thread = threading.Thread( target = connect_to_server )
+        # Receiving movement commands from Teleop and sending them to Pilot/app
+        movement_commands_from_teleop = teleop_receiver.get()
+        
+        # logger.info(f"Sending to pilot: {repr(movement_commands_from_teleop)}.")
+        if movement_commands_from_teleop != None:
+            coms_to_pilot_publisher.publish(movement_commands_from_teleop)
+            segment_client.msg_to_send = str(movement_commands_from_teleop)
 
 
-    # Each segment, regardless of IP, will be a server, so that their follower can connect to them.
-    logger.info(f"Starting the server code...")
-    server_thread.start()
 
-    # All other IPs will be clients except the first segment of the robot,
-    # since there is no "0th" segment
-    if nano_ip != "192.168.1.100":
-        logger.info(f"Starting the client code...")
-        client_thread.start()
-
-    # When the threads finish executing they exit
-    #################### We might not need this part###############################
-    server_thread.join()
-    client_thread.join()
 
 
 if __name__ == "__main__":
