@@ -302,9 +302,8 @@ def main():
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
 
-        if cmd.get("throttle") != 0:
-            # logger.info(f"Command to be send to Coms: {cmd}")
-            teleop_to_coms_publisher.publish(cmd)
+        # logger.info(f"Command to be send to Coms: {cmd}")
+        teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
