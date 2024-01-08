@@ -77,21 +77,21 @@ class Segment_server(threading.Thread):
                 except (ValueError, TypeError) as e:
                     self.movement_command_received = data_received # Its a normal string
 
-                if counter == 100:
+                if counter == 200:
                     logger.info(f"[Server] Received data from client: {self.movement_command_received}")
 
                 # Sending reply to the client
-                if counter == 100:
+                if counter == 200:
                     logger.info(f"[Server] Sending reply to client: {self.reply_to_client}")
                 arg_client_socket.send(self.reply_to_client.encode("utf-8"))
 
                 time_counter_stop = time.perf_counter()
 
                 trip_time = np.append(trip_time, (time_counter_stop-time_counter)*1000)
-                if counter == 100:
-                    logger.info(f"[Server] Server ended 100 rounds. It took avg {np.sum(trip_time) / trip_time.size:.3f}ms")
-                    logger.info(f"[Server] Server ended 100 rounds. It took max {np.max(trip_time):.3f}ms")
-                    logger.info(f"[Server] Server ended 100 rounds. It took min {np.min(trip_time):.3f}ms")
+                if counter == 200:
+                    logger.info(f"[Server] Server ended 200 rounds. It took avg {np.sum(trip_time) / trip_time.size:.3f}ms")
+                    logger.info(f"[Server] Server ended 200 rounds. It took max {np.max(trip_time):.3f}ms")
+                    logger.info(f"[Server] Server ended 200 rounds. It took min {np.min(trip_time):.3f}ms")
                     print("\n\n")
 
                     trip_time = np.array([])

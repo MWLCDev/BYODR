@@ -210,6 +210,7 @@ class RealMonitoringRelay(AbstractRelay):
         c_pilot = self._latest_or_none(pilot, patience=self._patience_micro)
         c_coms = self._latest_or_none(coms, patience=self._patience_micro)
         # logger.info(f"Processing with : {c_pilot}, {c_coms}.")
+        # logger.info(f"Processing with : {c_pilot}")
 
         n_violations = self._integrity.check()
 
