@@ -59,15 +59,25 @@ def main():
         
         # If the server of the current segment has not received anything from its lead, we forward commands from teleop
         if segment_server.movement_command_received == "":
-            coms_to_pilot_publisher.publish(movement_commands_from_teleop)
-            segment_client.msg_to_send = movement_commands_from_teleop
+            # print(f"Sending commands to pilot: {segment_server.movement_command_received}")
+
+            # We ignore the "None" movement commands
+            if movement_commands_from_teleop != None:
+
+                # Sending the movement commands to Pilot and then the current segment's follower
+                coms_to_pilot_publisher.publish(movement_commands_from_teleop)
+                segment_client.msg_to_send = movement_commands_from_teleop
 
 
-        # logger.info(f"Sending to pilot: {repr(movement_commands_from_teleop)}.")
         # If the server of this segment has received commands from its lead, we forward them instead
         else:
-            coms_to_pilot_publisher.publish(segment_server.movement_command_received)
-            segment_client.msg_to_send = segment_server.movement_command_received
+
+            # Sending the movement commands to Pilot and then the current segment's follower
+            # print(f"Sending commands to pilot: {segment_server.movement_command_received}")
+            if type(segment_server.movement_command_received) is dict:
+                # print(f"Sending commands to pilot: {segment_server.movement_command_received}")
+                coms_to_pilot_publisher.publish(segment_server.movement_command_received)
+                segment_client.msg_to_send = segment_server.movement_command_received
 
 
 
