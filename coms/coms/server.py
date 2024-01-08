@@ -97,7 +97,7 @@ class Segment_server(threading.Thread):
                     trip_time = np.array([])
                     counter = 0
 
-            # Catching potential exceptions and exiting the communication loo
+            # Catching potential exceptions and exiting the communication loop
             except socket.timeout:
                 logger.error("[Server] 100ms passed without receiving data from the client")
                 break

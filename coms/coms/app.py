@@ -57,10 +57,17 @@ def main():
         # Receiving movement commands from Teleop and sending them to Pilot/app
         movement_commands_from_teleop = teleop_receiver.get()
         
-        # logger.info(f"Sending to pilot: {repr(movement_commands_from_teleop)}.")
-        if movement_commands_from_teleop != None:
+        # If the server of the current segment has not received anything from its lead, we forward commands from teleop
+        if segment_server.movement_command_received == "":
             coms_to_pilot_publisher.publish(movement_commands_from_teleop)
             segment_client.msg_to_send = movement_commands_from_teleop
+
+
+        # logger.info(f"Sending to pilot: {repr(movement_commands_from_teleop)}.")
+        # If the server of this segment has received commands from its lead, we forward them instead
+        else:
+            coms_to_pilot_publisher.publish(segment_server.movement_command_received)
+            segment_client.msg_to_send = segment_server.movement_command_received
 
 
 
