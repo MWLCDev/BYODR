@@ -2,6 +2,7 @@ import socket
 import logging
 import threading
 import time
+import json
 import numpy as np
 from byodr.utils.ssh import Nano
 nano_ip = Nano.get_ip_address()
@@ -68,7 +69,14 @@ class Segment_server(threading.Thread):
                 counter = counter + 1
 
                 # Receiving message from the client
-                self.movement_command_received = arg_client_socket.recv(512).decode("utf-8")
+                data_received = arg_client_socket.recv(512).decode("utf-8")
+
+                # Checking if the data received is a JSON string or a normal string
+                try:
+                    self.movement_command_received = json.loads(data_received) # Its a json
+                except (ValueError, TypeError) as e:
+                    self.movement_command_received = data_received # Its a normal string
+
                 if counter == 100:
                     logger.info(f"[Server] Received data from client: {self.movement_command_received}")
 
@@ -89,7 +97,7 @@ class Segment_server(threading.Thread):
                     trip_time = np.array([])
                     counter = 0
 
-            # Catching potential exceptions and exiting the communication loop
+            # Catching potential exceptions and exiting the communication loo
             except socket.timeout:
                 logger.error("[Server] 100ms passed without receiving data from the client")
                 break
@@ -97,5 +105,5 @@ class Segment_server(threading.Thread):
                 logger.error("[Server] Client disconnected.")
                 break
             except Exception as e:
-                logger.error(f"[Server] Got error trying to send to client: {e}")
+                logger.error(f"[Server] Got error during communication: {e}")
                 break
