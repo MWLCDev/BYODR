@@ -22,7 +22,7 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router
+from byodr.utils.ssh import Router, Nano
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -76,12 +76,53 @@ class TeleopApplication(Application):
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._robot_config_file = os.path.join(self._config_dir, "robotConfig.ini")
         self._config_hash = -1
+        self._router = Router()
+        self._nano = Nano()
 
     def _check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         if len(_candidates) > 0:
             self._robot_config_file = _candidates[0]
             self._user_config_file = _candidates[1]
+
+    def populate_robot_config(self):
+        """Add mac address, SSID, and IP for current robot in robot_config file"""
+        # It is done here because vehicle service doesn't support any communication with the router (low py version 2.7)
+        config = configparser.ConfigParser()
+        config.read(self._robot_config_file)
+
+        # Check how many segments are present
+        segments = [s for s in config.sections() if s.startswith("segment_")]
+        if len(segments) > 1:
+            logger.info("Part of robot. Nothing to do.")
+            return
+
+        if len(segments) == 1:
+            segment = segments[0]
+
+            # Fetch new values
+            new_values = {
+                "mac.address": self._router.fetch_router_mac(),
+                "wifi.name": self._router.fetch_ssid(),
+                "ip.number": self._nano.get_ip_address(),
+            }
+
+            updated = False
+            for key, new_value in new_values.items():
+                # Get current value
+                current_value = config.get(segment, key, fallback="")
+
+                if new_value != current_value:
+                    config[segment][key] = new_value
+                    logger.info(f"Changed value of {key} with {new_value}")
+                    updated = True
+
+            # Write the updated configuration back to the file if there were updates
+            if updated:
+                with open(self._robot_config_file, "w") as configfile:
+                    config.write(configfile)
+            else:
+                logger.info("No changes made to the robot configuration.")
 
     def _config(self):
         parser = SafeConfigParser()
