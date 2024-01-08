@@ -60,7 +60,7 @@ def main():
         # logger.info(f"Sending to pilot: {repr(movement_commands_from_teleop)}.")
         if movement_commands_from_teleop != None:
             coms_to_pilot_publisher.publish(movement_commands_from_teleop)
-            segment_client.msg_to_send = str(movement_commands_from_teleop)
+            segment_client.msg_to_send = movement_commands_from_teleop
 
 
 
