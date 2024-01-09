@@ -65,19 +65,18 @@ def main():
             if type(movement_commands_from_teleop) is dict:
 
                 # Sending the movement commands to Pilot and then the current segment's follower
-                coms_to_pilot_publisher.publish(movement_commands_from_teleop)
                 segment_client.msg_to_send = movement_commands_from_teleop
+                coms_to_pilot_publisher.publish(movement_commands_from_teleop)
 
 
         # If the server of this segment has received commands from its lead, we forward them instead
         else:
-
             # Sending the movement commands to Pilot and then the current segment's follower
-            # print(f"Sending commands to pilot: {segment_server.movement_command_received}")
             if type(segment_server.movement_command_received) is dict:
+                
                 # print(f"Sending commands to pilot: {segment_server.movement_command_received}")
-                coms_to_pilot_publisher.publish(segment_server.movement_command_received)
                 segment_client.msg_to_send = segment_server.movement_command_received
+                coms_to_pilot_publisher.publish(segment_server.movement_command_received)
 
 
 
