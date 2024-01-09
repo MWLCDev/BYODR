@@ -1,7 +1,6 @@
 import socket
 import logging
 import time
-import numpy as np
 import threading
 import json
 from byodr.utils.ssh import Nano
@@ -83,7 +82,7 @@ class Segment_client(threading.Thread):
                 counter = counter + 1
 
                 # Sending test data to the server. If its a dictionary (movement commands), we encode it to json first
-                # if counter == 200:
+                # if time_counter - time_stop >= 1:
                 #     logger.info(f"[Client] Sending data to server: {self.msg_to_send}")
                 
                 # Checking to see if we are sending a dictionary (movement commands) or a normal string
@@ -95,7 +94,7 @@ class Segment_client(threading.Thread):
                 
                 # Receiving data from the server
                 self.reply_from_server = self.client_socket.recv(512).decode("utf-8")
-                # if counter == 200:
+                # if time_counter - time_stop >= 1:
                 #     logger.info(f"[Client] Received reply from the server: {self.reply_from_server}")
                 
                 if time_counter - time_stop >= 1:

@@ -3,7 +3,6 @@ import logging
 import threading
 import time
 import json
-import numpy as np
 from byodr.utils.ssh import Nano
 nano_ip = Nano.get_ip_address()
 
@@ -76,11 +75,11 @@ class Segment_server(threading.Thread):
                 except (ValueError, TypeError) as e:
                     self.movement_command_received = data_received # Its a normal string
 
-                # if counter == 200:
+                # if time_counter - time_stop >= 1:
                 #     logger.info(f"[Server] Received data from client: {self.movement_command_received}")
 
                 # Sending reply to the client
-                # if counter == 200:
+                # if time_counter - time_stop >= 1:
                 #     logger.info(f"[Server] Sending reply to client: {self.reply_to_client}")
                 arg_client_socket.send(self.reply_to_client.encode("utf-8"))
 
