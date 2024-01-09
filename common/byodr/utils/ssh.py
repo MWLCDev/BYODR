@@ -93,16 +93,20 @@ class Router:
 
     def fetch_ssid(self):
         """Get SSID of current segment"""
-        output = self._execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
-        return output
-
-    def fetch_segment_ip(self):
-        """Return an ip of .100"""
-        output = self._execute_ssh_command("ip addr show br-lan | grep 'inet ' | awk '{print $2}' | cut -d/ -f1")
+        output = None
+        # The loop is to keep calling the ssh function until it returns a value
+        while output is None:
+            output = self._execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
+            if output is None:
+                time.sleep(1)
         return output
 
     def fetch_router_mac(self):
-        output = self._execute_ssh_command("ifconfig wlan0 | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}'")
+        output = None
+        while output is None:
+            output = self._execute_ssh_command("ifconfig wlan0 | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}'")
+            if output is None:
+                time.sleep(1)
         return output
 
     def fetch_ip_and_mac(self):
