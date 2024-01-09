@@ -51,7 +51,7 @@ class Segment_client(threading.Thread):
 
                 except Exception as e:
                     logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
-                    time.sleep(1)  # Wait for a while before retrying
+                    time.sleep(2)  # Wait for a while before retrying
 
 
     # Close the malfunctioning socket if we lose connection to the server.
@@ -74,16 +74,17 @@ class Segment_client(threading.Thread):
         self.connect_to_server()
 
         counter = 0
-        trip_time = np.array([])
+        time_stop = 0
+
+
         while True:
             try:
-
                 time_counter = time.perf_counter()
                 counter = counter + 1
 
                 # Sending test data to the server. If its a dictionary (movement commands), we encode it to json first
-                if counter == 200:
-                    logger.info(f"[Client] Sending data to server: {self.msg_to_send}")
+                # if counter == 200:
+                #     logger.info(f"[Client] Sending data to server: {self.msg_to_send}")
                 
                 # Checking to see if we are sending a dictionary (movement commands) or a normal string
                 if type(self.msg_to_send) is dict: # We try to send a dictionary (movement commands)
@@ -94,20 +95,12 @@ class Segment_client(threading.Thread):
                 
                 # Receiving data from the server
                 self.reply_from_server = self.client_socket.recv(512).decode("utf-8")
-                if counter == 200:
-                    logger.info(f"[Client] Received reply from the server: {self.reply_from_server}")
+                # if counter == 200:
+                #     logger.info(f"[Client] Received reply from the server: {self.reply_from_server}")
                 
-                time_counter_stop = time.perf_counter()
-
-                trip_time = np.append(trip_time, (time_counter_stop-time_counter)*1000)
-
-                if counter == 200:
-                    logger.info(f"Client ended 200 rounds. It took avg {np.sum(trip_time) / trip_time.size:.3f}ms")
-                    logger.info(f"Client ended 200 rounds. It took max {np.max(trip_time):.3f}ms")
-                    logger.info(f"Client ended 200 rounds. It took min {np.min(trip_time):.3f}ms")
-                    print("\n\n")
-
-                    trip_time = np.array([])
+                if time_counter - time_stop >= 1:
+                    time_stop = time_counter
+                    logger.info(f"[Client] In 1 second sent/received {counter} commands")
                     counter = 0
 
 
