@@ -513,65 +513,130 @@ config route '1'
 
         return self.wifi_connect.driver(network_name, network_mac, False, network_forth_octet)
 
-    def delete_network(self, keyword):
-        """Remove network from `wireless.config` or `network.config`
-        Args:
-            keyword (str): The keyword to look for
+    class WifiNetworkDeletion:
+        def __init__(self, router):
+            self._router = router
+            self.networks = None
+            # The IP address of current router as a client in the network of the target router
+            self.current_router_client_address = None
+            self.network_router_ip = None
 
-         Example:
-            >> delete_network("CP_Davide")`.
+        def driver(self, keyword):
+            self.network_name = keyword
+            # Delete the connection with target segment
+            self.delete_network_profile()
+            pass
 
-        """
-        # It works by splitting these two files into sections based on the empty line. Then look for the section that has the keyword in it, make a temp file without the section that has the keyword, move the temp file instead of the original one
-        try:
-            for dir_location in ["wireless", "network", "firewall"]:
-                # Read the content of config file
-                output = self._execute_ssh_command(f"cat /etc/config/{dir_location}")
-                file_content = output
-                if dir_location != "firewall":
-                    # Split the file into sections based on empty lines
-                    sections = file_content.split("\n\n")
-                    updated_content = ""
-                    section_to_delete = None
+        def delete_network_profile(self):
+            """Remove network from `wireless.config` or `network.config`"""
+            try:
+                for dir_location in ["wireless", "network"]:
+                    self._process_directory(dir_location)
 
-                    for section in sections:
-                        if keyword in section:
-                            section_to_delete = section
-                            break
-                        else:
-                            updated_content += section + "\n\n"
+                # Process the firewall directory separately
+                self._process_firewall_directory()
 
-                    if section_to_delete:
-                        # Prepare the temp file path and content
-                        temp_file = f"/tmp/{dir_location}.conf"
-                        updated_content = updated_content.replace(section_to_delete, "").strip()
+            except Exception as e:
+                logger.error("An error occurred:", e)
+            finally:
+                self._router._execute_ssh_command("wifi reload")
 
-                        # Write the updated content back to the file using SFTP
-                        self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
+        def _process_directory(self, dir_location):
+            """Process wireless or network directory."""
+            output = self._router._execute_ssh_command(f"cat /etc/config/{dir_location}")
+            file_content = output
 
-                        # Move the temp file to overwrite the original
-                        self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
-                        print(f"{keyword} section deleted successfully from {dir_location}.")
-                    else:
-                        print(f"{keyword} not found in any {dir_location} section.")
+            sections = file_content.split("\n\n")
+            updated_content = ""
+            section_to_delete = None
+
+            for section in sections:
+                if self.network_name in section:
+                    section_to_delete = section
+                    self._extract_ip_address(section)
+                    break
                 else:
-                    # New functionality for firewall
-                    if keyword in file_content:
-                        updated_content = file_content.replace(keyword, "").strip()
-                        temp_file = f"/tmp/{dir_location}.conf"
+                    updated_content += section + "\n\n"
 
-                        # Write the updated content back to the file using SFTP
-                        self._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
+            if section_to_delete:
+                self._update_config_file(dir_location, section_to_delete, updated_content)
 
-                        # Move the temp file to overwrite the original
-                        self._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
-                        print(f"{keyword} deleted successfully from {dir_location}.")
+            else:
+                logger.info(f"{self.network_name} not found in {dir_location}.")
+
+        def _process_firewall_directory(self):
+            """Process firewall directory."""
+            dir_location = "firewall"
+            output = self._router._execute_ssh_command(f"cat /etc/config/{dir_location}")
+            file_content = output
+
+            if self.network_name in file_content:
+                updated_content = file_content.replace(self.network_name, "").strip()
+                temp_file = f"/tmp/{dir_location}.conf"
+
+                self._router._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
+                self._router._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
+                logger.info(f"{self.network_name} deleted successfully from {dir_location}.")
+            else:
+                logger.info(f"{self.network_name} not found in {dir_location}.")
+
+        def _extract_ip_address(self, section):
+            """Extract IP address from a section."""
+            for line in section.split("\n"):
+                if "option ipaddr" in line:
+                    ip_address = line.split("'")[1]
+                    # Will return 192.168.X.150
+                    self.current_router_client_address = ip_address
+                    ip_parts = ip_address.split(".")
+                    ip_parts[-1] = "1"
+                    modified_ip_address = ".".join(ip_parts)
+                    self.network_router_ip = modified_ip_address
+                    logger.info(f"Current router's IP as client in {self.network_name} is {self.current_router_client_address}")
+                    self.static_route()
+                    break
+
+        def _update_config_file(self, dir_location, section_to_delete, updated_content, ip=None):
+            """Update the configuration file."""
+            temp_file = f"/tmp/{dir_location}.conf"
+            updated_content = updated_content.replace(section_to_delete, "").strip()
+
+            self._router._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content, ip=ip)
+            self._router._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}", ip=ip)
+            logger.info(f"{self.network_name} section deleted successfully from {dir_location}.")
+
+        def static_route(self):
+            """SSH to target router and delete static route with current segment from it"""
+            dir_location = "network"
+            try:
+                # Retrieve current network configuration
+                current_network_config = self._router._execute_ssh_command(command=f"cat /etc/config/{dir_location}", ip=self.network_router_ip)
+                # Split the file into sections based on empty lines
+                sections = current_network_config.split("\n\n")
+                updated_content = ""
+                section_to_delete = None
+
+                for section in sections:
+                    if "option gateway" in section and self.current_router_client_address in section:
+                        section_to_delete = section
+                        break
                     else:
-                        print(f"{keyword} not found in {dir_location}.")
-        except Exception as e:
-            print("An error occurred:", e)
-        finally:
-            self._execute_ssh_command(f"wifi reload")
+                        updated_content += section + "\n\n"
+
+                if section_to_delete:
+                    # Use the existing method to update the config file
+                    self._update_config_file(dir_location, section_to_delete, updated_content, ip=self.network_router_ip)
+                    logger.info(f"Gateway section with address {self.current_router_client_address} deleted successfully from {dir_location}.")
+                else:
+                    logger.info(f"Gateway with address {self.current_router_client_address} not found in any {dir_location} section.")
+
+            except Exception as e:
+                logger.error(f"An error occurred while deleting static route with {self.network_name} network: {e}")
+            else:
+                logger.info(f"Finished deleting static route with {self.network_name} network")
+            pass
+
+    def delete_network(self, network_name):
+        return self.wifi_delete.driver(network_name)
 
 
 class Cameras:
