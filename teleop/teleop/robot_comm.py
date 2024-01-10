@@ -128,19 +128,12 @@ class TeleopSubscriberThread(threading.Thread):
         # Convert single quotes to double quotes for JSON parsing
         json_data_corrected = received_json_data.replace("'", '"')
         self._router_actions.driver(json_data_corrected)
-            self._router_actions.add_connection(json_data_corrected)
+
         try:
             # Manual parsing of the ISO format datetime string
             sent_time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
             time_diff = received_time - sent_time
             # print(f"Time difference: {time_diff.total_seconds()} seconds")
-
-            # if action_command == "Add":
-            #     print("1")
-            # elif action_command == "Remove":
-            #     print("2")
-            # elif action_command == "Reposition":
-            #     print("3")
         except ValueError:
             print("Invalid message format")
 
