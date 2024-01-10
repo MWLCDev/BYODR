@@ -136,14 +136,10 @@ class TeleopApplication(Application):
     def get_robot_config_file(self):
         return self._robot_config_file
 
-    # Private function to init router class with the nano's IP
-    def __get_nano_IP(self):
-        self.router = Router()
-
     def setup(self):
         if self.active():
             self._check_configuration_files()
-            self.__get_nano_IP()
+            self.populate_robot_config()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
