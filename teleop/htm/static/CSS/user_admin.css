@@ -1,3 +1,7 @@
+
+html{
+  overflow: hidden; /* This will prevent scrollbar from appearing */
+}
 #container_admin_settings {
   /* it is overridden by other code parts*/
   font-family: Helvetica, sans-serif;
