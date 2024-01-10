@@ -1,85 +1,76 @@
 <!DOCTYPE html>
 <html lang="en">
+	<body>
+		<div id="container_admin_settings">
+			<div id="container_segment_table">
+				<p id="segments_header">Segments order</p>
+				<table id="segment_table">
+					<thead>
+						<tr>
+							<th></th>
+							<th>Position</th>
+							<th>WiFi network name</th>
+							<th>Main segment</th>
+							<th>Remove</th>
+						</tr>
+					</thead>
+					<!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
+					<tbody>
+						<tr>
+							<td></td>
+							<td></td>
+							<td>CP_Carl</td>
+							<td><input type="radio" name="mainSegment" /></td>
+							<td><button type="button">X</button></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td></td>
+							<td>CP_Davide</td>
+							<td><input type="radio" name="mainSegment" /></td>
+							<td><button type="button">X</button></td>
+						</tr>
+						<tr>
+							<td></td>
+							<td></td>
+							<td>CP_Earl</td>
+							<td><input type="radio" name="mainSegment" /></td>
+							<td><button type="button">X</button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Document</title>
-  <style>
-  </style>
-</head>
+			<div id="container_connectable_networks_table">
+				<p id="header_found_segments">Found segments</p>
+				<button id="scanWifiNetworks">Get WiFi Networks</button>
+				<table id="connectable_networks_table">
+					<thead>
+						<tr>
+							<th>Segment name</th>
+							<th>Add</th>
+						</tr>
+					</thead>
+					<!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
+					<tbody>
+						<tr>
+							<td>CP_Carl</td>
+							<td><button type="button">Add</button></td>
+						</tr>
+						<tr>
+							<td>CP_Davide</td>
+							<td><button type="button">Add</button></td>
+						</tr>
+						<tr>
+							<td>CP_Earl</td>
+							<td><button type="button">Add</button></td>
+						</tr>
+					</tbody>
+				</table>
+			</div>
 
-<body>
-  <div id="container_admin_settings">
-    <div id="container_segment_table">
-      <p id="segments_header">Segments order</p>
-      <table id="segment_table">
-        <thead>
-          <tr>
-            <th></th>
-            <th>Position</th>
-            <th>WiFi network name</th>
-            <th>Main segment</th>
-            <th>Remove</th>
-          </tr>
-        </thead>
-        <!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
-        <tbody>
-          <tr>
-            <td></td>
-            <td></td>
-            <td>CP_Carl</td>
-            <td><input type="radio" name="mainSegment"></td>
-            <td><button type="button">Remove</button></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td></td>
-            <td>CP_Davide</td>
-            <td><input type="radio" name="mainSegment"></td>
-            <td><button type="button">Remove</button></td>
-          </tr>
-          <tr>
-            <td></td>
-            <td></td>
-            <td>CP_Earl</td>
-            <td><input type="radio" name="mainSegment"></td>
-            <td><button type="button">Remove</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <div id="container_connectable_networks_table">
-      <p id="header_found_segments">Found segments</p>
-      <button id="scanWifiNetworks">Get WiFi Networks</button>
-      <table id="connectable_networks_table">
-        <thead>
-          <tr>
-            <th>Segment name</th>
-            <th>Add</th>
-          </tr>
-        </thead>
-        <!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
-        <tbody>
-          <tr>
-            <td>CP_Carl</td>
-            <td><button type="button">Add</button></td>
-          </tr>
-          <tr>
-            <td>CP_Davide</td>
-            <td><button type="button">Add</button></td>
-          </tr>
-          <tr>
-            <td>CP_Earl</td>
-            <td><button type="button">Add</button></td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-
-    <p id="dummy_text"></p>
-  </div>
-</body>
-
+			<p id="dummy_text"></p>
+      <button type="save_config">Save</button>
+		</div>
+	</body>
 </html>
