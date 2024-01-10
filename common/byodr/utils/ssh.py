@@ -8,8 +8,8 @@ from pythonping import ping
 
 # Declaring the logger
 logging.basicConfig(
-    format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s",
-    datefmt="%Y%m%d:%H:%M:%S %p %Z",
+    format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S %p",
 )
 
 logging.getLogger().setLevel(logging.INFO)
@@ -27,6 +27,7 @@ class Router:
         self.port = int(port)  # Default value for SSH port
         self.wifi_scanner = self.WifiNetworkScanner(self)
         self.wifi_connect = self.ConnectToNetwork(self)
+        self.wifi_delete = self.WifiNetworkDeletion(self)
 
     def __get_nano_third_octet(self):
         try:

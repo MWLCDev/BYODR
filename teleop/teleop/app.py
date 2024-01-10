@@ -433,7 +433,7 @@ def reset_logging():
 if __name__ == "__main__":
     reset_logging()
     log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
-    logging.basicConfig(format=log_format, datefmt="%Y-%m-%d %H:%M:%S")
+    logging.basicConfig(format=log_format, datefmt="%Y-%m-%d %H:%M:%S %p")
     logger = logging.getLogger(__name__)
     logger.setLevel(logging.INFO)
     main()
