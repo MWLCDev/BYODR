@@ -168,6 +168,16 @@ class RouterActions:
         # Parse the JSON data
         json_dict = json.loads(json_data)
 
+    def check_segment_existence(self):
+        """Check if the current segment exists in the received data."""
+        # should it check also if the data inside of it is the same as .ini file?
+        for header, details in self.received_json_data.items():
+            if details.get("ip.number") == self._ip:
+                self.current_segment = details
+                self.current_segment_index = int(header.replace("segment_", "")) - 1
+                return True
+        return False  # Return False if the current segment is not found
+
         # Read and parse the INI file
         config = configparser.ConfigParser()
         with open(self.robot_config_dir, "r") as ini_file:
