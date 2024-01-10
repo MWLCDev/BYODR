@@ -41,7 +41,7 @@ class DataPublisher(threading.Thread):
                 # combined_message = f"{self.message} {json_data}"
 
                 timestamp = datetime.datetime.now().isoformat()
-                combined_message = f"{self.json_data}|{self.message}|{timestamp}"
+                combined_message = f"{self.json_data}|{timestamp}"
 
                 # print(f"Sent {combined_message}")
                 self.pub_socket.send_string(combined_message)
@@ -89,7 +89,7 @@ class TeleopSubscriberThread(threading.Thread):
         self._req_port = req_port
         self._quit_event = event
         self.robot_config_dir = robot_config_dir
-        self._router = Router()
+        self._router_actions = RouterActions(self.robot_config_dir)
         self._router_actions = RouterActions()
 
         self.context = zmq.Context()
@@ -149,6 +149,21 @@ class TeleopSubscriberThread(threading.Thread):
 
     def output_differences(self, json_data):
         # Convert single quotes to double quotes for JSON parsing
+
+class RouterActions:
+    def __init__(self, robot_config):
+        self.robot_config_dir = robot_config
+        self._router = Router()
+        # Retrieve the specific IP address
+        self._ip = Nano.get_ip_address()
+        self.received_json_data = None
+        self.adjacent_segments = None
+        self.current_segment = None
+        self.current_segment_index = None
+
+    def __set_parsers(self):
+        self.robot_config_parser = configparser.ConfigParser()
+        self.robot_config_parser.read(self.robot_config_dir)
 
         # Parse the JSON data
         json_dict = json.loads(json_data)
