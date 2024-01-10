@@ -26,7 +26,16 @@ html{
   /* Standard syntax */
 }
 
-/* Style for the drag handle */
+#segment_table th,
+#segment_table td {
+  border: 1px solid rgb(160, 160, 160);
+  /* Remove vertical lines */
+  border-left: none;
+  /* Remove vertical lines */
+  border-right: none;
+  /* Adds spacing between columns */
+  padding: 1em 0.5em;
+}
 #segment_table td:first-child {
   cursor: grab;
 }
