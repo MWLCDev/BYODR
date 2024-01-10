@@ -1,146 +1,143 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<title>Menu</title>
+		<link rel="stylesheet" href="../static/external/jquery-ui-1.12.1.min.css" />
+		<link rel="stylesheet" href="../static/external/radioslider-1.0.0_b1.min.css" />
+		<link rel="stylesheet" href="../static/external/datatables/datatables-1.11.5.min.css" />
+		<link rel="stylesheet" href="../static/external/datatables/fixedheader-3.2.2.min.css" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/user_admin.css" />
+		<link rel="shortcut icon" href="#" />
+	</head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Menu</title>
-  <link rel="stylesheet" href="../static/external/jquery-ui-1.12.1.min.css" />
-  <link rel="stylesheet" href="../static/external/radioslider-1.0.0_b1.min.css" />
-  <link rel="stylesheet" href="../static/external/datatables/datatables-1.11.5.min.css" />
-  <link rel="stylesheet" href="../static/external/datatables/fixedheader-3.2.2.min.css" />
-  <link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
-  <link rel="stylesheet" type="text/css" href="../static/CSS/user_admin.css" />
-  <link rel="shortcut icon" href="#">
+	<body>
+		<div class="application-body">
+			<button id="sidebarToggle" class="toggle-btn">></button>
+			<nav class="application-nav">
+				<p><a id="home_link" href="#">Home</a></p>
+				<p><a id="settings_link" href="#">Settings</a></p>
+				<p><a id="controls_link" href="#">Controls</a></p>
+				<p><a id="logbox_link" href="#">Events</a></p>
+				<p><a id="phone_controller_link" href="/mobile_controller_ui">Phone Controller</a></p>
+				<p><a id="admin_settings_link" href="#">Admin settings</a></p>
+			</nav>
 
-</head>
-
-<body>
-  <div class="application-body">
-    <button id="sidebarToggle" class="toggle-btn">></button>
-    <nav class="application-nav">
-      <p><a id="home_link" href="#">Home</a></p>
-      <p><a id="settings_link" href="#">Settings</a></p>
-      <p><a id="controls_link" href="#">Controls</a></p>
-      <p><a id="logbox_link" href="#">Events</a></p>
-      <p><a id="phone_controller_link" href="/mobile_controller_ui">Phone Controller</a></p>
-      <p><a id="admin_settings_link" href="#">Admin settings</a></p>
-    </nav>
-
-    <main class="application-content">
-      <div id="application-content-container"></div>
-    </main>
-  </div>
-  <script src="../static/external/jquery-3.4.1.min.js"></script>
-  <script src="../static/external/jquery-ui-1.12.1.min.js"></script>
-  <script src="../static/external/jquery.radioslider-1.0.0_b1.min.js"></script>
-  <script src="../static/external/datatables/datatables-1.11.5.min.js"></script>
-  <script src="../static/external/datatables/fixedheader-3.2.2.min.js"></script>
-  <script src="../static/JS/Index/index_a_utils.js"></script>
-  <script src="../static/JS/userMenu/menu_settings.js"></script>
-  <script src="../static/JS/userMenu/menu_controls.js"></script>
-  <script src="../static/JS/userMenu/menu_logbox.js"></script>
-  <script src="../static/JS/userMenu/menu_admin.js"></script>
-</body>
-
+			<main class="application-content">
+				<div id="application-content-container"></div>
+			</main>
+		</div>
+		<script src="../static/external/jquery-3.4.1.min.js"></script>
+		<script src="../static/external/jquery-ui-1.12.1.min.js"></script>
+		<script src="../static/external/jquery.radioslider-1.0.0_b1.min.js"></script>
+		<script src="../static/external/datatables/datatables-1.11.5.min.js"></script>
+		<script src="../static/external/datatables/fixedheader-3.2.2.min.js"></script>
+		<script src="../static/JS/Index/index_a_utils.js"></script>
+		<script src="../static/JS/userMenu/menu_settings.js"></script>
+		<script src="../static/JS/userMenu/menu_controls.js"></script>
+		<script src="../static/JS/userMenu/menu_logbox.js"></script>
+		<script src="../static/JS/userMenu/menu_admin.js"></script>
+	</body>
 </html>
 <script type="text/javascript">
-  var toggleBtn = document.getElementById('sidebarToggle');
-  var nav = document.querySelector('.application-nav');
-  var content = document.querySelector('.application-content');
-  var navLinks = document.querySelectorAll('.application-nav a'); // Select all nav links
+	var toggleBtn = document.getElementById('sidebarToggle');
+	var nav = document.querySelector('.application-nav');
+	var content = document.querySelector('.application-content');
+	var navLinks = document.querySelectorAll('.application-nav a'); // Select all nav links
 
-  // Function to toggle the sidebar and content blur
-  function toggleSidebar() {
-    nav.classList.toggle('active');
-    content.classList.toggle('expanded');
-    toggleBtn.classList.toggle('active');
+	// Function to toggle the sidebar and content blur
+	function toggleSidebar() {
+		nav.classList.toggle('active');
+		content.classList.toggle('expanded');
+		toggleBtn.classList.toggle('active');
 
-    // Update the left position of the toggle button dynamically based on the sidebar position
-    if (nav.classList.contains('active')) {
-      toggleBtn.style.left = (nav.offsetWidth) + 'px';
-    } else {
-      toggleBtn.style.left = '0px';
-    }
-  }
+		// Update the left position of the toggle button dynamically based on the sidebar position
+		if (nav.classList.contains('active')) {
+			toggleBtn.style.left = nav.offsetWidth + 'px';
+		} else {
+			toggleBtn.style.left = '0px';
+		}
+	}
 
-  // Event listener for the toggle button
-  toggleBtn.addEventListener('click', toggleSidebar);
+	// Event listener for the toggle button
+	toggleBtn.addEventListener('click', toggleSidebar);
 
-  navLinks.forEach(function (link) {
-    link.addEventListener('click', function () {
-      // Hide the sidebar
-      toggleSidebar();
-    });
-  });
+	navLinks.forEach(function (link) {
+		link.addEventListener('click', function () {
+			// Hide the sidebar
+			toggleSidebar();
+		});
+	});
 
-  // Event listener for clicking outside the sidebar to close it
-  document.addEventListener('click', function (event) {
-    var isClickInsideNav = nav.contains(event.target);
-    var isClickToggleBtn = toggleBtn.contains(event.target);
+	// Event listener for clicking outside the sidebar to close it
+	document.addEventListener('click', function (event) {
+		var isClickInsideNav = nav.contains(event.target);
+		var isClickToggleBtn = toggleBtn.contains(event.target);
 
-    if (!isClickInsideNav && !isClickToggleBtn && nav.classList.contains('active')) {
-      toggleSidebar();
-    }
-  });
-  function _user_menu_route_screen(screen) {
-    $('.application-nav a').each(function () {
-      $(this).removeClass('active');
-    });
+		if (!isClickInsideNav && !isClickToggleBtn && nav.classList.contains('active')) {
+			toggleSidebar();
+		}
+	});
+	function _user_menu_route_screen(screen) {
+		$('.application-nav a').each(function () {
+			$(this).removeClass('active');
+		});
 
-    const el_parent = $('main.application-content');
-    const el_container = $('<div/>', { id: 'application-content-container' });
-    el_parent.find('div#application-content-container').remove();
-    el_parent.append(el_container);
+		const el_parent = $('main.application-content');
+		const el_container = $('<div/>', { id: 'application-content-container' });
+		el_parent.find('div#application-content-container').remove();
+		el_parent.append(el_container);
 
-    // Save the last visited screen in the cache
-    window.localStorage.setItem('user.menu.screen', screen);
-    switch (screen) {
-      case 'controls':
-        $('a#controls_link').addClass('active');
-        menu_user_controls_main(el_container);
-        break;
-      case 'logbox':
-        $('a#logbox_link').addClass('active');
-        menu_user_logbox_main(el_container);
-        break;
-      case 'admin_settings_link':
-        $('a#admin_settings_link').addClass('active');
-        $('#application-content-container').load('/user_admin', function () {
-          // Code to initialize and use AdminMenu
-          const adminSettings = new AdminMenu();
-        });
+		// Save the last visited screen in the cache
+		window.localStorage.setItem('user.menu.screen', screen);
+		switch (screen) {
+			case 'controls':
+				$('a#controls_link').addClass('active');
+				menu_user_controls_main(el_container);
+				break;
+			case 'logbox':
+				$('a#logbox_link').addClass('active');
+				menu_user_logbox_main(el_container);
+				break;
+			case 'admin_settings_link':
+				$('a#admin_settings_link').addClass('active');
+				$('#application-content-container').load('/user_admin', function () {
+					// Code to initialize and use AdminMenu
+					const adminSettings = new AdminMenu();
+				});
 
-        break;
-      default:
-        $('a#settings_link').addClass('active');
-        menu_user_settings_main(el_container);
-    }
-  }
+				break;
+			default:
+				$('a#settings_link').addClass('active');
+				menu_user_settings_main(el_container);
+		}
+	}
 
-  document.addEventListener('DOMContentLoaded', function () {
-    // Set up the click handlers.
-    $('a#home_link').click(function () {
-      location = dev_tools.is_develop() ? '/index.htm?develop=' + dev_tools.is_develop() : '/';
-    });
-    $('a#settings_link').click(function () {
-      _user_menu_route_screen('settings');
-    });
-    $('a#controls_link').click(function () {
-      _user_menu_route_screen('controls');
-    });
-    $('a#logbox_link').click(function () {
-      _user_menu_route_screen('logbox');
-    });
-    $('a#admin_settings_link').click(function () {
-      _user_menu_route_screen('admin_settings_link');
-    });
+	document.addEventListener('DOMContentLoaded', function () {
+		// Set up the click handlers.
+		$('a#home_link').click(function () {
+			location = dev_tools.is_develop() ? '/index.htm?develop=' + dev_tools.is_develop() : '/';
+		});
+		$('a#settings_link').click(function () {
+			_user_menu_route_screen('settings');
+		});
+		$('a#controls_link').click(function () {
+			_user_menu_route_screen('controls');
+		});
+		$('a#logbox_link').click(function () {
+			_user_menu_route_screen('logbox');
+		});
+		$('a#admin_settings_link').click(function () {
+			_user_menu_route_screen('admin_settings_link');
+		});
 
-    // Load the last visited screen from cache. Default value for it is settings tab
-    var screen = window.localStorage.getItem('user.menu.screen');
-    if (screen == null) {
-      screen = 'settings';
-    }
-    _user_menu_route_screen(screen);
-  });
+		// Load the last visited screen from cache. Default value for it is settings tab
+		var screen = window.localStorage.getItem('user.menu.screen');
+		if (screen == null) {
+			screen = 'settings';
+		}
+		_user_menu_route_screen(screen);
+	});
 </script>

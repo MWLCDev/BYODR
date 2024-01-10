@@ -1,6 +1,10 @@
 body {
   margin: 0;
 }
+/* DEBUGGING 
+* {
+  outline: 1px solid red;
+} */
 
 .application-body {
   display: flex;
@@ -109,11 +113,12 @@ table#logbox td {
   /* Remove border */
   border: none;
   /* Rounded corners on the right side */
-  border-radius: 5px ;
+  border-radius: 5px;
   /* Cursor to indicate it's clickable */
   cursor: pointer;
   /* Smooth transition for rotating */
-  transition: transform 0.5s, left 0.5s; /* Add left to the transition */
+  transition: transform 0.5s, left 0.5s;
+  /* Add left to the transition */
 }
 
 /* When the sidebar is active, change the arrow direction and move toggle button */
