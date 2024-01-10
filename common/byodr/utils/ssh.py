@@ -152,6 +152,28 @@ class Router:
         sorted_devices = sorted(devices, key=lambda x: ip_address(x["ip"]))
         print("Devices found: ", sorted_devices)
 
+    def change_wifi_visibility(self, desired_state):
+        try:
+            # Convert the output of SSH command to boolean (assuming '0' is visible and '1' is hidden)
+            current_state = self._execute_ssh_command("uci get wireless.default_radio0.hidden") == "1"
+
+            # Check if the state needs to be changed
+            if current_state != desired_state:
+                if desired_state:
+                    # If desired state is True (visible), set hidden to 0
+                    commands = "uci set wireless.default_radio0.hidden=0; uci commit wireless; wifi reload"
+                else:
+                    # If desired state is False (hidden), set hidden to 1
+                    commands = "uci set wireless.default_radio0.hidden=1; uci commit wireless; wifi reload"
+
+                # Execute the commands
+                self._execute_ssh_command(commands)
+
+                # Log the completion
+                logger.info(f"Wifi network visibility changed to {'discoverable' if desired_state else 'hidden'}")
+        except Exception as e:
+            logger.error(f"Error in changing WiFi visibility: {e}")
+
     @staticmethod
     def check_network_connection(target_ip):
         response = ping(target_ip, count=6, timeout=1, verbose=False)
