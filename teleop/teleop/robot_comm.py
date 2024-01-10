@@ -137,8 +137,10 @@ class TeleopSubscriberThread(threading.Thread):
         except ValueError:
             print("Invalid message format")
 
-    def format_segment_details(self, segment, details_dict):
-        return f"{segment}: " + ", ".join(f"{key} = {value}" for key, value in details_dict.items())
+    def cleanup(self):
+        self.sub_socket.close()
+        self.req_socket.close()
+        self.context.term()
 
     def output_differences(self, json_data):
         # Convert single quotes to double quotes for JSON parsing
