@@ -48,11 +48,16 @@ html{
   cursor: grab;
 }
 
+.fade-in-left {
+  animation: fadeInLeft 0.5s ease-out;
+}
+
 @keyframes fadeInLeft {
   from {
     opacity: 0;
     transform: translateX(-40px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
