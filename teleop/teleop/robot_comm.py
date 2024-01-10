@@ -122,12 +122,12 @@ class TeleopSubscriberThread(threading.Thread):
             self.cleanup()
 
     def process_message(self, message):
+        # it should check for difference here. if there is difference, then start router actions class and run the appropriate function from it
         received_time = datetime.datetime.now()
-        parts = message.split("|")
-        if len(parts) == 3:
-            received_json_data, action_command, timestamp = parts
-            json_data_corrected = received_json_data.replace("'", '"')
-            # self.output_differences(json_data_corrected)
+        received_json_data, timestamp = message.split("|")
+        # Convert single quotes to double quotes for JSON parsing
+        json_data_corrected = received_json_data.replace("'", '"')
+        self._router_actions.driver(json_data_corrected)
             self._router_actions.add_connection(json_data_corrected)
         try:
             # Manual parsing of the ISO format datetime string
