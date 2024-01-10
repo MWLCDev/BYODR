@@ -13,16 +13,11 @@ html{
   font-size: xx-large;
 }
 
-#segment_table td,
-#segment_table tr,
-#segment_table sth {
-  border: 1px solid rgb(160, 160, 160);
+#segment_table {
   border-collapse: collapse;
-  cursor: all-scroll;
-}
-
-#segment_table table {
-  border-collapse: collapse;
+  /* This ensures that the cell borders are not doubled */
+  border-spacing: 0;
+  /* Removes space between borders */
   -webkit-user-select: none;
   /* Safari */
   -ms-user-select: none;
