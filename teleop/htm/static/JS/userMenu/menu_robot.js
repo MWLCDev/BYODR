@@ -1,8 +1,6 @@
 class RobotMenu {
   constructor() {
-    // Automatically call the method when an instance is created
-    new SegmentDataHandler(this);
-    new DragAndDrop(this);
+    new SegmentTableManager(this);
     this.getNanoIP();
     this.setupWifiNetworksButton();
   }
@@ -130,34 +128,33 @@ class RobotMenu {
     }, 3000); // Remove the toast after 3 seconds
   }
 }
-/**
- * Allow drag and drop the segment table
- */
-class DragAndDrop {
+
+class SegmentTableManager {
   constructor(robotMenu) {
     this.robotMenu = robotMenu;
+    this.tbody = document.querySelector('#segment_table tbody');
     this.draggedElement = null;
-    this.tbody = document.querySelector('#segment_table tbody'); // Define tbody as an instance variable
+
+    // Initialize both functionalities
     this.enableDragAndDrop();
+    this.fetchSegmentDataAndDisplay();
   }
 
   enableDragAndDrop() {
     this.robotMenu.updatePositionIndices();
-
     // Adding touch and mouse events to the tbody
     this.tbody.addEventListener('touchstart', (e) => this.handleDragStart(e), false);
     this.tbody.addEventListener('touchmove', (e) => this.handleDragMove(e.touches[0]), false);
     this.tbody.addEventListener('touchend', () => this.handleDragEnd(), false);
-
     this.tbody.addEventListener('mousedown', (e) => this.handleDragStart(e), false);
     this.tbody.addEventListener('mousemove', (e) => this.handleDragMove(e), false);
     this.tbody.addEventListener('mouseup', () => this.handleDragEnd(), false);
   }
+
   handleDragStart(event) {
     if (event.target === event.target.closest('tr').firstElementChild) {
       const row = event.target.closest('tr');
       if (row && row.parentNode === this.tbody) {
-        // Use this.tbody here
         this.draggedElement = row;
         this.draggedElement.classList.add('floating');
       }
@@ -200,16 +197,6 @@ class DragAndDrop {
     const parentNode = row1.parentNode;
     const nextSibling = row1.nextElementSibling === row2 ? row1 : row1.nextElementSibling;
     parentNode.insertBefore(row2, nextSibling);
-  }
-}
-
-/**
- * Class to fetch the data from robot_config.ini file and show it in segments table
- */
-class SegmentDataHandler {
-  constructor(robotMenu) {
-    this.robotMenu = robotMenu;
-    this.fetchSegmentDataAndDisplay();
   }
 
   // Method to fetch data from the API and display it
@@ -260,4 +247,5 @@ class SegmentDataHandler {
     }
     this.robotMenu.updatePositionIndices();
   }
+
 }
