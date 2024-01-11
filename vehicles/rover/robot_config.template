@@ -3,6 +3,8 @@ forward = segment_1
 
 [segment_1]
 ip.number = 192.168.1.100
-wifi.name = CP_01_Earl
+wifi.name = CP_Earl
+mac.address = 
 v.number = xx1xxxxxx
+position = 
 main = True
