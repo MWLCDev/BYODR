@@ -6,6 +6,11 @@ class RobotMenu {
     this.setupWifiNetworksButton();
   }
 
+  showSegments() {
+    console.log(this.robotUtils.segmentsData);
+  }
+
+
   setupWifiNetworksButton() {
     const wifiButton = document.getElementById('scan_wifi_networks');
     wifiButton.addEventListener('click', () => {
