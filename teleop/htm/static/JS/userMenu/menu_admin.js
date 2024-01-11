@@ -1,8 +1,8 @@
 class AdminMenu {
   constructor() {
     // Automatically call the method when an instance is created
-    this.enableDragAndDrop();
     this.fetchSegmentDataAndDisplay();
+    this.enableDragAndDrop();
     this.getNanoIP();
     this.setupWifiNetworksButton();
   }
@@ -81,7 +81,7 @@ class AdminMenu {
         <td></td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment"></td>
-        <td><button type="button">Remove</button></td>
+        <td><button type="button">X</button></td>
       `;
       tbody.appendChild(tr);
     }
@@ -151,7 +151,6 @@ class AdminMenu {
   enableDragAndDrop() {
     const tbody = document.querySelector('table tbody'); // Select only tbody
     let draggedElement = null;
-
     tbody.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
     tbody.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
     tbody.addEventListener('touchend', () => handleDragEnd(), false);
@@ -161,8 +160,10 @@ class AdminMenu {
     tbody.addEventListener('mouseup', () => handleDragEnd(), false);
 
     function handleDragStart(row) {
-      if (row && row.parentNode === tbody) { // Ensure the row is part of tbody
+      if (row && row.parentNode === tbody) {
         draggedElement = row;
+        // Add a class to the dragged element for the floating effect
+        draggedElement.classList.add('floating');
       }
     }
 
@@ -176,13 +177,23 @@ class AdminMenu {
         swapRows(draggedElement, targetRow);
       }
     }
+
     function handleDragEnd() {
       if (draggedElement) {
-        // Update row numbers after dragging ends
-        updateRowNumbers();
+        // Trigger the reverse transition for landing
+        draggedElement.style.transition = 'transform 0.2s, box-shadow 0.2s';
+        draggedElement.classList.remove('floating');
+
+        // Delay the removal of inline styles to allow the transition to complete
+        setTimeout(() => {
+          draggedElement.style.transition = '';
+          updateRowNumbers();
+        }, 200); // Duration should match the CSS transition time
+
+        draggedElement = null;
       }
-      draggedElement = null;
     }
+
 
     function swapRows(row1, row2) {
       const parentNode = row1.parentNode;
@@ -193,9 +204,11 @@ class AdminMenu {
     function updateRowNumbers() {
       const rows = tbody.querySelectorAll('tr');
       rows.forEach((row, index) => {
+        console.log("made something here")
         // Assuming the position number is in the second cell
         row.cells[1].textContent = index + 1;
       });
     }
   }
+
 }

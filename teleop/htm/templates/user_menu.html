@@ -9,7 +9,7 @@
 		<link rel="stylesheet" href="../static/external/datatables/datatables-1.11.5.min.css" />
 		<link rel="stylesheet" href="../static/external/datatables/fixedheader-3.2.2.min.css" />
 		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
-		<link rel="stylesheet" type="text/css" href="../static/CSS/user_admin.css" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu_robot.css" />
 		<link rel="shortcut icon" href="#" />
 	</head>
 
@@ -22,7 +22,7 @@
 				<p><a id="controls_link" href="#">Controls</a></p>
 				<p><a id="logbox_link" href="#">Events</a></p>
 				<p><a id="phone_controller_link" href="/mobile_controller_ui">Phone Controller</a></p>
-				<p><a id="admin_settings_link" href="#">Admin settings</a></p>
+				<p><a id="robot_settings_link" href="#">Robot Configuration</a></p>
 			</nav>
 
 			<main class="application-content">
@@ -38,7 +38,7 @@
 		<script src="../static/JS/userMenu/menu_settings.js"></script>
 		<script src="../static/JS/userMenu/menu_controls.js"></script>
 		<script src="../static/JS/userMenu/menu_logbox.js"></script>
-		<script src="../static/JS/userMenu/menu_admin.js"></script>
+		<script src="../static/JS/userMenu/menu_robot.js"></script>
 	</body>
 </html>
 <script type="text/javascript">
@@ -101,11 +101,11 @@
 				$('a#logbox_link').addClass('active');
 				menu_user_logbox_main(el_container);
 				break;
-			case 'admin_settings_link':
-				$('a#admin_settings_link').addClass('active');
-				$('#application-content-container').load('/user_admin', function () {
-					// Code to initialize and use AdminMenu
-					const adminSettings = new AdminMenu();
+			case 'robot_settings_link':
+				$('a#robot_settings_link').addClass('active');
+				$('#application-content-container').load('/user_robot', function () {
+					// Code to initialize and use RobotMenu
+					const robotSettings = new RobotMenu();
 				});
 
 				break;
@@ -129,8 +129,8 @@
 		$('a#logbox_link').click(function () {
 			_user_menu_route_screen('logbox');
 		});
-		$('a#admin_settings_link').click(function () {
-			_user_menu_route_screen('admin_settings_link');
+		$('a#robot_settings_link').click(function () {
+			_user_menu_route_screen('robot_settings_link');
 		});
 
 		// Load the last visited screen from cache. Default value for it is settings tab

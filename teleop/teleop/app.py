@@ -218,7 +218,7 @@ class TemplateRenderer(tornado.web.RequestHandler):
     _TEMPLATES = {
         "normalcontrol": "index.html",
         "user_menu": "user_menu.html",
-        "user_admin": "user_admin.html",
+        "user_robot": "user_menu_robot.html",
         "mobile_controller_ui": "mobile_controller_ui.html",
         "testFeature": "testFeature.html",
     }
@@ -340,7 +340,7 @@ def main():
                 # Navigate to user menu settings page
                 (r"/(user_menu)", TemplateRenderer),
                 # Navigate to admin section in user menu
-                (r"/(user_admin)", TemplateRenderer),
+                (r"/(user_robot)", TemplateRenderer),
                 # Navigate to Mobile controller UI
                 (r"/(mobile_controller_ui)", TemplateRenderer),
                 # Navigate to a testing page
