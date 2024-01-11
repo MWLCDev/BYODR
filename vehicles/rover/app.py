@@ -282,55 +282,8 @@ class ConfigFiles:
         with open(ini_file, "w") as configfile:
             config.write(configfile)
 
-    def update_robot_config(self):
-        """Check and update the IP address in robot_config.ini."""
-        # Count the number of 'segment_' sections
-        segment_count = sum(1 for section in self.robot_config_parser.sections() if section.startswith("segment_"))
-        print(segment_count)
-        if segment_count != 1:
-            print("This segment is part of a robot. No changes to be made in robot_config.ini")
-            return
-
-        ip_changed = self.__update_ip_address()
-
-        if not ip_changed:
-            logger.info("No need to change IP in robot_config.ini")
-        else:
-            logger.info("Updated robot_config.ini")
-
-    def __update_ip_address(self):
-        """Update the IP address in robot_config.ini if necessary."""
-        config_ip_number = self.robot_config_parser.get("segment_1", "ip.number")
-        ip_addresses = (
-            subprocess.check_output(
-                "hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'",
-                shell=True,
-            )
-            .decode()
-            .strip()
-        )
-        if config_ip_number != ip_addresses:
-            self.robot_config_parser.set("segment_1", "ip.number", ip_addresses)
-            with open(self.robot_config_dir, "w") as config_file:
-                self.robot_config_parser.write(config_file)
-            logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
-            return True
-        return False
-
-    # def __update_mac_address(self):
-    #     """Update the MAC address in robot_config.ini if necessary."""
-    #     config_mac_address = self.segment_config_parser.get("segment_1", "mac.address")
-    #     router_mac_address = self._segment_router.fetch_router_mac()
-    #     if config_mac_address != router_mac_address:
-    #         self.parser.set("segment_1", "mac.address", router_mac_address)
-    #         with open(self.robot_config_path, "w") as config_file:
-    #             self.parser.write(config_file)
-    #         logger.info("Changed MAC address in robot_config.ini to {}".format(router_mac_address))
-    #         return True
-    #     return False
-
     def change_segment_config(self):
-        """Change the ips in all the config files the segment is using them.
+        """Change the ips in the config file the segment is using them.
         It will count on the ip of the nano"""
         # Get the local IP address's third octet
         ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
@@ -405,7 +358,6 @@ class RoverApplication(Application):
                 self._config_hash = _hash
                 self._config_files_class.check_configuration_files()
                 self._config_files_class.change_segment_config()
-                self._config_files_class.update_robot_config()
                 _config = self._config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
