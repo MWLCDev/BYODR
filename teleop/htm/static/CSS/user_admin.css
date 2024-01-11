@@ -3,7 +3,6 @@ html{
   overflow: hidden; /* This will prevent scrollbar from appearing */
 }
 #container_admin_settings {
-  /* it is overridden by other code parts*/
   font-family: Helvetica, sans-serif;
   padding-left: 1vw;
 }
@@ -36,11 +35,25 @@ html{
   /* Adds spacing between columns */
   padding: 1em 0.5em;
 }
+
+#segment_table th {
+  border-top: none;
+  /* Remove top border from header */
+}
+
+.floating {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03);
+  z-index: 1000;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+
+
 #segment_table td:first-child {
   cursor: grab;
 }
 
-/* Optional: Style to indicate a draggable area */
 #segment_table td:first-child::before {
   content: '☰';
   display: inline-block;
@@ -62,8 +75,4 @@ html{
     opacity: 1;
     transform: translateX(0);
   }
-}
-
-.fade-in-left {
-  animation: fadeInLeft 0.5s ease-out;
 }
