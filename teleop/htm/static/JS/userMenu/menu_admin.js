@@ -48,12 +48,25 @@ class AdminMenu {
     try {
       const response = await fetch('/teleop/robot/options');
       const jsonData = await response.json();
-      console.log(jsonData)
+      console.log(jsonData);
+      // Extract only the segments data
+      const segmentsData = this.extractSegmentsData(jsonData);
       // Call a function to update the table with segment in robot data
-      this.updateSegmentsTable(jsonData);
+      this.updateSegmentsTable(segmentsData);
     } catch (error) {
       console.error('There has been a problem with your fetch operation:', error);
     }
+  }
+
+  // Function to extract only the segments data
+  extractSegmentsData(data) {
+    let segmentsData = {};
+    for (const key in data) {
+      if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
+        segmentsData[key] = data[key];
+      }
+    }
+    return segmentsData;
   }
 
   updateSegmentsTable(data) {
