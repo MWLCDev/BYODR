@@ -1,6 +1,7 @@
 class RobotMenu {
   constructor() {
-    new SegmentTableManager(this);
+    this.robotUtils = new RobotUtils()
+    new SegmentTableManager(this, this.robotUtils);
     this.getNanoIP();
     this.setupWifiNetworksButton();
   }
@@ -10,7 +11,7 @@ class RobotMenu {
     wifiButton.addEventListener('click', () => {
       // Disable the button and set a timer to re-enable it
       wifiButton.disabled = true;
-      this.showToast('please wait to try again');
+      this.robotUtils.showToast('please wait to try again');
 
       this.getWifiNetworks()
         .then(() => {
@@ -23,6 +24,74 @@ class RobotMenu {
         });
     });
   }
+
+  async getNanoIP() {
+    const data = await this.robotUtils.callRouterApi('get_nano_ip'); // Calls fetch_ssid function in Router class
+    const showSSID = document.getElementById('dummy_text');
+    console.log(data);
+    showSSID.innerHTML = data.message;
+  }
+
+  async getWifiNetworks() {
+    try {
+      let data = await this.robotUtils.callRouterApi('get_wifi_networks');
+
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
+
+      const tbody = document.querySelector('#connectable_networks_table tbody');
+      tbody.innerHTML = '';
+      console.log(data);
+      data.forEach((network, index) => {
+        const ssid = network['ESSID'];
+        const mac = network['MAC'];
+
+        const tr = document.createElement('tr');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Add';
+
+        // button.addEventListener('click', () => {
+        //   this.callRouterApi('add_network', { ssid: ssid, mac: mac });
+        // });
+
+        tr.innerHTML = `<td>${ssid}</td><td></td>`;
+        tr.children[1].appendChild(button);
+
+        // Add animation with a delay
+        tr.style.animationDelay = `${index * 0.1}s`;
+        tr.classList.add('fade-in-left');
+
+        tbody.appendChild(tr);
+      });
+    } catch (error) {
+      console.error('Error fetching WiFi networks:', error);
+    }
+  }
+
+  updatePositionIndices() {
+    const rows = document.querySelectorAll('#segment_table tbody tr');
+    rows.forEach((row, index) => {
+      const positionCell = row.cells[1];
+      if (positionCell) {
+        positionCell.textContent = index + 1; // +1 because indices are 0-based
+      }
+    });
+  }
+
+
+}
+class RobotUtils {
+  set segmentsData(newData) {
+    this._segmentsData = newData;
+    // You can also add additional logic here if you want to react to the data change
+  }
+
+  get segmentsData() {
+    return this._segmentsData;
+  }
+
 
   async callRouterApi(action, params = {}) {
     try {
@@ -52,62 +121,6 @@ class RobotMenu {
     }
   }
 
-  async getNanoIP() {
-    const data = await this.callRouterApi('get_nano_ip'); // Calls fetch_ssid function in Router class
-    const showSSID = document.getElementById('dummy_text');
-    console.log(data);
-    showSSID.innerHTML = data.message;
-  }
-
-  async getWifiNetworks() {
-    try {
-      let data = await this.callRouterApi('get_wifi_networks');
-
-      if (typeof data === 'string') {
-        data = JSON.parse(data);
-      }
-
-      const tbody = document.querySelector('#connectable_networks_table tbody');
-      tbody.innerHTML = '';
-      console.log(data);
-      data.forEach((network, index) => {
-        const ssid = network['ESSID'];
-        const mac = network['MAC'];
-
-        const tr = document.createElement('tr');
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = 'Add';
-
-        button.addEventListener('click', () => {
-          this.callRouterApi('add_network', { ssid: ssid, mac: mac });
-        });
-
-        tr.innerHTML = `<td>${ssid}</td><td></td>`;
-        tr.children[1].appendChild(button);
-
-        // Add animation with a delay
-        tr.style.animationDelay = `${index * 0.1}s`;
-        tr.classList.add('fade-in-left');
-
-        tbody.appendChild(tr);
-      });
-    } catch (error) {
-      console.error('Error fetching WiFi networks:', error);
-    }
-  }
-
-  updatePositionIndices() {
-    const rows = document.querySelectorAll('#segment_table tbody tr');
-    rows.forEach((row, index) => {
-      // Assuming the position number should be in the second cell (td) of each row
-      const positionCell = row.cells[1];
-      if (positionCell) {
-        positionCell.textContent = index + 1; // +1 because indices are 0-based
-      }
-    });
-  }
-
   showToast(message) {
     const toast = document.createElement('div');
     toast.textContent = message;
@@ -130,14 +143,65 @@ class RobotMenu {
 }
 
 class SegmentTableManager {
-  constructor(robotMenu) {
+  constructor(robotMenu, robotUtils) {
     this.robotMenu = robotMenu;
+    this.robotUtils = robotUtils;
     this.tbody = document.querySelector('#segment_table tbody');
     this.draggedElement = null;
-
-    // Initialize both functionalities
+    // Initialize both main functionalities
     this.enableDragAndDrop();
     this.fetchSegmentDataAndDisplay();
+  }
+
+
+
+  // Method to fetch data from the API and display it
+  async fetchSegmentDataAndDisplay() {
+    try {
+      const response = await fetch('/teleop/robot/options');
+      const jsonData = await response.json();
+      // Extract only the segments data
+      this.robotUtils.segmentsData = this.extractSegmentsData(jsonData);
+      this.robotMenu.showSegments()
+      // Call a function to update the table with segment in robot data
+      this.updateSegmentsTable();
+    } catch (error) {
+      console.error('There has been a problem with your fetch operation:', error);
+    }
+  }
+
+  // Function to extract only the segments data
+  extractSegmentsData(data) {
+    let segmentsData = {};
+    for (const key in data) {
+      if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
+        segmentsData[key] = data[key];
+      }
+    }
+    return segmentsData;
+  }
+
+  // Function to update the table with segments data
+  updateSegmentsTable() {
+    const tbody = document.querySelector('#container_segment_table table tbody');
+    tbody.innerHTML = '';
+    for (const segment in this.robotUtils.segmentsData) {
+      const row = this.robotUtils.segmentsData[segment];
+      const tr = document.createElement('tr');
+
+      // Check if the 'main' value is true and set the radio button accordingly
+      const isMainSegment = row['main'] === 'True';
+
+      tr.innerHTML = `
+        <td></td>
+        <td></td>
+        <td>${row['wifi.name']}</td>
+        <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
+        <td><button type="button">X</button></td>
+      `;
+      tbody.appendChild(tr);
+    }
+    this.robotMenu.updatePositionIndices();
   }
 
   enableDragAndDrop() {
@@ -197,55 +261,6 @@ class SegmentTableManager {
     const parentNode = row1.parentNode;
     const nextSibling = row1.nextElementSibling === row2 ? row1 : row1.nextElementSibling;
     parentNode.insertBefore(row2, nextSibling);
-  }
-
-  // Method to fetch data from the API and display it
-  async fetchSegmentDataAndDisplay() {
-    try {
-      const response = await fetch('/teleop/robot/options');
-      const jsonData = await response.json();
-      console.log(jsonData);
-      // Extract only the segments data
-      const segmentsData = this.extractSegmentsData(jsonData);
-      // Call a function to update the table with segment in robot data
-      this.updateSegmentsTable(segmentsData);
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation:', error);
-    }
-  }
-
-  // Function to extract only the segments data
-  extractSegmentsData(data) {
-    let segmentsData = {};
-    for (const key in data) {
-      if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
-        segmentsData[key] = data[key];
-      }
-    }
-    return segmentsData;
-  }
-
-  // Function to update the table with segments data
-  updateSegmentsTable(data) {
-    const tbody = document.querySelector('#container_segment_table table tbody');
-    tbody.innerHTML = '';
-    for (const segment in data) {
-      const row = data[segment];
-      const tr = document.createElement('tr');
-
-      // Check if the 'main' value is true and set the radio button accordingly
-      const isMainSegment = row['main'] === 'True';
-
-      tr.innerHTML = `
-        <td></td>
-        <td></td>
-        <td>${row['wifi.name']}</td>
-        <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
-        <td><button type="button">X</button></td>
-      `;
-      tbody.appendChild(tr);
-    }
-    this.robotMenu.updatePositionIndices();
   }
 
 }
