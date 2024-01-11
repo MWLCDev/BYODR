@@ -79,6 +79,20 @@ class DataPublisher(threading.Thread):
         self.context.term()
 
 
+import threading
+import zmq
+import json
+import logging
+import datetime, configparser
+import os
+import time
+
+from byodr.utils.ssh import Router, Nano
+
+# This file will have the ZMQ socket and dealing with the robot configuration file
+logger = logging.getLogger(__name__)
+
+
 class TeleopSubscriberThread(threading.Thread):
     def __init__(self, listening_ip, event, robot_config_dir, sub_port=5454, req_port=5455):
         # Set up necessary attributes and methods that TeleopSubscriberThread inherits from Thread.
@@ -90,7 +104,6 @@ class TeleopSubscriberThread(threading.Thread):
         self._quit_event = event
         self.robot_config_dir = robot_config_dir
         self._router_actions = RouterActions(self.robot_config_dir)
-        self._router_actions = RouterActions()
 
         self.context = zmq.Context()
         self.req_socket = self.context.socket(zmq.REQ)
@@ -112,8 +125,9 @@ class TeleopSubscriberThread(threading.Thread):
                 socks = dict(self.poller.poll(1000))  # Check every 1000 ms
                 if self.sub_socket in socks and socks[self.sub_socket] == zmq.POLLIN:
                     message = self.sub_socket.recv_string()
-                    # print(f"Received: {message}")
+                    # print(message)
                     self.process_message(message)
+
         finally:
             self.req_socket.send_string(f"DISCONNECT {subscriber_ip}")
             logging.info("TeleopSubscriberThread is about to close")
@@ -142,8 +156,6 @@ class TeleopSubscriberThread(threading.Thread):
         self.req_socket.close()
         self.context.term()
 
-    def output_differences(self, json_data):
-        # Convert single quotes to double quotes for JSON parsing
 
 class RouterActions:
     def __init__(self, robot_config):
@@ -160,8 +172,51 @@ class RouterActions:
         self.robot_config_parser = configparser.ConfigParser()
         self.robot_config_parser.read(self.robot_config_dir)
 
+    def driver(self, json_data):
+        self.__set_parsers()
         # Parse the JSON data
-        json_dict = json.loads(json_data)
+        self.received_json_data = json.loads(json_data)
+        # print(self.received_json_data)
+        # Get segments from JSON and INI file
+        self.json_segments = set(self.received_json_data.keys())
+        self.ini_segments = set(self.robot_config_parser.sections())
+        # Step 1: check if there are any changes between the received data and the existing one
+        if self.check_for_difference():
+            # logger.info("found difference")
+            if self.check_segment_existence():
+                self.router_visibility()
+                # processed with the check for adjacent segment
+                # DONE####
+                # self.check_adjacent_segments()
+                pass
+            else:
+                # remove the connection
+                pass
+            # self.default_robot_config()
+        else:
+            logger.info("No changes were found with all data in current robot_config.ini")
+
+    def check_for_difference(self):
+        """Check if there is a difference between received data and saved data in robot_config.ini"""
+
+        # Initialize a flag to indicate if there is any difference
+        is_different = False
+
+        # Check each segment present in both JSON and INI file
+        for segment in self.json_segments.intersection(self.ini_segments):
+            # For each key in the segment, compare JSON and INI values
+            for key in self.received_json_data[segment]:
+                if self.robot_config_parser.get(segment, key, fallback="Key Not Found") != self.received_json_data[segment][key]:
+                    # Set the flag to True if a difference is found
+                    is_different = True
+                    # Break out of the loop as we only need to know if there's any difference
+                    break
+            if is_different:
+                # Break out of the outer loop as well
+                break
+
+        # Return the boolean flag indicating whether there was a difference
+        return is_different
 
     def check_segment_existence(self):
         """Check if the current segment exists in the received data."""
@@ -173,75 +228,183 @@ class RouterActions:
                 return True
         return False  # Return False if the current segment is not found
 
-        # Read and parse the INI file
+    # ADD FUNCTION TO CHECK FOR MAIN IN ROUTER VISIBILITY
+    def router_visibility(self):
+        current_state = self.current_segment.get("main")
+        # self._router.change_wifi_visibility(current_state)
+
+    def check_adjacent_segments(self):
+        """
+        Check for new, mismatched, and good segments in the adjacent segments.
+        """
+        # Identifying adjacent segments
+        adjacent_segments_indices = [self.current_segment_index - 1, self.current_segment_index + 1]
+        adjacent_segments = [f"segment_{i + 1}" for i in adjacent_segments_indices if i >= 0]
+
+        # Consolidate .ini file data for comparison
+        ini_data = {}
+        for section in self.robot_config_parser.sections():
+            if section.startswith("segment_"):
+                ini_data[section] = {key: self.robot_config_parser.get(section, key) for key in ["ip.number", "wifi.name", "mac.address"]}
+
+        for segment in adjacent_segments:
+            json_segment_data = self.received_json_data.get(segment)
+
+            if json_segment_data:
+                # Check if the segment details exist in any .ini file segment
+                # CASE FOR A NEW ADDED SEGMENT
+                # Identify a segment as "new" if its details (IP, WiFi, MAC) in the JSON data do not exist under any header in the .ini file.
+                if not any(json_segment_data == details for details in ini_data.values()):
+                    logger.info(f"New segment: {json_segment_data.get('wifi.name')}")
+                    # self.check_segment_connection(json_segment_data)
+                    # Identify a segment as a "mismatch" if the same header exists in both JSON and .ini files but with different data.
+                    # THIS IS THE CASE FOR REPOSITION FROM THE OP
+                elif segment in ini_data and json_segment_data != ini_data[segment]:
+                    # Mismatch in existing segment
+                    logger.info(f"Mismatch in {segment}. JSON: {json_segment_data.get('wifi.name')}, INI: {ini_data[segment].get('wifi.name')}")
+                    # self.check_segment_connection(json_segment_data)
+                    # self.remove_segment_connection(ini_data[segment])
+                elif segment in ini_data and json_segment_data == ini_data[segment]:
+                    # Adjacent segment data matches
+                    position = "before" if int(segment.split("_")[-1]) < self.current_segment_index + 1 else "after"
+                    logger.info(f"Adjacent segment in position {position} is good")
+                    # self.check_segment_connection(json_segment_data)
+
+    def check_segment_connection(self, adjacent_segment):
+        """Ping the adjacent segment to make sure there is both ways connection to it"""
+
+        sleeping_time, connection_timeout_limit = 1, 5
+        while not self._router.check_network_connection(adjacent_segment.get("ip.number")) and sleeping_time < connection_timeout_limit:
+            logger.info(f"Retrying in {sleeping_time}seconds ({sleeping_time}/{connection_timeout_limit})")
+            time.sleep(sleeping_time)
+            sleeping_time += 1
+            # In a good day, this case shouldn't come true.
+            if sleeping_time > connection_timeout_limit:
+                logger.info(f"There is no connection with segment {adjacent_segment.get('wifi.name')}")
+                logger.info(f"Will create connection with it")
+                self.create_segment_connection(adjacent_segment)
+                break
+            logger.info(f"There is connection with {adjacent_segment.get('wifi.name')}. No action needed")
+            # self.save_robot_config()
+
+    def save_robot_config(self):
+        """Delete the data existing in the current robot_config.ini and place all the received data in it"""
+        # Clear existing content in the configparser
+        self.robot_config_parser.clear()
+
+        # Iterate over the JSON data and add sections and keys to the INI file
+        for segment, values in self.received_json_data.items():
+            self.robot_config_parser.add_section(segment)
+            for key, value in values.items():
+                # Convert boolean strings 'true'/'false' to 'True'/'False'
+                if isinstance(value, str) and value.lower() in ["true", "false"]:
+                    value = value.capitalize()
+                self.robot_config_parser.set(segment, key, value)
+
+        # Write the updated configuration to the file
+        with open(self.robot_config_dir, "w") as configfile:
+            self.robot_config_parser.write(configfile)
+
+    def remove_segment_connection(self, target_segment):
+        adjacent_name = target_segment.get("wifi.name")
+        logger.info(adjacent_name)
+        # self._router.delete_network(adjacent_name)
+
+    def create_segment_connection(self, target_segment):
+        adjacent_name = target_segment.get("wifi.name")
+        adjacent_mac = target_segment.get("mac.address")
+        # logger.info(adjacent_name, adjacent_mac)
+        # self._router.connect_to_network(adjacent_name, adjacent_mac)
+
+    def default_robot_config(self):
+        """Remove all the headers from current robot_config and rename the header of current's ip to be segment_1.
+        Also, print the wifi.name of the segments before and after the matching segment (if they exist)."""
+        # IT ISN"T FULLY WORKING YET
+        # Read the current configuration
         config = configparser.ConfigParser()
-        with open(self.robot_config_dir, "r") as ini_file:
-            config.read_file(ini_file)
+        config.read(self.robot_config_dir)
 
-        json_segments = set(json_dict.keys())
-        ini_segments = set(config.sections())
-
-        if json_segments > ini_segments:
-            extra_segments = json_segments - ini_segments
-            for segment in extra_segments:
-                print(f"Adding more sections: {segment} ==> " + ", ".join(f"{key} = {value}" for key, value in json_dict[segment].items()))
-        elif json_segments < ini_segments:
-            extra_segments = ini_segments - json_segments
-            for segment in extra_segments:
-                # Convert the configparser section to a dictionary
-                segment_details = {key: config[segment][key] for key in config[segment]}
-                print(f"ٌRemoving sections: {segment} ==> " + ", ".join(f"{key} = {value}" for key, value in segment_details.items()))
-        else:
-            print("No difference in sections")
-
-    def cleanup(self):
-        self.sub_socket.close()
-        self.req_socket.close()
-        self.context.term()
-
-
-class RouterActions:
-    def add_connection(self, json_data):
-        # Convert JSON data to a dictionary if it's in string format
-        self_ip = Nano.get_ip_address()
-        data = json.loads(json_data)
-        # Extract headers and their respective data
-        headers = list(data.keys())
-        found = False
-        for i, header in enumerate(headers):
-            if data[header]["ip.number"] == self_ip:
-                found = True
-                # This case wouldn't happen, as the message would have at least two segments in it.
-                if len(headers) == 1:
-                    # Isolated segment
-                    print(f"Self IP found in {header}. No adjacent segments.")
-                    print("No new connection needs to be made")
-                elif i == 0:
-                    # First segment (only a segment after)
-                    after = headers[i + 1]
-                    print(f"Self IP found in {header}. The segment after is: {after}")
-                    self.check_adjacent_nano(data[after])
-                elif i == len(headers) - 1:
-                    # Last segment (only a segment before)
-                    before = headers[i - 1]
-                    print(f"Self IP found in {header}. The segment before is: {before}")
-                    self.check_adjacent_nano(data[before])
-                    # print(os.environ['PATH'])
-
-                else:
-                    # Middle segment (both before and after)
-                    before = headers[i - 1]
-                    after = headers[i + 1]
-                    print(f"Self IP found in {header}. It is between {before} and {after}")
+        # Find the section with the matching IP address
+        matching_section = None
+        segments = [s for s in config.sections() if s.startswith("segment_")]
+        for i, section in enumerate(segments):
+            if config.get(section, "ip.number", fallback=None) == self._ip:
+                matching_section = section
+                matching_index = i
                 break
 
-        if not found:
-            print("No new connection to make")
+        # Print WiFi names of segments before and after the matching segment
+        if matching_section:
+            section_data = {}
+            if matching_index > 0:
+                previous_section = segments[matching_index - 1]
+                section_data["wifi.name"] = config.get(previous_section, "wifi.name", fallback="Not available")
+                print(f"Lead segment WiFi name: {section_data['wifi.name']}")
+                self.remove_segment_connection(section_data)
+            if matching_index < len(segments) - 1:
+                next_section = segments[matching_index + 1]
+                section_data["wifi.name"] = config.get(next_section, "wifi.name", fallback="Not available")
+                print(f"Follow segment WiFi name: {section_data['wifi.name']}")
+                self.remove_segment_connection(section_data)
 
-    def check_adjacent_nano(self, adjacent_segment):
-        # print(adjacent_segment["ip.number"])
-        response = ping(adjacent_segment["ip.number"], count=4, verbose=False)
-        if response.success():
-            print(f"Success: Device at {adjacent_segment['ip.number']} is reachable.")
-        else:
-            print(f"Failure: Device at {adjacent_segment['ip.number']} is not reachable.")
+        #     # Store the details of the matching section
+        #     details = dict(config.items(matching_section))
+
+        #     # Remove all segment_ sections
+        #     for section in segments:
+        #         config.remove_section(section)
+
+        #     # Add the matching section back as segment_1
+        #     config["segment_1"] = details
+
+        #     # Write the updated configuration back to the file
+        #     with open(self.robot_config_dir, "w") as configfile:
+        #         config.write(configfile)
+        #     logger.info("Removed all sections from current robot_config")
+        # else:
+        #     logger.info("No matching section found.")
+
+    # def compare_segments(self, adjacent_segment, position):
+    #     """Compare the data received with the existing one in robot_config for only the adjacent segments"""
+
+    #     # Check if the adjacent segment exists in the INI file
+    #     if adjacent_segment not in self.robot_config_parser:
+    #         logger.info(f"New header's details for {position} segment is {adjacent_segment}")
+    #         return
+    #     # IN CASE THE SEGMENT'S KEY_TO_COMPARE IS NEW, AND THERE WASN'T A HEADER IN THE SAME NAME AS IT IN THE .INI FILE, THEN LOG "GOT A NEW SEGMENT THAT DIDN'T EXIST BEFORE" AND PRINT IT'S WIFI.NAME.
+    #     # IF THE SEGMENT'S KEY_TO_COMPARE IS NEW, AND THERE WAS A HEADER IN THE SAME NAME AS IT IN THE .INI FILE, THEN
+    #     # 1- LOG "DELETING OLD CONNECTION" AND PRINT THE OLD SEGMENT'S (THE ONE FROM .INI FILE) WIFI.NAME
+    #     # 3- PRINT "MAKING NEW CONNECTION" AND PRINT THE NEW SEGMENT'S (IN JSON DATA) WIFI.NAME AND MAC.ADDRESS
+    #     #  DELETE THE OLD CONNECTION FROM THE SAME POSITION IN .INI FILE AND MAKE NEW CONNECTION WITH THE ONE RECEIVED FROM THE JSON
+    #     # Define the keys to compare. The v.number can be added later
+    #     keys_to_compare = ["ip.number", "wifi.name", "mac.address"]
+    #     ini_segment_data = {key: self.robot_config_parser.get(adjacent_segment, key) for key in keys_to_compare}
+    #     json_segment_data = self.received_json_data.get(adjacent_segment, {})
+
+    #     # Check if all required keys are present in JSON data
+    #     if all(key in json_segment_data for key in keys_to_compare):
+    #         # Check if all data is different
+    #         if all(json_segment_data.get(key) != ini_segment_data.get(key) for key in keys_to_compare):
+    #             logger.info(f"Got new segment in {position} position")
+    #         # Check for change in IP address only
+    #         elif json_segment_data.get("ip.number") != ini_segment_data.get("ip.number"):
+    #             logger.info("Change in the position of adjacent segment")
+    #             # self.remove_segment_connection(adjacent_segment)
+    #         # If no change in specified keys
+    #         else:
+    #             self.check_segment_connection(position, adjacent_segment)
+    #     else:
+    #         logger.info(f"Not all required keys found in JSON data for {position} segment {adjacent_segment}")
+
+    #     # Additional checks or actions can be added here if needed
+
+    # DEALING WITH THE NETWORK
+    # def check_adjacent_segments(self):
+    #     # Check if there are segments that are after or before the current one with the .ini file
+    #     # 1-I will give you an ip.number for the current entry in the json data, let's say it is self._ip.
+    #     # 2-you should compare the data between the json and .ini file with between the current segment and the entry after or before it only.
+    #     # 3-if there is a new adjacent segment then print (new header's {DETAILS})
+    #     # 4-if the after and before entry are the same, then check the data in them
+    #     # you can decide if you want to make the two checks (point 3 and 4) inside each others or each alone. It is up to you
+    #     # if the data for after or before is changed then print (changed data in {AFTER OR BEFORE}  is {KEY AND VALUE OF CHANGED DATA FROM THE INI FILE})
+    #     pass
