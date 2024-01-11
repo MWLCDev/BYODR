@@ -115,10 +115,29 @@ class RobotMenu {
 
 }
 class RobotUtils {
+
+  /**
+   * Add one data entry to the list of segments
+   */
   set segmentsData(newData) {
-    this._segmentsData = newData;
-    // You can also add additional logic here if you want to react to the data change
+    // Check if newData is already in _segmentsData
+    for (const key in this._segmentsData) {
+      if (this._segmentsData.hasOwnProperty(key)) {
+        const existingSegment = this._segmentsData[key];
+        const newSegment = newData[Object.keys(newData)[0]]; // Assuming newData contains only one segment to add
+
+        if (existingSegment['wifi.name'] === newSegment['wifi.name'] &&
+          existingSegment['mac.address'] === newSegment['mac.address']) {
+          console.log('This network is already added.');
+          return;
+        }
+      }
+    }
+
+    // If the new data is not already in _segmentsData, add it
+    this._segmentsData = { ...this._segmentsData, ...newData };
   }
+
 
   get segmentsData() {
     return this._segmentsData;
