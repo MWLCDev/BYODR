@@ -43,6 +43,7 @@ class RobotMenu {
       const tbody = document.querySelector('#connectable_networks_table tbody');
       tbody.innerHTML = '';
       console.log(data);
+
       data.forEach((network, index) => {
         const ssid = network['ESSID'];
         const mac = network['MAC'];
@@ -52,10 +53,6 @@ class RobotMenu {
         button.type = 'button';
         button.textContent = 'Add';
 
-        // button.addEventListener('click', () => {
-        //   this.callRouterApi('add_network', { ssid: ssid, mac: mac });
-        // });
-
         tr.innerHTML = `<td>${ssid}</td><td></td>`;
         tr.children[1].appendChild(button);
 
@@ -64,11 +61,41 @@ class RobotMenu {
         tr.classList.add('fade-in-left');
 
         tbody.appendChild(tr);
+
+        // Add click event listener to the button
+        button.addEventListener('click', () => {
+          this.addNetworkToSegments(ssid, mac);
+
+        });
       });
     } catch (error) {
       console.error('Error fetching WiFi networks:', error);
     }
   }
+
+  // Function to add network to segmentsData
+  addNetworkToSegments(ssid, mac) {
+
+    let segments = this.robotUtils.segmentsData || {};
+    let newIndex = 1;
+    while (segments[`segment_${newIndex}`]) {
+      newIndex++;
+    }
+    // Create new segment
+    const newSegment = {
+      "ip.number": "",
+      "wifi.name": ssid,
+      "mac.address": mac,
+      "vin.number": "",
+      "position": "",
+      "main": "False",
+    };
+
+    this.robotUtils.segmentsData = { [`segment_${newIndex}`]: newSegment };
+    console.log(this.robotUtils.segmentsData)
+  }
+
+
 
   updatePositionIndices() {
     const rows = document.querySelectorAll('#segment_table tbody tr');
