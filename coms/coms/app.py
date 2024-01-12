@@ -80,6 +80,10 @@ def client_code():
             if local_ip == "192.168.1.100":
                 original_message = teleop_receiver.get()
 
+                # The code will get stuck in this loop, until COM gets non-None type commands from teleop
+                while original_message is None:
+                    original_message = teleop_receiver.get()
+
             # This block will be called by a segment that receives commands from its LD
             else:
                 # Using get() will make the command wait for a data packet to be availabie in the queue, so that it can be retrieved
@@ -131,6 +135,9 @@ def client_code():
 
                 # Sending the command to our FL
                 segment_client.send_to_FL(message_to_send)
+
+                # Sending commands to our local pilot service
+                coms_to_pilot_publisher.publish(message_to_send)
 
                 # Receiving a reply from the FL
                 reply_from_server = segment_client.recv_from_FL()
@@ -190,7 +197,7 @@ def server_code():
                     counter_server = 0
 
                 # Sending a reply to the LD
-                segment_server.send_to_LD("I got your message")
+                segment_server.send_to_LD({"Message": "I got your message"})
 
             ######################################################################################################
 
