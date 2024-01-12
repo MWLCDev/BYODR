@@ -65,21 +65,11 @@ class Segment_client():
 
     # Sending data to the server
     def send_to_FL(self, message_to_send):
-
-
-        if message_to_send is None:
-            message_to_send = "I am the client"
-
-        # Checking to see if we are sending a dictionary (movement commands) or a normal string
-        # We try to send a dictionary (movement commands)
-        if type(message_to_send) is dict:
-            message_to_send = json.dumps(message_to_send)
-
+        message_to_send = json.dumps(message_to_send)
         self.client_socket.send(message_to_send.encode("utf-8"))
 
 
     # Receiving data from the server
     def recv_from_FL(self):
-
         recv_message = self.client_socket.recv(512).decode("utf-8")
         return recv_message

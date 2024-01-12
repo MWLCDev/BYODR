@@ -51,29 +51,14 @@ class Segment_server():
             except Exception as e:
                 logger.error(f"[Server] Got error while waiting for client: {e}")
 
-# Check for None messages being passed around
-# And check if i can not execute an if every time i want to send a message
 
     # Sending to the client
     def send_to_LD(self, message_to_send):
-        
-        if message_to_send is None:
-            message_to_send = "I am the server"
-
+        message_to_send = json.dumps(message_to_send)
         self.client_socket.send(message_to_send.encode("utf-8"))
-
 
 
     # Receiving from the client
     def recv_from_LD(self):
-        
-        # Receiving message from the client
         recv_message = self.client_socket.recv(512).decode("utf-8")
-
-        # Checking if the data received is a JSON string or a normal string
-        try:
-            decoded_message = json.loads(recv_message) # Its a json
-        except (ValueError, TypeError) as e:
-            decoded_message = recv_message # Its a normal string
-        
-        return decoded_message
+        return recv_message
