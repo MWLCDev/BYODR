@@ -162,13 +162,36 @@ class RobotUtils {
     return this.#segmentData;
   }
 
-    // If the new data is not already in _segmentsData, add it
-    this._segmentsData = { ...this._segmentsData, ...newData };
+  removeSegment(segName) {
+    // Iterate over each segment to find the one with the matching name
+    for (const key in this.#segmentData) {
+      if (this.#segmentData.hasOwnProperty(key)) {
+        const segment = this.#segmentData[key];
+        if (segment['wifi.name'] === segName) {
+          delete this.#segmentData[key];
+
+          this.reorganizeSegments();
+
+          console.log(`Segment with name ${segName} has been removed.`);
+          return;
+        }
+      }
+    }
+
+    console.log(`Segment with name ${segName} not found.`);
   }
 
-
-  get segmentsData() {
-    return this._segmentsData;
+  // Function to reorganize segments after deletion
+  reorganizeSegments() {
+    const newSegmentData = {};
+    let newIndex = 1;
+    for (const key in this.#segmentData) {
+      if (this.#segmentData.hasOwnProperty(key)) {
+        newSegmentData[`segment_${newIndex}`] = this.#segmentData[key];
+        newIndex++;
+      }
+    }
+    this.#segmentData = newSegmentData;
   }
 
 
