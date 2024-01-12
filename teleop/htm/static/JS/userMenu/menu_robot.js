@@ -81,12 +81,12 @@ class RobotMenu {
 
   // Function to add network to segmentsData
   addNetworkToSegments(ssid, mac) {
-
     let segments = this.robotUtils.segmentsData || {};
     let newIndex = 1;
     while (segments[`segment_${newIndex}`]) {
       newIndex++;
     }
+
     // Create new segment
     const newSegment = {
       "ip.number": "",
@@ -97,10 +97,12 @@ class RobotMenu {
       "main": "False",
     };
 
-    this.robotUtils.segmentsData = { [`segment_${newIndex}`]: newSegment };
-    console.log(this.robotUtils.segmentsData)
-  }
+    // Prepare the new segments data, including the new segment
+    const updatedSegments = { ...segments, [`segment_${newIndex}`]: newSegment };
 
+    // Update segments data using the setter
+    this.robotUtils.segmentsData = updatedSegments;
+  }
 
 
   updatePositionIndices() {
@@ -113,27 +115,52 @@ class RobotMenu {
     });
   }
 
-
 }
 class RobotUtils {
+  #segmentData = []
 
   /**
    * Add one data entry to the list of segments
    */
-  set segmentsData(newData) {
-    // Check if newData is already in _segmentsData
-    for (const key in this._segmentsData) {
-      if (this._segmentsData.hasOwnProperty(key)) {
-        const existingSegment = this._segmentsData[key];
-        const newSegment = newData[Object.keys(newData)[0]]; // Assuming newData contains only one segment to add
+  set segmentsData(newSegments) {
+    // Calculate the length of old and new data
+    const oldLength = Object.keys(this.#segmentData).length;
+    const newLength = Object.keys(newSegments).length;
+    // If new data has additional segments
+    if (newLength > oldLength) {
+      // Identify the new segments only
+      const newSegmentKeys = Object.keys(newSegments).slice(oldLength);
+      // Check each new segment for duplicates in the existing data
+      for (const key of newSegmentKeys) {
+        const newSegment = newSegments[key];
+        let isDuplicate = false;
+        for (const existingKey in this.#segmentData) {
+          if (this.#segmentData.hasOwnProperty(existingKey)) {
+            const existingSegment = this.#segmentData[existingKey];
+            if (existingSegment['wifi.name'] === newSegment['wifi.name'] &&
+              existingSegment['mac.address'] === newSegment['mac.address']) {
+              console.log(`${newSegment['wifi.name']} network is already added.`);
+              isDuplicate = true;
+              break;
+            }
+          }
+        }
 
-        if (existingSegment['wifi.name'] === newSegment['wifi.name'] &&
-          existingSegment['mac.address'] === newSegment['mac.address']) {
-          console.log('This network is already added.');
+        // If any new segment is a duplicate, retain the old data and return
+        if (isDuplicate) {
           return;
         }
       }
+
+      // If there are no duplicates, update #segmentData with the new data
+      this.#segmentData = newSegments;
     }
+  }
+
+
+  get segmentsData() {
+    return this.#segmentData;
+  }
 
     // If the new data is not already in _segmentsData, add it
     this._segmentsData = { ...this._segmentsData, ...newData };
