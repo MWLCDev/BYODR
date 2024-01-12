@@ -1,7 +1,7 @@
 class RobotMenu {
   constructor() {
     this.robotUtils = new RobotUtils()
-    new SegmentTableManager(this, this.robotUtils);
+    this.segmentTableManager = new SegmentTableManager(this, this.robotUtils);
     this.getNanoIP();
     this.setupWifiNetworksButton();
   }
@@ -71,6 +71,7 @@ class RobotMenu {
         button.addEventListener('click', () => {
           this.addNetworkToSegments(ssid, mac);
 
+          this.segmentTableManager.updateSegmentsTable()
         });
       });
     } catch (error) {
