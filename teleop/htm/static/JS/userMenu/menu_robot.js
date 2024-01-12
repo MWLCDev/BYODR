@@ -299,9 +299,16 @@ class SegmentTableManager {
         <td></td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
-        <td><button type="button">X</button></td>
+        <td><button type="button" data-wifiname="${row['wifi.name']}">X</button></td>
       `;
       tbody.appendChild(tr);
+
+      // Find the newly created button and attach the click event listener
+      const deleteButton = tr.querySelector(`button[data-wifiname="${row['wifi.name']}"]`);
+      deleteButton.addEventListener('click', () => {
+        this.robotUtils.removeSegment(row['wifi.name']);
+        this.updateSegmentsTable(); // Refresh the table after deletion
+      });
     }
     this.robotMenu.updatePositionIndices();
   }
