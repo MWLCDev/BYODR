@@ -73,12 +73,9 @@ class Segment_client():
         # Checking to see if we are sending a dictionary (movement commands) or a normal string
         # We try to send a dictionary (movement commands)
         if type(message_to_send) is dict:
-            json_formatted_message = json.dumps(message_to_send)
-            self.client_socket.send(json_formatted_message.encode("utf-8"))
+            message_to_send = json.dumps(message_to_send)
 
-        # We try to send a normal string
-        else:
-            self.client_socket.send(message_to_send.encode("utf-8"))
+        self.client_socket.send(message_to_send.encode("utf-8"))
 
 
     # Receiving data from the server
