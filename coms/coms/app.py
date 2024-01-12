@@ -137,7 +137,7 @@ def client_code():
                 segment_client.send_to_FL(message_to_send)
 
                 # Sending commands to our local pilot service
-                coms_to_pilot_publisher.publish(message_to_send)
+                coms_to_pilot_publisher.publish(original_message)
 
                 # Receiving a reply from the FL
                 reply_from_server = segment_client.recv_from_FL()
