@@ -58,7 +58,12 @@ class Segment_server():
         self.client_socket.send(message_to_send.encode("utf-8"))
 
 
+
     # Receiving from the client
     def recv_from_LD(self):
+        
+        # Receiving message from the client
         recv_message = self.client_socket.recv(512).decode("utf-8")
-        return recv_message
+        decoded_message = json.loads(recv_message)
+        
+        return decoded_message
