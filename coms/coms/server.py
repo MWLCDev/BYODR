@@ -1,6 +1,5 @@
 import socket
 import logging
-import time
 import json
 from byodr.utils.ssh import Nano
 nano_ip = Nano.get_ip_address()
@@ -21,6 +20,8 @@ class Segment_server():
         self.server_ip = arg_server_ip
         self.server_port = arg_server_port
         self.timeout = arg_timeout # Maybe 100ms
+        self.msg_to_client = None
+        self.msg_from_client = None
 
         # The server socket that will wait for clients to connect
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -53,17 +54,13 @@ class Segment_server():
 
 
     # Sending to the client
-    def send_to_LD(self, message_to_send):
-        message_to_send = json.dumps(message_to_send)
+    def send_to_LD(self):
+        message_to_send = json.dumps(self.msg_to_client)
         self.client_socket.send(message_to_send.encode("utf-8"))
 
 
 
     # Receiving from the client
     def recv_from_LD(self):
-        
-        # Receiving message from the client
         recv_message = self.client_socket.recv(512).decode("utf-8")
-        decoded_message = json.loads(recv_message)
-        
-        return decoded_message
+        self.msg_from_client = json.loads(recv_message)
