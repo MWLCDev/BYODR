@@ -27,10 +27,19 @@ class RobotMenu {
     });
     const saveTablesData = document.getElementById('save_config');
     saveTablesData.addEventListener('click', () => {
-      this.compareData()
+      this.send_config()
     });
   }
+  async send_config() {
+    // Prepare data to send
+    const dataToSend = RobotState.segmentsData;
 
+    // Call API with action 'got new file' and the prepared data
+    const response = await callRouterApi('new_robot_config', dataToSend);
+
+    // Handle the response
+    console.log('Response from server:', response);
+  }
 
   async getNanoIP() {
     const data = await callRouterApi('get_nano_ip'); // Calls fetch_ssid function in Router class
