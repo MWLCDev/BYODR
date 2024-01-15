@@ -4,14 +4,25 @@ import threading
 import queue
 import socket
 import copy
+import signal
 from byodr.utils.ipc import JSONPublisher, json_collector
 from byodr.utils.ssh import Nano
-nano_ip = Nano.get_ip_address()
 from .server import Segment_server
 from .client import Segment_client
 from .command_processor import process
 
+# This flag starts as false
 quit_event = multiprocessing.Event()
+quit_event.clear()
+
+signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
+signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
+
+
+# Set the flag as true when we receive interrupt signals
+def _interrupt():
+    logger.info("Received interrupt, quitting.")
+    quit_event.set()
 
 
 # Declaring the logger
@@ -30,9 +41,7 @@ lead_ip = "192.168." + str( int(local_ip[8])-1 ) + ".100"
 # A queue that will store messages received by the server of the segment
 msg_from_server_queue = queue.Queue(maxsize=1)
 
-
 # Declaring the inter-service sockets
-
 # Other socket located on pilot/app.py/140
 coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
@@ -56,97 +65,88 @@ def main():
     # Starting the functions that will allow the client and server of each segment to start sending and receiving data
     client_interface_thread = threading.Thread( target=client_code )
     server_interface_thread = threading.Thread( target=server_code )
+
+    # Starting the threads of Coms
     client_interface_thread.start()
     server_interface_thread.start()
+
+
+    ######################################################################################################
+    # In this block, Coms forwards commands to Pilot
+
+    while not quit_event.is_set():
+        # The head segment forwards commands from teleop
+        if local_ip == "192.168.1.100":
+            while not quit_event.is_set():
+                # print("[Client] Forwarding to pilot...")
+                coms_to_pilot_publisher.publish(segment_client.msg_to_server)
+
+        # All other segments are forwarding commands from the COM server
+        else:
+            while not quit_event.is_set():
+                # print("[Server] Forwarding to pilot...")
+                coms_to_pilot_publisher.publish(segment_server.msg_from_client)
+
+
+    ######################################################################################################
+
 
     # Closing the threads when the executions finish
     client_interface_thread.join()
     server_interface_thread.join()
+    logger.info("Stopped threads.")
 
+    return 0
 
 
 def client_code():
     counter_client = 0
 
-    while True:
-
+    while not quit_event.is_set():
         segment_client.connect_to_server()
 
-        while True:
+        ######################################################################################################
+        # Receiving the commands that we will process/forward to our FL, from Teleop or from our current LD
+
+        while not quit_event.is_set():
             counter_client = counter_client + 1
 
             # Receiving movement commands from Teleop and sending them to Pilot/app
             # This block will be called by the head segment, since only the head receives commands from its own teleop
             if local_ip == "192.168.1.100":
-                original_message = teleop_receiver.get()
+                segment_client.msg_to_server = teleop_receiver.get()
 
                 # The code will get stuck in this loop, until COM gets non-None type commands from teleop
-                while original_message is None:
-                    original_message = teleop_receiver.get()
+                while segment_client.msg_to_server is None:
+                    segment_client.msg_to_server = teleop_receiver.get()
 
             # This block will be called by a segment that receives commands from its LD
             else:
                 # Using get() will make the command wait for a data packet to be availabie in the queue, so that it can be retrieved
                 # Using get_nowait() will make the command get whatever is inside, and if its empty, it raises an exception (except queue.Empty)
                 try:
-                    original_message = msg_from_server_queue.get_nowait()
+                    segment_client.msg_to_server = msg_from_server_queue.get_nowait()
                 
                 except queue.Empty:
                     # If the queue is empty, we will wait for the queue to be full
-                    original_message = msg_from_server_queue.get()
-
-            # Making a new seperate object that has the same values as the original message
-            # Using message_to_send = original_message_to_send, creates a reference(message_to_send) to the same object in memory(original_message_to_send)
-            # We need this because if we use "message_to_send = original_message_to_send", or just use original_message_to_send everywhere
-            # changes in the value of message_to_send will be reflected on the value of original_message_to_send, thus altering the values that we get from the teleop_receiver 
-            message_to_send = copy.deepcopy(original_message)
-            # Try testing this:
-            # import copy
-
-            # original_dict = {"ValA": 1, "ValB": 2}
-
-            # # Simple assignment (creates a reference)
-            # copied_dict_ref = original_dict
-
-            # # Deep copy (creates a new object)
-            # copied_dict_deepcopy = copy.deepcopy(original_dict)
-
-            # # Modifying the original dictionary
-            # copied_dict_ref["ValA"] = 1000
-
-            # print("Original Dict:", original_dict)
-            # print("Copied Dict (Reference):", copied_dict_ref)
-            # print("Copied Dict (Deepcopy):", copied_dict_deepcopy)
-
-            # Running the above snippet gives these results:
-            # Original Dict: {'ValA': 1000, 'ValB': 2}
-            # Copied Dict (Reference): {'ValA': 1000, 'ValB': 2}
-            # Copied Dict (Deepcopy): {'ValA': 1, 'ValB': 2}
-
-
+                    segment_client.msg_to_server = msg_from_server_queue.get()
 
             try:
 
                 ######################################################################################################
                 # Main part of the send/recv of the client
-                    
-                # Processing the command before sending it to the FL
-                process(message_to_send)
 
                 # Sending the command to our FL
-                segment_client.send_to_FL(message_to_send)
-
-                # Sending commands to our local pilot service
-                coms_to_pilot_publisher.publish(original_message)
+                segment_client.send_to_FL()
 
                 # Receiving a reply from the FL
-                reply_from_server = segment_client.recv_from_FL()
+                segment_client.recv_from_FL()
 
                 if counter_client == 200:
-                    logger.info(f"[Client] Got reply from server: {reply_from_server}")
+                    # logger.info(f"[Client] Got reply from server: {segment_client.msg_from_server}")
+                    logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
                     counter_client = 0
             
-
                 ######################################################################################################
 
             # Catching potential exceptions and attempting to reconnect each time
@@ -166,11 +166,11 @@ def client_code():
 def server_code():
     counter_server = 0
 
-    while True:
+    while not quit_event.is_set():
 
         segment_server.start_server()
 
-        while True:
+        while not quit_event.is_set():
             counter_server = counter_server + 1
 
             try:
@@ -179,25 +179,55 @@ def server_code():
                 # Main part of the send/recv of the server
 
                 # Receiving movement commands from the LD
-                message_from_client = segment_server.recv_from_LD()
+                segment_server.recv_from_LD()
+
+                # Making a new seperate object that has the same values as the original message
+                # Using processed_command = msg_from_client, creates a reference(processed_command) to the same object in memory(msg_from_client)
+                # We need deepcopy because if we use "processed_command = msg_from_client", or just use msg_from_client everywhere
+                # changes in the value of processed_command will be reflected on the value of msg_from_client, thus altering the values that we get from the teleop_receiver 
+                processed_command = copy.deepcopy(segment_server.msg_from_client)
+                # Try testing this:
+                # import copy
+
+                # original_dict = {"ValA": 1, "ValB": 2}
+
+                # # Simple assignment (creates a reference)
+                # copied_dict_ref = original_dict
+
+                # # Deep copy (creates a new object)
+                # copied_dict_deepcopy = copy.deepcopy(original_dict)
+
+                # # Modifying the original dictionary
+                # copied_dict_ref["ValA"] = 1000
+
+                # print("Original Dict:", original_dict)
+                # print("Copied Dict (Reference):", copied_dict_ref)
+                # print("Copied Dict (Deepcopy):", copied_dict_deepcopy)
+
+                # Running the above snippet gives these results:
+                # Original Dict: {'ValA': 1000, 'ValB': 2}
+                # Copied Dict (Reference): {'ValA': 1000, 'ValB': 2}
+                # Copied Dict (Deepcopy): {'ValA': 1, 'ValB': 2}
+
+                # Processing the command before sending it to the FL
+                process(processed_command)
 
                 # Placing the message from the server in the queue
                 # Using put() will make the command wait for a free spot on the queue.
                 # Using put_nowait() will make the command add the data in the queue and raise an exception if its already full (except queue.Full)
                 try:
-                    msg_from_server_queue.put_nowait(message_from_client)
+                    msg_from_server_queue.put_nowait(processed_command)
                 
                 except queue.Full:
-                    # If the queue is full, we empty it, and try to place the data again, but this time we will wait for the queue to be empty
-                    msg_from_server_queue.get()
-                    msg_from_server_queue.put(message_from_client)
+                    pass
 
                 if counter_server == 200:
-                    logger.info(f"[Server] Got message from client: {message_from_client}")
+                    logger.info(f"[Server] Edited message from client: {processed_command}")
                     counter_server = 0
 
                 # Sending a reply to the LD
-                segment_server.send_to_LD({"Message": "I got your message"})
+                segment_server.msg_to_client = {"Message": "I got your message"}
+                segment_server.send_to_LD()
 
             ######################################################################################################
 
