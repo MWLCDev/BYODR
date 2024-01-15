@@ -1,5 +1,5 @@
 import logging
-import threading
+from byodr.utils import timestamp
 
 
 # Declaring the logger
@@ -15,3 +15,6 @@ def process(movement_command):
         # We reverse throttle and inverse steering
         movement_command["throttle"] = -(movement_command["throttle"])
         movement_command["steering"] = -(movement_command["steering"])
+
+        # Replacing the received command's timestamp with a current one
+        movement_command["time"] = timestamp()
