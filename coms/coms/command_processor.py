@@ -18,3 +18,5 @@ def process(movement_command):
 
         # Replacing the received command's timestamp with a current one
         movement_command["time"] = timestamp()
+
+    return movement_command

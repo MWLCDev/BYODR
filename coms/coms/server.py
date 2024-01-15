@@ -22,6 +22,7 @@ class Segment_server():
         self.timeout = arg_timeout # Maybe 100ms
         self.msg_to_client = None
         self.msg_from_client = None
+        self.processed_command = None
 
         # The server socket that will wait for clients to connect
         self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
