@@ -85,7 +85,7 @@ def main():
         else:
             while not quit_event.is_set():
                 # print("[Server] Forwarding to pilot...")
-                coms_to_pilot_publisher.publish(segment_server.msg_from_client)
+                coms_to_pilot_publisher.publish(segment_server.processed_command)
 
 
     ######################################################################################################
@@ -185,7 +185,7 @@ def server_code():
                 # Using processed_command = msg_from_client, creates a reference(processed_command) to the same object in memory(msg_from_client)
                 # We need deepcopy because if we use "processed_command = msg_from_client", or just use msg_from_client everywhere
                 # changes in the value of processed_command will be reflected on the value of msg_from_client, thus altering the values that we get from the teleop_receiver 
-                processed_command = copy.deepcopy(segment_server.msg_from_client)
+                command_to_process = copy.deepcopy(segment_server.msg_from_client)
                 # Try testing this:
                 # import copy
 
@@ -210,19 +210,19 @@ def server_code():
                 # Copied Dict (Deepcopy): {'ValA': 1, 'ValB': 2}
 
                 # Processing the command before sending it to the FL
-                process(processed_command)
+                segment_server.processed_command = process(command_to_process)
 
                 # Placing the message from the server in the queue
                 # Using put() will make the command wait for a free spot on the queue.
                 # Using put_nowait() will make the command add the data in the queue and raise an exception if its already full (except queue.Full)
                 try:
-                    msg_from_server_queue.put_nowait(processed_command)
+                    msg_from_server_queue.put_nowait(segment_server.processed_command)
                 
                 except queue.Full:
                     pass
 
                 if counter_server == 200:
-                    logger.info(f"[Server] Edited message from client: {processed_command}")
+                    logger.info(f"[Server] Edited message from client: {segment_server.processed_command}")
                     counter_server = 0
 
                 # Sending a reply to the LD
