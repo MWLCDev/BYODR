@@ -13,23 +13,13 @@ async function fetchSegmentDataAndDisplay() {
   try {
     const response = await fetch('/teleop/robot/options');
     const jsonData = await response.json();
-    RobotState.robotConfigData = extractSegmentsData(jsonData);
-    RobotState.segmentsData = extractSegmentsData(jsonData)
+    RobotState.robotConfigData = jsonData;
+    RobotState.segmentsData = jsonData;
+    // console.log(RobotState.segmentsData)
     updateSegmentsTable();
   } catch (error) {
     console.error('There has been a problem with your fetch operation:', error);
   }
-}
-
-// Function to extract only the segment_ data
-function extractSegmentsData(data) {
-  let segmentsData = {};
-  for (const key in data) {
-    if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
-      segmentsData[key] = data[key];
-    }
-  }
-  return segmentsData;
 }
 
 function waitForTable() {
@@ -47,26 +37,28 @@ function waitForTable() {
 function updateSegmentsTable() {
   tbody.innerHTML = '';
   for (const segment in RobotState.segmentsData) {
-    const row = RobotState.segmentsData[segment];
-    const tr = document.createElement('tr');
+    if (RobotState.segmentsData.hasOwnProperty(segment) && segment.startsWith('segment_')) {
+      const row = RobotState.segmentsData[segment];
+      const tr = document.createElement('tr');
 
-    const isMainSegment = row['main'] === 'True';
+      const isMainSegment = row['main'] === 'True';
 
-    tr.innerHTML = `
+      tr.innerHTML = `
         <td></td>
         <td></td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
         <td><button type="button" data-wifiname="${row['wifi.name']}">X</button></td>
       `;
-    tbody.appendChild(tr);
+      tbody.appendChild(tr);
 
-    // Find the newly created button and attach the deleting click event listener
-    $('#application-content-container').on('click', '#segment_table tbody button[data-wifiname]', (e) => {
-      const wifiName = $(e.currentTarget).data('wifiname');
-      removeSegment(wifiName);
-      updateSegmentsTable();
-    });
+      // Find the newly created button and attach the deleting click event listener
+      $('#application-content-container').on('click', '#segment_table tbody button[data-wifiname]', (e) => {
+        const wifiName = $(e.currentTarget).data('wifiname');
+        removeSegment(wifiName);
+        updateSegmentsTable();
+      });
+    }
   }
   updatePositionIndices();
 }
