@@ -38,7 +38,7 @@
 		<script src="../static/JS/userMenu/menu_settings.js"></script>
 		<script src="../static/JS/userMenu/menu_controls.js"></script>
 		<script src="../static/JS/userMenu/menu_logbox.js"></script>
-		<script src="../static/JS/userMenu/menu_robot.js"></script>
+		<script type="module" src="../static/JS/userMenu/robotConfiguration/robotConfiguration_a_app.js"></script>
 	</body>
 </html>
 <script type="text/javascript">
@@ -105,7 +105,7 @@
 				$('a#robot_settings_link').addClass('active');
 				$('#application-content-container').load('/user_robot', function () {
 					// Code to initialize and use RobotMenu
-					const robotSettings = new RobotMenu();
+					new RobotMenu();
 				});
 
 				break;
