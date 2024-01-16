@@ -1,3 +1,10 @@
+# TESTED AND WORKING ON
+# Firmware version :RUT9_R_00.07.06.1
+# Firmware build date: 2024-01-02 11:11:13
+# Internal modem firmware version: SLM750_4.0.6_EQ101
+# Kernel version: 5.4.259
+
+
 import logging
 import paramiko, time, re, json
 from ipaddress import ip_address
