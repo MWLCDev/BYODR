@@ -103,7 +103,7 @@ class TeleopSubscriberThread(threading.Thread):
         self._req_port = req_port
         self._quit_event = event
         self.robot_config_dir = robot_config_dir
-        self._router_actions = RouterActions(self.robot_config_dir)
+        self._robot_actions = RobotActions(self.robot_config_dir)
 
         self.context = zmq.Context()
         self.req_socket = self.context.socket(zmq.REQ)
@@ -141,7 +141,7 @@ class TeleopSubscriberThread(threading.Thread):
         received_json_data, timestamp = message.split("|")
         # Convert single quotes to double quotes for JSON parsing
         json_data_corrected = received_json_data.replace("'", '"')
-        self._router_actions.driver(json_data_corrected)
+        self._robot_actions.driver(json_data_corrected)
 
         try:
             # Manual parsing of the ISO format datetime string
@@ -158,6 +158,7 @@ class TeleopSubscriberThread(threading.Thread):
 
 
 class RouterActions:
+class RobotActions:
     def __init__(self, robot_config):
         self.robot_config_dir = robot_config
         self._router = Router()
