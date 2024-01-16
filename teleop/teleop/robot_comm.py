@@ -175,28 +175,25 @@ class RobotActions:
         self.robot_config_parser.read(self.robot_config_dir)
 
     def driver(self, json_data):
-        self.__set_parsers()
-        # Parse the JSON data
-        self.received_json_data = json.loads(json_data)
-        # print(self.received_json_data)
-        # Get segments from JSON and INI file
-        self.json_segments = set(self.received_json_data.keys())
-        self.ini_segments = set(self.robot_config_parser.sections())
-        # Step 1: check if there are any changes between the received data and the existing one
-        if self.check_for_difference():
-            # logger.info("found difference")
-            if self.check_segment_existence():
-                self.router_visibility()
-                # processed with the check for adjacent segment
-                # DONE####
-                # self.check_adjacent_segments()
-                pass
+        try:
+            # READ PARSER AFTER AN ACTION IS DONE TO THE ROBOT_CONFIG
+            self.__set_parsers()
+            self.received_json_data = json_data
+            # logger.info(self.received_json_data)
+            if self.check_for_difference():
+                if self.check_segment_existence():
+                    pass
+                    self.router_visibility()
+                    self.check_adjacent_segments()
+                    # pass
+                else:
+                    # self.default_robot_config()
+                    pass
             else:
-                # remove the connection
-                pass
-            # self.default_robot_config()
-        else:
-            logger.info("No changes were found with all data in current robot_config.ini")
+                logger.info("No changes were found with all data in current robot_config.ini")
+        except Exception as e:
+            # Handle any exception that occurs in the post method
+            logger.info(f"{e}")
 
     def check_for_difference(self):
         """Check if there is a difference between received data and saved data in robot_config.ini"""
@@ -237,19 +234,22 @@ class RobotActions:
                 return True
         return False  # Return False if the current segment is not found
 
-    # ADD FUNCTION TO CHECK FOR MAIN IN ROUTER VISIBILITY
+    # ADD FUNCTION TO CHECK FOR HOST IN ROUTER VISIBILITY
     def router_visibility(self):
-        current_state = self.current_segment.get("main")
+        current_state = self.current_segment.get("host")
+        # print(current_state)
         # self._router.change_wifi_visibility(current_state)
 
     def check_adjacent_segments(self):
         """
         Check for new, mismatched, and good segments in the adjacent segments.
         """
+        # A segment is new if the ip, wifi and mac inside the JSON doesn't exist in the .ini file at all, under any of the headers.
+        # It is mismatch if the received header exist already in .ini (so i can have segment_1 in json and segment_1 in .ini)but the data inside of it isn't the same as the json
+        # If all is good (meaning data is identical and it is adjacent to the current one) with the segment, then it will check the connection then save the data.
         # Identifying adjacent segments
         adjacent_segments_indices = [self.current_segment_index - 1, self.current_segment_index + 1]
         adjacent_segments = [f"segment_{i + 1}" for i in adjacent_segments_indices if i >= 0]
-
         # Consolidate .ini file data for comparison
         ini_data = {}
         for section in self.robot_config_parser.sections():
@@ -265,7 +265,8 @@ class RobotActions:
                 # Identify a segment as "new" if its details (IP, WiFi, MAC) in the JSON data do not exist under any header in the .ini file.
                 if not any(json_segment_data == details for details in ini_data.values()):
                     logger.info(f"New segment: {json_segment_data.get('wifi.name')}")
-                    # self.check_segment_connection(json_segment_data)
+                    logger.info("Will check the connection with it")
+                    self.check_segment_connection(json_segment_data)
                     # Identify a segment as a "mismatch" if the same header exists in both JSON and .ini files but with different data.
                     # THIS IS THE CASE FOR REPOSITION FROM THE OP
                 elif segment in ini_data and json_segment_data != ini_data[segment]:
