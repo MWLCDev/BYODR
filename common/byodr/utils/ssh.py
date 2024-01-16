@@ -35,6 +35,7 @@ class Router:
         self.wifi_scanner = self.WifiNetworkScanner(self)
         self.wifi_connect = self.ConnectToNetwork(self)
         self.wifi_delete = self.WifiNetworkDeletion(self)
+        self.fetch_ip_from_mac = self.FetchIpFromMac(self)
 
     def __get_nano_third_octet(self):
         try:
@@ -197,6 +198,61 @@ class Router:
             logger.info(f"Failure: Device at {target_ip} is not reachable.")
             return False
 
+    class FetchIpFromMac:
+        def __init__(self, router):
+            self.router = router
+            self.networks = None
+
+        def driver(self, mac_address):
+            wireless_config_path = "/etc/config/wireless"
+            network_config_path = "/etc/config/network"
+
+            try:
+                # Fetch wireless configuration and find the network interface
+                wireless_config = self.router._execute_ssh_command(f"cat {wireless_config_path}")
+                network_interface = self._parse_wireless_config(wireless_config, mac_address)
+                if not network_interface:
+                    return False
+
+                # Fetch network configuration and find the gateway IP
+                network_config = self.router._execute_ssh_command(f"cat {network_config_path}")
+                target_ip = self._parse_network_config(network_config, network_interface)
+                if target_ip:
+                    # Split the IP and replace the fourth octet with '100'
+                    ip_parts = target_ip.split(".")
+                    target_nano_ip = ".".join(ip_parts[:3] + ["100"])
+
+                    return [target_ip, target_nano_ip]
+
+            except Exception as e:
+                logging.error(f"An error occurred: {e}")
+                return None
+
+        def _parse_wireless_config(self, config, mac_address):
+            lines = config.split("\n")
+            current_section = None
+            for line in lines:
+                if line.startswith("config wifi-iface"):
+                    current_section = {}
+                elif "option bssid" in line and mac_address in line:
+                    current_section["mac_found"] = True
+                elif "option network" in line and current_section.get("mac_found"):
+                    return line.split("'")[1]  # # option network 'ifWan2' will return (ifWan2)
+            return None
+
+        def _parse_network_config(self, config, network_interface):
+            lines = config.split("\n")
+            current_section = None
+            for line in lines:
+                if line.startswith(f"config interface '{network_interface}'"):
+                    current_section = True
+                elif "option gateway" in line and current_section:
+                    return line.split("'")[1]  # Extracting gateway IP
+            return None
+
+    def get_ip_from_mac(self, mac_address):
+        return self.fetch_ip_from_mac.driver(mac_address)
+
     class WifiNetworkScanner:
         def __init__(self, router):
             self.router = router
@@ -215,7 +271,7 @@ class Router:
             self.filter_teltonika_networks()
 
             # DEBUGGING
-            print(json.dumps(self.networks, indent=4))  # Pretty print the JSON
+            # print(json.dumps(self.networks, indent=4))  # Pretty print the JSON
             # for network in self.networks:
             #    print(network.get("ESSID"), network.get("MAC"), end="\n")
             return self.networks
