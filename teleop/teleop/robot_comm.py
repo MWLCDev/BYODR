@@ -274,21 +274,29 @@ class RouterActions:
         """Ping the adjacent segment to make sure there is both ways connection to it"""
 
         sleeping_time, connection_timeout_limit = 1, 5
-        while not self._router.check_network_connection(adjacent_segment.get("ip.number")) and sleeping_time < connection_timeout_limit:
-            logger.info(f"Retrying in {sleeping_time}seconds ({sleeping_time}/{connection_timeout_limit})")
+        # print(adjacent_segment.get("ip.number"))
+        adjacent_nano_ip = self._router.get_ip_from_mac(adjacent_segment.get("mac.address"))[1]
+        while sleeping_time <= connection_timeout_limit:
+            if self._router.check_network_connection(adjacent_nano_ip):
+                logger.info(f"There is connection with {adjacent_segment.get('wifi.name')}. No action needed")
+                # self.save_robot_config()
+                break
+
+            logger.info(f"Retrying in {sleeping_time} seconds ({sleeping_time}/{connection_timeout_limit})")
             time.sleep(sleeping_time)
             sleeping_time += 1
-            # In a good day, this case shouldn't come true.
-            if sleeping_time > connection_timeout_limit:
-                logger.info(f"There is no connection with segment {adjacent_segment.get('wifi.name')}")
-                logger.info(f"Will create connection with it")
-                self.create_segment_connection(adjacent_segment)
-                break
-            logger.info(f"There is connection with {adjacent_segment.get('wifi.name')}. No action needed")
-            # self.save_robot_config()
+
+        # In a good day, this case shouldn't come true.
+        if sleeping_time > connection_timeout_limit:
+            logger.info(f"There is no connection with segment {adjacent_segment.get('wifi.name')}")
+            logger.info("Will create connection with it")
+            # self.create_segment_connection(adjacent_segment)
 
     def save_robot_config(self):
         """Delete the data existing in the current robot_config.ini and place all the received data in it"""
+        # Saving the received data to the current robot_config.ini should be done only after the verification of segment existing
+        # Which is done through check_segment_connection()
+        logger.info("Saving received data to the current robot_config.ini")
         # Clear existing content in the configparser
         self.robot_config_parser.clear()
 
