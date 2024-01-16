@@ -107,7 +107,7 @@ class RobotMenu {
       "mac.address": mac,
       "vin.number": "",
       "position": newIndex,
-      "main": "False",
+      "host": "False",
     };
 
     // Prepare the new segments data, including the new segment

@@ -41,7 +41,7 @@ function updateSegmentsTable() {
       const row = RobotState.segmentsData[segment];
       const tr = document.createElement('tr');
 
-      const isMainSegment = row['main'] === 'True';
+      const isMainSegment = row['host'] === 'True';
 
       tr.innerHTML = `
         <td></td>
