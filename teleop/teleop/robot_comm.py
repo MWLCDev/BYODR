@@ -169,6 +169,7 @@ class RouterActions:
         self.current_segment_index = None
 
     def __set_parsers(self):
+        #  Module reads data from INI files as strings. It doesn't matter if the data is int or bol
         self.robot_config_parser = configparser.ConfigParser()
         self.robot_config_parser.read(self.robot_config_dir)
 
@@ -198,24 +199,31 @@ class RouterActions:
 
     def check_for_difference(self):
         """Check if there is a difference between received data and saved data in robot_config.ini"""
-
         # Initialize a flag to indicate if there is any difference
         is_different = False
+        # Get segments from JSON and INI file
+        self.json_segments = set(self.received_json_data.keys())
+        self.ini_segments = set(self.robot_config_parser.sections())
 
-        # Check each segment present in both JSON and INI file
-        for segment in self.json_segments.intersection(self.ini_segments):
-            # For each key in the segment, compare JSON and INI values
-            for key in self.received_json_data[segment]:
-                if self.robot_config_parser.get(segment, key, fallback="Key Not Found") != self.received_json_data[segment][key]:
-                    # Set the flag to True if a difference is found
-                    is_different = True
-                    # Break out of the loop as we only need to know if there's any difference
-                    break
-            if is_different:
-                # Break out of the outer loop as well
+        # Check each segment present in JSON data
+        for segment in self.json_segments:
+            # If segment is not in INI, it's a difference
+            if segment not in self.ini_segments:
+                is_different = True
                 break
 
-        # Return the boolean flag indicating whether there was a difference
+            # For existing segments, check each key
+            for key in self.received_json_data[segment]:
+                ini_value = self.robot_config_parser.get(segment, key, fallback="Key Not Found")
+                json_value = self.received_json_data[segment][key]
+                if str(ini_value) != str(json_value):
+                    # logger.info(f"Difference found in {segment}: INI value '{ini_value}' vs JSON value '{json_value}'")
+                    is_different = True
+                    break
+
+            if is_different:
+                break
+
         return is_different
 
     def check_segment_existence(self):
