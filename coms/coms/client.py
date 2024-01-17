@@ -44,7 +44,8 @@ class Segment_client():
             self.socket_initialized = True
 
         except Exception as e:
-            logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
+            # logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
+            # logger.exception("[Client] Exception details:")
             time.sleep(2)  # Wait for a while before retrying
 
 
@@ -58,7 +59,8 @@ class Segment_client():
                 self.client_socket.close()
                 self.socket_initialized = False
             except Exception as e:
-                logger.warning(f"[Client] Error while closing socket: {e}")
+                # logger.warning(f"[Client] Error while closing socket: {e}")
+                # logger.exception("[Client] Exception details:")
                 time.sleep(2)
 
 

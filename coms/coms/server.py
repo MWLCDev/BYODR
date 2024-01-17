@@ -51,7 +51,9 @@ class Segment_server():
                 break
 
             except Exception as e:
-                logger.error(f"[Server] Got error while waiting for client: {e}")
+                # logger.error(f"[Server] Got error while waiting for client: {e}")
+                # logger.exception("[Server] Exception details:")
+                pass
 
 
     # Sending to the client
@@ -64,4 +66,11 @@ class Segment_server():
     # Receiving from the client
     def recv_from_LD(self):
         recv_message = self.client_socket.recv(512).decode("utf-8")
-        self.msg_from_client = json.loads(recv_message)
+
+        try:
+            self.msg_from_client = json.loads(recv_message)
+
+        except json.JSONDecodeError as e:
+            # logger.warning(f"[Server] JSON decoding error: {e}")
+            # logger.exception("[Server] Exception details:")
+            self.msg_from_client = "Message of wrong format received"
