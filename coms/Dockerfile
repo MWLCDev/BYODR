@@ -18,5 +18,3 @@ COPY ./coms app/
 WORKDIR /app
 
 ENV PYTHONPATH "${PYTHONPATH}:/common"
-
-CMD ["python3", "app.py"]
