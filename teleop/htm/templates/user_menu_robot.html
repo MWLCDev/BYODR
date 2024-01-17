@@ -9,9 +9,11 @@
 						<tr>
 							<th></th>
 							<th>Position</th>
+							<th>VIN</th>
+							<th>MAC</th>
 							<th>WiFi network name</th>
-							<th>Main segment</th>
-							<th>Remove</th>
+							<th>Host</th>
+							<th>Action</th>
 						</tr>
 					</thead>
 					<!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
@@ -40,37 +42,10 @@
 					</tbody>
 				</table>
 			</div>
-
-			<div id="container_connectable_networks_table">
-				<p id="header_found_segments">Found segments</p>
-				<table id="connectable_networks_table">
-					<thead>
-						<tr>
-							<th>Segment name</th>
-							<th></th>
-						</tr>
-					</thead>
-					<!-- All the data here is for debugging. They will be removed automatically once the fetch function is called -->
-					<tbody>
-						<tr>
-							<td>CP_Carl</td>
-							<td><button type="button">Add</button></td>
-						</tr>
-						<tr>
-							<td>CP_Davide</td>
-							<td><button type="button">Add</button></td>
-						</tr>
-						<tr>
-							<td>CP_Earl</td>
-							<td><button type="button">Add</button></td>
-						</tr>
-					</tbody>
-				</table>
-				<button id="scan_wifi_networks">Scan for segments</button>
-			</div>
+			<button type="submit" id="Add_row">Add Row</button>
+			<button type="submit" style="display: none" id="save_config">Save</button>
 
 			<p id="dummy_text" style="display: none"></p>
-			<button type="submit" id="save_config">Save</button>
 		</div>
 	</body>
 </html>
