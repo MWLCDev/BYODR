@@ -1,5 +1,5 @@
-import { callRouterApi, showToast } from "./robotConfiguration_b_utils.js"
-import { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable } from "./robotConfiguration_c_table_robot.js"
+import { callRouterApi } from "./robotConfiguration_b_utils.js"
+import { enableDragAndDrop, fetchSegmentDataAndDisplay, addNewRow } from "./robotConfiguration_c_table_robot.js"
 import RobotState from "./robotConfiguration_z_state.js"
 
 class RobotMenu {
@@ -11,88 +11,23 @@ class RobotMenu {
   }
 
   setupButtons() {
-    const wifiButton = document.getElementById('scan_wifi_networks');
-    wifiButton.addEventListener('click', () => {
-      wifiButton.disabled = true;
-      showToast('please wait to try again');
-
-      this.getWifiNetworks()
-        .then(() => {
-          wifiButton.disabled = false;
-        })
-        .catch(() => {
-          // Re-enable the button in case of an error
-          wifiButton.disabled = false;
-        });
-    });
-    const saveTablesData = document.getElementById('save_config');
+    const saveTablesData = document.getElementById('Add_row');
     saveTablesData.addEventListener('click', () => {
-      this.send_config()
+      addNewRow()
     });
   }
   async send_config() {
-    // Prepare data to send
     const dataToSend = RobotState.segmentsData;
-
-    // Call API with action 'got new file' and the prepared data
+    console.log(dataToSend)
     const response = await callRouterApi('new_robot_config', dataToSend);
-
-    // Handle the response
     console.log('Response from server:', response);
   }
 
   async getNanoIP() {
     const data = await callRouterApi('get_nano_ip'); // Calls fetch_ssid function in Router class
     const showSSID = document.getElementById('dummy_text');
-    // console.log(data);
     showSSID.innerHTML = data.message;
   }
-
-  async getWifiNetworks() {
-    try {
-      let data = await callRouterApi('get_wifi_networks');
-
-      if (typeof data === 'string') {
-        data = JSON.parse(data);
-      }
-
-      const tbody = document.querySelector('#connectable_networks_table tbody');
-      tbody.innerHTML = '';
-      console.log(data);
-
-      data.forEach((network, index) => {
-        const ssid = network['ESSID'];
-        const mac = network['MAC'];
-
-        const tr = document.createElement('tr');
-        const button = document.createElement('button');
-        button.type = 'button';
-        button.textContent = 'Add';
-
-        tr.innerHTML = `<td>${ssid}</td><td></td>`;
-        tr.children[1].appendChild(button);
-
-        // Add animation with a delay
-        tr.style.animationDelay = `${index * 0.1}s`;
-        tr.classList.add('fade-in-left');
-
-        tbody.appendChild(tr);
-
-        // Add click event listener to the button
-        // REFRESH THE SEGMENTS TABLE AFTER THE CLICK IS DONE 
-        button.addEventListener('click', () => {
-          this.addNetworkToSegments(ssid, mac);
-          updateSegmentsTable()
-
-        });
-
-      });
-    } catch (error) {
-      console.error('Error fetching WiFi networks:', error);
-    }
-  }
-
-  // Function to add network to segmentsData
   addNetworkToSegments(ssid, mac) {
     let segments = RobotState.segmentsData || {};
     let newIndex = 1;

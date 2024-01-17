@@ -46,12 +46,13 @@ function updateSegmentsTable() {
       tr.innerHTML = `
         <td></td>
         <td></td>
+        <td>${row['vin.number']}</td>
+        <td>${row['mac.address']}</td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
-        <td><button type="button" data-wifiname="${row['wifi.name']}">X</button></td>
+        ${isMainSegment ? '' : '<td><button type="button" data-wifiname="${row["wifi.name"]}">Remove</button></td>'}
       `;
       tbody.appendChild(tr);
-
       // Find the newly created button and attach the deleting click event listener
       $('#application-content-container').on('click', '#segment_table tbody button[data-wifiname]', (e) => {
         const wifiName = $(e.currentTarget).data('wifiname');
@@ -60,6 +61,22 @@ function updateSegmentsTable() {
       });
     }
   }
+  addNewRow()
+}
+
+function addNewRow() {
+  // After adding all rows, append an extra row for input
+  const inputRow = document.createElement('tr');
+  inputRow.innerHTML = `
+     <td></td>
+     <td></td>
+     <td><input type="text" placeholder="VIN Number"></td>
+     <td><input type="text" placeholder="IP"></td>
+     <td><input type="text" placeholder="WiFi Name"></td>
+     <td><input type="radio" name="mainSegment"></td>
+     <td><button type="button" onclick="addNewSegment()">Add</button></td>
+   `;
+  tbody.appendChild(inputRow);
   updatePositionIndices();
 }
 
@@ -125,4 +142,4 @@ function swapRows(row1, row2) {
 document.addEventListener('DOMContentLoaded', initialize);
 
 
-export { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable }
+export { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable, addNewRow }
