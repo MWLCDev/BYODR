@@ -7,4 +7,4 @@ wifi.name = CP_Earl
 mac.address = 
 vin.number = xx1xxxxxx
 position = 1
-main = True
+host = True

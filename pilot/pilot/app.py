@@ -15,13 +15,14 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from byodr.utils import Application, ApplicationExit
-from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
+from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector, JSONServerThread
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
 from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
 from .core import CommandProcessor
 from .relay import RealMonitoringRelay, NoopMonitoringRelay
 from .web import RelayControlRequestHandler, RelayConfigRequestHandler
+
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +51,8 @@ class PilotApplication(Application):
         self.ros = None
         self.vehicle = None
         self.inference = None
+        self.coms_receiver = None
+        self.movement_commands = None
         self._init(relay)
 
     def _init(self, _relay):
@@ -63,18 +66,18 @@ class PilotApplication(Application):
 
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
-        cfg = dict(parser.items("pilot")) if parser.has_section("pilot") else {}
-        cfg.update(dict(parser.items("relay")) if parser.has_section("relay") else {})
-        # self.logger.info(cfg)
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
+        cfg = dict(parser.items('pilot')) if parser.has_section('pilot') else {}
+        cfg.update(dict(parser.items('relay')) if parser.has_section('relay') else {})
+        self.logger.info(cfg)
         return cfg
 
     def _set_pulse_channels(self, **kwargs):
         _pulse_channels = []
         # The channel index is zero based in the code and 1-based in the configuration.
-        if parse_option("primary.channel.3.operation", str, "", [], **kwargs) == "pulse":
+        if parse_option('primary.channel.3.operation', str, '', [], **kwargs) == 'pulse':
             _pulse_channels.append(2)
-        if parse_option("primary.channel.4.operation", str, "", [], **kwargs) == "pulse":
+        if parse_option('primary.channel.4.operation', str, '', [], **kwargs) == 'pulse':
             _pulse_channels.append(3)
         self._holder.set_pulse_channels(_pulse_channels)
 
@@ -108,45 +111,49 @@ class PilotApplication(Application):
     #     profiler.dump_stats('/config/pilot.stats')
 
     def step(self):
-        teleop = self.teleop()
-        commands = (teleop, self.ros(), self.vehicle(), self.inference())
+        coms = self.coms_receiver()
+        commands = (coms, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        self._monitor.step(pilot, teleop)
+        # print(f"Sending command to relay.py: {pilot}, {coms}.")
+        self._monitor.step(pilot, coms)
+
         if pilot is not None:
             self.publisher.publish(pilot)
         chat = self.ipc_chatter()
         if chat is not None:
-            if chat.get("command") == "restart":
+            if chat.get('command') == 'restart':
                 self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Pilot.")
-    parser.add_argument("--name", type=str, default="none", help="Process name.")
-    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
-    parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
+    parser = argparse.ArgumentParser(description='Pilot.')
+    parser.add_argument('--name', type=str, default='none', help='Process name.')
+    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
+    parser.add_argument('--routes', type=str, default='/routes', help='Directory with the navigation routes.')
     args = parser.parse_args()
 
     _relay = SearchUsbRelayFactory().get_relay()
-    logger.info("The USB Relay is {} attached.".format("well" if _relay.is_attached() else "not"))
+    logger.info("The USB Relay is {} attached.".format('well' if _relay.is_attached() else 'not'))
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)
 
-    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
-    ros = json_collector(url="ipc:///byodr/ros.sock", topic=b"aav/ros/input", hwm=10, pop=True, event=quit_event)
-    vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event)
-    inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event)
-    ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
+    coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
+    ros = json_collector(url='ipc:///byodr/ros.sock', topic=b'aav/ros/input', hwm=10, pop=True, event=quit_event)
+    vehicle = json_collector(url='ipc:///byodr/vehicle.sock', topic=b'aav/vehicle/state', event=quit_event)
+    inference = json_collector(url='ipc:///byodr/inference.sock', topic=b'aav/inference/state', event=quit_event)
+    ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
 
-    application.teleop = lambda: teleop.get()
+    application.coms_receiver = lambda: coms_receiver.get()
     application.ros = lambda: ros.get()
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
-    application.publisher = JSONPublisher(url="ipc:///byodr/pilot.sock", topic="aav/pilot/output")
-    application.ipc_server = LocalIPCServer(url="ipc:///byodr/pilot_c.sock", name="pilot", event=quit_event)
-    threads = [teleop, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
+    application.publisher = JSONPublisher(url='ipc:///byodr/pilot.sock', topic='aav/pilot/output')
+    application.ipc_server = LocalIPCServer(url='ipc:///byodr/pilot_c.sock', name='pilot', event=quit_event)
+
+
+    threads = [coms_receiver, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 
@@ -163,9 +170,10 @@ def main():
     try:
         # The api has partial control of the relay.
         _holder = application.get_relay_holder()
-        main_app = web.Application(
-            [(r"/teleop/pilot/controls/relay/state", RelayControlRequestHandler, dict(relay_holder=_holder)), (r"/teleop/pilot/controls/relay/conf", RelayConfigRequestHandler, dict(relay_holder=_holder))]
-        )
+        main_app = web.Application([
+            (r"/teleop/pilot/controls/relay/state", RelayControlRequestHandler, dict(relay_holder=_holder)),
+            (r"/teleop/pilot/controls/relay/conf", RelayConfigRequestHandler, dict(relay_holder=_holder))
+        ])
         http_server = HTTPServer(main_app, xheaders=True)
         http_server.bind(8082)
         http_server.start()
@@ -182,6 +190,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
+    logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
     logging.getLogger().setLevel(logging.INFO)
     main()

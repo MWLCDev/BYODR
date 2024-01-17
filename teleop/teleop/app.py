@@ -293,7 +293,7 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
+    teleop_to_coms_publisher = JSONPublisher(url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input")
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(
         urls=[
@@ -321,7 +321,10 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
-        teleop_publisher.publish(cmd)
+
+        # if cmd.get("throttle") != 0:
+        #    logger.info(f"Command to be send to Coms: {cmd}")
+        teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
