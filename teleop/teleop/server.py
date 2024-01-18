@@ -452,6 +452,22 @@ class ApiUserOptionsHandler(JSONRequestHandler):
         self.write(json.dumps(dict(message="ok")))
 
 
+class SendConfigHandler(tornado.web.RequestHandler):
+    def initialize(self, **kwargs):
+        self.tel_socket = kwargs.get("tel_socket")
+
+    def post(self):
+        try:
+            original_data = json.loads(self.request.body)
+            data_to_send = {"robot_config": original_data}
+            self.tel_socket(data_to_send)
+            self.write({"status": "success"})
+        except json.JSONDecodeError as json_err:
+            self.write({"status": "error", "message": f"JSON decoding error: {str(json_err)}"})
+        except Exception as e:
+            self.write({"status": "error", "message": f"General error: {str(e)}"})
+
+
 class JSONMethodDumpRequestHandler(JSONRequestHandler):
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
