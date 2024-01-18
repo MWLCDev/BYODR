@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 
+import tornado.ioloop
+import tornado.web
 import argparse
 import asyncio
 import glob
@@ -11,13 +13,12 @@ import concurrent.futures
 import user_agents  # Check in the request header if it is a phone or not
 
 
+from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-import tornado.ioloop
-import tornado.web
 
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
@@ -33,6 +34,7 @@ from .robot_comm import *
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
 router = Router()
+# router.get_ip_from_mac("00:1E:42:2C:9F:77")
 # router.delete_network("CP_Davide")
 # router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77")
 # router.fetch_ip_and_mac()
@@ -188,7 +190,6 @@ class GetSegmentSSID(tornado.web.RequestHandler):
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
             ssid = await loop.run_in_executor(None, router.fetch_ssid)
 
-            logger.info(f"SSID of current robot: {ssid}")
             self.write(ssid)
         except Exception as e:
             logger.error(f"Error fetching SSID of current robot: {e}")
@@ -269,6 +270,7 @@ def main():
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
+    coms_chatter = json_collector(url="ipc:///byodr/coms_c.sock", topic=b"aav/coms/chatter", pop=True, event=quit_event)
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
@@ -286,7 +288,7 @@ def main():
     # "segment_4": {"ip.number": "192.168.4.100", "wifi.name": "CP_Frank", "main": "false"},
     outer_teleop_publisher = DataPublisher(data=fake_json_data, robot_config_dir=application.get_robot_config_file(), event=quit_event, message="Remove")
 
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, outer_teleop_publisher]
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, coms_chatter, logbox_thread, package_thread, outer_teleop_publisher]
 
     if quit_event.is_set():
         return 0
@@ -319,24 +321,39 @@ def main():
         return route_store.get_image(image_id)
 
     def teleop_publish(cmd):
+        if coms_chatter.get():
+            logger.info(coms_chatter.get())
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
 
-        # if cmd.get("throttle") != 0:
-        #    logger.info(f"Command to be send to Coms: {cmd}")
         teleop_to_coms_publisher.publish(cmd)
 
     def teleop_publish_robot_config(cmd):
         print(cmd)
         chatter.publish(dict(time=timestamp(), command=cmd))
 
+    def check_coms_chatter():
+        # Check if the application is signaled to shut down
+        if quit_event.is_set():
+            return
+
+        message = coms_chatter.get()
+        if message:
+            # Process the message
+            logger.info("Received message: {}".format(message))
+
+    # Set up the asyncio event loop policy and create a new event loop
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
     io_loop = ioloop.IOLoop.instance()
+    #  This lambda function is a callback that stops the Tornado IOLoop. It's passed to ApplicationExit so that when the exit condition is met, this function is called to stop the loop.
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
     _periodic = ioloop.PeriodicCallback(lambda: _conditional_exit(), 5e3)
     _periodic.start()
+
+    _periodic_check_messages = ioloop.PeriodicCallback(check_coms_chatter, 100)
+    _periodic_check_messages.start()
 
     try:
         main_app = web.Application(
@@ -398,7 +415,7 @@ def main():
                     dict(user_options=(ConfigManager(application.get_robot_config_file())), fn_on_save=on_options_save),
                 ),
                 (r"/teleop/send_config", SendConfigHandler, dict(tel_socket=teleop_publish_robot_config)),
-                (r"/ssh/router", RouterSSHHandler),
+                (r"/ssh/router", RouterSSHHandler, dict(robot_config_dir=application.get_robot_config_file())),
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
