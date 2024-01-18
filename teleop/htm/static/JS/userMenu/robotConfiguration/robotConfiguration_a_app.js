@@ -15,12 +15,34 @@ class RobotMenu {
     saveTablesData.addEventListener('click', () => {
       addNewRow()
     });
+    const testData = document.getElementById('test_config');
+    testData.addEventListener('click', () => {
+      this.send_config()
+    });
   }
+
   async send_config() {
     const dataToSend = RobotState.segmentsData;
     console.log(dataToSend)
-    const response = await callRouterApi('new_robot_config', dataToSend);
-    console.log('Response from server:', response);
+    try {
+      const response = await fetch('/teleop/send_config', {
+        method: 'POST', // Specify the method
+        headers: {
+          'Content-Type': 'application/json' // Specify the content type
+        },
+        body: JSON.stringify(dataToSend) // Convert the data to a JSON string
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! Status: ${response.status}`);
+      }
+
+      const responseData = await response.json();
+      console.log('Response from server:', responseData);
+    } catch (error) {
+      console.error('Error while sending configuration:', error);
+    }
+
   }
 
   async getNanoIP() {
