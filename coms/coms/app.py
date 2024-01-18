@@ -25,24 +25,30 @@ teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b
 coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
 
-def main():
-    def chatter_message(cmd):
-        """Broadcast message from the current service to any service listening to it. It is a one time message"""
-        logger.info(cmd)
-        chatter.publish(dict(time=timestamp(), command=cmd))
+def tel_chatter_filter_robot(tel_data):
+    # Check if tel_data is not None and then check for 'robot_config'
+    if tel_data and "robot_config" in tel_data.get("command", {}):
+        logger.info(tel_data["command"]["robot_config"])
 
+
+def chatter_message(cmd):
+    """Broadcast message from the current service to any service listening to it. It is a one time message"""
+    logger.info(cmd)
+    chatter.publish(dict(time=timestamp(), command=cmd))
+
+
+def main():
     threads = [teleop_receiver, tel_chatter]
     [t.start() for t in threads]
     while not quit_event.is_set():
         # Creating a message
-        chatter_message("Your command here")
+        # chatter_message("Check message to TEL")
+        # time.sleep(1)
 
         tel_data = tel_chatter.get()
-        if tel_data:
-            logger.info(tel_data["command"]["robot_config"])
+        tel_chatter_filter_robot(tel_data)
 
-            # Publishing data in every iteration
-        time.sleep(1)
+        # Publishing data in every iteration
         coms_to_pilot_publisher.publish(teleop_receiver.get())
 
     logger.info("Waiting on threads to stop.")
