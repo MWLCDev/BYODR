@@ -326,6 +326,10 @@ def main():
         #    logger.info(f"Command to be send to Coms: {cmd}")
         teleop_to_coms_publisher.publish(cmd)
 
+    def teleop_publish_robot_config(cmd):
+        print(cmd)
+        chatter.publish(dict(time=timestamp(), command=cmd))
+
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
@@ -391,11 +395,9 @@ def main():
                 (
                     r"/teleop/robot/options",
                     ApiUserOptionsHandler,
-                    dict(
-                        user_options=(ConfigManager(application.get_robot_config_file())),
-                        fn_on_save=on_options_save,
-                    ),
+                    dict(user_options=(ConfigManager(application.get_robot_config_file())), fn_on_save=on_options_save),
                 ),
+                (r"/teleop/send_config", SendConfigHandler, dict(tel_socket=teleop_publish_robot_config)),
                 (r"/ssh/router", RouterSSHHandler),
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=list_service_capabilities)),
