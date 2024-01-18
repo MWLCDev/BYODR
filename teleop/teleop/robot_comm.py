@@ -79,20 +79,6 @@ class DataPublisher(threading.Thread):
         self.context.term()
 
 
-import threading
-import zmq
-import json
-import logging
-import datetime, configparser
-import os
-import time
-
-from byodr.utils.ssh import Router, Nano
-
-# This file will have the ZMQ socket and dealing with the robot configuration file
-logger = logging.getLogger(__name__)
-
-
 class TeleopSubscriberThread(threading.Thread):
     def __init__(self, listening_ip, event, robot_config_dir, sub_port=5454, req_port=5455):
         # Set up necessary attributes and methods that TeleopSubscriberThread inherits from Thread.
@@ -157,7 +143,7 @@ class TeleopSubscriberThread(threading.Thread):
         self.context.term()
 
 
-class RouterActions:
+# should start the broadcasting from here also
 class RobotActions:
     def __init__(self, robot_config):
         self.robot_config_dir = robot_config

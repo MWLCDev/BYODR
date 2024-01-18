@@ -24,6 +24,7 @@ if sys.version_info > (3,):
 
     def send_string(sender, val, flags=0):
         return sender.send_string(val, flags)
+
 else:
 
     def receive_string(subscriber):
@@ -34,7 +35,6 @@ else:
 
 
 logger = logging.getLogger(__name__)
-
 
 class JSONPublisher(object):
     def __init__(self, url, topic="", hwm=1, clean_start=True):

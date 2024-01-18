@@ -26,13 +26,6 @@ from .robot_comm import *
 logger = logging.getLogger(__name__)
 
 
-import tornado.websocket
-
-latest_message = {}
-
-import json
-
-
 class RouterSSHHandler(tornado.web.RequestHandler):
     def initialize(self, **kwargs):
         self.router = Router()
@@ -431,6 +424,8 @@ class JSONRequestHandler(web.RequestHandler):
 
 
 class ApiUserOptionsHandler(JSONRequestHandler):
+    """The function is the one that controls ConfigManager. It is like a manager that defines what command to execute from it"""
+
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
         self._options = kwargs.get("user_options")

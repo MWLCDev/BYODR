@@ -326,6 +326,7 @@ class Router:
             self.router = router_instance
 
         def driver(self, network_name, network_mac, skip_init, network_forth_octet):
+            # REMOVE THE REBOOT RESTART, THE FIREWALL RESTARTING COMMAND IS WORKING FINE
             self.network_name = network_name
             self.network_mac = network_mac
             # Skip the initialization of connection from the current router and go to making the static route immediately
