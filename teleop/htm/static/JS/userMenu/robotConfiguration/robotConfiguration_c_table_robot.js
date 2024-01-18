@@ -71,7 +71,7 @@ function addNewRow() {
      <td></td>
      <td></td>
      <td><input type="text" placeholder="VIN Number"></td>
-     <td><input type="text" placeholder="IP"></td>
+     <td><input type="text" placeholder="MAC"></td>
      <td><input type="text" placeholder="WiFi Name"></td>
      <td><input type="radio" name="mainSegment"></td>
      <td><button type="button" onclick="addNewSegment()">Add</button></td>
