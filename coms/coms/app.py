@@ -1,7 +1,7 @@
 import logging
 import multiprocessing
 import threading
-import queue
+from collections import deque
 import socket
 import copy
 import signal
@@ -39,8 +39,8 @@ nano_port = 1111
 follower_ip = "192.168." + str( int(local_ip[8])+1 ) + ".100"
 lead_ip = "192.168." + str( int(local_ip[8])-1 ) + ".100"
 
-# A queue that will store messages received by the server of the segment
-msg_from_server_queue = queue.Queue(maxsize=1)
+# A deque that will store messages received by the server of the segment
+msg_from_server_queue = deque(maxlen=1)
 
 # Declaring the inter-service sockets
 # Other socket located on pilot/app.py/140
@@ -74,6 +74,8 @@ def main():
     client_interface_thread.start()
     server_interface_thread.start()
 
+    global msg_from_server_queue
+
 
     ######################################################################################################
     # In this block, Coms receives commands from teleop, and also forwards commands to Pilot
@@ -105,15 +107,10 @@ def main():
 
                 # Receiving the commands that we will process/forward to our FL, from our current LD
                 try:
-
-                    # Using get() will make the command wait for a data packet to be availabie in the queue, so that it can be retrieved
-                    # Using get_nowait() will make the command get whatever is inside, and if its empty, it raises an exception (except queue.Empty)
-                    segment_client.msg_to_server = msg_from_server_queue.get_nowait()
-
+                    segment_client.msg_to_server = msg_from_server_queue.pop()
                 
-                except queue.Empty:
-                    # If the queue is empty, we will wait for the queue to be full
-                    # segment_client.msg_to_server = msg_from_server_queue.get()
+                except IndexError:
+                    # If the queue is empty, we do nothing and check again later
                     pass
 
 
@@ -148,9 +145,11 @@ def client_code():
             counter_client = counter_client + 1
 
             try:
-
                 ######################################################################################################
                 # Main part of the send/recv of the client
+
+                dict_with_velocity = vehicle_receiver.get()
+                segment_client.msg_to_server.update(dict_with_velocity)
 
                 # Sending the command to our FL
                 segment_client.send_to_FL()
@@ -161,7 +160,7 @@ def client_code():
                 # if time_counter - time_stop >= 1:
                 #     # logger.info(f"[Client] Got reply from server: {segment_client.msg_from_server}")
                 #     logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
-                if counter_client == 200:
+                if counter_client == 50:
                     logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
 
                     
@@ -173,7 +172,7 @@ def client_code():
                 #     counter_client = 0
                 #     time_stop = time_counter
 
-                if counter_client == 200:
+                if counter_client == 50:
                     logger.info(f"[Client] Got reply from server: {segment_client.msg_from_server}")
                     logger.info(f"[Client] A round took {(stop_time-time_counter)*1000:.3f}ms\n")
                     counter_client = 0
@@ -189,10 +188,13 @@ def client_code():
 
             except Exception as e:
                 # logger.error(f"[Client] Got error during communication: {e}")
+                # logger.exception("[Server] Exception details:")
                 break
 
 
 def server_code():
+
+    global msg_from_server_queue
     counter_server = 0
     # time_stop = 0
 
@@ -211,8 +213,8 @@ def server_code():
 
                 # Receiving movement commands from the LD
                 segment_server.recv_from_LD()
-                if counter_server == 200:
-                    logger.info(f"[Server] Received from client: {segment_server.msg_from_client}")
+                # if counter_server == 50:
+                #     logger.info(f"[Server] Received from client: {segment_server.msg_from_client}")
 
                 # if time_counter - time_stop >= 1:
                 #     logger.info(f"[Server] Edited message from client: {segment_server.processed_command}")
@@ -251,15 +253,10 @@ def server_code():
                     segment_server.processed_command = process(command_to_process)
 
                     # Placing the message from the server in the queue
-                    # Using put() will make the command wait for a free spot on the queue.
-                    # Using put_nowait() will make the command add the data in the queue and raise an exception if its already full (except queue.Full)
-                    try:
-                        msg_from_server_queue.put_nowait(segment_server.processed_command)
-                    
-                    except queue.Full:
-                        pass
+                    msg_from_server_queue.append(segment_server.processed_command)
 
-                if counter_server == 200:
+
+                if counter_server == 50:
                     logger.info(f"[Server] Edited message from client: {segment_server.processed_command}")
 
 
@@ -275,7 +272,7 @@ def server_code():
                 #     counter_server = 0
                 #     time_stop = time_counter
 
-                if counter_server == 200:
+                if counter_server == 50:
                     logger.info(f"[Server] Sent reply to client: {segment_server.msg_to_client}")
                     logger.info(f"[Server] A round took {(stop_time-time_counter)*1000:.3f}ms\n")
                     counter_server = 0
@@ -291,6 +288,7 @@ def server_code():
 
             except Exception as e:
                 # logger.error(f"[Server] Got error during communication: {e}")
+                # logger.exception("[Server] Exception details:")
                 break
 
 
