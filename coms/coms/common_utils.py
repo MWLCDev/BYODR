@@ -91,6 +91,10 @@ class SocketManager:
         while not self.quit_event.is_set():
             return self.teleop_receiver.get()
 
+    def get_teleop_chatter(self):
+        while not self.quit_event.is_set():
+            return self.tel_chatter_socket.get()
+
     def chatter_message(self, cmd):
         """Broadcast message from COMS chatter with a timestamp. It is a one time message"""
         logger.info(cmd)
@@ -99,6 +103,7 @@ class SocketManager:
     def start_threads(self):
         for thread in self.threads:
             thread.start()
+        logger.info("Started all communication sockets")
 
     def join_threads(self):
         for thread in self.threads:
