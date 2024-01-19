@@ -35,13 +35,21 @@ class TeleopChatter:
         self.seg_config_dir = _segment_config_dir
         self.robot_actions = RobotActions(self.robot_config_dir)
 
-        logger.info(tel_data["command"]["robot_config"])
+    def filter_robot_config(self, tel_data):
+        """Get new robot_config from TEL chatter socket
 
+        Args:
+            tel_data (object): Full message returned from TEL chatter
+        """
+        # Check if tel_data is not None and then check for existence of 'robot_config'
+        if tel_data and "robot_config" in tel_data.get("command", {}):
+            new_robot_config = tel_data["command"]["robot_config"]
+            logger.info(new_robot_config)
+            self.robot_actions.driver(new_robot_config)
 
-def chatter_message(cmd):
-    """Broadcast message from the current service to any service listening to it. It is a one time message"""
-    logger.info(cmd)
-    chatter.publish(dict(time=timestamp(), command=cmd))
+    def filter_watch_dog(self):
+        """place holder for watchdog function"""
+        pass
 
 
 def main():
@@ -61,8 +69,10 @@ def main():
     logger.info("Ready")
     try:
         while not quit_event.is_set():
-
-            socket_manager.coms_to_pilot()
+            # Creating a message
+            # socket_manager.chatter_message("Check message to TEL")
+            teleop_chatter_message = socket_manager.get_teleop_chatter()
+            tel_chatter.filter_robot_config(teleop_chatter_message)
     finally:
         socket_manager.join_threads()
 
