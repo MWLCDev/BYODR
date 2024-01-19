@@ -77,17 +77,28 @@ class TeleopApplication(Application):
         """
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
-        self._user_config_file = os.path.join(self._config_dir, "config.ini")
-        self._robot_config_file = os.path.join(self._config_dir, "robotConfig.ini")
         self._config_hash = -1
+        # Initialize variables to None
+        self._robot_config_file = None
+        self._user_config_file = None
         self._router = Router()
         self._nano = Nano()
 
-    def _check_configuration_files(self):
+    def __check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) > 0:
-            self._robot_config_file = _candidates[0]
-            self._user_config_file = _candidates[1]
+
+        for file_path in _candidates:
+            # Extract the filename from the path
+            file_name = os.path.basename(file_path)
+
+            if file_name == "robot_config.ini":
+                self._robot_config_file = file_path
+            elif file_name == "config.ini":
+                self._user_config_file = file_path
+
+        # Optional: Check if both files were found
+        if self._robot_config_file is None or self._user_config_file is None:
+            logger.info("Warning: Not all config files were found")
 
     def populate_robot_config(self):
         """Add mac address, SSID, and IP for current robot in robot_config file"""
@@ -142,7 +153,7 @@ class TeleopApplication(Application):
 
     def setup(self):
         if self.active():
-            self._check_configuration_files()
+            self.__check_configuration_files()
             self.populate_robot_config()
             _config = self._config()
             _hash = hash_dict(**_config)
