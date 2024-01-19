@@ -64,3 +64,41 @@ class ComsApplication(Application):
                 self._config_hash = _hash
 
         # logger.info(tel_data["command"]["robot_config"])
+
+
+class SocketManager:
+    def __init__(self, quit_event):
+        self.quit_event = quit_event
+        # Initialize sockets as instance variables
+        self.coms_chatter = JSONPublisher(url="ipc:///byodr/coms_c.sock", topic="aav/coms/chatter")
+        self.tel_chatter_socket = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
+        self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
+        self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
+
+        self.threads = [self.tel_chatter_socket, self.teleop_receiver]
+
+    def coms_to_pilot(self):
+        while not self.quit_event.is_set():
+            self.publish_to_coms(self.teleop_receiver.get())
+
+    def publish_to_coms(self, message):
+        # Method to publish a message using coms_to_pilot_publisher
+        self.coms_to_pilot_publisher.publish(message)
+
+    def teleop_input(self):
+        # Method to get data from teleop_receiver
+        while not self.quit_event.is_set():
+            return self.teleop_receiver.get()
+
+    def chatter_message(self, cmd):
+        """Broadcast message from COMS chatter with a timestamp. It is a one time message"""
+        logger.info(cmd)
+        self.coms_chatter.publish(dict(time=timestamp(), command=cmd))
+
+    def start_threads(self):
+        for thread in self.threads:
+            thread.start()
+
+    def join_threads(self):
+        for thread in self.threads:
+            thread.join()

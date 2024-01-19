@@ -27,12 +27,6 @@ def _interrupt():
     quit_event.set()
 
 
-chatter = JSONPublisher(url="ipc:///byodr/coms_c.sock", topic="aav/coms/chatter")
-tel_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
-teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
-coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
-
-
 class TeleopChatter:
     """Resolve the data incoming from Teleop chatter socket"""
 
@@ -58,21 +52,19 @@ def main():
     args = parser.parse_args()
 
     application = ComsApplication(event=quit_event, config_dir=args.config)
+    socket_manager = SocketManager(quit_event=quit_event)
+    tel_chatter = TeleopChatter(application.get_robot_config_file(), application.get_user_config_file())
+
     application.setup()
-    [t.start() for t in threads]
-    while not quit_event.is_set():
-        # Creating a message
-        # chatter_message("Check message to TEL")
-        # time.sleep(1)
+    socket_manager.start_threads()
 
-        tel_data = tel_chatter.get()
-        tel_chatter_filter_robot(tel_data)
+    logger.info("Ready")
+    try:
+        while not quit_event.is_set():
 
-        # Publishing data in every iteration
-        coms_to_pilot_publisher.publish(teleop_receiver.get())
-
-    logger.info("Waiting on threads to stop.")
-    [t.join() for t in threads]
+            socket_manager.coms_to_pilot()
+    finally:
+        socket_manager.join_threads()
 
     return 0
 
