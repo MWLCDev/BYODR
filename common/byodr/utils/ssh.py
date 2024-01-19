@@ -5,12 +5,15 @@
 # Kernel version: 5.4.259
 
 
+import json
 import logging
-import paramiko, time, re, json
-from ipaddress import ip_address
-import paramiko
-import traceback
+import re
 import subprocess
+import time
+import traceback
+from ipaddress import ip_address
+
+import paramiko
 from pythonping import ping
 
 # Declaring the logger
@@ -97,7 +100,7 @@ class Router:
         except Exception as e:
             # Get the name of the caller function
             caller = traceback.extract_stack(None, 2)[0][2]
-            print(f"Error occurred in {caller}: {e}")
+            logger.info(f"Error occurred in {caller}: {e}")
             return None
 
     def fetch_ssid(self):
@@ -195,7 +198,6 @@ class Router:
             logger.info(f"Success: Device at {target_ip} is reachable. Average speed: {average_time_ms:.2f}ms")
             return True
         else:
-            logger.info(f"Failure: Device at {target_ip} is not reachable.")
             return False
 
     class FetchIpFromMac:

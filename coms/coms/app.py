@@ -1,17 +1,19 @@
 import argparse
-import configparser
-import glob
 import logging
 import multiprocessing
-import os
 import signal
-import time
 
-from byodr.utils import Application, hash_dict, timestamp
-from byodr.utils.ipc import JSONPublisher, json_collector
+from byodr.utils.ssh import Nano, Router
 
-from .robot_comm import *
 from .common_utils import *
+from .robot_comm import *
+
+router = Router()
+# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77")
+# router.change_wifi_visibility("False")
+# router.change_wifi_visibility("True")
+
+
 
 # This flag starts as false
 quit_event = multiprocessing.Event()
@@ -71,6 +73,9 @@ def main():
         while not quit_event.is_set():
             # Creating a message
             # socket_manager.chatter_message("Check message to TEL")
+            # time.sleep(1)
+            # if robot_config:
+            #     print(robot_config)
             teleop_chatter_message = socket_manager.get_teleop_chatter()
             tel_chatter.filter_robot_config(teleop_chatter_message)
     finally:
