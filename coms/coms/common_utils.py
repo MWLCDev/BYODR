@@ -75,7 +75,8 @@ class SocketManager:
         self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
         self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
-        self.threads = [self.tel_chatter_socket, self.teleop_receiver]
+        #  No need to call socket_manager.coms_to_pilot() in main() loop, as it's already being executed in its own thread
+        self.threads = [self.tel_chatter_socket, self.teleop_receiver, threading.Thread(target=self.coms_to_pilot)]
 
     def coms_to_pilot(self):
         while not self.quit_event.is_set():
