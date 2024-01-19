@@ -38,7 +38,12 @@ def chatter_message(cmd):
 
 
 def main():
-    threads = [teleop_receiver, tel_chatter]
+    # Adding the parser here for a static design pattern between all services
+    parser = argparse.ArgumentParser(description="Communication sockets server.")
+    parser.add_argument("--name", type=str, default="none", help="Process name.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
+    args = parser.parse_args()
+
     [t.start() for t in threads]
     while not quit_event.is_set():
         # Creating a message
