@@ -328,6 +328,12 @@ class Router:
 
         def __init__(self, router_instance):
             self.router = router_instance
+            # Full IP of the target router
+            self.network_router_ip = None
+            # The IP address of current router when it joins the target router as a client
+            self.current_router_client_address = None
+            self.wireless_config_content = None
+            self.interface_config_content = None
 
         def driver(self, network_name, network_mac, network_forth_octet):
             start_time = time.time()
@@ -336,12 +342,6 @@ class Router:
             self.network_mac = network_mac
             # Will be used when joining the network of target segment
             self.network_forth_octet = network_forth_octet
-            # The third octet for target network
-            self.network_router_third_octet = 2
-            # Full IP of the target router
-            self.network_router_ip = None
-            # The IP address of current router when it joins the target router as a client
-            self.current_router_client_address = None
             try:
                 # Step 1: Add the new network to the interface and network config files
                 self.__connect_to_network()
@@ -415,6 +415,13 @@ config interface '{self.network_name}'
                     if config_data not in current_config:
                         self.router._execute_ssh_command(f'echo "{config_data}" >> {config_file}')
                         logger.info(f"Added {self.network_name} section in {config_file}")
+
+                        updated_config = current_config + config_data
+
+                        if config_file == "/etc/config/wireless":
+                            self.wireless_config_content = updated_config
+                        elif config_file == "/etc/config/network":
+                            self.interface_config_content = updated_config
                     else:
                         logger.info(f"{self.network_name} section already exists in {config_file}")
 
@@ -443,10 +450,7 @@ config interface '{self.network_name}'
                     continue
 
         def __delete_interface_DHCP_config(self):
-            file_content = self.router._execute_ssh_command(f"cat /etc/config/network")
-
-            # Split the file into sections based on empty lines
-            sections = file_content.split("\n\n")
+            sections = self.interface_config_content.split("\n\n")
             updated_content = []
             section_found = False
 
@@ -465,8 +469,8 @@ config interface '{self.network_name}'
                 try:
                     # Write the updated content back to the file
                     self.router._execute_ssh_command(f'echo "{new_file_content}" > {temp_file}')
-
                     self.router._execute_ssh_command(f"mv {temp_file} /etc/config/network")
+                    self.interface_config_content = new_file_content
                 except Exception as e:
                     logger.info(f"An error occurred while deleting DHCP interface for network {self.network_name}: {e}")
                 finally:
@@ -491,15 +495,10 @@ config interface '{self.network_name}'
         option device 'wlan0'
 """
             try:
-                # Retrieve current network configuration
-                current_network_config = self.router._execute_ssh_command("cat /etc/config/network")
-
                 # Check if the configuration already exists
-                if interface_static_config.strip() not in current_network_config:
+                if interface_static_config.strip() not in self.interface_config_content:
                     # Append the configuration if it doesn't exist
-                    commands = [f'echo "{interface_static_config}" >> /etc/config/network', "wifi reload"]
-                    for command in commands:
-                        self.router._execute_ssh_command(command)
+                    self.router._execute_ssh_command(f'echo "{interface_static_config}" >> /etc/config/network; wifi reload')
                 else:
                     logger.info(f"Static IP configuration for {self.network_name} already exists.")
             except Exception as e:
@@ -545,7 +544,6 @@ config interface '{self.network_name}'
             while not self.router.check_network_connection(self.network_router_ip):
                 continue
 
-
             # Gets the IP until the third dot
             network_prefix = ".".join(self.router.ip.split(".")[:3]) + "."
             current_segment_ip = f"{network_prefix}0"
@@ -567,9 +565,7 @@ config route '1'
                 # Check if the static route configuration already exists
                 if static_route_config.strip() not in current_network_config:
                     # Append the configuration if it doesn't exist
-                    commands = [f'echo "{static_route_config}" >> /etc/config/network', "wifi reload"]
-                    for command in commands:
-                        self.router._execute_ssh_command(command, ip=self.network_router_ip)
+                    self.router._execute_ssh_command(f'echo "{static_route_config}" >> /etc/config/network; wifi reload;', ip=self.network_router_ip)
                 else:
                     logger.info(f"Static route configuration for {self.network_name} already exists.")
             except Exception as e:
