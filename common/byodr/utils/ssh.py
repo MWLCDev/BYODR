@@ -39,6 +39,8 @@ class Router:
         self.wifi_connect = self.ConnectToNetwork(self)
         self.wifi_delete = self.WifiNetworkDeletion(self)
         self.fetch_ip_from_mac = self.FetchIpFromMac(self)
+        self.client = None
+        self.__open_ssh_connection()
 
     def __get_nano_third_octet(self):
         try:
@@ -54,43 +56,51 @@ class Router:
             print(f"An error occurred: {e}")
             return None
 
-    # Protected function for internal use but can still be accessed from inner classes or subclasses
-    def _execute_ssh_command(self, command, ip=None, file_path=None, file_contents=None):
+    def __open_ssh_connection(self):
+        """
+        Opens an SSH connection to the router.
+        """
+        try:
+            self.client = paramiko.SSHClient()
+            self.client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+            self.client.connect(self.ip, self.port, self.username, self.password)
+        except Exception as e:
+            logger.error(f"Failed to open SSH connection: {e}")
+            self.client = None
+
+    def _execute_ssh_command(self, command, ip=None, file_path=None, file_contents=None, suppress_error_log=False):
         """
         Executes a command on the router via SSH and returns the result.
         Optionally, can write to a file on the router using SFTP.
-
-        Args:
-            command (str): Command to be executed on the router.
-            file_path (str, optional): Path to the file to be written via SFTP.
-            file_contents (str, optional): Contents to write to the file.
-
-        Returns:
-            str: The output of the command execution, or None in case of SFTP.
         """
-        # In case I want to ssh to another router. I can just pass the IP for it and no need to pass the other credentials
         router_ip = ip if ip is not None else self.ip
+        temp_client = None
 
         try:
-            client = paramiko.SSHClient()
-            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-            client.connect(router_ip, self.port, self.username, self.password)
+            if router_ip != self.ip:
+                # Establish a temporary connection for a different router
+                temp_client = paramiko.SSHClient()
+                temp_client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+                temp_client.connect(router_ip, self.port, self.username, self.password)
+                client = temp_client
+            else:
+                # Check and use the persistent connection for the primary router
+                if not self.client or not self.client.get_transport() or not self.client.get_transport().is_active():
+                    self.__open_ssh_connection()
+                client = self.client
 
             if file_path and file_contents is not None:
                 # Handle SFTP file write operation
                 with client.open_sftp() as sftp:
                     with sftp.file(file_path, "w") as file:
                         file.write(file_contents)
-                client.close()
                 # No command output in case of SFTP operation
                 return None
 
             # Execute the SSH command
             stdin, stdout, stderr = client.exec_command(command)
             result = stdout.read().decode().strip()
-            error = stderr.read().decode()
-
-            client.close()
+            error = stderr.read().decode().strip()
 
             if error:
                 raise Exception(error)
@@ -98,17 +108,31 @@ class Router:
             return result
 
         except Exception as e:
-            # Get the name of the caller function
-            caller = traceback.extract_stack(None, 2)[0][2]
-            logger.info(f"Error occurred in {caller}: {e}")
+            if not suppress_error_log:
+                # Log the error
+                caller = traceback.extract_stack(None, 2)[0][2]
+                logger.info(f"Error occurred in {caller}: {e}")
             return None
+
+        finally:
+            # Close the temporary client if it was used
+            if router_ip != self.ip and temp_client:
+                temp_client.close()
+
+    def close_ssh_connection(self):
+        """
+        Closes the SSH connection to the router.
+        """
+        if self.client:
+            self.client.close()
+            self.client = None
 
     def fetch_ssid(self):
         """Get SSID of current segment"""
         output = None
         # The loop is to keep calling the ssh function until it returns a value
         while output is None:
-            output = self._execute_ssh_command("uci get wireless.@wifi-iface[0].ssid")
+            output = self._execute_ssh_command("uci get wireless.@wifi-iface[0].ssid", suppress_error_log=True)
             if output is None:
                 time.sleep(1)
         return output
@@ -116,7 +140,7 @@ class Router:
     def fetch_router_mac(self):
         output = None
         while output is None:
-            output = self._execute_ssh_command("ifconfig wlan0 | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}'")
+            output = self._execute_ssh_command("ifconfig wlan0 | grep -o -E '([[:xdigit:]]{2}:){5}[[:xdigit:]]{2}'", suppress_error_log=True)
             if output is None:
                 time.sleep(1)
         return output
@@ -364,6 +388,7 @@ class Router:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
                 logger.info(f"Connection to {self.network_name} has been done successfully in {elapsed_time:.2f} seconds.")
+                self.router.close_ssh_connection()
 
         def __connect_to_network(self):
             """Add wireless network to `wireless.config` and `interface.config`
