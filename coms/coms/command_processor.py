@@ -8,16 +8,13 @@ from byodr.utils import timestamp
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
-# A queue in which steering values other than 0 will be stored in
-steering_queue = deque()
+#################### Can be of inf size. Potentially dangerous if the user keeps steering => queue keeps appending data ####################
+steering_queue = deque() # A queue in which steering values other than 0 will be stored in
 
-# Default values for the current time and delay time
-time_now = 0.0
-delay = 0.0
-
-# Variable that tells the function when it is time to use the queue for steering values
-use_steering_queue = False
-
+time_now = 0.0 # Default values for the current time 
+delay = 0.0 # Default values for the delay amount 
+use_steering_queue = False # Variable that tells the function when it is time to use the queue for steering values
+start_counting_down = False # Variable that tells the function to start counting down. We dont want the function to start counting down unless it receives steering first
 
 
 def process(movement_command):
@@ -25,23 +22,15 @@ def process(movement_command):
     global time_now
     global delay
     global use_steering_queue
+    global start_counting_down
 
-    # Velocity of the LD segment in m/s
-    # The Pi gives the velocity to Vehicles from servos.py L407 -> core.py L165
-    velocity = movement_command["velocity"]
-
-    # Testing the delay
-    velocity = 1 # in m/s
     
-    # Distance between the motors of the current segment and the LD segment in m
-    distance = 1
-
-    # Getting the steering value from the command we just got
-    steering = movement_command["steering"]
-
-    # The steering value that the final command will include
-    applied_steering = 0.0
-
+    velocity = movement_command["velocity"] # Velocity of the LD segment in m/s
+    velocity = 1 # Testing the delay in m/s
+    distance = 5 # Distance between the motors of the current segment and the LD segment in m
+    steering = movement_command["steering"] # Getting the steering value from the command we just got
+    applied_steering = 0.0 # The steering value that the final command will include
+    time_counter = time.perf_counter() # Getting the current time value
 
     # If we detect that the LD is turning
     if steering != 0:
@@ -51,25 +40,33 @@ def process(movement_command):
             # Execution delay of steering in s
             # We want the absolute value, the delay is never negative
             delay = abs(distance / velocity)
-
         except ZeroDivisionError:
-            delay = 0.0
+            pass
 
         # Place the non-zero steering in the deque
         steering_queue.append(steering)
 
+        # Getting the time in which we start receiving steering other than 0
+        # Making sure we mark the time only once, and not keep updating it every time we receive non-zero steering
+        # We will be able to run this again after the current queue with values is emptied.
+        if not start_counting_down:
+            time_now = time.perf_counter()
 
-    # Getting the current time value
-    time_counter = time.perf_counter()
+        # Telling the function that we received steering, and to start counting down so that the values we store are applied after "delay" seconds
+        start_counting_down = True
 
-    # If its time to start applying the steering values
-    if time_counter - time_now >= delay:
 
+
+    # If we need to start counting down
+    # AND
+    # If the time difference between the function time and the time in which we first received steering is "delay" seconds
+    if start_counting_down and time_counter - time_now >= delay:
         # We mark the time we start applying the values for the next iteration of the function
         time_now = time_counter
 
         # We turn the trigger into True, making the function use steering from the queue
         use_steering_queue = True
+
 
     # Trigger that tells the function to use steering from the queue
     if use_steering_queue:
@@ -79,9 +76,10 @@ def process(movement_command):
         try:
             applied_steering = steering_queue.popleft()
         except IndexError:
-            # If the queue is empty, we put steering = 0 and turn the trigger to False
+            # If the queue is empty, we put steering = 0 and turn the triggers to False
             applied_steering = 0.0
             use_steering_queue = False
+            start_counting_down = False
 
 
     # We reverse throttle
