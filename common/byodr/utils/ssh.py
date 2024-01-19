@@ -163,23 +163,23 @@ class Router:
 
     def change_wifi_visibility(self, desired_state):
         try:
-            # Convert the output of SSH command to boolean (assuming '0' is visible and '1' is hidden)
-            current_state = self._execute_ssh_command("uci get wireless.default_radio0.hidden") == "1"
+            # Get current state for the Wifi network
+            ssh_output = self._execute_ssh_command("uci get wireless.default_radio0.hidden").strip()
 
-            # Check if the state needs to be changed
-            if current_state != desired_state:
-                if desired_state:
-                    # If desired state is True (visible), set hidden to 0
-                    commands = "uci set wireless.default_radio0.hidden=0; uci commit wireless; wifi reload"
-                else:
-                    # If desired state is False (hidden), set hidden to 1
-                    commands = "uci set wireless.default_radio0.hidden=1; uci commit wireless; wifi reload"
+            # Determine the current state: '0' for discoverable, '1' for hidden
+            is_currently_hidden = ssh_output == "1"
 
-                # Execute the commands
-                self._execute_ssh_command(commands)
+            # Convert desired_state to boolean ('True' or 'False' string to a boolean value)
+            desired_state_bool = desired_state.lower() == "true"
 
-                # Log the completion
-                logger.info(f"Wifi network visibility changed to {'discoverable' if desired_state else 'hidden'}")
+            # Check if the current state is different from the desired state
+            if (is_currently_hidden and desired_state_bool) or (not is_currently_hidden and not desired_state_bool):
+                # If the WiFi is hidden and should be discoverable, or vice versa
+                new_state = "0" if desired_state_bool else "1"
+                self._execute_ssh_command(f"uci set wireless.default_radio0.hidden={new_state}; uci commit wireless; wifi reload")
+
+                new_state_str = "discoverable" if desired_state_bool else "hidden"
+                logger.info(f"Wifi network visibility changed to {new_state_str}")
         except Exception as e:
             logger.error(f"Error in changing WiFi visibility: {e}")
 
