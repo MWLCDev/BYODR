@@ -1,37 +1,33 @@
 #!/usr/bin/env python
 from __future__ import absolute_import
 
-import tornado.ioloop
-import tornado.web
 import argparse
 import asyncio
+import concurrent.futures
+import configparser
 import glob
 import multiprocessing
 import signal
-import tornado.web
-import concurrent.futures
-import user_agents  # Check in the request header if it is a phone or not
-
-
-from datetime import timedelta
 from concurrent.futures import ThreadPoolExecutor
+from datetime import timedelta
+
+import tornado.ioloop
+import tornado.web
+import user_agents  # Check in the request header if it is a phone or not
+from byodr.utils import Application, ApplicationExit, hash_dict
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.ssh import Nano, Router
+from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from logbox.app import LogApplication, PackageApplication
+from logbox.core import MongoLogBox, SharedState, SharedUser
+from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from byodr.utils import Application, hash_dict, ApplicationExit
-from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router, Nano
-from logbox.app import LogApplication, PackageApplication
-from logbox.core import MongoLogBox, SharedUser, SharedState
-from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
-from .robot_comm import *
-
-
-from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 
 router = Router()
 # router.get_ip_from_mac("00:1E:42:2C:9F:77")
