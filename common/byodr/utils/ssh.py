@@ -426,35 +426,23 @@ config interface '{self.network_name}'
         def __get_IP_new_network(self):
             """Get the third octet of IP that is being used in the new segment's network after joining it as a client"""
             network_router_third_octet_command = "ifconfig wlan0-1 | grep 'inet addr' | awk '{print $2}' | cut -d':' -f2 | cut -d'.' -f3"
-            sleeping_time = 1
-            # to overcome (ifconfig: wlan0-1: error fetching interface information: Device not found)
-            time.sleep(5)
             while True:
                 # Executing the command to get the IP address
-                self.network_router_third_octet = self.router._execute_ssh_command(network_router_third_octet_command)
-                # Check if the command execution returned None (indicating an error)
+                self.network_router_third_octet = self.router._execute_ssh_command(network_router_third_octet_command, suppress_error_log=True)
                 if self.network_router_third_octet is None:
-                    logger.error(f"connection not set yet. Retrying after {sleeping_time}sec...")
-                    time.sleep(sleeping_time)
-                    sleeping_time += 1
                     continue
 
-                # Check if the result is a digit
                 if self.network_router_third_octet.isdigit():
                     logger.info(f"Third octet of current segment in {self.network_name} network is {self.network_router_third_octet}")
                     self.network_router_third_octet = self.network_router_third_octet.replace(" ", "")
-                    # Update the value with the third octet
                     # There are lots of split in it to make sure the used ip is dynamic to the current segment. It can start with 192.168. or any other digits
                     self.current_router_client_address = ".".join(self.router.ip.split(".")[:2] + [str(self.network_router_third_octet)] + [str(self.network_forth_octet)])
                     self.network_router_ip = ".".join(self.router.ip.split(".")[:2] + [str(self.network_router_third_octet)] + self.router.ip.split(".")[3:])
                     break
                 else:
-                    logger.info(f"Waiting for a valid third octet from network of {self.network_name}. Retrying after {sleeping_time}sec...")
-                    time.sleep(sleeping_time)
-                    sleeping_time += 1
+                    continue
 
         def __delete_interface_DHCP_config(self):
-            # Read the interface file
             file_content = self.router._execute_ssh_command(f"cat /etc/config/network")
 
             # Split the file into sections based on empty lines
@@ -478,7 +466,6 @@ config interface '{self.network_name}'
                     # Write the updated content back to the file
                     self.router._execute_ssh_command(f'echo "{new_file_content}" > {temp_file}')
 
-                    # Move the temp file to overwrite the original
                     self.router._execute_ssh_command(f"mv {temp_file} /etc/config/network")
                 except Exception as e:
                     logger.info(f"An error occurred while deleting DHCP interface for network {self.network_name}: {e}")
@@ -548,20 +535,16 @@ config interface '{self.network_name}'
             except Exception as e:
                 logger.info(f"An error occurred while updating the firewall config with {self.network_name} network: {e}")
             else:
-                logger.info(f"updated the firewall config with the new network {self.network_name}")
+                logger.info(f"Updated the firewall config with the new network {self.network_name}")
                 # connecting and disconnecting with target router. To set the target router with the static route
                 logger.info("Will disconnect and connect with the target router")
                 self.router.change_wifi_visibility("False")
                 self.router.change_wifi_visibility("True")
 
         def __add_static_route(self):
-            sleeping_time = 1
-            # self.network_router_ip = "192.168.2.1"
             while not self.router.check_network_connection(self.network_router_ip):
-                logger.info(f"Retrying in {sleeping_time}seconds")
-                time.sleep(sleeping_time)
-                sleeping_time += 1
-            # Sleeping time until the current router pends all the changes
+                continue
+
 
             # Gets the IP until the third dot
             network_prefix = ".".join(self.router.ip.split(".")[:3]) + "."
@@ -661,7 +644,7 @@ config route '1'
 
                 self._router._execute_ssh_command(None, file_path=temp_file, file_contents=updated_content)
                 self._router._execute_ssh_command(f"mv {temp_file} /etc/config/{dir_location}")
-                logger.info(f"{self.network_name} deleted successfully from {dir_location}.")
+                logger.info(f"{self.network_name} deleted successfully from {dir_location} config.")
             else:
                 logger.info(f"{self.network_name} not found in {dir_location}.")
 
@@ -710,14 +693,14 @@ config route '1'
                 if section_to_delete:
                     # Use the existing method to update the config file
                     self._update_config_file(dir_location, section_to_delete, updated_content, ip=self.network_router_ip)
-                    logger.info(f"Gateway section with address {self.current_router_client_address} deleted successfully from {dir_location}.")
+                    logger.info(f"{self.network_name} gateway deleted successfully from {dir_location}.")
                 else:
                     logger.info(f"Gateway with address {self.current_router_client_address} not found in any {dir_location} section.")
 
             except Exception as e:
                 logger.error(f"An error occurred while deleting static route with {self.network_name} network: {e}")
             else:
-                logger.info(f"Finished deleting static route with {self.network_name} network")
+                logger.info(f"Deleted static route with {self.network_name} network")
             pass
 
     def delete_network(self, network_name):
