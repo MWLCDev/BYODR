@@ -25,9 +25,14 @@ teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b
 coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
 
-def tel_chatter_filter_robot(tel_data):
-    # Check if tel_data is not None and then check for 'robot_config'
-    if tel_data and "robot_config" in tel_data.get("command", {}):
+class TeleopChatter:
+    """Resolve the data incoming from Teleop chatter socket"""
+
+    def __init__(self, _robot_config_dir, _segment_config_dir):
+        self.robot_config_dir = _robot_config_dir
+        self.seg_config_dir = _segment_config_dir
+        self.robot_actions = RobotActions(self.robot_config_dir)
+
         logger.info(tel_data["command"]["robot_config"])
 
 
