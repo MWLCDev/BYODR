@@ -322,15 +322,16 @@ class Router:
         return self.wifi_scanner.fetch_wifi_networks()
 
     class ConnectToNetwork:
+        """Connect to a network using the SSID and mac address for it"""
+
         def __init__(self, router_instance):
             self.router = router_instance
 
-        def driver(self, network_name, network_mac, skip_init, network_forth_octet):
+        def driver(self, network_name, network_mac, network_forth_octet):
+            start_time = time.time()
             # REMOVE THE REBOOT RESTART, THE FIREWALL RESTARTING COMMAND IS WORKING FINE
             self.network_name = network_name
             self.network_mac = network_mac
-            # Skip the initialization of connection from the current router and go to making the static route immediately
-            self.skip_init = skip_init
             # Will be used when joining the network of target segment
             self.network_forth_octet = network_forth_octet
             # The third octet for target network
@@ -340,25 +341,27 @@ class Router:
             # The IP address of current router when it joins the target router as a client
             self.current_router_client_address = None
             try:
-                if not self.skip_init:
-                    # Step 1: Add the new network to the interface and network config files
-                    self.__connect_to_network()
-                    # Step 2: Get the IP of current router when it joins as a client to the target segment's router
-                    self.__get_IP_new_network()
-                    # Step 3: Remove the DHCP connection
-                    self.__delete_interface_DHCP_config()
-                    # Step 4: Add the updated config to interface
-                    self.__update_interface_config()
-                    # Step 5: Add the new network to the firewall
-                    self.__update_firewall_config()
-                else:
-                    self.__get_IP_new_network()
-                    # Step 6: SSH to target router and add the static router to the current router
-                    self.__add_static_route()
+                # Step 1: Add the new network to the interface and network config files
+                self.__connect_to_network()
+                # Step 2: Get the IP of current router when it joins as a client to the target segment's router
+                self.__get_IP_new_network()
+                # Step 3: Remove the DHCP connection
+                self.__delete_interface_DHCP_config()
+                # Step 4: Add the updated config to interface
+                self.__update_interface_config()
+                # Step 5: Add the new network to the firewall
+                self.__update_firewall_config()
+                # Step 6: SSH to target router and add the static router to the current router
+                self.__add_static_route()
             except Exception as e:
-                logger.info(f"There was a problem while trying to connect to {self.network_name}: {e}")
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                logger.info(f"Trying to connect to {self.network_name} failed after {elapsed_time:.2f} seconds with error: {e}")
+
             else:
-                logger.info(f"connection to {self.network_name} has been done successfully.")
+                end_time = time.time()
+                elapsed_time = end_time - start_time
+                logger.info(f"Connection to {self.network_name} has been done successfully in {elapsed_time:.2f} seconds.")
 
         def __connect_to_network(self):
             """Add wireless network to `wireless.config` and `interface.config`
@@ -422,6 +425,8 @@ config interface '{self.network_name}'
             """Get the third octet of IP that is being used in the new segment's network after joining it as a client"""
             network_router_third_octet_command = "ifconfig wlan0-1 | grep 'inet addr' | awk '{print $2}' | cut -d':' -f2 | cut -d'.' -f3"
             sleeping_time = 1
+            # to overcome (ifconfig: wlan0-1: error fetching interface information: Device not found)
+            time.sleep(5)
             while True:
                 # Executing the command to get the IP address
                 self.network_router_third_octet = self.router._execute_ssh_command(network_router_third_octet_command)
@@ -437,7 +442,7 @@ config interface '{self.network_name}'
                     logger.info(f"Third octet of current segment in {self.network_name} network is {self.network_router_third_octet}")
                     self.network_router_third_octet = self.network_router_third_octet.replace(" ", "")
                     # Update the value with the third octet
-                    # there is lots of split in it to make sure the used ip is dynamic to the current segment. It can start with 192.168. or any other digits
+                    # There are lots of split in it to make sure the used ip is dynamic to the current segment. It can start with 192.168. or any other digits
                     self.current_router_client_address = ".".join(self.router.ip.split(".")[:2] + [str(self.network_router_third_octet)] + [str(self.network_forth_octet)])
                     self.network_router_ip = ".".join(self.router.ip.split(".")[:2] + [str(self.network_router_third_octet)] + self.router.ip.split(".")[3:])
                     break
@@ -512,8 +517,6 @@ config interface '{self.network_name}'
                 logger.info(f"An error occurred while updating interface static config for {self.network_name} network: {e}")
             else:
                 logger.info(f"Finished adding static interface config for {self.network_name} network")
-                logger.info(f"Will restart the current router.")
-                self.router._execute_ssh_command("reboot")
 
         def __update_firewall_config(self):
             firewall_config_path = "/etc/config/firewall"
@@ -543,8 +546,11 @@ config interface '{self.network_name}'
             except Exception as e:
                 logger.info(f"An error occurred while updating the firewall config with {self.network_name} network: {e}")
             else:
-                self.router._execute_ssh_command("wifi reload")
                 logger.info(f"updated the firewall config with the new network {self.network_name}")
+                # connecting and disconnecting with target router. To set the target router with the static route
+                logger.info("Will disconnect and connect with the target router")
+                self.router.change_wifi_visibility("False")
+                self.router.change_wifi_visibility("True")
 
         def __add_static_route(self):
             sleeping_time = 1
@@ -588,17 +594,7 @@ config route '1'
 
     def connect_to_network(self, network_name, network_mac, network_forth_octet=150):
         """Delegating the call to the ConnectToNetwork instance"""
-        # It will check if the interface already exists
-        # If the interface exists then it will make the static route from the target router
-
-        file_content = self._execute_ssh_command(f"cat /etc/config/network")
-        sections = file_content.split("\n\n")
-        for section in sections:
-            if f"config interface '{network_name}'" in section:
-                logger.info(f"{network_name} was found. Will make the static route.")
-                return self.wifi_connect.driver(network_name, network_mac, True, network_forth_octet)
-
-        return self.wifi_connect.driver(network_name, network_mac, False, network_forth_octet)
+        return self.wifi_connect.driver(network_name, network_mac, network_forth_octet)
 
     class WifiNetworkDeletion:
         def __init__(self, router):
