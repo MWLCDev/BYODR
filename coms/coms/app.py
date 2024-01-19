@@ -44,6 +44,8 @@ def main():
     parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     args = parser.parse_args()
 
+    application = ComsApplication(event=quit_event, config_dir=args.config)
+    application.setup()
     [t.start() for t in threads]
     while not quit_event.is_set():
         # Creating a message
