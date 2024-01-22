@@ -12,10 +12,20 @@ log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 class Segment_server():
+    """Class that encapsulates the server functionalities of the segment.
+        Methods:
+            - start_server(): The server starts listening for clients
+            - send_to_LD(): The server sends a reply to its LD
+            - recv_from_LD(): The server receives data from its LD
+
+        Args:
+            arg_server_ip (Str): IP of the server -> '192.168.1.100'
+            arg_server_port (Int): Port that the server uses -> '1111'
+            arg_timeout (Float): Server socket timeout -> '0.1' (In seconds)
+        """
 
     # Method that is called after the class is being initiated, to give it its values
     def __init__(self, arg_server_ip, arg_server_port, arg_timeout):
-        
         # Giving the class the values from the class call
         self.server_ip = arg_server_ip
         self.server_port = arg_server_port

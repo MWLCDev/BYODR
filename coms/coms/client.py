@@ -14,10 +14,22 @@ log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 class Segment_client():
+    """Class that encapsulates the client functionalities of the segment.
+        Methods:
+            - connect_to_server(): Tries to connect to the server
+            - close_connection(): Closes the connection to the server
+            - start_server(): The server starts listening for clients
+            - send_to_FL(): The client sends data to its FL
+            - recv_from_FL(): The client receives a reply from its FL
+
+        Args:
+            arg_server_ip (Str): IP of the server -> '192.168.1.100'
+            arg_server_port (Int): Port that the server uses -> '1111'
+            arg_timeout (Float): Client socket timeout -> '0.1' (In seconds)
+        """
 
     # Method that is called after the class is being initiated, to give it its values
     def __init__(self, arg_server_ip, arg_server_port, arg_timeout):
-        
         # Giving the class the values from the class call
         self.server_ip = arg_server_ip # The IP of the server that the client will connect to
         self.server_port = arg_server_port # The port of the server that the client will connect to
