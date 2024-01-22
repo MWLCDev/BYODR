@@ -119,7 +119,7 @@ class Router:
             if router_ip != self.ip and temp_client:
                 temp_client.close()
 
-    def close_ssh_connection(self):
+    def __close_ssh_connection(self):
         """
         Closes the SSH connection to the router.
         """
@@ -361,7 +361,6 @@ class Router:
 
         def driver(self, network_name, network_mac, network_forth_octet):
             start_time = time.time()
-            # REMOVE THE REBOOT RESTART, THE FIREWALL RESTARTING COMMAND IS WORKING FINE
             self.network_name = network_name
             self.network_mac = network_mac
             # Will be used when joining the network of target segment
@@ -388,7 +387,7 @@ class Router:
                 end_time = time.time()
                 elapsed_time = end_time - start_time
                 logger.info(f"Connection to {self.network_name} has been done successfully in {elapsed_time:.2f} seconds.")
-                self.router.close_ssh_connection()
+                self.router.__close_ssh_connection()
 
         def __connect_to_network(self):
             """Add wireless network to `wireless.config` and `interface.config`
@@ -614,6 +613,7 @@ config route '1'
             self.network_name = keyword
             # Delete the connection with target segment
             self.delete_network_profile()
+            self.router.__close_ssh_connection()
             pass
 
         def delete_network_profile(self):
