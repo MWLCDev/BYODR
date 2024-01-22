@@ -37,10 +37,10 @@ def main():
     args = parser.parse_args()
 
     application = ComsApplication(event=quit_event, config_dir=args.config)
+    application.setup()
     tel_chatter = TeleopChatter(application.get_robot_config_file(), application.get_user_config_file())
     socket_manager = SocketManager(tel_chatter, quit_event=quit_event)
 
-    application.setup()
     socket_manager.start_threads()
 
     logger.info("Ready")
