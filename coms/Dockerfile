@@ -12,6 +12,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN python3 -m pip install -U pip
 RUN pip3 install paramiko
+RUN pip3 install pythonping
 
 COPY ./common common/
 COPY ./coms app/

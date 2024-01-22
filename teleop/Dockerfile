@@ -20,6 +20,7 @@ RUN pip3 install Flask
 RUN pip3 install flask_socketio
 RUN pip3 install paramiko
 RUN pip3 install user-agents
+RUN pip3 install pythonping
 
 
 
