@@ -37,8 +37,8 @@ def main():
     args = parser.parse_args()
 
     application = ComsApplication(event=quit_event, config_dir=args.config)
-    socket_manager = SocketManager(quit_event=quit_event)
     tel_chatter = TeleopChatter(application.get_robot_config_file(), application.get_user_config_file())
+    socket_manager = SocketManager(tel_chatter, quit_event=quit_event)
 
     application.setup()
     socket_manager.start_threads()
@@ -46,13 +46,7 @@ def main():
     logger.info("Ready")
     try:
         while not quit_event.is_set():
-            # Creating a message
-            # socket_manager.chatter_message("Check message to TEL")
-            # time.sleep(1)
-            # if robot_config:
-            #     print(robot_config)
-            teleop_chatter_message = socket_manager.get_teleop_chatter()
-            tel_chatter.filter_robot_config(teleop_chatter_message)
+            socket_manager.get_teleop_chatter()
     finally:
         socket_manager.join_threads()
 

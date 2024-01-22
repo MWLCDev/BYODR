@@ -67,8 +67,9 @@ class ComsApplication(Application):
 
 
 class SocketManager:
-    def __init__(self, quit_event):
+    def __init__(self, teleop_chatter, quit_event):
         self.quit_event = quit_event
+        self.tel_chatter_actions = teleop_chatter
         # Initialize sockets as instance variables
         self.coms_chatter = JSONPublisher(url="ipc:///byodr/coms_c.sock", topic="aav/coms/chatter")
         self.tel_chatter_socket = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
@@ -93,7 +94,9 @@ class SocketManager:
 
     def get_teleop_chatter(self):
         while not self.quit_event.is_set():
-            return self.tel_chatter_socket.get()
+            teleop_chatter_message = self.tel_chatter_socket.get()
+            self.tel_chatter_actions.filter_robot_config(teleop_chatter_message)
+            return teleop_chatter_message
 
     def chatter_message(self, cmd):
         """Broadcast message from COMS chatter with a timestamp. It is a one time message"""
