@@ -1,5 +1,5 @@
 import { callRouterApi } from "./robotConfiguration_b_utils.js"
-import { enableDragAndDrop, fetchSegmentDataAndDisplay, addNewRow } from "./robotConfiguration_c_table_robot.js"
+import { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable } from "./robotConfiguration_c_table_robot.js"
 import RobotState from "./robotConfiguration_z_state.js"
 
 class RobotMenu {
@@ -50,6 +50,49 @@ class RobotMenu {
     const showSSID = document.getElementById('dummy_text');
     showSSID.innerHTML = data.message;
   }
+
+  async getWifiNetworks() {
+    try {
+      let data = await callRouterApi('get_wifi_networks');
+
+      if (typeof data === 'string') {
+        data = JSON.parse(data);
+      }
+
+      const tbody = document.querySelector('#connectable_networks_table tbody');
+      tbody.innerHTML = '';
+      console.log(data);
+
+      data.forEach((network, index) => {
+        const ssid = network['ESSID'];
+        const mac = network['MAC'];
+
+        const tr = document.createElement('tr');
+        const button = document.createElement('button');
+        button.type = 'button';
+        button.textContent = 'Add';
+
+        tr.innerHTML = `<td>${ssid}</td><td></td>`;
+        tr.children[1].appendChild(button);
+
+        // Add animation with a delay
+        tr.style.animationDelay = `${index * 0.1}s`;
+        tr.classList.add('fade-in-left');
+
+        tbody.appendChild(tr);
+
+        // Add click event listener to the button
+        button.addEventListener('click', () => {
+          this.addNetworkToSegments(ssid, mac);
+          updateSegmentsTable()
+        });
+
+      });
+    } catch (error) {
+      console.error('Error fetching WiFi networks:', error);
+    }
+  }
+
   addNetworkToSegments(ssid, mac) {
     let segments = RobotState.segmentsData || {};
     let newIndex = 1;
