@@ -68,8 +68,7 @@ class Segment_server():
 
     # Sending to the client
     def send_to_LD(self):
-        message_to_send = json.dumps(self.msg_to_client)
-        self.client_socket.send(message_to_send.encode("utf-8"))
+        self.client_socket.send(self.msg_to_client.encode("utf-8"))
 
 
 
