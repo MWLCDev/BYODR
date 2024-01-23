@@ -3,17 +3,15 @@ import RobotState from "./robotConfiguration_z_state.js"
 
 function removeSegment(segName) {
   // Iterate over each segment to find the one with the matching name
-  for (const key in RobotState.segmentData) {
-    if (RobotState.segmentData.hasOwnProperty(key)) {
-      const segment = RobotState.segmentData[key];
+  for (const key in RobotState.segmentsData) {
+    if (RobotState.segmentsData.hasOwnProperty(key)) {
+      const segment = RobotState.segmentsData[key];
       if (segment['wifi.name'] === segName) {
         // Delete the segment from the data
-        delete RobotState.segmentData[key];
+        delete RobotState.segmentsData[key];
 
         //Reorganize the remaining segments if needed
         reorganizeSegments();
-
-        console.log(`Segment with name ${segName} has been removed.`);
         return;
       }
     }
@@ -26,13 +24,13 @@ function removeSegment(segName) {
 function reorganizeSegments() {
   const newSegmentData = {};
   let newIndex = 1;
-  for (const key in RobotState.segmentData) {
-    if (RobotState.segmentData.hasOwnProperty(key)) {
-      newSegmentData[`segment_${newIndex}`] = RobotState.segmentData[key];
+  for (const key in RobotState.segmentsData) {
+    if (RobotState.segmentsData.hasOwnProperty(key)) {
+      newSegmentData[`segment_${newIndex}`] = RobotState.segmentsData[key];
       newIndex++;
     }
   }
-  RobotState.segmentData = newSegmentData;
+  RobotState.segmentsData = newSegmentData;
 }
 
 async function callRouterApi(action, params = {}) {
