@@ -1,5 +1,5 @@
 import RobotState from "./robotConfiguration_z_state.js"
-import { removeSegment, updatePositionIndices } from "./robotConfiguration_b_utils.js"
+import {  updatePositionIndices } from "./robotConfiguration_b_utils.js"
 
 let tbody;
 let draggedElement = null;
@@ -40,16 +40,14 @@ function updateSegmentsTable() {
     if (RobotState.segmentsData.hasOwnProperty(segment) && segment.startsWith('segment_')) {
       const row = RobotState.segmentsData[segment];
       const tr = document.createElement('tr');
-
       const isMainSegment = row['host'] === 'True';
 
       tr.innerHTML = `
-        <td></td>
-        <td></td>
-        <td>${row['wifi.name']}</td>
-        <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
-        ${isMainSegment ? '' : '<td><button type="button" data-wifiname="${row["wifi.name"]}">Remove</button></td>'}
-      `;
+      <td></td>
+      <td></td>
+      <td>${row['wifi.name']}</td>
+      <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
+      ${isMainSegment ? `` : `<td><button type="button" data-wifiname="${row['wifi.name']}">Remove</button></td>`}`;
       tbody.appendChild(tr);
     }
   }
