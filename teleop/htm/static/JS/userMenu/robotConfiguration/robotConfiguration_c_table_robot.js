@@ -46,8 +46,6 @@ function updateSegmentsTable() {
       tr.innerHTML = `
         <td></td>
         <td></td>
-        <td>${row['vin.number']}</td>
-        <td>${row['mac.address']}</td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment" ${isMainSegment ? 'checked' : ''}></td>
         ${isMainSegment ? '' : '<td><button type="button" data-wifiname="${row["wifi.name"]}">Remove</button></td>'}
