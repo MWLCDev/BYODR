@@ -1,4 +1,4 @@
-import { callRouterApi } from "./robotConfiguration_b_utils.js"
+import { callRouterApi, removeSegment } from "./robotConfiguration_b_utils.js"
 import { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable } from "./robotConfiguration_c_table_robot.js"
 import RobotState from "./robotConfiguration_z_state.js"
 
@@ -14,7 +14,16 @@ class RobotMenu {
   setupButtons() {
     const testData = document.getElementById('test_config');
     testData.addEventListener('click', () => {
-      this.send_config()
+      this.send_config();
+    });
+
+    // Attach the click event listener for dynamically created 'Remove' buttons
+    document.addEventListener('click', (e) => {
+      if (e.target.matches('#segment_table tbody button[data-wifiname]')) {
+        const wifiName = e.target.getAttribute('data-wifiname');
+        removeSegment(wifiName);
+        updateSegmentsTable()
+      }
     });
   }
 
@@ -58,7 +67,7 @@ class RobotMenu {
 
       const tbody = document.querySelector('#connectable_networks_table tbody');
       tbody.innerHTML = '';
-      console.log(data);
+      // console.log(data);
 
       data.forEach((network, index) => {
         const ssid = network['ESSID'];

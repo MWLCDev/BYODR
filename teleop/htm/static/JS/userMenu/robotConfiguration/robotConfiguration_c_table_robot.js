@@ -51,11 +51,6 @@ function updateSegmentsTable() {
         ${isMainSegment ? '' : '<td><button type="button" data-wifiname="${row["wifi.name"]}">Remove</button></td>'}
       `;
       tbody.appendChild(tr);
-      // Find the newly created button and attach the deleting click event listener
-      $('#application-content-container').on('click', '#segment_table tbody button[data-wifiname]', (e) => {
-        const wifiName = $(e.currentTarget).data('wifiname');
-        removeSegment(wifiName);
-      });
     }
   }
   updatePositionIndices();
