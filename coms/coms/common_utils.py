@@ -104,6 +104,10 @@ class IntersegmentCommunication:
         # Socket that forwards movement commands to Pilot
         self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
 
+        # Other socket located on pilot/relay.py/94
+        # Socket that receives the Pi watchdog status from Pilot
+        self.pilot_receiver = json_collector(url="ipc:///byodr/pilot_to_coms.sock", topic=b"aav/pilot/watchdog", event=quit_event)
+
         # Other socket located on teleop/app.py/306
         # Socket that receives movement commands from Teleop
         self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
@@ -113,7 +117,7 @@ class IntersegmentCommunication:
         self.vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
 
         
-        self.threads = [self.teleop_receiver, self.vehicle_receiver]
+        self.threads = [self.teleop_receiver, self.vehicle_receiver,  self.pilot_receiver]
 
 
     def publish_to_pilot(self, message):
@@ -122,13 +126,15 @@ class IntersegmentCommunication:
 
     def get_velocity(self):
         # Method to get data from vehicle_receiver
-        while not self.quit_event.is_set():
-            return self.vehicle_receiver.get()
+        return self.vehicle_receiver.get()
 
     def get_movement_command(self):
         # Method to get data from teleop_receiver
-        while not self.quit_event.is_set():
-            return self.teleop_receiver.get()
+        return self.teleop_receiver.get()
+        
+    def get_watchdog_status(self):
+        # Method to get the watchdog status from pilot_receiver
+        return self.pilot_receiver.get()
 
     def start_threads(self):
         for thread in self.threads:
