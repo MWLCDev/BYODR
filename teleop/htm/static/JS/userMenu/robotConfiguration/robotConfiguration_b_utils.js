@@ -81,28 +81,89 @@ function showToast(message) {
   }, 3000);
 }
 
+/**
+ * Main function that orchestrates the updating of segment positions in the table
+ * and synchronizes these updates with the RobotState.segmentsData.
+ */
 function updatePositionIndices() {
   const rows = document.querySelectorAll('#segment_table tbody tr');
+
+  updatePositionsInData(rows);
+  const sortedSegments = collectAndSortSegments();
+  const renamedSegments = renameSegmentKeys(sortedSegments);
+  removeAllSegments();
+  reAddSegments(renamedSegments);
+}
+
+/**
+ * Updates the positions of segments in the RobotState.segmentsData based on the
+ * current order of rows in the table.
+ * @param {NodeListOf<HTMLTableRowElement>} rows - The rows of the table.
+ */
+function updatePositionsInData(rows) {
   rows.forEach((row, index) => {
-    // Get the wifi.name from the third cell (index 2) of each row
     const wifiNameCell = row.cells[2];
     const wifiName = wifiNameCell.textContent;
-
-    // Update the position in the table
     const positionCell = row.cells[1];
     if (positionCell) {
-      positionCell.textContent = index + 1; // +1 because indices are 0-based
+      positionCell.textContent = index + 1;
     }
 
-    // Update the position in the JSON data
     for (let segment in RobotState.segmentsData) {
       if (RobotState.segmentsData[segment]['wifi.name'] === wifiName) {
         RobotState.segmentsData[segment].position = index + 1;
-        break; // Stop looping once the correct segment is found and updated
+        break;
       }
     }
   });
 }
 
-// Shared instance will make sure that all the imports can access the same value without change in them
+/**
+ * Collects all segments from RobotState.segmentsData, sorts them based on their
+ * updated position, and returns the sorted array.
+ * @returns {Array} An array of sorted segments.
+ */
+function collectAndSortSegments() {
+  let updatedSegments = [];
+  for (let segment in RobotState.segmentsData) {
+    if (segment.startsWith('segment_')) {
+      updatedSegments.push({ key: segment, data: RobotState.segmentsData[segment] });
+    }
+  }
+  return updatedSegments.sort((a, b) => a.data.position - b.data.position);
+}
+
+/**
+ * Renames the keys of the segment objects to match their position in the sorted array.
+ * @param {Array} segments - The array of segments to rename.
+ * @returns {Array} An array of segments with updated keys.
+ */
+function renameSegmentKeys(segments) {
+  return segments.map((segment, index) => ({
+    key: `segment_${index + 1}`,
+    data: segment.data
+  }));
+}
+
+
+/**
+ * Removes all segments from RobotState.segmentsData that start with "segment_".
+ */
+function removeAllSegments() {
+  Object.keys(RobotState.segmentsData)
+    .filter(key => key.startsWith('segment_'))
+    .forEach(segKey => removeSegment(RobotState.segmentsData[segKey]['wifi.name']));
+}
+
+/**
+ * Adds the given segments back into RobotState.segmentsData.
+ * @param {Array} segments - The array of segments to be re-added.
+ */
+function reAddSegments(segments) {
+  segments.forEach(segment => {
+    RobotState.segmentsData[segment.key] = segment.data;
+  });
+}
+
+// The function should read the data from the table and sort them in the json according to the way they are in table
 export { removeSegment, reorganizeSegments, callRouterApi, showToast, updatePositionIndices };
