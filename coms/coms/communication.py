@@ -124,6 +124,7 @@ def command_receiver():
                 if status_dictionary.get("status") == 1:
                     socket_interface.publish_to_pilot(segment_client.msg_to_server)
                 else:
+                    socket_interface.publish_to_pilot(None)
                     segment_client.msg_to_server = status_dictionary
                     logger.warning(f"[Client] The Pi of the segment is malfunctioning")
 
