@@ -12,10 +12,6 @@ class RobotMenu {
   }
 
   setupButtons() {
-    const saveTablesData = document.getElementById('Add_row');
-    saveTablesData.addEventListener('click', () => {
-      addNewRow()
-    });
     const testData = document.getElementById('test_config');
     testData.addEventListener('click', () => {
       this.send_config()

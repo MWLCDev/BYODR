@@ -59,22 +59,6 @@ function updateSegmentsTable() {
       });
     }
   }
-  addNewRow()
-}
-
-function addNewRow() {
-  // After adding all rows, append an extra row for input
-  const inputRow = document.createElement('tr');
-  inputRow.innerHTML = `
-     <td></td>
-     <td></td>
-     <td><input type="text" placeholder="VIN Number"></td>
-     <td><input type="text" placeholder="MAC"></td>
-     <td><input type="text" placeholder="WiFi Name"></td>
-     <td><input type="radio" name="mainSegment"></td>
-     <td><button type="button" onclick="addNewSegment()">Add</button></td>
-   `;
-  tbody.appendChild(inputRow);
   updatePositionIndices();
 }
 
@@ -140,4 +124,4 @@ function swapRows(row1, row2) {
 document.addEventListener('DOMContentLoaded', initialize);
 
 
-export { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable, addNewRow }
+export { enableDragAndDrop, fetchSegmentDataAndDisplay, updateSegmentsTable }
