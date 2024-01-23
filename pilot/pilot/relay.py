@@ -10,7 +10,7 @@ import six
 from six.moves.configparser import SafeConfigParser
 
 from byodr.utils import timestamp
-from byodr.utils.ipc import ReceiverThread, JSONZmqClient
+from byodr.utils.ipc import ReceiverThread, JSONZmqClient, JSONPublisher
 from byodr.utils.option import parse_option, hash_dict
 from byodr.utils.protocol import MessageStreamProtocol
 from byodr.utils.usbrelay import SingleChannelUsbRelay
@@ -91,6 +91,7 @@ class RealMonitoringRelay(AbstractRelay):
         self._integrity = MessageStreamProtocol() # The variable that returns the communication errors with the Pi
         self._status_factory = StatusReceiverThreadFactory() if status_factory is None else status_factory
         self._client_factory = PiClientFactory() if client_factory is None else client_factory
+        self.watchdog_to_coms = JSONPublisher(url="ipc:///byodr/pilot_to_coms.sock", topic="aav/pilot/watchdog")
         self._relay_closed_calltrace = collections.deque(maxlen=1)
         self._patience_micro = 100.
         self._config_hash = -1
@@ -218,16 +219,20 @@ class RealMonitoringRelay(AbstractRelay):
         if n_violations < -5:
             self._close_relay()
             self._drive(c_pilot, c_coms)
+            self.watchdog_to_coms.publish(dict(status = 1)) # Status 1 = ok
         # If the Pi is not responding
         elif n_violations > 200:
             # ZeroMQ ipc over tcp does not allow connection timeouts to be set - while the timeout is too high.
             self._reboot()  # Resets the protocol.
+            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
         # If there are errors and delayes in the communication with the Pi, we open the relays
         elif n_violations > 5:
             self._open_relay()
             self._drive(None, None)
+            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
         else:
             self._drive(None, None)
+            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
 
 
 def main():
