@@ -95,6 +95,7 @@ def command_receiver():
     """
    
     global msg_from_server_queue
+    counter_main = 0
 
     while not quit_event.is_set():
 
@@ -103,6 +104,8 @@ def command_receiver():
         if local_ip == "192.168.1.100":
             while not quit_event.is_set():
 
+                counter_main = counter_main + 1
+
                 # Receiving the commands that we will process/forward to our FL, from Teleop
                 # The code will get stuck in this loop, until COM gets non-None type commands from teleop
                 segment_client.msg_to_server = socket_interface.get_movement_command()
@@ -110,8 +113,19 @@ def command_receiver():
                     segment_client.msg_to_server = socket_interface.get_movement_command()
 
 
-                # Forwarding commands to pilot
-                socket_interface.publish_to_pilot(segment_client.msg_to_server)
+
+                status_dictionary = socket_interface.get_watchdog_status()
+
+                if counter_main == 1800:
+                    logger.info(f"[Client] Watchdog status: {status_dictionary}")
+                    counter_main = 0
+
+                # Forwarding commands to pilot only if the local Pi is working
+                if status_dictionary.get("status") == 1:
+                    socket_interface.publish_to_pilot(segment_client.msg_to_server)
+                else:
+                    segment_client.msg_to_server = status_dictionary
+                    logger.warning(f"[Client] The Pi of the segment is malfunctioning")
 
 
 
@@ -274,7 +288,7 @@ def server_code():
                 # Copied Dict (Deepcopy): {'ValA': 1, 'ValB': 2}
 
                 # Processing the command before sending it to the FL
-                if type(command_to_process) is dict:
+                if "throttle" in command_to_process:
                     segment_server.processed_command = process(command_to_process)
 
                     # Placing the message from the server in the queue
@@ -286,7 +300,7 @@ def server_code():
 
 
                 # Sending a reply to the LD
-                segment_server.msg_to_client = {"Message": "I got your message"}
+                segment_server.msg_to_client = "1"
                 segment_server.send_to_LD()
 
             ######################################################################################################
