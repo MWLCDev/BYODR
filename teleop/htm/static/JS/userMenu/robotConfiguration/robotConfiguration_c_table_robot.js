@@ -55,7 +55,6 @@ function updateSegmentsTable() {
       $('#application-content-container').on('click', '#segment_table tbody button[data-wifiname]', (e) => {
         const wifiName = $(e.currentTarget).data('wifiname');
         removeSegment(wifiName);
-        updateSegmentsTable();
       });
     }
   }
@@ -63,7 +62,6 @@ function updateSegmentsTable() {
 }
 
 function enableDragAndDrop() {
-  updatePositionIndices();
   // Adding touch and mouse events to the tbody
   $('#application-content-container').on('touchstart', '#segment_table tbody', (e) => handleDragStart(e));
   $('#application-content-container').on('touchmove', '#segment_table tbody', (e) => handleDragMove(e.touches[0]));
@@ -110,7 +108,6 @@ function handleDragEnd() {
 
     draggedElement = null;
 
-    // Call updatePositionIndices after a row has been repositioned
     updatePositionIndices();
   }
 }

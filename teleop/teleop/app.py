@@ -29,16 +29,6 @@ from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
 
-router = Router()
-# router.get_ip_from_mac("00:1E:42:2C:9F:77")
-# router.delete_network("CP_Davide")
-# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77")
-# router.fetch_ip_and_mac()
-# router.fetch_segment_ip
-# router.get_wifi_networks()
-# print(router.fetch_router_mac())
-
-
 # Tells Python to call the _interrupt function when a SIGINT is received.
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())  # It's a request to interrupt the process.
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())  #  Sent by OS commands to request termination of a process.
@@ -287,15 +277,15 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
 
-    fake_json_data = {
-        "segment_1": {"ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "mac.address": "11:22:33:44:55:66", "v.number": "xx1xxxxxx", "main": "True"},
-        "segment_2": {"ip.number": "192.168.2.100", "wifi.name": "CP_Davide", "mac.address": "22:33:44:55:66:77", "v.number": "xx2xxxxxx", "main": "False"},
-    }
-    # "segment_3": {"ip.number": "192.168.3.100","v.number" : "xx3xxxxxx", "wifi.name": "CP_03_Carl", "main": "false"},
-    # "segment_4": {"ip.number": "192.168.4.100", "wifi.name": "CP_Frank", "main": "false"},
-    outer_teleop_publisher = DataPublisher(data=fake_json_data, robot_config_dir=application.get_robot_config_file(), event=quit_event, message="Remove")
+    # fake_json_data = {
+    #     "segment_1": {"ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "mac.address": "11:22:33:44:55:66", "v.number": "xx1xxxxxx", "main": "True"},
+    #     "segment_2": {"ip.number": "192.168.2.100", "wifi.name": "CP_Davide", "mac.address": "22:33:44:55:66:77", "v.number": "xx2xxxxxx", "main": "False"},
+    # }
+    # # "segment_3": {"ip.number": "192.168.3.100","v.number" : "xx3xxxxxx", "wifi.name": "CP_03_Carl", "main": "false"},
+    # # "segment_4": {"ip.number": "192.168.4.100", "wifi.name": "CP_Frank", "main": "false"},
+    # outer_teleop_publisher = DataPublisher(data=fake_json_data, robot_config_dir=application.get_robot_config_file(), event=quit_event, message="Remove")
 
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, coms_chatter, logbox_thread, package_thread, outer_teleop_publisher]
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, coms_chatter, logbox_thread, package_thread]
 
     if quit_event.is_set():
         return 0

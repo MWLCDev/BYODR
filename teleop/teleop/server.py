@@ -20,7 +20,6 @@ from tornado.gen import coroutine
 
 from byodr.utils import timestamp
 from byodr.utils.ssh import Router, Nano
-from .robot_comm import *
 
 
 logger = logging.getLogger(__name__)
@@ -30,7 +29,7 @@ class RouterSSHHandler(tornado.web.RequestHandler):
     def initialize(self, **kwargs):
         self.router = Router()
         self.robot_config_dir = kwargs.get("robot_config_dir", None)
-        self._robot_actions = RobotActions(self.robot_config_dir)
+        # self._robot_actions = RobotActions(self.robot_config_dir)
 
     def post(self):
         try:
@@ -38,7 +37,7 @@ class RouterSSHHandler(tornado.web.RequestHandler):
             action = self.get_argument("action", None)
 
             if action == "new_robot_config":
-                self._robot_actions.driver(json_data)
+                # self._robot_actions.driver(json_data)
                 self.write({"message": "Driver executed successfully"})
             else:
                 self.write({"error": "Invalid function parameter."})

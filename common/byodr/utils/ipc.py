@@ -36,6 +36,7 @@ else:
 
 logger = logging.getLogger(__name__)
 
+
 class JSONPublisher(object):
     def __init__(self, url, topic="", hwm=1, clean_start=True):
         if clean_start and url.startswith("ipc://") and os.path.exists(url[6:]):

@@ -263,7 +263,7 @@ class Router:
                 elif "option bssid" in line and mac_address in line:
                     current_section["mac_found"] = True
                 elif "option network" in line and current_section.get("mac_found"):
-                    return line.split("'")[1]  # # option network 'ifWan2' will return (ifWan2)
+                    return line.split("'")[1]  # option network 'ifWan2' will return (ifWan2)
             return None
 
         def _parse_network_config(self, config, network_interface):

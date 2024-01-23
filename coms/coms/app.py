@@ -3,17 +3,12 @@ import logging
 import multiprocessing
 import signal
 
-from byodr.utils.ssh import Nano, Router
+from byodr.utils.ssh import Router
 
 from .common_utils import *
 from .robot_comm import *
 
 router = Router()
-# router.connect_to_network("CP_Davide", "00:1E:42:2C:9F:77")
-# router.change_wifi_visibility("False")
-# router.change_wifi_visibility("True")
-
-
 
 # This flag starts as false
 quit_event = multiprocessing.Event()

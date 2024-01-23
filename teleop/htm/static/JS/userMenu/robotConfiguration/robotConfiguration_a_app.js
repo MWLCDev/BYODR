@@ -113,7 +113,6 @@ class RobotMenu {
     // Update segments data using the setter
     RobotState.segmentsData = updatedSegments;
   }
-
 }
 
 window.RobotMenu = RobotMenu;
