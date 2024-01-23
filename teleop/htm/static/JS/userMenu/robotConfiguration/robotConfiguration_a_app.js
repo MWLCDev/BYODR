@@ -8,6 +8,7 @@ class RobotMenu {
     this.setupButtons();
     enableDragAndDrop();
     fetchSegmentDataAndDisplay();
+    this.getWifiNetworks()
   }
 
   setupButtons() {
