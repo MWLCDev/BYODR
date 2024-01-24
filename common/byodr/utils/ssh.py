@@ -210,6 +210,16 @@ class Router:
         except Exception as e:
             logger.error(f"Error in changing WiFi visibility: {e}")
 
+    def check_static_route(self):
+        network_config = self._execute_ssh_command(f"cat /etc/config/network")
+        lines = network_config.split("\n")
+        current_section = None
+        for line in lines:
+            if line.startswith(f"config route '1'"):
+                current_section = True
+            elif "option target" in line and current_section:
+                return(line.split("'")[1])  # Extracting gateway IP
+
     @staticmethod
     def check_network_connection(target_ip):
         response = ping(target_ip, count=6, timeout=1, verbose=False)
