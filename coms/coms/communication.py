@@ -41,8 +41,8 @@ lead_ip = "192.168." + str( int(local_ip[8])-1 ) + ".100"
 # A deque that will store messages received by the server of the segment
 msg_from_server_queue = deque(maxlen=1)
 
-segment_server = Segment_server(local_ip, nano_port, 0.1) # The server that will wait for the lead to connect
-segment_client = Segment_client(follower_ip, nano_port, 0.1) # The client that will connect to a follower
+segment_server = Segment_server(local_ip, nano_port, 0.10) # The server that will wait for the lead to connect
+segment_client = Segment_client(follower_ip, nano_port, 0.10) # The client that will connect to a follower
 socket_interface = IntersegmentCommunication(quit_event) # Class that includes sockets to other services necesassary for segment communication
 
 
@@ -64,7 +64,7 @@ def communication_between_segments():
     command_receiver_thread = threading.Thread( target=command_receiver )
     client_interface_thread = threading.Thread( target=client_code )
     server_interface_thread = threading.Thread( target=server_code )
-
+    
     # Starting the threads of Coms
     socket_interface.start_threads()
     command_receiver_thread.start()
@@ -95,6 +95,8 @@ def command_receiver():
     """
    
     global msg_from_server_queue
+    watchdog_status_list = []
+    status_dictionary = None
     counter_main = 0
 
     while not quit_event.is_set():
@@ -102,6 +104,9 @@ def command_receiver():
         # The head segment forwards commands from teleop
         # This block is only used by the Head segment
         if local_ip == "192.168.1.100":
+
+            watchdog_status_list.extend([0,0])
+
             while not quit_event.is_set():
 
                 counter_main = counter_main + 1
@@ -114,25 +119,40 @@ def command_receiver():
 
 
 
-                status_dictionary = socket_interface.get_watchdog_status()
+                while status_dictionary is None:
+                    status_dictionary = socket_interface.get_watchdog_status()
+                watchdog_status_list[0] = status_dictionary.get("status")
 
-                if counter_main == 1800:
-                    logger.info(f"[Client] Watchdog status: {status_dictionary}")
+                if counter_main == 2000:
+                    logger.info(f"[Client] Watchdog status: {watchdog_status_list}")
                     counter_main = 0
 
                 # Forwarding commands to pilot only if the local Pi is working
-                if status_dictionary.get("status") == 1:
+                if watchdog_status_list[0] == 1:
                     socket_interface.publish_to_pilot(segment_client.msg_to_server)
                 else:
                     socket_interface.publish_to_pilot(None)
                     segment_client.msg_to_server = status_dictionary
-                    logger.warning(f"[Client] The Pi of the segment is malfunctioning")
+                    # logger.warning(f"[Client] The Pi of the segment is malfunctioning")
 
 
 
         # All other segments are forwarding commands from the COM server
         else:
+
+            watchdog_status_list.extend([0])
+
             while not quit_event.is_set():
+
+                counter_main = counter_main + 1
+
+                while status_dictionary is None:
+                    status_dictionary = socket_interface.get_watchdog_status()
+                watchdog_status_list[0] = status_dictionary.get("status")
+
+                if counter_main == 2000:
+                    logger.info(f"[Server] Watchdog status: {watchdog_status_list[0]}")
+                    counter_main = 0
 
                 # Receiving the commands that we will process/forward to our FL, from our current LD
                 try:
@@ -178,10 +198,11 @@ def client_code():
 
                 dict_with_velocity = socket_interface.get_velocity()
                 if dict_with_velocity is None:
-                    logger.warning("[Client] 0 velocity")
-                    dict_with_velocity = {'velocity': 0.0}
+                    logger.warning("[Client] Didnt receive velocity from Vehicle")
+                    dict_with_velocity = dict(velocity = 0.0)
                 
-                segment_client.msg_to_server.update(dict_with_velocity)
+                if "throttle" in segment_client.msg_to_server:
+                    segment_client.msg_to_server.update(dict_with_velocity)
 
                 # Sending the command to our FL
                 segment_client.send_to_FL()
@@ -189,20 +210,11 @@ def client_code():
                 # Receiving a reply from the FL
                 segment_client.recv_from_FL()
 
-                # if time_counter - time_stop >= 1:
-                #     # logger.info(f"[Client] Got reply from server: {segment_client.msg_from_server}")
-                #     logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
                 if counter_client == 50:
                     logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
-
-                    
             
                 ######################################################################################################
                 stop_time = time.perf_counter()
-                # if time_counter - time_stop >= 1:
-                #     print(f"[Client] {counter_client} rounds in 1 second")
-                #     counter_client = 0
-                #     time_stop = time_counter
 
                 if counter_client == 50:
                     logger.info(f"[Client] Got reply from server: {segment_client.msg_from_server}")
@@ -236,7 +248,6 @@ def server_code():
 
     global msg_from_server_queue
     counter_server = 0
-    # time_stop = 0
 
     while not quit_event.is_set():
 
@@ -255,11 +266,7 @@ def server_code():
                 segment_server.recv_from_LD()
                 # if counter_server == 50:
                 #     logger.info(f"[Server] Received from client: {segment_server.msg_from_client}")
-
-                # if time_counter - time_stop >= 1:
-                #     logger.info(f"[Server] Edited message from client: {segment_server.processed_command}")
                 
-
                 # Making a new seperate object that has the same values as the original message
                 # Using processed_command = msg_from_client, creates a reference(processed_command) to the same object in memory(msg_from_client)
                 # We need deepcopy because if we use "processed_command = msg_from_client", or just use msg_from_client everywhere
@@ -288,7 +295,8 @@ def server_code():
                 # Copied Dict (Reference): {'ValA': 1000, 'ValB': 2}
                 # Copied Dict (Deepcopy): {'ValA': 1, 'ValB': 2}
 
-                # Processing the command before sending it to the FL
+                # Processing the command before sending it to the FL.
+                # Since we might receive a status message instead of a movement command, we check if its a normal movement command first
                 if "throttle" in command_to_process:
                     segment_server.processed_command = process(command_to_process)
 
@@ -307,10 +315,6 @@ def server_code():
             ######################################################################################################
                 
                 stop_time = time.perf_counter()
-                # if time_counter - time_stop >= 1:
-                #     print(f"[Server] {counter_server} rounds in 1 second")
-                #     counter_server = 0
-                #     time_stop = time_counter
 
                 if counter_server == 50:
                     logger.info(f"[Server] Sent reply to client: {segment_server.msg_to_client}")
