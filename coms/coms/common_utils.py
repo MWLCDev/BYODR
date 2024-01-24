@@ -9,6 +9,61 @@ from byodr.utils.ipc import JSONPublisher, json_collector
 from .robot_comm import *
 
 
+class RepeatedTimer(object):
+    """
+    A timer that runs a function at regular intervals.
+
+    This class creates a timer that executes a specified function every 'interval' seconds.
+    The timer runs in its own thread and checks for a 'quit_event' to determine whether to continue execution or stop.
+
+    Attributes:
+        interval (float): The time interval, in seconds, between each execution of the function.
+        function (callable): The function to be executed at each interval.
+        quit_event (multiprocessing.Event): An event that signals the timer to stop running when set.
+        args (tuple): Additional positional arguments to pass to the function.
+        kwargs (dict): Additional keyword arguments to pass to the function.
+        timer (threading.Timer): Internal timer instance for scheduling function execution.
+        running (bool): Indicates whether the timer is currently running.
+
+    Methods:
+        start(): Starts the timer, scheduling the function to be executed at regular intervals.
+        stop(): Stops the timer, preventing any further execution of the function.
+
+    Usage:
+        To use this class, instantiate it with the desired interval, function, and quit_event.
+        Call the start() method to begin the timer. The timer will automatically stop when the quit_event is set,
+        or the stop() method can be called explicitly to stop it.
+    """
+
+    def __init__(self, interval, function, quit_event, *args, **kwargs):
+        self.interval = interval
+        self.function = function
+        self.quit_event = quit_event
+        self.args = args
+        self.kwargs = kwargs
+        self.timer = None
+        self.running = False
+        self.start()
+
+    def _run(self):
+        if not self.quit_event.is_set():
+            self.running = False
+            self.start()
+            self.function(*self.args, **self.kwargs)
+        else:
+            self.running = False
+
+    def start(self):
+        if not self.running:
+            self.timer = threading.Timer(self.interval, self._run)
+            self.timer.start()
+            self.running = True
+
+    def stop(self):
+        self.timer.cancel()
+        self.running = False
+
+
 class ComsApplication(Application):
     def __init__(self, event, config_dir=os.getcwd()):
         """set up configuration directory and a configuration file path
