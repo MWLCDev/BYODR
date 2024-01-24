@@ -104,7 +104,16 @@ class ComsApplication(Application):
         cfg = dict(parser.items("coms")) if parser.has_section("coms") else {}
         return cfg
 
-    def get_user_config_file(self):
+    def check_and_start_SUB(self):
+        """Start subscriber ZMQ socket between segments if there is static route made to the current segment
+
+        The socket is used to receive the robot_config file"""
+        network_prefix = self._router.check_static_route()
+
+        # Check if network_prefix is not None and is a digit string
+        if network_prefix and network_prefix.replace(".", "").isdigit():
+            target_nano = ".".join(network_prefix.split(".")[:3]) + ".100"
+            print(target_nano)
         return self._user_config_file
 
     def get_robot_config_file(self):
@@ -118,7 +127,7 @@ class ComsApplication(Application):
             if _hash != self._config_hash:
                 self._config_hash = _hash
 
-        # logger.info(tel_data["command"]["robot_config"])
+            self.timer = RepeatedTimer(60, self.check_and_start_SUB, self.quit_event)
 
 
 class SocketManager:
