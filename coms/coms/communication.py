@@ -10,7 +10,6 @@ from byodr.utils.ssh import Nano
 from .server import Segment_server
 from .client import Segment_client
 from .command_processor import process
-from .common_utils import IntersegmentCommunication
 
 # This flag starts as false
 quit_event = multiprocessing.Event()
@@ -43,11 +42,10 @@ msg_from_server_queue = deque(maxlen=1)
 
 segment_server = Segment_server(local_ip, nano_port, 0.10) # The server that will wait for the lead to connect
 segment_client = Segment_client(follower_ip, nano_port, 0.10) # The client that will connect to a follower
-socket_interface = IntersegmentCommunication(quit_event) # Class that includes sockets to other services necesassary for segment communication
 
 
 
-def communication_between_segments():
+def communication_between_segments(socket_manager):
     """Use: 
         The main function that starts all other communicaiton functionalities.
         Starts 3 threads:\n
@@ -61,12 +59,11 @@ def communication_between_segments():
 
 
     # Starting the functions that will allow the client and server of each segment to start sending and receiving data
-    command_receiver_thread = threading.Thread( target=command_receiver )
-    client_interface_thread = threading.Thread( target=client_code )
+    command_receiver_thread = threading.Thread( target=command_receiver, args=(socket_manager,) )
+    client_interface_thread = threading.Thread( target=client_code, args=(socket_manager,) )
     server_interface_thread = threading.Thread( target=server_code )
     
     # Starting the threads of Coms
-    socket_interface.start_threads()
     command_receiver_thread.start()
     client_interface_thread.start()
     server_interface_thread.start()
@@ -75,12 +72,11 @@ def communication_between_segments():
     command_receiver_thread.join()
     client_interface_thread.join()
     server_interface_thread.join()
-    socket_interface.join_threads()
     logger.info("Stopped threads in communication.py.")
     return 0
 
 
-def command_receiver():
+def command_receiver(socket_manager):
     """Use:
         With this function, Coms receives commands from teleop or LD-COMS, and also forwards commands to Pilot.
         In between receiving commands and sending to pilot, the client_interface_thread and server_interface_thread
@@ -113,14 +109,14 @@ def command_receiver():
 
                 # Receiving the commands that we will process/forward to our FL, from Teleop
                 # The code will get stuck in this loop, until COM gets non-None type commands from teleop
-                segment_client.msg_to_server = socket_interface.get_movement_command()
+                segment_client.msg_to_server = socket_manager.get_teleop_input()
                 while segment_client.msg_to_server is None:
-                    segment_client.msg_to_server = socket_interface.get_movement_command()
+                    segment_client.msg_to_server = socket_manager.get_teleop_input()
 
 
 
                 while status_dictionary is None:
-                    status_dictionary = socket_interface.get_watchdog_status()
+                    status_dictionary = socket_manager.get_watchdog_status()
                 watchdog_status_list[0] = status_dictionary.get("status")
 
                 if counter_main == 2000:
@@ -129,11 +125,11 @@ def command_receiver():
 
                 # Forwarding commands to pilot only if the local Pi is working
                 if watchdog_status_list[0] == 1:
-                    socket_interface.publish_to_pilot(segment_client.msg_to_server)
+                    socket_manager.publish_to_pilot(segment_client.msg_to_server)
                 else:
-                    socket_interface.publish_to_pilot(None)
+                    socket_manager.publish_to_pilot(None)
                     segment_client.msg_to_server = status_dictionary
-                    # logger.warning(f"[Client] The Pi of the segment is malfunctioning")
+                    logger.warning(f"[Client] The Pi of the segment is malfunctioning")
 
 
 
@@ -147,7 +143,7 @@ def command_receiver():
                 counter_main = counter_main + 1
 
                 while status_dictionary is None:
-                    status_dictionary = socket_interface.get_watchdog_status()
+                    status_dictionary = socket_manager.get_watchdog_status()
                 watchdog_status_list[0] = status_dictionary.get("status")
 
                 if counter_main == 2000:
@@ -164,10 +160,10 @@ def command_receiver():
 
 
                 # Forwarding commands to pilot
-                socket_interface.publish_to_pilot(segment_client.msg_to_server)
+                socket_manager.publish_to_pilot(segment_client.msg_to_server)
 
 
-def client_code():
+def client_code(socket_manager):
     """Use:
         The main functionality of the client of the segment. It will try to connect to its assigned server. If it connects successfully,
         will send and then receive (in that order) data from its assigned server.
@@ -178,7 +174,6 @@ def client_code():
     """
 
     counter_client = 0
-    # time_stop = 0
 
     
     while not quit_event.is_set():
@@ -196,7 +191,7 @@ def client_code():
                 ######################################################################################################
                 # Main part of the send/recv of the client
 
-                dict_with_velocity = socket_interface.get_velocity()
+                dict_with_velocity = socket_manager.get_velocity()
                 if dict_with_velocity is None:
                     logger.warning("[Client] Didnt receive velocity from Vehicle")
                     dict_with_velocity = dict(velocity = 0.0)
@@ -334,7 +329,3 @@ def server_code():
                 logger.error(f"[Server] Got error during communication: {e}")
                 logger.exception("[Server] Exception details:")
                 break
-
-
-if __name__ == "__main__":
-    communication_between_segments()

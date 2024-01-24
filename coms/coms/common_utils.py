@@ -66,71 +66,48 @@ class ComsApplication(Application):
         # logger.info(tel_data["command"]["robot_config"])
 
 
-class SocketManager():
-    def __init__(self, quit_event):
+class SocketManager:
+    def __init__(self, teleop_chatter, quit_event):
         self.quit_event = quit_event
+        self.tel_chatter_actions = teleop_chatter
         # Initialize sockets as instance variables
         self.coms_chatter = JSONPublisher(url="ipc:///byodr/coms_c.sock", topic="aav/coms/chatter")
         self.tel_chatter_socket = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
-    
-        self.threads = [self.tel_chatter_socket]
+        self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
+        self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
+        self.pilot_receiver = json_collector(url="ipc:///byodr/pilot_to_coms.sock", topic=b"aav/pilot/watchdog", event=quit_event)
+        self.vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
+
+
+        #  No need to call socket_manager.coms_to_pilot() in main() loop, as it's already being executed in its own thread
+        self.threads = [self.tel_chatter_socket, 
+                        self.teleop_receiver, 
+                        self.vehicle_receiver,  
+                        self.pilot_receiver, 
+                        ]
+
+    def publish_to_pilot(self, message):
+        # Method to publish a message using coms_to_pilot_publisher
+        self.coms_to_pilot_publisher.publish(message)
+
+    def get_teleop_input(self):
+        # Method to get data from teleop_receiver
+        return self.teleop_receiver.get()
 
     def get_teleop_chatter(self):
         while not self.quit_event.is_set():
-            return self.tel_chatter_socket.get()
+            teleop_chatter_message = self.tel_chatter_socket.get()
+            self.tel_chatter_actions.filter_robot_config(teleop_chatter_message)
+            return teleop_chatter_message
 
     def chatter_message(self, cmd):
         """Broadcast message from COMS chatter with a timestamp. It is a one time message"""
         logger.info(cmd)
         self.coms_chatter.publish(dict(time=timestamp(), command=cmd))
 
-    def start_threads(self):
-        for thread in self.threads:
-            thread.start()
-        logger.info("Started all communication sockets")
-
-    def join_threads(self):
-        for thread in self.threads:
-            thread.join()
-
-
-class IntersegmentCommunication:
-    def __init__(self, quit_event):
-        self.quit_event = quit_event
-
-        # Initialize sockets as instance variables
-
-        # Other socket located on pilot/app.py/140
-        # Socket that forwards movement commands to Pilot
-        self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
-
-        # Other socket located on pilot/relay.py/94
-        # Socket that receives the Pi watchdog status from Pilot
-        self.pilot_receiver = json_collector(url="ipc:///byodr/pilot_to_coms.sock", topic=b"aav/pilot/watchdog", event=quit_event)
-
-        # Other socket located on teleop/app.py/306
-        # Socket that receives movement commands from Teleop
-        self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
-
-        # Other socket located on vehicles/rover/app.py/59
-        # Socket that receives velocity from Vehicle
-        self.vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
-
-        
-        self.threads = [self.teleop_receiver, self.vehicle_receiver,  self.pilot_receiver]
-
-
-    def publish_to_pilot(self, message):
-        # Method to publish a message using coms_to_pilot_publisher
-        self.coms_to_pilot_publisher.publish(message)
-
     def get_velocity(self):
         # Method to get data from vehicle_receiver
         return self.vehicle_receiver.get()
-
-    def get_movement_command(self):
-        # Method to get data from teleop_receiver
-        return self.teleop_receiver.get()
         
     def get_watchdog_status(self):
         # Method to get the watchdog status from pilot_receiver
@@ -144,3 +121,28 @@ class IntersegmentCommunication:
     def join_threads(self):
         for thread in self.threads:
             thread.join()
+
+
+class TeleopChatter:
+    """Resolve the data incoming from Teleop chatter socket"""
+
+    def __init__(self, _robot_config_dir, _segment_config_dir):
+        self.robot_config_dir = _robot_config_dir
+        self.seg_config_dir = _segment_config_dir
+        self.robot_actions = RobotActions(self.robot_config_dir)
+
+    def filter_robot_config(self, tel_data):
+        """Get new robot_config from TEL chatter socket
+
+        Args:
+            tel_data (object): Full message returned from TEL chatter
+        """
+        # Check if tel_data is not None and then check for existence of 'robot_config'
+        if tel_data and "robot_config" in tel_data.get("command", {}):
+            new_robot_config = tel_data["command"]["robot_config"]
+            logger.info(new_robot_config)
+            self.robot_actions.driver(new_robot_config)
+
+    def filter_watch_dog(self):
+        """place holder for watchdog function"""
+        pass

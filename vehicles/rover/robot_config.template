@@ -1,6 +1,10 @@
-[segment1]
+[direction]
+head = segment_1
+
+[segment_1]
 ip.number = 192.168.1.100
-mac.address = 
 wifi.name = CP_Earl
-v.number = 
-main = yes
+mac.address = 
+vin.number = xx1xxxxxx
+position = 1
+host = True
