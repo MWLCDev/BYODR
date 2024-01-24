@@ -61,8 +61,8 @@ class Segment_server():
                 break
 
             except Exception as e:
-                # logger.error(f"[Server] Got error while waiting for client: {e}")
-                # logger.exception("[Server] Exception details:")
+                logger.error(f"[Server] Got error while waiting for client: {e}")
+                logger.exception("[Server] Exception details:")
                 pass
 
 
@@ -80,6 +80,6 @@ class Segment_server():
             self.msg_from_client = json.loads(recv_message)
 
         except json.JSONDecodeError as e:
-            # logger.warning(f"[Server] JSON decoding error: {e}")
-            # logger.exception("[Server] Exception details:")
+            logger.warning(f"[Server] JSON decoding error: {e}")
+            logger.exception("[Server] Exception details:")
             self.msg_from_client = "Message of wrong format received"
