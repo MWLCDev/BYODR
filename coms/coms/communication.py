@@ -6,10 +6,13 @@ import copy
 import time
 import multiprocessing
 import signal
+import configparser
 from byodr.utils.ssh import Nano
 from .server import Segment_server
 from .client import Segment_client
 from .command_processor import process
+from .common_utils import common_queue
+
 
 # This flag starts as false
 quit_event = multiprocessing.Event()
@@ -29,23 +32,40 @@ logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Getting the IP of the local machine
-local_ip = Nano.get_ip_address()
-nano_port = 1111
-
-# Getting the follower/lead IPs from the local IP. (Temporary, until we get the robot config file)
-follower_ip = "192.168." + str( int(local_ip[8])+1 ) + ".100"
-lead_ip = "192.168." + str( int(local_ip[8])-1 ) + ".100"
-
-# A deque that will store messages received by the server of the segment
-msg_from_server_queue = deque(maxlen=1)
-
-segment_server = Segment_server(local_ip, nano_port, 0.10) # The server that will wait for the lead to connect
-segment_client = Segment_client(follower_ip, nano_port, 0.10) # The client that will connect to a follower
+robot_config_parser = configparser.ConfigParser()
 
 
+def read_config_file(config_file_dir, local_ip):
+    
+    follower_ip = None
+    lead_ip = None
+    head_ip = None
 
-def communication_between_segments(socket_manager):
+    # Get the contents of the file
+    robot_config_parser.read(config_file_dir)
+    sections_list = robot_config_parser.sections()
+
+    # Getting our local position
+    for entry in sections_list[1:]:
+        if robot_config_parser.get(entry, 'ip.number') == local_ip:
+            local_position = robot_config_parser.get(entry, 'position')
+            break
+
+    # Getting the IPs of the FL, LD and HD segments
+    for entry in sections_list[1:]:
+        if robot_config_parser.get(entry, 'position') == str(int(local_position)+1):
+            follower_ip = robot_config_parser.get(entry, 'ip.number')
+
+        elif robot_config_parser.get(entry, 'position') == str(int(local_position)-1):
+            lead_ip = robot_config_parser.get(entry, 'ip.number')
+
+        elif robot_config_parser.get('direction', 'head') == entry:
+            head_ip = robot_config_parser.get(entry, 'ip.number')
+
+    return head_ip, lead_ip, follower_ip
+
+
+def start_communication(socket_manager, robot_config_dir):
     """Use: 
         The main function that starts all other communicaiton functionalities.
         Starts 3 threads:\n
@@ -58,11 +78,30 @@ def communication_between_segments(socket_manager):
     """
 
 
+    # A deque that will store messages received by the server of the segment
+    msg_from_server_queue = deque(maxlen=1)
+
+    # Getting the IP of the local machine
+    local_ip = Nano.get_ip_address()
+    nano_port = 1111
+
+    # Reading the config files to receive information about this and neighboring segments
+    head_ip, lead_ip, follower_ip = read_config_file(robot_config_dir, local_ip)
+
+    # Getting the follower/lead IPs from the local IP. (Temporary, until we get a full robot config file)
+    follower_ip = "192.168." + str( int(local_ip[8])+1 ) + ".100"
+
+    segment_client = Segment_client(follower_ip, nano_port, 0.10) # The client that will connect to a follower
+    segment_server = Segment_server(local_ip, nano_port, 0.10) # The server that will wait for the lead to connect
+
     # Starting the functions that will allow the client and server of each segment to start sending and receiving data
-    command_receiver_thread = threading.Thread( target=command_receiver, args=(socket_manager,) )
-    client_interface_thread = threading.Thread( target=client_code, args=(socket_manager,) )
-    server_interface_thread = threading.Thread( target=server_code )
-    
+    command_receiver_thread = threading.Thread( target=command_receiver, args=(socket_manager, segment_client, local_ip, head_ip, msg_from_server_queue) )
+    client_interface_thread = threading.Thread( target=client_code, args=(socket_manager, segment_client) )
+    server_interface_thread = threading.Thread( target=server_code,  args=(segment_server, msg_from_server_queue) )
+
+    # get data from both files and each coms needs to know to which segment it belongs to 
+    # the Segment_client and Segment_server will need to be passed as arguments inside the client and server code threads
+
     # Starting the threads of Coms
     command_receiver_thread.start()
     client_interface_thread.start()
@@ -76,7 +115,7 @@ def communication_between_segments(socket_manager):
     return 0
 
 
-def command_receiver(socket_manager):
+def command_receiver(socket_manager, segment_client, local_ip, head_ip, msg_from_server_queue):
     """Use:
         With this function, Coms receives commands from teleop or LD-COMS, and also forwards commands to Pilot.
         In between receiving commands and sending to pilot, the client_interface_thread and server_interface_thread
@@ -90,7 +129,6 @@ def command_receiver(socket_manager):
         Nothing
     """
    
-    global msg_from_server_queue
     watchdog_status_list = []
     status_dictionary = None
     counter_main = 0
@@ -99,7 +137,7 @@ def command_receiver(socket_manager):
 
         # The head segment forwards commands from teleop
         # This block is only used by the Head segment
-        if local_ip == "192.168.1.100":
+        if local_ip == head_ip:
 
             watchdog_status_list.extend([0,0])
 
@@ -122,6 +160,8 @@ def command_receiver(socket_manager):
                 if counter_main == 2000:
                     logger.info(f"[Client] Watchdog status: {watchdog_status_list}")
                     counter_main = 0
+
+                # read_config_file(config_file_dir)
 
                 # Forwarding commands to pilot only if the local Pi is working
                 if watchdog_status_list[0] == 1:
@@ -159,11 +199,16 @@ def command_receiver(socket_manager):
                     pass
 
 
-                # Forwarding commands to pilot
-                socket_manager.publish_to_pilot(segment_client.msg_to_server)
+                # Forwarding commands to pilot only if the local Pi is working
+                if watchdog_status_list[0] == 1:
+                    socket_manager.publish_to_pilot(segment_client.msg_to_server)
+                else:
+                    socket_manager.publish_to_pilot(None)
+                    segment_client.msg_to_server = status_dictionary
+                    # logger.warning(f"[Client] The Pi of the segment is malfunctioning")
 
 
-def client_code(socket_manager):
+def client_code(socket_manager, segment_client):
     """Use:
         The main functionality of the client of the segment. It will try to connect to its assigned server. If it connects successfully,
         will send and then receive (in that order) data from its assigned server.
@@ -231,7 +276,7 @@ def client_code(socket_manager):
                 break
 
 
-def server_code():
+def server_code(segment_server, msg_from_server_queue):
     """Use:
         The main functionality of the server of the segment. It will setup a socket server and will wait for a client to connect.
         Once a client connects, the server will wait for data, and when it is received, will send back a reply.
@@ -241,7 +286,6 @@ def server_code():
         Nothing
     """
 
-    global msg_from_server_queue
     counter_server = 0
 
     while not quit_event.is_set():

@@ -234,19 +234,20 @@ class RoverHandler(Configurable):
         return self._platform.state()
 
 
-class RoverApplication(Application):
-    def __init__(self, handler=None, config_dir=os.getcwd()):
-        super(RoverApplication, self).__init__()
+class ConfigFiles:
+    def __init__(self, config_dir):
         self._config_dir = config_dir
-        self._handler = RoverHandler(config_dir=self._config_dir) if handler is None else handler
-        self._config_hash = -1
-        self.state_publisher = None
-        self.ipc_server = None
-        self.pilot = None
-        self.teleop = None
-        self.ipc_chatter = None
+        self.__set_parsers()
 
-    def _check_configuration_files(self):
+    def __set_parsers(self):
+        self.robot_config_dir = os.path.join(self._config_dir, "robot_config.ini")
+        self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
+        self.robot_config_parser = SafeConfigParser()
+        self.segment_config_parser = SafeConfigParser()
+        self.robot_config_parser.read(self.robot_config_dir)
+        self.segment_config_parser.read(self.segment_config_dir)
+
+    def check_configuration_files(self):
         """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
         # FOR DEBUGGING
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -287,32 +288,8 @@ class RoverApplication(Application):
         with open(ini_file, "w") as configfile:
             config.write(configfile)
 
-    def _check_segment_ip_robot_config(self):
-        """change the ip current segment in the robot_config.ini"""
-        parser = SafeConfigParser()
-        robot_config_path = os.path.join(self._config_dir, "robot_config.ini")
-        parser.read(robot_config_path)
-        config_ip_number = parser.get("segment1", "ip.number")
-
-        ip_addresses = (
-            subprocess.check_output(
-                "hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'",
-                shell=True,
-            )
-            .decode()
-            .strip()
-        )
-        if config_ip_number != ip_addresses:
-            parser.set("segment1", "ip.number", ip_addresses)
-            with open(robot_config_path, "w") as config_file:
-                parser.write(config_file)
-            logger.info("Changed IP in robot_config.ini to {}".format(ip_addresses))
-        else:
-            logger.info("no need to change IP")
-
-    def _change_segment_config(self):
-        """Change the ips in all the config files the segment is using them.
-        It will change the cert file also
+    def change_segment_config(self):
+        """Change the ips in the config file the segment is using them.
         It will count on the ip of the nano"""
         # Get the local IP address's third octet
         ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
@@ -351,16 +328,29 @@ class RoverApplication(Application):
 
             # Print changes made
             if changes_made_in_file:
-                print("Updated {} with new ip address".format(file))
+                logger.info("Updated {} with new ip address".format(file))
             else:
-                print("No changes needed for {}.".format(file))
+                logger.info("No changes needed for {}.".format(file))
+
+
+class RoverApplication(Application):
+    def __init__(self, handler=None, config_dir=os.getcwd()):
+        super(RoverApplication, self).__init__()
+        self._config_dir = config_dir
+        self._handler = RoverHandler(config_dir=self._config_dir) if handler is None else handler
+        self._config_hash = -1
+        self.state_publisher = None
+        self.ipc_server = None
+        self.pilot = None
+        self.teleop = None
+        self.ipc_chatter = None
+        self._config_files_class = ConfigFiles(self._config_dir)
 
     def _config(self):
         parser = SafeConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
         cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
-        self.logger.info(cfg)
         return cfg
 
     def _capabilities(self):
@@ -372,9 +362,8 @@ class RoverApplication(Application):
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
-                self._check_configuration_files()
-                self._check_segment_ip_robot_config()
-                self._change_segment_config()
+                self._config_files_class.check_configuration_files()
+                self._config_files_class.change_segment_config()
                 _config = self._config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
@@ -412,13 +401,8 @@ def main():
     quit_event = application.quit_event
 
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
-    teleop = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
-    ipc_chatter = json_collector(
-        url="ipc:///byodr/teleop_c.sock",
-        topic=b"aav/teleop/chatter",
-        pop=True,
-        event=quit_event,
-    )
+    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
     application.state_publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
     application.ipc_server = LocalIPCServer(url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event)

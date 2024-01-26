@@ -2,12 +2,14 @@ import configparser
 import glob
 import os
 import time
-
+from queue import Queue
 from byodr.utils import Application, hash_dict, timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
-
 from .robot_comm import *
 
+
+
+common_queue = Queue(maxsize=1)
 
 class ComsApplication(Application):
     def __init__(self, event, config_dir=os.getcwd()):
@@ -79,7 +81,6 @@ class SocketManager:
         self.vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
 
 
-        #  No need to call socket_manager.coms_to_pilot() in main() loop, as it's already being executed in its own thread
         self.threads = [self.tel_chatter_socket, 
                         self.teleop_receiver, 
                         self.vehicle_receiver,  
