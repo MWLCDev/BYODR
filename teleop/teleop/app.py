@@ -346,14 +346,13 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         #cmd["navigator"] = dict(route=route_store.get_selected_route())
-        # request = "Do the follow thing"
-        # start_follow_publisher.publish(dict(data=request))
+        request = 1
+        start_follow_publisher.publish(dict(data=request))
 
         cmd = following.get()
-        # cmd_filtered = cmd.get("data")
 
-        # logger.info(f"Command to be send to Coms: {cmd[0]}")
-        teleop_to_coms_publisher.publish(cmd[0])
+        #logger.info(f"Command to be send to Coms: {cmd}")
+        teleop_to_coms_publisher.publish(cmd[0]) # add [0] for command from Following
         #for some reason, this prints with an increasing delay
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())

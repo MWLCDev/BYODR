@@ -1,165 +1,178 @@
-from ultralytics import YOLO
-import os
-import yaml
-import logging
-from byodr.utils.ipc import JSONZmqClient, JSONServerThread, ReceiverThread
-import multiprocessing
+# Both libraries to access the yolov8 yaml inside the robot
+# import os
+# import yaml
 
+import json
+import time
+import logging
+import multiprocessing
+import subprocess
+
+# yolov8 library
+#from ultralytics import YOLO
+import torch
+
+from byodr.utils import timestamp
+from byodr.utils.ipc import JSONPublisher, json_collector
 
 quit_event = multiprocessing.Event()
 
-with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
-    yamldoc = yaml.safe_load(istream)
-    yamldoc['nc'] = 1
-with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
-    yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
-    os.rename("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
+# Accessing the yolov8.yaml inside the robot to remove unnecessary classes
+# with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
+#     yamldoc = yaml.safe_load(istream)
+#     yamldoc['nc'] = 1
+# # Replacing the default yaml with a modified one
+# with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
+#     yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
+#     os.rename("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
+#
 
-model = YOLO('../../BYODR/following/50ep320imgsz.pt')
-# model = YOLO('yolov8s.pt')
+# Utilizing GPU for prediction if GPU available
+print(torch.cuda.is_available())
+print(torch.version.cuda)
+print(torch.__version__)
+# torch.cuda.set_device(0)
+#device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
+# Choosing the trained model
+# model = YOLO('50ep320imgsz.pt')
+# model = YOLO('yolov8n.pt')
+#model.to(device=device)
 
 # Declaring the logger
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
-def _on_message(message):
-    logger.info(f"Data received from the Teleop service, Listener: {message}.")
+# Declaring the socket to receive messages from Teleop
+teleop = json_collector(url="ipc:///byodr/startfollow.sock", topic=b"aav/startfollow/input", event=quit_event)
+# teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event, hwm=20, pop=True)
+teleop.start()
 
-#Declaring the inter-service sockets
-teleop_receiver = JSONServerThread(url="ipc:///byodr/teleop_to_following.sock", event=quit_event, receive_timeout_ms=50)
-teleop_receiver.message_to_send = "Following"
-teleop_receiver.add_listener(_on_message)
+# Declaring the socket to send control commands
+following_publisher = JSONPublisher(
+    url="ipc:///byodr/following.sock", topic="aav/following/controls"
+)
 
-def detect_objects():
+
+# Getting graphics card info
+def run_hwinfo():
+    # Run the 'hwinfo --gfxcard --short' command
+    cmds = ["hwinfo","--gfxcard","--short"]
+    # cmds = ["dkms", "status"]
+    cmdres = subprocess.run(cmds,check=True,stdout=subprocess.PIPE)
+    # Print the output
+    print("Command Output:")
+    print(cmdres.stdout)
+    cmds = ["nvidia-smi"]
+    cmdres = subprocess.run(cmds, check=True, stdout=subprocess.PIPE)
+    print(cmdres.stdout)
+
+# Sending a subscriptable object to teleop
+def pub_init():
+    cmd = {
+        'throttle': 0,
+        'steering': 0,
+        'button_b': 1,
+        # 'time': timestamp(),
+        'navigator': {'route': None}
+    }
+    # Publishing the command to Teleop
+    # logger.info(f"Sending command to teleop: {cmd}")
+    following_publisher.publish(cmd)
+
+
+# Launching the main logic only when received a request from Teleop
+def wait_for_request():
+    logger.info(f"Waiting for request")
     while True:
-        # Setting test data to the inter-service sockets
-        # reply_from_teleop = teleop_receiver.call(dict(data = "Following"))
-        # logger.info(f"Message received from Teleop: {reply_from_teleop}")
+        request = teleop.get()
+        if request is not None:
+            main()
+        else:
+            # logger.info(f"No request")
+            pass
 
-        #results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.2.64:554/Streaming/Channels/102', classes=0, stream=True)
-        results = model.predict(source='imgTest/.', classes=0, stream=True)
-        print("got results")
 
+def main():
+    # Default control commands
+    throttle = 0
+    steering = 0
+
+    logger.info(f"Starting following model")
+
+    while True:
+        # Initializing the recognition model
+        # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
+        # results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64z554/Streaming/Channels/102', classes=0, stream=True)
+        results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
+        logger.info("got results")
+        # 'for' loop used when yolov8 model parameter stream = True
         for r in results:
-            boxes = r.boxes.cpu().numpy()
-            img = r.orig_img
+            boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
+            img = r.orig_img                    # Original image (without bboxes, reshaping)
+            xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
 
-            # xyxy[0, x] for x1, y1, x2, y2
-            xyxy = boxes.xyxy
-            if xyxy.size > 0:
+            if xyxy.size > 0:   # If anything detected
+
+                # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
                 y1 = xyxy[0, 1]
                 x2 = xyxy[0, 2]
                 y2 = xyxy[0, 3]
-                # id = boxes.id
-                # print(id)
-                # orig_img.shape[0]=height
-                # [1]=width
-                # [2]=depth
-                xCen = int((x1 + x2) / 2)  # only need xcen for navigation
-                yBot = int(y2 - y1)  # for distance measurement
-                leftE = int(110 / 320 * img.shape[1])
-                rightE = int(210 / 320 * img.shape[1])
-                topE = int(60 / 240 * img.shape[0])
-                botE = int(180 / 240 * img.shape[0])
-                # __________left/right speeds
-                if xCen <= leftE:
-                    # linear
-                    v = (-1 / leftE) * xCen + 1  # r wheel = v, l wheel = -v
+                # id = boxes.id     # Used when model.track to choose a specific object in view
 
-                    # exponential
-                    # a = 1
-                    # b = 0.1**(1/130)
-                    # v = a*b**float(xCen)
+                # Calculating coordinates on the screen
+                xCen = int((x1 + x2) / 2)   # Center of the bbox
+                yBot = int(y2 - y1)  # Bottom edge of the bbox
 
-                    tur = 2  # 2 = left, 1 = right, 0 = none
-                elif xCen >= rightE:
-                    # linear
-                    v = 1 / leftE * xCen - rightE / leftE  # r wheel = -v, l wheel = v
+                # Edges on the screen beyond which robot should start moving to keep distance
+                leftE = int(110 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
+                rightE = int(210 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
+                topE = int(60 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
+                # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
 
-                    # exponential
-                    # a = 1e6**(12/13)/1e8
-                    # b = 10**(1/130)
-                    # v = a*b**float(xCen)
+                # throttle: 0 to 1
+                # steering: -1 to 1, - left, + right
 
-                    tur = 1
-                else:
-                    v = 0
-                    tur = 0
-
-                # ___________forward/backward speeds
+                # Bbox center crossed the top edge
                 if yBot <= topE:
-                    # linear
-                    d = (-1 / topE) * yBot + 1
-
-                    # exponential
-                    # a = 1
-                    # b = 0.1**(1/130)
-                    # v = a*b**float(xCen)
-
-                    dir = 2  # 2 = forward, 1 = backward, 0 = none
-                elif yBot >= botE:
-                    # linear
-                    d = (-1 / topE) * yBot + 3
-
-                    # exponential
-                    # a = 1e6**(12/13)/1e8
-                    # b = 10**(1/130)
-                    # v = a*b**float(xCen)
-
-                    dir = 1
+                    # Linear increase of throttle
+                    throttle = -yBot / topE + 1
                 else:
-                    d = 0
-                    dir = 0
+                    throttle = 0
 
-                # ______wheel speeds
-                if [tur, dir] == [1, 0]:
-                    mov = "right in place"
-                    vl = v
-                    vr = -v
-                elif [tur, dir] == [2, 0]:
-                    mov = "left in place"
-                    vl = -v
-                    vr = v
-                elif [tur, dir] == [0, 1]:
-                    mov = "backward straight"
-                    vl = d
-                    vr = d
-                elif [tur, dir] == [1, 1]:
-                    mov = "backward right"
-                    vl = -abs(v + d)
-                    vr = -abs(-v + d)
-                elif [tur, dir] == [2, 1]:
-                    mov = "backward left"
-                    vl = -abs(-v + d)
-                    vr = -abs(v + d)
-                elif [tur, dir] == [0, 2]:
-                    mov = "forward straight"
-                    vl = d
-                    vr = d
-                elif [tur, dir] == [1, 2]:
-                    mov = "forward right"
-                    vl = abs(v + d)
-                    vr = abs(-v + d)
-                elif [tur, dir] == [2, 2]:
-                    mov = "forward left"
-                    vl = abs(-v + d)
-                    vr = abs(v + d)
+                # Bbox center crossed the left edge
+                if xCen <= leftE:
+                    # Linear increase of steering
+                    steering = xCen / leftE - 1
+                    # Robot needs throttle to turn left/right
+                    if throttle == 0:
+                        throttle = xCen / leftE - 1
+                # Bbox center crossed the right edge
+                elif xCen >= rightE:
+                    # Linear increase of steering
+                    steering = xCen / leftE - (rightE / leftE)
+                    # Robot needs throttle to turn left/right
+                    if throttle == 0:
+                        throttle = xCen / leftE - (rightE / leftE)
                 else:
-                    mov = "stop"
-                    vl = 0
-                    vr = 0
+                    steering = 0
 
-                print("Left wheel speed = ", vl)
-                print("Right wheel speed = ", vr)
-                print("Movement direction:", mov)
+            # Defining the control command to be sent to Teleop
+            cmd = {
+                'throttle':throttle,
+                'steering':steering,
+                'button_b':1,
+                # 'time':timestamp(),
+                'navigator': {'route': None}
+            }
+            # Publishing the command to Teleop
+            logger.info(f"Sending command to teleop: {cmd}")
+            following_publisher.publish(cmd)
 
-def main():
-    while True:
-        logger.info(f"Following working")
 
 if __name__ == "__main__":
-    main()
-    teleop_receiver.start()
-    # detect_objects()
+    run_hwinfo()
+    #pub_init()
+    #wait_for_request()
