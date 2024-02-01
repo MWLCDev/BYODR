@@ -329,7 +329,6 @@ def main():
             "ipc:///byodr/camera_c.sock",
         ]
     )
-
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
         application.setup()
@@ -345,14 +344,14 @@ def main():
 
     def teleop_publish(cmd):
         # We are the authority on route state.
-        #cmd["navigator"] = dict(route=route_store.get_selected_route())
+        cmd["navigator"] = dict(route=route_store.get_selected_route())
         request = 1
         start_follow_publisher.publish(dict(data=request))
 
-        cmd = following.get()
+        # cmd = following.get()
 
         #logger.info(f"Command to be send to Coms: {cmd}")
-        teleop_to_coms_publisher.publish(cmd[0]) # add [0] for command from Following
+        teleop_to_coms_publisher.publish(cmd) # add [0] for command from Following
         #for some reason, this prints with an increasing delay
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
