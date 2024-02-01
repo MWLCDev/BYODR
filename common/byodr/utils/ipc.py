@@ -37,7 +37,6 @@ else:
 logger = logging.getLogger(__name__)
 
 
-# Class that publishes data for potential receivers to get it
 class JSONPublisher(object):
     def __init__(self, url, topic='', hwm=1, clean_start=True):
         if clean_start and url.startswith('ipc://') and os.path.exists(url[6:]):
@@ -48,14 +47,13 @@ class JSONPublisher(object):
         self._publisher = publisher
         self._topic = topic
 
-    # Function to send data
     def publish(self, data, topic=None):
         _topic = self._topic if topic is None else topic
         if data is not None:
             data = dict((k, v) for k, v in data.items() if v is not None)
             send_string(self._publisher, '{}:{}'.format(_topic, json.dumps(data)), zmq.NOBLOCK)
 
-# Class that publishes image for potential receivers to get it
+
 class ImagePublisher(object):
     def __init__(self, url, topic='', hwm=1, clean_start=True):
         if clean_start and url.startswith('ipc://') and os.path.exists(url[6:]):
@@ -66,7 +64,6 @@ class ImagePublisher(object):
         self._publisher = publisher
         self._topic = topic
 
-    # Function to send data
     def publish(self, _img, topic=None):
         _topic = self._topic if topic is None else topic
         self._publisher.send_multipart([_topic,
@@ -74,8 +71,7 @@ class ImagePublisher(object):
                                         np.ascontiguousarray(_img, dtype=np.uint8)],
                                        flags=zmq.NOBLOCK)
 
-# Class that connects to a zmq zerver via url
-# Receives the data the server is publishing
+
 class JSONReceiver(object):
     def __init__(self, url, topic=b'', hwm=1, receive_timeout_ms=2, pop=False):
         subscriber = zmq.Context().socket(zmq.SUB)
@@ -90,7 +86,6 @@ class JSONReceiver(object):
         self._lock = threading.Lock()
         self._queue = collections.deque(maxlen=hwm)
 
-    # Receives data from the server and stores it in an internal queue
     def consume(self):
         with self._lock:
             try:
@@ -99,14 +94,12 @@ class JSONReceiver(object):
             except zmq.Again:
                 pass
 
-    # Get the value that is stored inside the queue. Has the ability to clear the queue after receiving
     def get(self):
         _view = self._queue[0] if (self._queue and self._unpack) else list(self._queue) if self._queue else None
         if self._pop:
             self._queue.clear()
         return _view
 
-    # Returns the stored value in the queue
     def peek(self):
         return self._queue[0] if self._queue else None
 
@@ -207,53 +200,42 @@ class CameraThread(threading.Thread):
             except zmq.Again:
                 pass
 
-# Class that sends and receives data to/from clients
+
 class JSONServerThread(threading.Thread):
     def __init__(self, url, event, hwm=1, receive_timeout_ms=50):
         super(JSONServerThread, self).__init__()
         server = zmq.Context().socket(zmq.REP)
         server.set_hwm(hwm)
-        server.setsockopt(zmq.RCVTIMEO, receive_timeout_ms) # Will shutdown socket after 50ms pass with no message
-        server.setsockopt(zmq.LINGER, 0) # Does not linger at all after shutting down
+        server.setsockopt(zmq.RCVTIMEO, receive_timeout_ms)
+        server.setsockopt(zmq.LINGER, 0)
         server.bind(url)
         self._server = server
         self._quit_event = event
         self._queue = collections.deque(maxlen=1)
         self._listeners = []
-        self.message_to_send = None
 
-    # Adds a listener function to be executed whenever the server gets a message
     def add_listener(self, c):
         self._listeners.append(c)
 
-    # Function that executes everytime the server receives a message.
-    # Stores the message to its internal queue, then runs each listener function appended from add_listener(), with the message received as a argument
     def on_message(self, message):
         self._queue.appendleft(message)
         list(map(lambda x: x(message), self._listeners))
 
-    # Returns the stored data
     def get_latest(self):
         return self._queue[0] if bool(self._queue) else None
 
-    # Returns the stored data and then deletes it from the queue
     def pop_latest(self):
         return self._queue.popleft() if bool(self._queue) else None
 
-    # Returns an empty dictionary if we want to send back nothing, or send back our own message to the client
-    def serve(self, reply):
-        if reply is None:
-            return {}
-        return {'reply': reply}
+    def serve(self, request):
+        return {}
 
-    # Main function of the class.
-    # Receives data from the client, and sends back a reply based on self.message_to_send
     def run(self):
         while not self._quit_event.is_set():
             try:
                 message = json.loads(receive_string(self._server))
                 self.on_message(message)
-                send_string(self._server, json.dumps(self.serve(self.message_to_send)))
+                send_string(self._server, json.dumps(self.serve(message)))
             except zmq.Again:
                 pass
 
@@ -287,7 +269,6 @@ class LocalIPCServer(JSONServerThread):
         return {}
 
 
-# Class that connects to a url of a server and sends a message first, then receives a reply
 class JSONZmqClient(object):
     def __init__(self, urls, hwm=1, receive_timeout_ms=200):
         self._urls = urls if isinstance(urls, list) else [urls]
@@ -299,11 +280,11 @@ class JSONZmqClient(object):
 
     def _create(self, locations):
         context = zmq.Context()
-        socket = context.socket(zmq.REQ) # socket zmq.REQ will block on send unless it has successfully received a reply back
+        socket = context.socket(zmq.REQ)
         socket.set_hwm(self._hwm)
-        socket.setsockopt(zmq.RCVTIMEO, self._receive_timeout) # Socket closes after 200ms
-        socket.setsockopt(zmq.LINGER, 0) # Socket does not linger after a command to shut it down. It shuts down immediately.
-        [socket.connect(location) for location in locations] # Connects to all urls it got as an argument
+        socket.setsockopt(zmq.RCVTIMEO, self._receive_timeout)
+        socket.setsockopt(zmq.LINGER, 0)
+        [socket.connect(location) for location in locations]
         self._context = context
         self._socket = socket
 
@@ -311,16 +292,11 @@ class JSONZmqClient(object):
         if self._context is not None:
             self._context.destroy()
 
-    # Main function of the class.
     def call(self, message):
         ret = {}
-        # For each url it is connected to
         for i in range(len(self._urls)):
             try:
-                # Sends a message
                 send_string(self._socket, json.dumps(message), zmq.NOBLOCK)
-
-                # Receives a reply and stores it in the "ret" dictionary
                 ret.update(json.loads(receive_string(self._socket)))
             except zmq.ZMQError:
                 j = i + 1

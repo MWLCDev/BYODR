@@ -27,7 +27,7 @@ with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") a
     os.rename("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
 
 # Choosing the trained model
-# model = YOLO('50ep320imgsz.pt')
+model = YOLO('50ep320imgsz.pt')
 # model = YOLO('yolov8n.pt')
 #model.to(device=device)
 
@@ -143,7 +143,7 @@ def main():
                 'throttle':throttle,
                 'steering':steering,
                 'button_b':1,
-                # 'time':timestamp(),
+                'time':timestamp(),
                 'navigator': {'route': None}
             }
             # Publishing the command to Teleop
@@ -153,4 +153,4 @@ def main():
 
 if __name__ == "__main__":
     pub_init()
-    wait_for_request()
+    main()

@@ -10,7 +10,7 @@ This computer system includes a Raspberry Pi, a Jetson Nano, 2 cameras, a router
 
 - A smart segment uses Hikvision PTZ Dome Network camera for its AI Camera.
 
-- IP: 192.168.1.64
+- IP: 192.168.3.64
 
 - **Input**: Footage from its surroundings
 
@@ -20,7 +20,7 @@ This computer system includes a Raspberry Pi, a Jetson Nano, 2 cameras, a router
 
 - The smart segment also uses a 2nd Hikvision PTZ Dome Network camera for an Operator Camera.
 
-- IP: 192.168.1.65
+- IP: 192.168.3.65
 
 - **Input**: Footage from its surroundings
 
@@ -29,18 +29,18 @@ This computer system includes a Raspberry Pi, a Jetson Nano, 2 cameras, a router
 ### Raspberry Pi 4B
 
 - OS: balena-cloud-byodr- pi-raspberrypi4-64-2.99.27-v14.0.8
-- IP: 192.168.1.32
+- IP: 192.168.3.32
 - This OS allows it to communicate with Balena Cloud. Inside the Pi, there are 5 processes running, 4 of which run in their own separate Docker containers.
 
 ### Nvidia Jetson Nano
 
 - OS: balena-cloud-byodr-nano-jetson-nano-2.88.4+rev1-v12.11.0
-- IP: 192.168.1.100
+- IP: 192.168.3.100
 - This OS allows it to communicate with Balena Cloud. Inside the Nano, there are 10 processes running, all of which run in their own separate Docker containers.
 
 ### RUT-955
 
-- IP: 192.168.1.1
+- IP: 192.168.3.1
 - The router inside the segment is called RUT955 from Teltonika. The router has LAN, WAN, 4G, 5G and LTE capabilities. It's ethernet connectivity is extended with a switch. The router is responsible for all internet connectivity between the segment and the rest of the Internet.
 - This router also includes an internal relay that works as a switch that lets the battery power the rest of the segment. Only when the router is booted up and the relay switch closes, will the segment receive power to the rest of its internal components.
 

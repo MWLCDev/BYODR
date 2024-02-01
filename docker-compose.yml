@@ -9,173 +9,152 @@ volumes:
   volume_byodr_sockets:
   volume_byodr_sessions:
 services:
-#   zerotier:
-#     cpuset: '0'
-#     image: zyclonite/zerotier:1.6.6
-#     restart: always
-#     network_mode: host
-#     devices:
-#       - '/dev/net/tun'
-#     cap_add:
-#       - SYS_ADMIN
-#       - NET_ADMIN
-#       - CAP_SYS_RAWIO
-#     volumes:
-#       - volume_zerotier_config:/var/lib/zerotier-one:rw
-#   wireguard:
-#     cpuset: '0'
-#     image: masipcat/wireguard-go
-#     container_name: wireguard
-#     restart: always
-#     network_mode: host
-#     devices:
-#       - '/dev/net/tun'
-#     cap_add:
-#       - SYS_ADMIN
-#       - NET_ADMIN
-#       - CAP_SYS_RAWIO
-#     volumes:
-#       - volume_wireguard_config:/etc/wireguard:rw
-   httpd:
-      cpuset: '0'
-      build:
-        context: .
-        dockerfile: httpd/Dockerfile
-      restart: always
-      network_mode: host
-      command: ['python', 'wrap.py']
-      stop_signal: SIGKILL
-      volumes:
-        - volume_byodr_config:/config:rw
-#   ftpd:
-#     cpuset: '0'
-#     build:
-#       context: .
-#       dockerfile: ftpd/Dockerfile
-#     restart: always
-#     command: ['python3', 'wrap.py']
-#     stop_signal: SIGKILL
-#     ports:
-#       - '21:21'
-#       - '30000-30009:30000-30009'
-#     volumes:
-#       - volume_ftpd_config:/etc/pureftpd:rw
-#       - volume_byodr_sessions:/home/ftpuser:rw
-  # rosnode:
-  #   cpuset: "0"
-  #   build:
-  #     context: .
-  #     dockerfile: rosnode/Dockerfile
-  #   restart: always
-  #   command: ["python3", "app.py", "--name", "rosnode"]
-  #   network_mode: host
-  #   stop_signal: SIGKILL
-  #   volumes:
-  #     - volume_byodr_sockets:/byodr:rw
-  #     - volume_byodr_config:/config:ro
-   mongodb:
-     cpuset: '0'
-     build:
-       context: .
-       dockerfile: mongodb/Dockerfile
-     restart: always
-     command: ['python3', 'wrap.py']
-     network_mode: host
-     stop_signal: SIGKILL
-     environment:
-       MONGO_INITDB_ROOT_USERNAME: admin
-       MONGO_INITDB_ROOT_PASSWORD_FILE: /config/mongo-root
-     volumes:
+  zerotier:
+    cpuset: '0'
+    image: zyclonite/zerotier:1.6.6
+    restart: always
+    network_mode: host
+    devices:
+      - '/dev/net/tun'
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - CAP_SYS_RAWIO
+    volumes:
+      - volume_zerotier_config:/var/lib/zerotier-one:rw
+  wireguard:
+    cpuset: '0'
+    image: masipcat/wireguard-go
+    container_name: wireguard
+    restart: always
+    network_mode: host
+    devices:
+      - '/dev/net/tun'
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - CAP_SYS_RAWIO
+    volumes:
+      - volume_wireguard_config:/etc/wireguard:rw
+  httpd:
+    cpuset: '0'
+    build:
+      context: .
+      dockerfile: httpd/Dockerfile
+    restart: always
+    network_mode: host
+    command: ['python', 'wrap.py']
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_config:/config:rw
+  ftpd:
+    cpuset: '0'
+    build:
+      context: .
+      dockerfile: ftpd/Dockerfile
+    restart: always
+    command: ['python3', 'wrap.py']
+    stop_signal: SIGKILL
+    ports:
+      - '21:21'
+      - '30000-30009:30000-30009'
+    volumes:
+      - volume_ftpd_config:/etc/pureftpd:rw
+      - volume_byodr_sessions:/home/ftpuser:rw
+  rosnode:
+    cpuset: '0'
+    build:
+      context: .
+      dockerfile: rosnode/Dockerfile
+    restart: always
+    command: ['python3', 'app.py', '--name', 'rosnode']
+    network_mode: host
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:ro
+  mongodb:
+    cpuset: '0'
+    build:
+      context: .
+      dockerfile: mongodb/Dockerfile
+    restart: always
+    command: ['python3', 'wrap.py']
+    network_mode: host
+    stop_signal: SIGKILL
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD_FILE: /config/mongo-root
+    volumes:
       - volume_mongodb_config:/config:rw
       - volume_mongodb_data:/data/db:rw
-   teleop:
-     cpuset: '0'
-     build:
-       context: .
-       dockerfile: teleop/Dockerfile
-     restart: always
-     command: ['sh', '-c', 'python3 -m teleop.app --name teleop --routes /sessions/routes']
-     network_mode: host
-     environment:
-       LD_PRELOAD: libgomp.so.1
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:rw
-       - volume_byodr_sessions:/sessions:rw
-   vehicle:
-     cpuset: '1'
-     build:
-       context: .
-       dockerfile: vehicles/rover/rover_vehicle.dockerfile
-     restart: always
-     command: ['python', 'app.py', '--name', 'vehicle']
-     privileged: true # NvMedia device creation for omx decoder.
-     network_mode: host
-     environment:
-       LD_PRELOAD: libgomp.so.1
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:rw
-   pilot:
-     cpuset: '2'
-     build:
-       context: .
-       dockerfile: pilot/Dockerfile
-     restart: always
-     privileged: true # Access to usb devices without udev rules.
-     command: ['python3', '-m', 'pilot.app', '--name', 'pilot', '--routes', '/sessions/routes']
-     ports:
-       - '8082:8082'
-     environment:
-       LD_PRELOAD: libgomp.so.1
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:ro
-       - volume_byodr_sessions:/sessions:ro
-   inference:
+  teleop:
+    cpuset: '0'
+    build:
+      context: .
+      dockerfile: teleop/Dockerfile
+    restart: always
+    command: ['sh', '-c', 'python3 -m teleop.app --name teleop --routes /sessions/routes']
+    network_mode: host
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+      - volume_byodr_sessions:/sessions:rw
+  vehicle:
+    cpuset: '1'
+    build:
+      context: .
+      dockerfile: vehicles/rover/rover_vehicle.dockerfile
+    restart: always
+    command: ['python', 'app.py', '--name', 'vehicle']
+    privileged: true # NvMedia device creation for omx decoder.
+    network_mode: host
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+  pilot:
+    cpuset: '2'
+    build:
+      context: .
+      dockerfile: pilot/Dockerfile
+    restart: always
+    privileged: true # Access to usb devices without udev rules.
+    command: ['python3', '-m', 'pilot.app', '--name', 'pilot', '--routes', '/sessions/routes']
+    ports:
+      - '8082:8082'
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:ro
+      - volume_byodr_sessions:/sessions:ro
+  inference:
     # cpuset: "3" # - not compatible with onnx runtime - use env omp_places.
-     build:
-       context: .
-       dockerfile: inference/runtime-cp36-jp441.dockerfile
-     restart: always
-     privileged: true
-     command: ['python3', '-m', 'inference.app', '--user', '/sessions/models', '--routes', '/sessions/routes']
-     environment:
-       LD_PRELOAD: libgomp.so.1
-       OMP_PLACES: '{3}'
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:ro
-       - volume_byodr_sessions:/sessions:rw
-   coms:
-     cpuset: "3"
-     build:
-       context: .
-       dockerfile: coms/Dockerfile
-     restart: always
-     command:
-       [
-         "python3",
-         "-m",
-         "coms.app",
-         "--name",
-         "coms",
-       ]
-     environment:
-       LD_PRELOAD: libgomp.so.1
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:rw
-     network_mode: "host"
-   following:
-     cpuset: '1'
-     build:
-       context: .
-       dockerfile: following/Dockerfile
-     restart: always
-     privileged: true
-     network_mode: host
-     stop_signal: SIGKILL
-     volumes:
-       - volume_byodr_sockets:/byodr:rw
-       - volume_byodr_config:/config:rw
+    build:
+      context: .
+      dockerfile: inference/runtime-cp36-jp441.dockerfile
+    restart: always
+    privileged: true
+    command: ['python3', '-m', 'inference.app', '--user', '/sessions/models', '--routes', '/sessions/routes']
+    environment:
+      LD_PRELOAD: libgomp.so.1
+      OMP_PLACES: '{3}'
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:ro
+  following:
+    cpuset: '1'
+    build:
+      context: .
+      dockerfile: following/Dockerfile
+    restart: always
+    privileged: true
+    network_mode: host
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw

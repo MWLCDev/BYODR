@@ -6,11 +6,11 @@ import asyncio
 import glob
 import multiprocessing
 import signal
+import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
 import user_agents  # Check in the request header if it is a phone or not
-import time
 
 
 from concurrent.futures import ThreadPoolExecutor
@@ -310,10 +310,9 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_to_coms_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input"
+    teleop_publisher = JSONPublisher(
+        url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
     )
-
     start_follow_publisher = JSONPublisher(url="ipc:///byodr/startfollow.sock", topic="aav/startfollow/input")
 
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
@@ -329,6 +328,7 @@ def main():
             "ipc:///byodr/camera_c.sock",
         ]
     )
+
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
         application.setup()
@@ -345,15 +345,13 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
+
         request = 1
         start_follow_publisher.publish(dict(data=request))
-
-        # cmd = following.get()
+        cmd = following.get()
 
         #logger.info(f"Command to be send to Coms: {cmd}")
-        teleop_to_coms_publisher.publish(cmd) # add [0] for command from Following
-        #for some reason, this prints with an increasing delay
-
+        teleop_publisher.publish(cmd[0]) # add [0] for command from Following
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 

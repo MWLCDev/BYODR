@@ -33,9 +33,9 @@ Unpack the robot.
 Turn the key and wait for several minutes for the startup procedure of the different devices to complete.   
 Plug the controller into your computer.
 Open chrome and browse to the managed ip of the robot as shown in my.zerotier.com *network* information. 
-As an example assume the robot’s managed ip is 192.168.193.42. In the browser’s address bar type:  
+As an example assume the robot’s managed ip is 192.168.393.42. In the browser’s address bar type:  
 
-    http://192.168.193.42
+    http://192.168.393.42
 
 ### Store
 1. Place the robot on a platform so that the wheels can turn freely.
