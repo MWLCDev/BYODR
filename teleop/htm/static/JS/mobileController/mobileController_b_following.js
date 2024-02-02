@@ -1,26 +1,21 @@
-// Add event listener to toggle button
-toggleButton.addEventListener('click', function() {
-    // Toggle functionality here
-    console.log(toggleButton.classList.contains('toggled'))
-    if (toggleButton.classList.contains('toggled')==false){
-      toggleButton.classList.toggle('toggled')
-      toggleButton.innerText = 'Stop following'
-      toggleButton.style.backgroundColor = '#e06e6e'
-    }
-    else if (toggleButton.classList.contains('toggled')==true){
-      toggleButton.classList.toggle('toggled')
-      toggleButton.innerText = 'Start following'
-      toggleButton.style.backgroundColor = '#67b96a'
-      var test = 0;
-    }
+const toggleButton = document.getElementById('toggleButton');
+
+toggleButton.addEventListener('click', function () {
+  const command = toggleButton.innerText === "Start Following" ? "Stop Following" : "Start Following";
+
+  // Toggle button text and color
+  toggleButton.innerText = command;
+  toggleButton.style.backgroundColor = command === "Stop Following" ? "#ff6347" : "#67b96a";
+
+  fetch('/switch_following', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/x-www-form-urlencoded',
+    },
+    body: `command=${encodeURIComponent(command)}`,
+  })
+    .then(response => response.json())
+    .then(data => console.log("Server response:", data))
+    .catch(error => console.error("Error sending command:", error));
 });
 
-function initializeFollowingWS(){
-
-}
-
-function sendJSONFollowing(){
-
-}
-
-export {initializeFollowingWS, sendJSONFollowing}
