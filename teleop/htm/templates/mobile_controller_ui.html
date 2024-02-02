@@ -19,7 +19,21 @@
       overflow: hidden;
       /* This will prevent scrollbar from appearing */
     }
-
+    #toggleButton {
+        position: fixed;
+        bottom: 5%;
+        left: 50%; 
+        width: 70%;
+        margin-right: -50%;
+        transform: translate(-50%, 0);
+        z-index: 9999; 
+        padding: 10px 20px;
+        background-color: #67b96a;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+    }
     canvas {
       display: block;
     }
@@ -27,6 +41,14 @@
 
   <script src="external/pixi-v7.3.0-rc.2.min.js"></script>
   <!-- File/folder names cannot be capital -->
+    <script>
+    // Create the toggle button
+    var toggleButton = document.createElement('button');
+    toggleButton.id = 'toggleButton';
+    toggleButton.innerText = 'Start following';
+    document.body.appendChild(toggleButton);
+  </script>
+  <script type="module" src="JS/mobileController/mobileController_b_following.js"></script>
   <script type="module" src="JS/mobileController/mobileController_a_app.js"></script>
 </body>
 
