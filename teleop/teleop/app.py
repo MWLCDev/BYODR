@@ -21,7 +21,7 @@ from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 import tornado.ioloop
 import tornado.web
 
-from byodr.utils import Application, hash_dict, ApplicationExit
+from byodr.utils import Application, hash_dict, ApplicationExit, timestamp
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from logbox.app import LogApplication, PackageApplication
@@ -260,7 +260,7 @@ def main():
         url="ipc:///byodr/following.sock",
         topic=b"aav/following/controls",
         event=quit_event,
-        hwm=20,
+        # hwm=20,
     )
     vehicle = json_collector(
         url="ipc:///byodr/vehicle.sock",
@@ -344,14 +344,17 @@ def main():
 
     def teleop_publish(cmd):
         # We are the authority on route state.
-        cmd["navigator"] = dict(route=route_store.get_selected_route())
+        # cmd["navigator"] = dict(route=route_store.get_selected_route())
 
         request = 1
         start_follow_publisher.publish(dict(data=request))
         cmd = following.get()
 
-        #logger.info(f"Command to be send to Coms: {cmd}")
-        teleop_publisher.publish(cmd[0]) # add [0] for command from Following
+        cmd["time"] = timestamp()
+        # logger.info(f"Time of control commands received: {cmd['time']}")
+        # logger.info(f"Command to be send to Coms: {cmd}")
+        teleop_publisher.publish(cmd)
+        
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 

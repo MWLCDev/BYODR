@@ -2,15 +2,15 @@
 import os
 import yaml
 
-import json
-import time
+# import json
+# import time
 import logging
 import multiprocessing
-import subprocess
+# import subprocess
 
 # yolov8 library
 from ultralytics import YOLO
-import torch
+# import torch
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
@@ -53,7 +53,7 @@ def pub_init():
         'throttle': 0,
         'steering': 0,
         'button_b': 1,
-        # 'time': timestamp(),
+        'time': timestamp(),
         'navigator': {'route': None}
     }
     # Publishing the command to Teleop
@@ -83,8 +83,8 @@ def main():
     while True:
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
-        # results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64z554/Streaming/Channels/102', classes=0, stream=True)
-        results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
+        results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/102', classes=0, stream=True)
+        # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
         logger.info("got results")
         # 'for' loop used when yolov8 model parameter stream = True
         for r in results:

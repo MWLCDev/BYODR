@@ -1,4 +1,4 @@
-version: '2.3'
+version: '2'
 volumes:
   volume_zerotier_config:
   volume_wireguard_config:
@@ -132,20 +132,20 @@ services:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:ro
       - volume_byodr_sessions:/sessions:ro
-  inference:
-    # cpuset: "3" # - not compatible with onnx runtime - use env omp_places.
-    build:
-      context: .
-      dockerfile: inference/runtime-cp36-jp441.dockerfile
-    restart: always
-    privileged: true
-    command: ['python3', '-m', 'inference.app', '--user', '/sessions/models', '--routes', '/sessions/routes']
-    environment:
-      LD_PRELOAD: libgomp.so.1
-      OMP_PLACES: '{3}'
-    volumes:
-      - volume_byodr_sockets:/byodr:rw
-      - volume_byodr_config:/config:ro
+  # inference:
+  #   # cpuset: "3" # - not compatible with onnx runtime - use env omp_places.
+  #   build:
+  #     context: .
+  #     dockerfile: inference/runtime-cp36-jp441.dockerfile
+  #   restart: always
+  #   privileged: true
+  #   command: ['python3', '-m', 'inference.app', '--user', '/sessions/models', '--routes', '/sessions/routes']
+  #   environment:
+  #     LD_PRELOAD: libgomp.so.1
+  #     OMP_PLACES: '{3}'
+  #   volumes:
+  #     - volume_byodr_sockets:/byodr:rw
+  #     - volume_byodr_config:/config:ro
   following:
     cpuset: '1'
     build:
