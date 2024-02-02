@@ -313,7 +313,9 @@ def main():
     teleop_publisher = JSONPublisher(
         url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
     )
-    start_follow_publisher = JSONPublisher(url="ipc:///byodr/startfollow.sock", topic="aav/startfollow/input")
+    start_follow_publisher = JSONPublisher(
+        url="ipc:///byodr/startfollow.sock", topic="aav/startfollow/input"
+    )
 
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(
@@ -344,19 +346,15 @@ def main():
 
     def teleop_publish(cmd):
         # We are the authority on route state.
-        # cmd["navigator"] = dict(route=route_store.get_selected_route())
-
-        request = 1
-        start_follow_publisher.publish(dict(data=request))
-        cmd = following.get()
-
-        cmd["time"] = timestamp()
-        # logger.info(f"Time of control commands received: {cmd['time']}")
-        # logger.info(f"Command to be send to Coms: {cmd}")
+        cmd["navigator"] = dict(route=route_store.get_selected_route())
+        print(cmd)
         teleop_publisher.publish(cmd)
-        
+
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
+
+    def teleop_publish_to_following(cmd):
+        chatter.publish(cmd)
 
     io_loop = ioloop.IOLoop.instance()
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
@@ -383,6 +381,11 @@ def main():
                     r"/ws/send_mobile_controller_commands",
                     MobileControllerCommands,
                     dict(fn_control=teleop_publish),
+                ),
+                (
+                    r"/switch_following",
+                    FollowingHandler,
+                    dict(fn_control=teleop_publish_to_following),
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
