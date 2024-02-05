@@ -56,7 +56,7 @@ class RasSpeedOdometer(object):
         # Checking if the message from the Pi includes velocity
         # logger.info("Sending data to Coms: {}".format(dict(velocity = value)))
         
-        self.velocity_to_coms.publish(dict(velocity = value))
+        self.velocity_to_coms.publish({'velocity': value})
         self._values.append((value, timestamp()))
 
     def get(self):
