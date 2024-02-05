@@ -29,8 +29,6 @@ services:
     build:
       context: .
       dockerfile: pi_gpio.dockerfile
-#    image: centipede2donald/byodr-ce:pi_servos
-#    container_name: servos
     privileged: true
     labels:
       io.balena.features.kernel-modules: '1'
@@ -43,15 +41,11 @@ services:
     environment:
       GPIOZERO_PIN_FACTORY: 'pigpio'
     volumes:
-#      - /dev/bus/usb:/dev/bus/usb  # not allowed by balena os
-#      - /dev:/dev  # not allowed by balena os
       - volume_local_config:/config:rw
   stream0:
     build:
       context: .
       dockerfile: pi_gstreamer.dockerfile
-#    image: centipede2donald/byodr-ce:pi_stream
-#    container_name: stream0
     privileged: true
     user: root
     restart: always
@@ -64,8 +58,6 @@ services:
     build:
       context: .
       dockerfile: pi_gstreamer.dockerfile
-#    image: centipede2donald/byodr-ce:pi_stream
-#    container_name: stream1
     privileged: true
     user: root
     restart: always
