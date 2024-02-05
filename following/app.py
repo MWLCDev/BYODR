@@ -83,7 +83,7 @@ def main():
     while True:
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
-        results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/102', classes=0, stream=True)
+        results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=1)
         # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
         logger.info("got results")
         # 'for' loop used when yolov8 model parameter stream = True
@@ -91,9 +91,9 @@ def main():
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
-
             if xyxy.size > 0:   # If anything detected
 
+                print(boxes.conf)
                 # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
                 y1 = xyxy[0, 1]
@@ -104,16 +104,15 @@ def main():
                 # Calculating coordinates on the screen
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
                 yBot = int(y2 - y1)  # Bottom edge of the bbox
-
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(110 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
-                rightE = int(210 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                topE = int(60 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
+                leftE = int(100 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
+                rightE = int(220 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
+                topE = int(100 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
-
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
-
+                print(xCen)
+                print(yBot)
                 # Bbox center crossed the top edge
                 if yBot <= topE:
                     # Linear increase of throttle
@@ -127,14 +126,14 @@ def main():
                     steering = xCen / leftE - 1
                     # Robot needs throttle to turn left/right
                     if throttle == 0:
-                        throttle = xCen / leftE - 1
+                        throttle = abs(xCen / leftE - 1)
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
                     # Linear increase of steering
                     steering = xCen / leftE - (rightE / leftE)
                     # Robot needs throttle to turn left/right
                     if throttle == 0:
-                        throttle = xCen / leftE - (rightE / leftE)
+                        throttle = abs(xCen / leftE - (rightE / leftE))
                 else:
                     steering = 0
 
