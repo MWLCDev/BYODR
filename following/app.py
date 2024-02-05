@@ -37,8 +37,7 @@ logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Declaring the socket to receive messages from Teleop
-teleop = json_collector(url="ipc:///byodr/startfollow.sock", topic=b"aav/startfollow/input", event=quit_event)
-# teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event, hwm=20, pop=True)
+teleop = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
 teleop.start()
 
 # Declaring the socket to send control commands
@@ -60,40 +59,29 @@ def pub_init():
     logger.info(f"Sending command to teleop: {cmd}")
     following_publisher.publish(cmd)
 
-
-# Launching the main logic only when received a request from Teleop
-def wait_for_request():
-    logger.info(f"Waiting for request")
-    while True:
-        request = teleop.get()
-        if request is not None:
-            main()
-        else:
-            # logger.info(f"No request")
-            pass
-
-
 def main():
     # Default control commands
-    throttle = 0
-    steering = 0
-
-    logger.info(f"Starting following model")
-
-    while True:
+        # logger.info(f"Waiting for request")
+        request = teleop.get()
+        # logger.info(f"Message from teleop chatter: {request}")
+        # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
+        if request is None or request['following'] == "Stop Following":
+            return
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
-        results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=1)
-        # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
-        logger.info("got results")
         # 'for' loop used when yolov8 model parameter stream = True
+        logger.info("got results")
         for r in results:
+            request = teleop.get()
+            if request is not None:
+                print(request['following'])
+            if request is not None and request['following'] == "Stop Following":
+                return
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
             if xyxy.size > 0:   # If anything detected
 
-                print(boxes.conf)
                 # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
                 y1 = xyxy[0, 1]
@@ -111,8 +99,6 @@ def main():
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
-                print(xCen)
-                print(yBot)
                 # Bbox center crossed the top edge
                 if yBot <= topE:
                     # Linear increase of throttle
@@ -152,4 +138,11 @@ def main():
 
 if __name__ == "__main__":
     pub_init()
-    main()
+
+    throttle = 0
+    steering = 0
+
+    logger.info(f"Starting following model")
+    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=1)
+    while True:
+        main()
