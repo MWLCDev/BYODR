@@ -219,20 +219,21 @@ class RealMonitoringRelay(AbstractRelay):
         if n_violations < -5:
             self._close_relay()
             self._drive(c_pilot, c_coms)
-            self.watchdog_to_coms.publish(dict(status = 1)) # Status 1 = ok
+            self.watchdog_to_coms.publish(dict(status = '1')) # Status 1 = ok
         # If the Pi is not responding
         elif n_violations > 200:
             # ZeroMQ ipc over tcp does not allow connection timeouts to be set - while the timeout is too high.
             self._reboot()  # Resets the protocol.
-            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
+            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
         # If there are errors and delayes in the communication with the Pi, we open the relays
         elif n_violations > 5:
             self._open_relay()
             self._drive(None, None)
-            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
+            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
         else:
             self._drive(None, None)
-            self.watchdog_to_coms.publish(dict(status = 0)) # Status 0 = Not ok
+            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
+        # print(n_violations)
 
 
 def main():

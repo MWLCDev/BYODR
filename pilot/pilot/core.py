@@ -987,15 +987,12 @@ class CommandProcessor(Configurable):
                     ),
                 )
 
-    def _process(self, c_teleop, c_ros, c_inference):
+    def _process(self, c_teleop, c_inference):
         # r_action = None if c_external is None else c_external.get('action', None)
         # if r_action == 'resume':
         #     self._cache_safe('external api call', lambda: self._driver.switch_ctl('driver_mode.inference.dnn'))
 
         self._driver.process_navigation(c_teleop, c_inference)
-
-        # Continue with ros instructions which take precedence over a route.
-        self._process_ros(c_ros)
 
         # Zero out max speed on any intervention as a safety rule for ap and to detect faulty controllers.
         # With the left button this behavior can be overridden to allow for steer corrections.
@@ -1041,7 +1038,7 @@ class CommandProcessor(Configurable):
                 "decrease cruise speed", lambda: self._driver.decrease_cruise_speed()
             )
 
-    def _unpack_commands(self, teleop, ros, vehicle, inference):
+    def _unpack_commands(self, teleop, vehicle, inference):
         _patience, _ts = self._patience_micro, timestamp()
         # The teleop, vehicle or inference commands could be none, old or repeated.
         teleop_time = 0 if teleop is None else teleop.get("time", 0)
@@ -1062,12 +1059,12 @@ class CommandProcessor(Configurable):
             else None
         )
         # The external and ros commands need to be handled each occurrence.
-        return teleop, ros, vehicle, inference
+        return teleop, vehicle, inference
 
     def next_action(self, *args):
-        teleop, ros, vehicle, inference = self._unpack_commands(*args)
+        teleop, vehicle, inference = self._unpack_commands(*args)
         # Handle instructions first.
-        self._process(teleop, ros, inference)
+        self._process(teleop, inference)
         # What to do on message timeout depends on which driver is active.
         _ctl = self._driver.get_driver_ctl()
         # Switch off autopilot on internal errors.

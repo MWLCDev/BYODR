@@ -48,11 +48,9 @@ class PilotApplication(Application):
         self.ipc_server = None
         self.ipc_chatter = None
         self.teleop = None
-        self.ros = None
         self.vehicle = None
         self.inference = None
         self.coms_receiver = None
-        self.movement_commands = None
         self._init(relay)
 
     def _init(self, _relay):
@@ -112,9 +110,9 @@ class PilotApplication(Application):
 
     def step(self):
         coms = self.coms_receiver()
-        commands = (coms, self.ros(), self.vehicle(), self.inference())
+        commands = (coms, self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        # print(f"Sending command to relay.py: {pilot}, {coms}.")
+        # print(f"Sending command to relay.py: {coms}.")
         self._monitor.step(pilot, coms)
 
         if pilot is not None:
@@ -139,13 +137,11 @@ def main():
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)
 
     coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
-    ros = json_collector(url='ipc:///byodr/ros.sock', topic=b'aav/ros/input', hwm=10, pop=True, event=quit_event)
     vehicle = json_collector(url='ipc:///byodr/vehicle.sock', topic=b'aav/vehicle/state', event=quit_event)
     inference = json_collector(url='ipc:///byodr/inference.sock', topic=b'aav/inference/state', event=quit_event)
     ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
 
     application.coms_receiver = lambda: coms_receiver.get()
-    application.ros = lambda: ros.get()
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
@@ -153,7 +149,7 @@ def main():
     application.ipc_server = LocalIPCServer(url='ipc:///byodr/pilot_c.sock', name='pilot', event=quit_event)
 
 
-    threads = [coms_receiver, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
+    threads = [coms_receiver, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 
