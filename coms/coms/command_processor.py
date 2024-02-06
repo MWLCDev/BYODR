@@ -1,7 +1,6 @@
 import logging
 from collections import deque
 import time
-from byodr.utils import timestamp
 
 
 # Declaring the logger
@@ -104,7 +103,7 @@ def process(movement_command):
         # our data structure needs to be FIFO (First in First out)
         try:
             applied_steering = steering_queue.popleft()
-            print("popped")
+            # print("popped")
         except IndexError:
             # If the queue is empty, we put steering = 0 and turn the triggers to False
             applied_steering = 0.0
@@ -117,8 +116,5 @@ def process(movement_command):
 
     # We apply the steering.
     movement_command["steering"] = applied_steering
-
-    # Replacing the received command's timestamp with a current one
-    movement_command["time"] = timestamp()
 
     return movement_command
