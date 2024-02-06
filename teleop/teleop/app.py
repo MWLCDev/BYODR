@@ -44,6 +44,8 @@ quit_event = multiprocessing.Event()
 thread_pool = ThreadPoolExecutor()
 
 
+stats = None
+
 def _interrupt():
     logger.info("Received interrupt, quitting.")
     quit_event.set()
@@ -197,6 +199,9 @@ class TestFeatureUI(tornado.web.RequestHandler):
         self.render("../htm/templates/testFeature.html")
 
 
+
+
+
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -212,6 +217,9 @@ def main():
     JSON publishers are set up for teleop data and chatter data.
 
     """
+
+    global stats
+
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument(
@@ -260,7 +268,7 @@ def main():
         url="ipc:///byodr/following.sock",
         topic=b"aav/following/controls",
         event=quit_event,
-        # hwm=20,
+        hwm=1,
     )
     vehicle = json_collector(
         url="ipc:///byodr/vehicle.sock",
@@ -292,8 +300,27 @@ def main():
         _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
     )
 
+    def send_command():
+        global stats
+
+        while True:
+            while stats == "Start Following":
+                # logger.info (stats)
+                ctrl = following.get()
+                
+                if ctrl is not None:
+                    ctrl['time'] = timestamp()
+                    # logger.info(f"Message from Following: {ctrl}")
+                    teleop_publisher.publish(ctrl)
+                #     prev_command = ctrl
+                # else:
+                #     teleop_publisher.publish(prev_command)}
+            # logger.info(stats)
+
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
+    follow_thread = threading.Thread(target=send_command)
+
 
     threads = [
         camera_front,
@@ -304,6 +331,7 @@ def main():
         inference,
         logbox_thread,
         package_thread,
+        follow_thread,
     ]
     if quit_event.is_set():
         return 0
@@ -350,14 +378,17 @@ def main():
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
+
     def teleop_publish_to_following(cmd):
+        global stats
+
         logger.info(f"Permission from teleop:{cmd['following']}")
         chatter.publish(cmd)
-        if cmd["following"] == "Start Following":
-            ctrl = following.get()
-            ctrl['time'] = timestamp()
-            logger.info(f"Message from Following: {ctrl}")
-            teleop_publisher.publish(ctrl)
+        stats = cmd["following"]
+    
+
+
+
 
     io_loop = ioloop.IOLoop.instance()
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
