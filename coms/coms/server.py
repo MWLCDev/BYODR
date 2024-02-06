@@ -30,8 +30,8 @@ class Segment_server():
         self.server_ip = arg_server_ip
         self.server_port = arg_server_port
         self.timeout = arg_timeout # Maybe 100ms
-        self.msg_to_client = None
-        self.msg_from_client = None
+        self.msg_to_client = {'rep': '-'}
+        self.msg_from_client = {'msg': '-'}
         self.processed_command = None
 
         # The server socket that will wait for clients to connect
@@ -47,14 +47,12 @@ class Segment_server():
 
     # Starting the server
     def start_server(self):
-        
         while True:
             try:
                 logger.info(f"[Server] Server is listening on {(self.server_ip, self.server_port)}")
                 self.client_socket, self.client_address = self.server_socket.accept() # Waiting for clients to connect. Blocking function
-                logger.info(f"[Server] {self.client_address} connected.")
+                logger.info(f"[Server] New client {self.client_address} connected.")
                 self.client_socket.settimeout(self.timeout) # We set the timeout that the server will wait for data from the client
-
 
                 # Starting actions when a client connects.
                 # We break from this loop so that the code can move on to different function calls
@@ -68,18 +66,11 @@ class Segment_server():
 
     # Sending to the client
     def send_to_LD(self):
-        self.client_socket.send(self.msg_to_client.encode("utf-8"))
-
+        message_to_send = json.dumps(self.msg_to_client).encode('utf-8')
+        self.client_socket.send(message_to_send)
 
 
     # Receiving from the client
     def recv_from_LD(self):
-        recv_message = self.client_socket.recv(512).decode("utf-8")
-
-        try:
-            self.msg_from_client = json.loads(recv_message)
-
-        except json.JSONDecodeError as e:
-            logger.warning(f"[Server] JSON decoding error: {e}")
-            logger.exception("[Server] Exception details:")
-            self.msg_from_client = "Message of wrong format received"
+        recv_message = self.client_socket.recv(512)
+        self.msg_from_client = json.loads(recv_message.decode("utf-8"))

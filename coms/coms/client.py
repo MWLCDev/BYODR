@@ -35,51 +35,54 @@ class Segment_client():
         self.server_port = arg_server_port # The port of the server that the client will connect to
         self.timeout = arg_timeout # Maybe 100ms
         self.socket_initialized = False # Variable that keeps track if we have a functioning socket to a server
-        self.msg_to_server = None
-        self.msg_from_server = None
+        self.msg_to_server = {'cmd': '-'}
+        self.msg_from_server = {'rep': '-'}
         self.client_socket = None # The client socket that will connect to the server
 
 
     # Establish the connection to the server
     def connect_to_server(self):
-            
-        try:
-            # Close the current socket, if it exists
+        # Close the current socket, if it exists
+        if self.client_socket is not None:
             self.close_connection()
 
-            self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Remake the socket and reconnect
-            self.client_socket.settimeout(self.timeout) # Set the timeout for all the back and forth between the server/client
-            self.client_socket.connect((self.server_ip, self.server_port)) # Connect to the server
-            logger.info("[Client] Connected to server.")
-            self.socket_initialized = True
+        while not self.socket_initialized:
+            try:
+                self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Remake the socket and reconnect
+                self.client_socket.settimeout(self.timeout) # Set the timeout for all the back and forth between the server/client
+                self.client_socket.connect((self.server_ip, self.server_port)) # Connect to the server
+                logger.info(f"[Client] Connected to server {(self.server_ip, self.server_port)}.")
+                self.socket_initialized = True
 
-        except Exception as e:
-            logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
-            logger.exception("[Client] Exception details:")
-            time.sleep(2)  # Wait for a while before retrying
+            except Exception as e:
+                # logger.warning(f"[Client] Got error trying to connect to the server: {e}.\nTrying to reconnect...")
+                # logger.exception("[Client] Exception details:")
+                time.sleep(2)  # Wait for a while before retrying
 
 
     # Close the malfunctioning socket if we lose connection to the server.
     # We will make a new one and try to reconnect
     def close_connection(self):
-        
-        while self.socket_initialized:
-            try:
-                self.client_socket.shutdown(socket.SHUT_RDWR)
-                self.client_socket.close()
-                self.socket_initialized = False
-            except Exception as e:
-                logger.warning(f"[Client] Error while closing socket: {e}")
-                logger.exception("[Client] Exception details:")
-                time.sleep(2)
+        try:
+            self.msg_to_server = {'cmd': '-'}
+            self.client_socket.shutdown(socket.SHUT_RDWR)
+            self.client_socket.close()
+            self.socket_initialized = False
+        except Exception as e:
+            logger.warning(f"[Client] Error while closing socket: {e}")
+            logger.exception("[Client] Exception details:")
+            time.sleep(2)
+        finally:
+            self.socket_initialized = False
 
 
     # Sending data to the server
     def send_to_FL(self):
-        message_to_send = json.dumps(self.msg_to_server)
-        self.client_socket.send(message_to_send.encode("utf-8"))
+        message_to_send = json.dumps(self.msg_to_server).encode("utf-8")
+        self.client_socket.send(message_to_send)
 
 
     # Receiving data from the server
     def recv_from_FL(self):
-        self.msg_from_server = self.client_socket.recv(512).decode("utf-8")
+        recv_message = self.client_socket.recv(512).decode("utf-8")
+        self.msg_from_server = json.loads(recv_message)
