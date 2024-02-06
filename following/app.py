@@ -37,7 +37,7 @@ logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Declaring the socket to receive messages from Teleop
-teleop = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
+teleop = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event, hwm=1,)
 teleop.start()
 
 # Declaring the socket to send control commands
@@ -60,6 +60,8 @@ def pub_init():
     following_publisher.publish(cmd)
 
 def main():
+        throttle = 0
+        steering = 0
     # Default control commands
         # logger.info(f"Waiting for request")
         request = teleop.get()
@@ -95,7 +97,7 @@ def main():
                 # Edges on the screen beyond which robot should start moving to keep distance
                 leftE = int(100 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
                 rightE = int(220 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                topE = int(100 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
+                topE = int(120 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
@@ -123,6 +125,10 @@ def main():
                 else:
                     steering = 0
 
+            # Lowering the throttle and steering values to compensate for delay (temporary)
+            throttle = throttle * 0.7
+            steering = steering * 0.7
+
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
@@ -139,10 +145,7 @@ def main():
 if __name__ == "__main__":
     pub_init()
 
-    throttle = 0
-    steering = 0
-
     logger.info(f"Starting following model")
-    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=1)
+    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.4, max_det=3)
     while True:
         main()
