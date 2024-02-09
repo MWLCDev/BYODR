@@ -61,14 +61,15 @@ def process(movement_command):
     # If we detect that the LD is turning
     if steering != 0:
 
-
         # Calculating the delay for steering
         try:
             # Execution delay of steering in s
             # We want the absolute value, the delay is never negative
             delay = abs(distance / velocity)
+
+        # If velocity == 0, meaning the robot is standing still, we do not move on with calculations
         except ZeroDivisionError:
-            delay = 9999
+            return movement_command
 
         # Place the non-zero steering in the deque
         steering_queue.append(steering)
