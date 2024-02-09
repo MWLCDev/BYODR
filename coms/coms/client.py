@@ -64,7 +64,6 @@ class Segment_client():
     # We will make a new one and try to reconnect
     def close_connection(self):
         try:
-            self.msg_to_server = {'cmd': '-'}
             self.client_socket.shutdown(socket.SHUT_RDWR)
             self.client_socket.close()
             self.socket_initialized = False
