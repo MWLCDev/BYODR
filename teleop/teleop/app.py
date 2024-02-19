@@ -382,7 +382,7 @@ def main():
     def teleop_publish_to_following(cmd):
         global stats
 
-        logger.info(f"Permission from teleop:{cmd['following']}")
+        # logger.info(f"Permission from teleop:{cmd['following']}")
         chatter.publish(cmd)
         stats = cmd["following"]
     

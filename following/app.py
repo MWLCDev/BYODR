@@ -97,37 +97,43 @@ def main():
                 # Edges on the screen beyond which robot should start moving to keep distance
                 leftE = int(100 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
                 rightE = int(220 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                topE = int(120 / 240 * img.shape[0])     # Top edge, 60p away from the top end if image height = 240p
+                botE = int(120 / 240 * img.shape[0])     # Bot edge, 120p away from the top end if image height = 240p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
-                if yBot <= topE:
+                if yBot <= botE:
                     # Linear increase of throttle
-                    throttle = -yBot / topE + 1
+                    # throttle = -(7/800)*yBot+1.35
+                    # throttle = 0.3
+                    throttle = -(0.00875) * yBot + 1.35
                 else:
                     throttle = 0
 
                 # Bbox center crossed the left edge
                 if xCen <= leftE:
                     # Linear increase of steering
-                    steering = xCen / leftE - 1
+                    # steering = -(xCen / leftE - 1)
+                    # steering = 0.4
+                    steering = (0.00875) * xCen - (1.175)
                     # Robot needs throttle to turn left/right
                     if throttle == 0:
-                        throttle = abs(xCen / leftE - 1)
+                        throttle = 0.3
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
                     # Linear increase of steering
-                    steering = xCen / leftE - (rightE / leftE)
+                    # steering = -(xCen / leftE - (rightE / leftE))                  
+                    # steering = 0.4
+                    steering = (0.00875) * xCen - (1.625)
                     # Robot needs throttle to turn left/right
                     if throttle == 0:
-                        throttle = abs(xCen / leftE - (rightE / leftE))
+                        throttle = 0.3
                 else:
                     steering = 0
 
             # Lowering the throttle and steering values to compensate for delay (temporary)
-            throttle = throttle * 0.7
-            steering = steering * 0.7
+            # throttle = throttle * 0.7
+            # steering = steering * 0.7
 
             # Defining the control command to be sent to Teleop
             cmd = {
@@ -146,6 +152,6 @@ if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.4, max_det=3)
+    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
     while True:
         main()
