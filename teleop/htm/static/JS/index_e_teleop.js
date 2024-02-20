@@ -193,7 +193,7 @@ class RealGamepadSocket {
         ws.onmessage = function (evt) {
           // console.log(evt)
           var message = JSON.parse(evt.data);
-          setTimeout(function () { _instance._capture(message); }, 0);
+          setTimeout(function () { _instance._capture(message); }, 100);
         };
       });
     }
