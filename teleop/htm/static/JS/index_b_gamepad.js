@@ -148,8 +148,17 @@ var gamepad_controller = {
     const ct = this.controller;
     // Skip buttons when not pressed to save bandwidth.
     var command = {};
-    command.steering = ct.steering;
-    command.throttle = ct.throttle;
+
+    if(ct.throttle && ct.throttle != 0)
+    {
+      command.throttle = ct.throttle;
+      command.steering = ct.steering;
+    }
+    else
+    {
+      command.steering = ct.steering;
+      command.throttle = ct.throttle;
+    }
     command.pan = ct.pan;
     command.tilt = ct.tilt;
     if (ct.button_center) {
