@@ -86,12 +86,6 @@ class TeleopApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
-
-    def get_motor_scale(self):
-        parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        scale_cfg = dict(parser.items('vehicle')) if parser.has_section('vehicle') else {}
-        return int(scale_cfg.get('ras.driver.motor.scale'))
     
     def get_user_config_file(self):
         return self._user_config_file
@@ -100,7 +94,6 @@ class TeleopApplication(Application):
         if self.active():
             self._check_user_config()
             _config = self._config()
-            self._motor_scale = self.get_motor_scale()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
