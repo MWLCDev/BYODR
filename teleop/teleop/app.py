@@ -370,24 +370,25 @@ def main():
                 if braking_sign > 0 and current_throttle < 0:
                     current_throttle = 0.0
 
-                cmd["throttle"] = current_throttle
-
             # If throttle is the 1st key of the dict, then it means the user gives throttle input 
             else:
                 # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
-                accelerate_sign = -1 if target_throttle < 0 else 1
+                accelerate_sign = 0
+                if target_throttle < current_throttle:
+                    accelerate_sign = -1
+                elif target_throttle > current_throttle:
+                    accelerate_sign = 1
 
                 # Decreasing or increasing the throttle by each iteration, by the step we have defined.
                 # Dec or Inc depends on if we want to go forwards or backwards
                 current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
                 
                 # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                if abs(current_throttle) > abs(target_throttle):
+                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
                     current_throttle = target_throttle
                 
-                cmd["throttle"] = current_throttle
-
             # Sending commands to Coms/Pilot
+            cmd["throttle"] = current_throttle
             print(f"Sending command: {cmd}")
             teleop_publish(cmd)
 
