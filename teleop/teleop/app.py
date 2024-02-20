@@ -6,7 +6,6 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
@@ -24,6 +23,8 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
+from six.moves.configparser import SafeConfigParser
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -43,6 +44,10 @@ quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
 
+# Variables in use for the throttle_control() function
+prev_throttle = 0.0
+current_throttle = 0.0
+throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -69,6 +74,7 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._motor_scale = 0
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -81,6 +87,12 @@ class TeleopApplication(Application):
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
 
+    def get_motor_scale(self):
+        parser = SafeConfigParser()
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
+        scale_cfg = dict(parser.items('vehicle')) if parser.has_section('vehicle') else {}
+        return int(scale_cfg.get('ras.driver.motor.scale'))
+    
     def get_user_config_file(self):
         return self._user_config_file
 
@@ -88,6 +100,7 @@ class TeleopApplication(Application):
         if self.active():
             self._check_user_config()
             _config = self._config()
+            self._motor_scale = self.get_motor_scale()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
@@ -333,6 +346,51 @@ def main():
     def get_navigation_image(image_id):
         return route_store.get_image(image_id)
 
+    def throttle_control(cmd):
+        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
+        global throttle_change_step # Always 0.1
+
+
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller)
+        if "throttle" in cmd:
+
+            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
+            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
+
+            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
+            if first_key == "steering":
+                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
+                braking_sign = -1 if current_throttle < 0 else 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we were going forwards or backwards
+                current_throttle = current_throttle - (braking_sign*throttle_change_step)
+                
+                # Capping the value at 0 so that the robot does not move while idle
+                if braking_sign > 0 and current_throttle < 0:
+                    current_throttle = 0.0
+
+                cmd["throttle"] = current_throttle
+
+            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
+            else:
+                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
+                accelerate_sign = -1 if target_throttle < 0 else 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we want to go forwards or backwards
+                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
+                
+                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
+                if abs(current_throttle) > abs(target_throttle):
+                    current_throttle = target_throttle
+                
+                cmd["throttle"] = current_throttle
+
+            # Sending commands to Coms/Pilot
+            print(f"Sending command: {cmd}")
+            teleop_publish(cmd)
+
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
@@ -365,7 +423,7 @@ def main():
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
                     MobileControllerCommands,
-                    dict(fn_control=teleop_publish),
+                    dict(fn_control=throttle_control),
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
@@ -379,7 +437,7 @@ def main():
                     JPEGImageRequestHandler,
                     dict(mongo_box=_mongo),
                 ),  # Get the commands from the controller in normal UI
-                (r"/ws/ctl", ControlServerSocket, dict(fn_control=teleop_publish)),
+                (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_control)),
                 (
                     r"/ws/log",
                     MessageServerSocket,
