@@ -6,6 +6,13 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
 
+// Initialize sending commands only once, instead of calling it each time we touch the triangles
+// The function would keep stacking, sending commands more often than 10 times a second
+// Now we call it once, and we just change the commands that are being sent
+// At first we send a default value
+CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
+sendJSONCommand()
+
 
 window.addEventListener('load', () => {
   initializeWS()
@@ -35,7 +42,6 @@ app.view.addEventListener('touchstart', (event) => {
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
         // Arrow function to send the command through websocket 
-        sendJSONCommand()
         break;
     }
   } else {
@@ -65,7 +71,7 @@ app.view.addEventListener('touchend', () => {
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
     CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
-    clearInterval(intervalId);
+    clearTimeout(intervalId);
   }
 });
 
