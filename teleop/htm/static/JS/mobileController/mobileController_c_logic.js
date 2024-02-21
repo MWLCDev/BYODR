@@ -77,20 +77,35 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
  * @param {number} x current position of the ball (same as touch)
  * @param {*} y current position for the ball (same as touch)
  */
-function deltaCoordinatesFromTip(x, y) {
+function deltaCoordinatesFromTip(x, y, triangle_in_use, user_touch_Y) {
   // Calculate the differences in x and y coordinates to get coordinates relative to the tip
   const relativeX = x - window.innerWidth / 2;
   const relativeY = y - window.innerHeight / 2;
-  SetStatistics(relativeX, relativeY);
+  SetStatistics(relativeX, relativeY, triangle_in_use, user_touch_Y);
 }
 
-function SetStatistics(x, y) {
+function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
-  CTRL_STAT.throttleSteeringJson = {
-    throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
-    steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
-    button_b: 1,
-  };
+  const isTopTriangle = triangle_in_use === 'top'; // Checking if the top triangle is in use
+  const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
+  
+  // Stopping the robot urgently depending on where the finger of the user is. We stop in these cases:
+  // top triangle in use AND finger below the center
+  // OR
+  // bottom triangle in use AND finger above the center
+  // This is the definition of an XNOR gate, and the equivalent in JS is the '===' operator
+  // In this case, the robot will not decelerate slowly, it will immediately stop
+  if (isTopTriangle === isTouchBelowCenter)
+    // Removing the throttle key in the JSON, since the robot will brake if the command does not have throttle inside it
+    CTRL_STAT.throttleSteeringJson = {};
+
+  // In any other case, we produce commands normally
+  else
+    CTRL_STAT.throttleSteeringJson = {
+      throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
+      steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
+      button_b: 1,
+    };
 }
 
 /**
@@ -123,7 +138,8 @@ function handleDotMove(touchX, touchY) {
   //X value to visually limit the movement of the ball
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-  deltaCoordinatesFromTip(x, y);
+
+  deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY);
 }
 
 /**
