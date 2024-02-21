@@ -344,7 +344,7 @@ def main():
         global throttle_change_step # Always 0.1
 
 
-        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller)
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
         if "throttle" in cmd:
 
             first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
@@ -384,6 +384,11 @@ def main():
             cmd["throttle"] = current_throttle
             print(f"Sending command: {cmd}")
             teleop_publish(cmd)
+
+        # When we receive commands without throttle in them, we reset the throttle values to 0
+        else:
+            current_throttle = 0
+            target_throttle = 0
 
     def teleop_publish(cmd):
         # We are the authority on route state.
