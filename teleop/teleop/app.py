@@ -388,7 +388,6 @@ def main():
         # When we receive commands without throttle in them, we reset the throttle values to 0
         else:
             current_throttle = 0
-            target_throttle = 0
 
     def teleop_publish(cmd):
         # We are the authority on route state.
