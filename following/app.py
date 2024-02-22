@@ -68,6 +68,16 @@ def main():
         # logger.info(f"Message from teleop chatter: {request}")
         # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
         if request is None or request['following'] == "Stop Following":
+            cmd = {
+                'throttle': 0,
+                'steering': 0,
+                'button_b': 1,
+                'time': timestamp(),
+                'navigator': {'route': None}
+            }
+            # Publishing the command to Teleop
+            # logger.info(f"Sending command to teleop: {cmd}")
+            following_publisher.publish(cmd)
             return
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
@@ -82,7 +92,7 @@ def main():
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
-            if xyxy.size > 0:   # If anything detected
+            if xyxy.size > 0:                   # If anything detected
 
                 # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
@@ -94,51 +104,57 @@ def main():
                 # Calculating coordinates on the screen
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
                 yBot = int(y2 - y1)  # Bottom edge of the bbox
+                logger.info(f"Bottom edge: {yBot}, Center: {xCen}")
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(100 / 320 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
-                rightE = int(220 / 320 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                botE = int(120 / 240 * img.shape[0])     # Bot edge, 120p away from the top end if image height = 240p
+                leftE = int(200 / 640 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
+                rightE = int(440 / 640 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
+                botE = int(200 / 480 * img.shape[0])    # Bot edge, 120p away from the top end if image height = 240p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
                 if yBot <= botE:
+                    throttle = 0.5
                     # Linear increase of throttle
-                    # throttle = -(7/800)*yBot+1.35
-                    # throttle = 0.3
-                    throttle = -(0.00875) * yBot + 1.35
+                    # throttle = (-(0.005) * yBot) + 1.4
+
                 else:
                     throttle = 0
 
                 # Bbox center crossed the left edge
                 if xCen <= leftE:
+                    steering = -0.7
                     # Linear increase of steering
-                    # steering = -(xCen / leftE - 1)
-                    # steering = 0.4
-                    steering = (0.00875) * xCen - (1.175)
+                    # steering = (0.004375) * xCen - (1.175)
                     # Robot needs throttle to turn left/right
-                    if throttle == 0:
-                        throttle = 0.3
+                    if throttle < abs(steering):
+                        throttle = abs(steering)
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
+                    steering = 0.7
                     # Linear increase of steering
-                    # steering = -(xCen / leftE - (rightE / leftE))                  
-                    # steering = 0.4
-                    steering = (0.00875) * xCen - (1.625)
+                    # steering = (0.004375) * xCen - (1.625)
                     # Robot needs throttle to turn left/right
-                    if throttle == 0:
-                        throttle = 0.3
+                    if throttle < abs(steering):
+                        throttle = abs(steering)
                 else:
-                    steering = 0
-
-            # Lowering the throttle and steering values to compensate for delay (temporary)
-            # throttle = throttle * 0.7
-            # steering = steering * 0.7
+                    steering = -0.1
+                
+                #caveman
+                if throttle > 1:
+                    throttle = 1
+                if steering < -1:
+                    steering = -1
+                if steering > 1:
+                    steering = 1
+            else:
+                throttle = 0
+                steering = 0
 
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
-                'steering':steering,
+                'steering':-steering,   #reversing because of the bug
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
@@ -152,6 +168,8 @@ if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.3.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
+    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
+    # results = model.predict(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3)
+
     while True:
         main()

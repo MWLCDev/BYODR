@@ -77,7 +77,7 @@ def create_stream(config_file):
             ).split("x")
         ]
         config = {
-            "ip": (parse_option("camera.ip", str, "192.168.3.64", **kwargs)),
+            "ip": (parse_option("camera.ip", str, "192.168.1.64", **kwargs)),
             "port": (parse_option("camera.port", int, 554, **kwargs)),
             "user": (parse_option("camera.user", str, "user1", **kwargs)),
             "password": (
@@ -116,7 +116,7 @@ def create_stream(config_file):
             "udp_height": udp_height,
             "udp_bitrate": (parse_option("camera.udp.bitrate", int, 1024000, **kwargs)),
             "udp_host": (
-                parse_option("camera.udp.host", str, "192.168.3.100", **kwargs)
+                parse_option("camera.udp.host", str, "192.168.1.100", **kwargs)
             ),
             "udp_port": (parse_option("camera.udp.port", int, 5000, **kwargs)),
             "out_width": out_width,

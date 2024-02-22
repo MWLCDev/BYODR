@@ -385,9 +385,6 @@ def main():
         # logger.info(f"Permission from teleop:{cmd['following']}")
         chatter.publish(cmd)
         stats = cmd["following"]
-    
-
-
 
 
     io_loop = ioloop.IOLoop.instance()
