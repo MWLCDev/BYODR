@@ -18,3 +18,5 @@ toggleButton.addEventListener('click', function () {
   toggleButton.innerText = command === "Start Following" ? "Stop Following" : "Start Following";
   toggleButton.style.backgroundColor = toggleButton.innerText === "Stop Following" ? "#ff6347" : "#67b96a";
 });
+
+export { toggleButton };
