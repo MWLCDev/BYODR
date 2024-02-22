@@ -114,31 +114,34 @@ def main():
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
                 if yBot <= botE:
-                    throttle = 0.7
+                    # throttle = 0.7
                     # Linear increase of throttle
-                    # throttle = (-(0.005) * yBot) + 1.4
+                    throttle = (-(0.00333333) * yBot) + 1.26667
 
                 else:
                     throttle = 0
 
                 # Bbox center crossed the left edge
                 if xCen <= leftE:
-                    steering = -0.6
+                    # steering = -0.6
                     # Linear increase of steering
-                    # steering = (0.004375) * xCen - (1.175)
+                    # steering = (0.003125) * xCen - (1.125)    # 0.5 minimum
+                    steering = (0.0025) * xCen - (1.1)          # 0.6 minimum
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
-                    steering = 0.6
+                    # steering = 0.6
                     # Linear increase of steering
-                    # steering = (0.004375) * xCen - (1.625)
+                    # steering = (0.003125) * xCen - (0.875)    # 0.5 minimum
+                    steering = (0.0025) * xCen - (0.5)          # 0.6 minimum
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
                 else:
                     steering = -0.02
+
                 
                 #caveman
                 if throttle > 1:
