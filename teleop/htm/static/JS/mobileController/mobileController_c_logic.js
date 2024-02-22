@@ -88,7 +88,7 @@ function SetStatistics(x, y) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
   CTRL_STAT.throttleSteeringJson = {
     throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
-    steering: Number(-(x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
+    steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
     button_b: 1,
   };
 }
