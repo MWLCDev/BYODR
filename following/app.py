@@ -114,7 +114,7 @@ def main():
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
                 if yBot <= botE:
-                    throttle = 0.5
+                    throttle = 0.7
                     # Linear increase of throttle
                     # throttle = (-(0.005) * yBot) + 1.4
 
@@ -123,7 +123,7 @@ def main():
 
                 # Bbox center crossed the left edge
                 if xCen <= leftE:
-                    steering = -0.7
+                    steering = -0.6
                     # Linear increase of steering
                     # steering = (0.004375) * xCen - (1.175)
                     # Robot needs throttle to turn left/right
@@ -131,14 +131,14 @@ def main():
                         throttle = abs(steering)
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
-                    steering = 0.7
+                    steering = 0.6
                     # Linear increase of steering
                     # steering = (0.004375) * xCen - (1.625)
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
                 else:
-                    steering = -0.1
+                    steering = -0.02
                 
                 #caveman
                 if throttle > 1:
@@ -154,7 +154,7 @@ def main():
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
-                'steering':-steering,   #reversing because of the bug
+                'steering':steering,   #reversing because of the bug
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
