@@ -44,7 +44,12 @@ quit_event = multiprocessing.Event()
 thread_pool = ThreadPoolExecutor()
 
 
+# Variable in use for the following
 stats = None
+
+# Variables in use for the throttle_control() function
+current_throttle = 0.0
+throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -311,7 +316,7 @@ def main():
                 if ctrl is not None:
                     ctrl['time'] = timestamp()
                     # logger.info(f"Message from Following: {ctrl}")
-                    teleop_publisher.publish(ctrl)
+                    teleop_publish(ctrl)
                 #     prev_command = ctrl
                 # else:
                 #     teleop_publisher.publish(prev_command)}
@@ -369,10 +374,61 @@ def main():
     def get_navigation_image(image_id):
         return route_store.get_image(image_id)
 
+    def throttle_control(cmd):
+        global stats # Checking if Following is running, so that the throttle control does not send commands at the same time as following
+        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
+        global throttle_change_step # Always 0.1
+
+
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
+        if "throttle" in cmd and stats != "Start Following":
+
+            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
+            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
+
+            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
+            if first_key == "steering":
+                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
+                braking_sign = -1 if current_throttle < 0 else 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we were going forwards or backwards
+                current_throttle = current_throttle - (braking_sign*throttle_change_step)
+                
+                # Capping the value at 0 so that the robot does not move while idle
+                if braking_sign > 0 and current_throttle < 0:
+                    current_throttle = 0.0
+
+            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
+            else:
+                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
+                accelerate_sign = 0
+                if target_throttle < current_throttle:
+                    accelerate_sign = -1
+                elif target_throttle > current_throttle:
+                    accelerate_sign = 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we want to go forwards or backwards
+                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
+                
+                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
+                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
+                    current_throttle = target_throttle
+                
+            # Sending commands to Coms/Pilot
+            cmd["throttle"] = current_throttle
+            # print("Throttle control running")
+            teleop_publish(cmd)
+
+        # When we receive commands without throttle in them, we reset the current throttle value to 0
+        else:
+            current_throttle = 0
+
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
-        # print(cmd)
+        # print(f"Sending command: {cmd}")
         teleop_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -411,7 +467,7 @@ def main():
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
                     MobileControllerCommands,
-                    dict(fn_control=teleop_publish),
+                    dict(fn_control=throttle_control),
                 ),
                 (
                     r"/switch_following",
@@ -430,7 +486,7 @@ def main():
                     JPEGImageRequestHandler,
                     dict(mongo_box=_mongo),
                 ),  # Get the commands from the controller in normal UI
-                (r"/ws/ctl", ControlServerSocket, dict(fn_control=teleop_publish)),
+                (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_control)),
                 (
                     r"/ws/log",
                     MessageServerSocket,
