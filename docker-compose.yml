@@ -147,7 +147,7 @@ services:
   #     - volume_byodr_sockets:/byodr:rw
   #     - volume_byodr_config:/config:ro
   following:
-    cpuset: '1'
+    # cpuset: '3'
     build:
       context: .
       dockerfile: following/Dockerfile
