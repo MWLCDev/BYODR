@@ -19,13 +19,13 @@ from byodr.utils.ipc import JSONPublisher, json_collector
 quit_event = multiprocessing.Event()
 
 # Accessing the yolov8.yaml inside the robot to remove unnecessary classes
-with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
+with open("/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
     yamldoc = yaml.safe_load(istream)
     yamldoc['nc'] = 1
 # Replacing the default yaml with a modified one
-with open("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
+with open("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
     yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
-    os.rename("/usr/src/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/usr/src/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
+    os.rename("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
 
 # Choosing the trained model
 model = YOLO('50ep320imgsz.pt')
