@@ -7,6 +7,7 @@ import yaml
 import logging
 import multiprocessing
 # import subprocess
+# import cv2
 
 # yolov8 library
 from ultralytics import YOLO
@@ -83,6 +84,7 @@ def main():
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
         # 'for' loop used when yolov8 model parameter stream = True
         logger.info("got results")
+
         for r in results:
             request = teleop.get()
             if request is not None:
@@ -92,6 +94,7 @@ def main():
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
+            # print(img.shape)
             if xyxy.size > 0:                   # If anything detected
 
                 # Getting each coordinate of the bbox corners
@@ -106,9 +109,9 @@ def main():
                 yBot = int(y2 - y1)  # Bottom edge of the bbox
                 logger.info(f"Bottom edge: {yBot}, Center: {xCen}")
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(200 / 640 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
-                rightE = int(440 / 640 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                botE = int(200 / 480 * img.shape[0])    # Bot edge, 120p away from the top end if image height = 240p
+                leftE = int(240 / 640 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
+                rightE = int(400 / 640 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
+                botE = int(190 / 480 * img.shape[0])    # Bot edge, 120p away from the top end if image height = 240p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
@@ -116,31 +119,31 @@ def main():
                 if yBot <= botE:
                     # throttle = 0.7
                     # Linear increase of throttle
-                    throttle = (-(0.00333333) * yBot) + 1.26667
+                    throttle = (-(0.00416667) * yBot) + 1.3333333
 
                 else:
                     throttle = 0
 
                 # Bbox center crossed the left edge
                 if xCen <= leftE:
-                    # steering = -0.6
+                    # steering = -0.4
                     # Linear increase of steering
-                    # steering = (0.003125) * xCen - (1.125)    # 0.5 minimum
-                    steering = (0.0025) * xCen - (1.1)          # 0.6 minimum
+                    # steering = (0.003125) * xCen - (1.125)    # 0.5 minimum (200 edge)
+                    steering = (0.002) * xCen - (0.8)  # 0.3 minimum (250 edge)
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
-                    # steering = 0.6
+                    # steering = 0.4
                     # Linear increase of steering
-                    # steering = (0.003125) * xCen - (0.875)    # 0.5 minimum
-                    steering = (0.0025) * xCen - (0.5)          # 0.6 minimum
+                    # steering = (0.003125) * xCen - (0.875)    # 0.5 minimum (440 edge)
+                    steering = (0.002) * xCen - (0.48) # 0.3 minimum (390 edge)
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
                 else:
-                    steering = -0.02
+                    steering = 0
 
                 
                 #caveman
@@ -150,6 +153,7 @@ def main():
                     steering = -1
                 if steering > 1:
                     steering = 1
+
             else:
                 throttle = 0
                 steering = 0
@@ -157,7 +161,7 @@ def main():
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
-                'steering':steering,   #reversing because of the bug
+                'steering':steering,
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
@@ -165,7 +169,6 @@ def main():
             # Publishing the command to Teleop
             logger.info(f"Sending command to teleop: {cmd}")
             following_publisher.publish(cmd)
-
 
 if __name__ == "__main__":
     pub_init()
