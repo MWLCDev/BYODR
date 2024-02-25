@@ -117,7 +117,7 @@ services:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:rw
   pilot:
-    cpuset: '2'
+    cpuset: '1'
     build:
       context: .
       dockerfile: pilot/Dockerfile
@@ -147,7 +147,7 @@ services:
   #     - volume_byodr_sockets:/byodr:rw
   #     - volume_byodr_config:/config:ro
   following:
-    # cpuset: '3'
+    cpuset: '3,2'
     build:
       context: .
       dockerfile: following/Dockerfile
