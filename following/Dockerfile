@@ -1,4 +1,4 @@
-FROM ultralytics/ultralytics:latest-jetson
+FROM mwlvdev/jetson-nano-ubuntu:bionic-torch1.11-cp38-cuda10.2
 #FROM ultralytics/ultralytics:latest-arm64
 
 
