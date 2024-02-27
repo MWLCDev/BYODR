@@ -321,7 +321,7 @@ class RoverApplication(Application):
         self.pilot = None
         self.teleop = None
         self.ipc_chatter = None
-
+        self._config_files_class = ConfigFiles(self._config_dir)
 
 
     def _config(self):
@@ -341,7 +341,8 @@ class RoverApplication(Application):
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
-                self._check_user_file()
+                self._config_files_class.check_configuration_files()
+                self._config_files_class.change_segment_config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
                     self.ipc_server.register_start(self._handler.get_errors(), self._capabilities())
