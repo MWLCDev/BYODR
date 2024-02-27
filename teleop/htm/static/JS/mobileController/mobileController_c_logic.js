@@ -1,7 +1,7 @@
 
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
-import { redraw } from '/JS/mobileController/mobileController_d_pixi.js';
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import CTRL_STAT from './mobileController_z_state.js';
+import { redraw } from './mobileController_d_pixi.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';

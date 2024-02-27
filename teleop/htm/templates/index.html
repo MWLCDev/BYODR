@@ -6,8 +6,8 @@
   <meta http-equiv="X-UA-Compatible" content="IE=edge" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>teleop</title>
-  <link rel="stylesheet" type="text/css" href="CSS/style.css" />
-  <script src="external/jquery-3.4.1.min.js"></script>
+  <link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
+  <script src="../static/external/jquery-3.4.1.min.js"></script>
   <link rel="shortcut icon" href="#" />
 </head>
 
@@ -41,7 +41,7 @@
     <div id="horizontal_bar">
       <div id="home_menu" title="Settings">
         <a title="navigate to user menu page" href="/user_menu">
-          <img id="home_menu_icon" src="assets/index-menu.png" />
+          <img id="home_menu_icon" src="../static/assets/index-menu.png" />
         </a>
       </div>
       <div id="stream_links">
@@ -52,16 +52,16 @@
       </div>
       <div id="mjpeg_stream_controls">
         <span id="mjpeg_quality_val">0</span>
-        <img id="caret_down" src="assets/caret.png" class="caret_img" title="Decrease motion jpeg quality" />
-        <img id="caret_up" src="assets/caret.png" class="caret_img" title="Increase motion jpeg quality" />
+        <img id="caret_down" src="../static/assets/caret.png" class="caret_img" title="Decrease motion jpeg quality" />
+        <img id="caret_up" src="../static/assets/caret.png" class="caret_img" title="Increase motion jpeg quality" />
       </div>
       <div id="preview_container" title="Show this camera on the main display">
         <img id="mjpeg_camera_preview_image" class="preview_img" />
       </div>
       <div id="overlay_control_container">
-        <img src="assets/expand-collapse-icon-8.jpg" id="expand_camera_icon"
+        <img src="../static/assets/expand-collapse-icon-8.jpg" id="expand_camera_icon"
           title="Expand or collapse the camera overlay" />
-        <a id="open_training_sessions_list" href="#"><img src="assets/gps_icon.jpg"
+        <a id="open_training_sessions_list" href="#"><img src="../static/assets/gps_icon.jpg"
             title="Show training sessions" /></a>
       </div>
       <div id="dashboard">
@@ -89,11 +89,11 @@
       <div id="navigation_route_container" title="Navigation points and their images will be displayed when matched">
         <p>
           <span id="navigation_route_sel_prev" title="Select the previous route, if any">
-            <img src="assets/caret.png" class="caret_img" />
+            <img src="../static/assets/caret.png" class="caret_img" />
           </span>
           <span id="navigation_route_name"></span>
           <span id="navigation_route_sel_next" title="Select the next route, if any">
-            <img src="assets/caret.png" class="caret_img" />
+            <img src="../static/assets/caret.png" class="caret_img" />
           </span>
         </p>
         <p>
@@ -122,18 +122,18 @@
     </div>
   </div>
 
-  <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads, which can prevent errors, and speed up website response time. -->
-  <script src="JS/index.js"></script>
-  <script src="JS/index_a_utils.js"></script>
-  <script src="JS/index_b_gamepad.js"></script>
-  <script src="JS/index_c_screen.js"></script>
-  <script src="JS/index_d_navigator.js"></script>
-  <script src="JS/index_e_teleop.js"></script>
-  <script src="JS/index_f_trainingSessions.js"></script>
-  <script src="JS/http-live-player.js"></script>
-  <script src="JS/performance-polyfill.js"></script>
-  <script src="JS/index_video_hlp.js"></script>
-  <script src="JS/index_video_mjpeg.js"></script>
+  <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads -->
+  <script src="../static/JS/Index/index.js"></script>
+  <script src="../static/JS/Index/index_a_utils.js"></script>
+  <script src="../static/JS/Index/index_b_gamepad.js"></script>
+  <script src="../static/JS/Index/index_c_screen.js"></script>
+  <script src="../static/JS/Index/index_d_navigator.js"></script>
+  <script src="../static/JS/Index/index_e_teleop.js"></script>
+  <script src="../static/JS/Index/index_f_trainingSessions.js"></script>
+  <script src="../static/JS/Index/index_video_hlp.js"></script>
+  <script src="../static/JS/Index/index_video_mjpeg.js"></script>
+  <script src="../static/JS/http-live-player.js"></script>
+  <script src="../static/JS/performance-polyfill.js"></script>
 </body>
 
 </html>
