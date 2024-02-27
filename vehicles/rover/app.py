@@ -322,12 +322,7 @@ class RoverApplication(Application):
         self.teleop = None
         self.ipc_chatter = None
 
-    def _check_user_file(self):
-        # One user configuration file is optional and can be used to persist settings.
-        _candidates = glob.glob(os.path.join(self._config_dir, '*.ini'))
-        if len(_candidates) == 0:
-            shutil.copyfile('config.template', os.path.join(self._config_dir, 'config.ini'))
-            logger.info("Created a new user configuration file from template.")
+
 
     def _config(self):
         parser = SafeConfigParser()
