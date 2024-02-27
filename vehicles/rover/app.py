@@ -3,16 +3,17 @@ import collections
 import glob
 import logging
 import os
+import re
 import shutil
+import subprocess
 
-from ConfigParser import SafeConfigParser
-
-from byodr.utils import Application, PeriodicCallTrace
-from byodr.utils import timestamp, Configurable
-from byodr.utils.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector, ReceiverThread
+from byodr.utils import Application, Configurable, PeriodicCallTrace, timestamp
+from byodr.utils.ipc import (ImagePublisher, JSONPublisher, LocalIPCServer,
+                             ReceiverThread, json_collector)
 from byodr.utils.location import GeoTracker
-from byodr.utils.option import parse_option, hash_dict
-from core import GpsPollerThread, PTZCamera, ConfigurableImageGstSource
+from byodr.utils.option import hash_dict, parse_option
+from ConfigParser import SafeConfigParser
+from core import ConfigurableImageGstSource, GpsPollerThread, PTZCamera
 
 logger = logging.getLogger(__name__)
 log_format = '%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s'
