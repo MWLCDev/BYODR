@@ -161,12 +161,10 @@ class RealMonitoringRelay(AbstractRelay):
     def _reboot(self):
         errors = []
         _config = self._config()
-        self._patience_micro = (
-            parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
-        )
-        _pi_uri = parse_option(
-            "ras.master.uri", str, "tcp://192.168.1.32", errors, **_config
-        )
+        self._patience_micro = parse_option('patience.ms', int, 100, errors, **_config) * 1000.
+        _pi_uri = parse_option('ras.master.uri', str, 'tcp://192.168.1.32', errors, **_config)
+        _pi_uri = f"tcp://{_pi_uri}"
+        # Stopping the sockets that handle communication with the Pi
         if self._pi_client is not None:
             self._pi_client.quit()
         if self._pi_status is not None:
