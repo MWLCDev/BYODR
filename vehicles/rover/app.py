@@ -215,6 +215,101 @@ class RoverHandler(Configurable):
         return self._platform.state()
 
 
+class ConfigFiles:
+    def __init__(self, config_dir):
+        self._config_dir = config_dir
+        self.__set_parsers()
+
+    def __set_parsers(self):
+        self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
+        self.segment_config_parser = SafeConfigParser()
+        self.segment_config_parser.read(self.segment_config_dir)
+
+    def check_configuration_files(self):
+        """Checks if configuration file for segment exist, if not, then create it from the template"""
+        # FOR DEBUGGING
+        # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
+        # print(_candidates)
+        required_files = ["config.ini"]
+        template_files = {
+            "config.ini": "config.template",
+        }
+        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/
+        for file in required_files:
+            file_path = os.path.join(self._config_dir, file)
+            if not os.path.exists(file_path):
+                template_file = template_files[file]
+                shutil.copyfile(template_file, file_path)
+                logger.info("Created {} from template.".format(file))
+
+            # Verify and add missing keys
+            self._verify_and_add_missing_keys(file_path, template_files[file])
+
+    def _verify_and_add_missing_keys(self, ini_file, template_file):
+        config = SafeConfigParser()
+        template_config = SafeConfigParser()
+
+        config.read(ini_file)
+        template_config.read(template_file)
+
+        # Loop through each section and key in the template
+        for section in template_config.sections():
+            if not config.has_section(section):
+                config.add_section(section)
+            for key, value in template_config.items(section):
+                if not config.has_option(section, key):
+                    config.set(section, key, value)
+                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+
+        # Write changes to the ini file
+        with open(ini_file, "w") as configfile:
+            config.write(configfile)
+
+    def change_segment_config(self):
+        """Change the ips in the config file the segment is using them.
+        It will count on the ip of the nano"""
+        # Get the local IP address's third octet
+        ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+        third_octet_new = ip_address.split(".")[2]
+
+        _candidates = glob.glob(os.path.join(self._config_dir, "config.ini"))
+
+        # Regular expression to match IP addresses
+        ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
+
+        for file in _candidates:
+            with open(file, "r") as f:
+                content = f.readlines()
+
+            updated_content = []
+            changes_made = []
+            changes_made_in_file = False  # Flag to track changes in the current file
+
+            for line in content:
+                match = ip_regex.search(line)
+                if match:
+                    third_octet_old = match.group(2)
+                    if third_octet_old != third_octet_new:
+                        # Replace the third octet
+                        new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
+                        updated_content.append(new_line)
+                        changes_made.append((third_octet_old, third_octet_new))
+                        changes_made_in_file = True
+
+                        continue
+                updated_content.append(line)
+
+            # Write changes back to the file
+            with open(file, "w") as f:
+                f.writelines(updated_content)
+
+            # Print changes made
+            if changes_made_in_file:
+                logger.info("Updated {} with new ip address".format(file))
+            else:
+                logger.info("No changes needed for {}.".format(file))
+
+
 class RoverApplication(Application):
     def __init__(self, handler=None, config_dir=os.getcwd()):
         super(RoverApplication, self).__init__()
