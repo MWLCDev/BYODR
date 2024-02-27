@@ -1,5 +1,4 @@
 [camera]
-# front.camera.type = h264/udp
 front.camera.type = h264/rtsp
 front.camera.ip = 192.168.1.64
 rear.camera.type = h264/rtsp
