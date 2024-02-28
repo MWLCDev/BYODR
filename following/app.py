@@ -18,14 +18,14 @@ from byodr.utils.ipc import JSONPublisher, json_collector
 
 quit_event = multiprocessing.Event()
 
-# Accessing the yolov8.yaml inside the robot to remove unnecessary classes
-with open("/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
-    yamldoc = yaml.safe_load(istream)
-    yamldoc['nc'] = 1
-# Replacing the default yaml with a modified one
-with open("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
-    yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
-    os.rename("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml","/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
+# # Accessing the yolov8.yaml inside the robot to remove unnecessary classes
+# with open("/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
+#     yamldoc = yaml.safe_load(istream)
+#     yamldoc['nc'] = 1
+# # Replacing the default yaml with a modified one
+# with open("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
+#     yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
+#     os.rename("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
 
 # Choosing the trained model
 model = YOLO('50ep320imgsz.pt')
@@ -95,23 +95,30 @@ def main():
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
             # print(img.shape)
-            if xyxy.size > 0:                   # If anything detected
 
+            if xyxy.size > 0:                   # If anything detected
                 # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
                 y1 = xyxy[0, 1]
                 x2 = xyxy[0, 2]
                 y2 = xyxy[0, 3]
                 # id = boxes.id     # Used when model.track to choose a specific object in view
-
+                if boxes.id is not None and boxes.id.size > 1:
+                    for box in boxes:
+                        if box.id == 1:
+                            x1 = box.xyxy[0,0]
+                            y1 = box.xyxy[0,1]
+                            x2 = box.xyxy[0,2]
+                            y2 = box.xyxy[0,3]
                 # Calculating coordinates on the screen
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
                 yBot = int(y2 - y1)  # Bottom edge of the bbox
                 logger.info(f"Bottom edge: {yBot}, Center: {xCen}")
+
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(240 / 640 * img.shape[1])   # Left edge, 110p away from the left end if image width = 320p
-                rightE = int(400 / 640 * img.shape[1])  # Right edge, 110p away from the right end if image width = 320p
-                botE = int(190 / 480 * img.shape[0])    # Bot edge, 120p away from the top end if image height = 240p
+                leftE = int(240 / 640 * img.shape[1])   # Left edge, 240p away from the left end of the screen
+                rightE = int(400 / 640 * img.shape[1])  # Right edge, 240p away from the right end if image width = 640p
+                botE = int(200 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
@@ -119,7 +126,7 @@ def main():
                 if yBot <= botE:
                     # throttle = 0.7
                     # Linear increase of throttle
-                    throttle = (-(0.00416667) * yBot) + 1.3333333
+                    throttle = (-(0.01) * yBot) + 2.3 # 0.3 minimum at 200p edge, max at 130p edge
 
                 else:
                     throttle = 0
@@ -128,8 +135,7 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    # steering = (0.003125) * xCen - (1.125)    # 0.5 minimum (200 edge)
-                    steering = (0.002) * xCen - (0.8)  # 0.3 minimum (250 edge)
+                    steering = (0.0025) * xCen - (0.8)  # 0.2 minimum at 240p edge
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
@@ -137,8 +143,7 @@ def main():
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    # steering = (0.003125) * xCen - (0.875)    # 0.5 minimum (440 edge)
-                    steering = (0.002) * xCen - (0.48) # 0.3 minimum (390 edge)
+                    steering = (0.0025) * xCen - (0.8) # 0.2 minimum at 400p edge
                     # Robot needs throttle to turn left/right
                     if throttle < abs(steering):
                         throttle = abs(steering)
@@ -151,8 +156,10 @@ def main():
                     throttle = 1
                 if steering < -1:
                     steering = -1
-                if steering > 1:
+                elif steering > 1:
                     steering = 1
+                if yBot >= 255:
+                    throttle = 0
 
             else:
                 throttle = 0
@@ -174,7 +181,7 @@ if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
+    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
     # results = model.predict(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3)
 
     while True:
