@@ -35,6 +35,22 @@ class ToggleButtonHandler {
   }
 
 
+  getAttribute(attributeName) {
+    return this.toggleButton.getAttribute(attributeName);
+  }
+
+  setAttribute(attributeName, value) {
+    this.toggleButton.setAttribute(attributeName, value);
+  }
+
+  getStyle(property) {
+    return this.toggleButton.style[property];
+  }
+
+  setStyle(property, value) {
+    this.toggleButton.style[property] = value;
+  }
+}
 
 // Usage
 const toggleButtonHandler = new ToggleButtonHandler('toggleButton');
