@@ -5,7 +5,7 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 
 import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
-import { toggleButton } from "/JS/mobileController/mobileController_b_following.js";
+import { toggleButtonHandler } from "/JS/mobileController/mobileController_b_following.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 // The function would keep stacking, sending commands more often than 10 times a second
@@ -57,7 +57,7 @@ function startOperating(event) {
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 
   // Hide the button when triangles are pressed
-  toggleButton.style.display = 'none';
+  toggleButtonHandler.setStyle('display', 'none');
 
   handleTriangleMove(event.touches[0].clientY);
 }
@@ -80,7 +80,7 @@ app.view.addEventListener('touchend', () => {
   }
 
   // Show the button again when touch ends
-  toggleButton.style.display = 'block';
+  toggleButtonHandler.setStyle('display', 'block');
 });
 
 function onTouchMove(event) {
