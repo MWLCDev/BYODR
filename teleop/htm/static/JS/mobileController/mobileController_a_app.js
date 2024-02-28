@@ -40,9 +40,12 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        if (toggleButtonHandler.toggleButton.innerText === "Stop Following") {
+          toggleButtonHandler.sendSwitchFollowingRequest("Stop Following")
+        }
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
-        // Arrow function to send the command through websocket 
+        // Arrow function to send the command through websocket
         break;
     }
   } else {
