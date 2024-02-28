@@ -1,22 +1,44 @@
-const toggleButton = document.getElementById('toggleButton');
+class ToggleButtonHandler {
+  constructor(buttonId) {
+    this.toggleButton = document.getElementById(buttonId);
+    this.toggleButton.addEventListener('click', () => {
+      this.handleButtonClick();
+    });
+  }
 
-toggleButton.addEventListener('click', function () {
-  const command = toggleButton.innerText === "Start Following" ? "Start Following" : "Stop Following";
 
-  fetch('/switch_following', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
-    },
-    body: `command=${encodeURIComponent(command)}`,
-  })
-    .then(response => response.json())
-    .then(data => console.log("Server response:", data))
-    .catch(error => console.error("Error sending command:", error));
+  handleButtonClick() {
+    // Determine the command based on the opposite of the current button text
+    let currentText = this.toggleButton.innerText;
+    this.sendSwitchFollowingRequest(currentText);
+  }
 
-      // Toggle button text and color
-  toggleButton.innerText = command === "Start Following" ? "Stop Following" : "Start Following";
-  toggleButton.style.backgroundColor = toggleButton.innerText === "Stop Following" ? "#ff6347" : "#67b96a";
-});
+  sendSwitchFollowingRequest(command) {
+    fetch('/switch_following', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: `command=${encodeURIComponent(command)}`,
+    })
+      .then(response => response.json())
+      .then(data => {
+        console.log("Server response:", data);
+        this.toggleButtonAppearance(command);
+      })
+      .catch(error => console.error("Error sending command:", error));
+  }
 
-export { toggleButton };
+  toggleButtonAppearance(command) {
+    this.toggleButton.innerText = command === "Start Following" ? "Stop Following" : "Start Following";
+    this.toggleButton.style.backgroundColor = command === "Start Following" ? "#ff6347" : "#67b96a";
+  }
+
+
+
+// Usage
+const toggleButtonHandler = new ToggleButtonHandler('toggleButton');
+
+// If needed to export
+
+export { toggleButtonHandler };
