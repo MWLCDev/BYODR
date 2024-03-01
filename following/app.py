@@ -32,6 +32,9 @@ model = YOLO('50ep320imgsz.pt')
 # model = YOLO('yolov8n.pt')
 #model.to(device=device)
 
+no_human_counter = 0
+
+
 # Declaring the logger
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
 logging.getLogger().setLevel(logging.INFO)
@@ -61,6 +64,8 @@ def pub_init():
     following_publisher.publish(cmd)
 
 def main():
+        
+        global no_human_counter
         throttle = 0
         steering = 0
     # Default control commands
@@ -97,6 +102,9 @@ def main():
             # print(img.shape)
 
             if xyxy.size > 0:                   # If anything detected
+
+                no_human_counter = 0
+
                 # Getting each coordinate of the bbox corners
                 x1 = xyxy[0, 0]
                 y1 = xyxy[0, 1]
@@ -162,8 +170,16 @@ def main():
                     throttle = 0
 
             else:
-                throttle = 0
-                steering = 0
+
+                no_human_counter = no_human_counter + 1
+
+                logger.info(f"No human detected for {no_human_counter} frames")
+
+
+
+                if no_human_counter == 15:
+                    throttle = 0
+                    steering = 0
 
             # Defining the control command to be sent to Teleop
             cmd = {
