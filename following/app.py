@@ -113,11 +113,17 @@ def main():
                 # id = boxes.id     # Used when model.track to choose a specific object in view
                 if boxes.id is not None and boxes.id.size > 1:
                     for box in boxes:
-                        if box.id == 1:
+                        if box.id == boxes.id[0]:
                             x1 = box.xyxy[0,0]
                             y1 = box.xyxy[0,1]
                             x2 = box.xyxy[0,2]
                             y2 = box.xyxy[0,3]
+                            print(box.id)
+                else:
+                    x1 = xyxy[0, 0]
+                    y1 = xyxy[0, 1]
+                    x2 = xyxy[0, 2]
+                    y2 = xyxy[0, 3]
                 # Calculating coordinates on the screen
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
                 yBot = int(y2 - y1)  # Bottom edge of the bbox
@@ -190,14 +196,14 @@ def main():
                 'navigator': {'route': None}
             }
             # Publishing the command to Teleop
-            logger.info(f"Sending command to teleop: {cmd}")
+            # logger.info(f"Sending command to teleop: {cmd}")
             following_publisher.publish(cmd)
 
 if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.35, max_det=3)
+    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
     # results = model.predict(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3)
 
     while True:
