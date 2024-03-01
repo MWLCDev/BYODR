@@ -106,11 +106,6 @@ def main():
                 no_human_counter = 0
 
                 # Getting each coordinate of the bbox corners
-                x1 = xyxy[0, 0]
-                y1 = xyxy[0, 1]
-                x2 = xyxy[0, 2]
-                y2 = xyxy[0, 3]
-                # id = boxes.id     # Used when model.track to choose a specific object in view
                 if boxes.id is not None and boxes.id.size > 1:
                     for box in boxes:
                         if box.id == boxes.id[0]:
@@ -126,8 +121,9 @@ def main():
                     y2 = xyxy[0, 3]
                 # Calculating coordinates on the screen
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
-                yBot = int(y2 - y1)  # Bottom edge of the bbox
-                logger.info(f"Bottom edge: {yBot}, Center: {xCen}")
+                yBot = int(y2)  # Bottom edge of the bbox
+                height = int(y2 - y1) # Height of the bbox
+                logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
 
                 # Edges on the screen beyond which robot should start moving to keep distance
                 leftE = int(240 / 640 * img.shape[1])   # Left edge, 240p away from the left end of the screen
@@ -137,10 +133,11 @@ def main():
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
-                if yBot <= botE:
+                if height <= botE or yBot <= botE:
                     # throttle = 0.7
                     # Linear increase of throttle
-                    throttle = (-(0.01) * yBot) + 2.3 # 0.3 minimum at 200p edge, max at 130p edge
+                    # throttle = (-(0.01) * yBot) + 2.2 # 0.2 minimum at 200p edge, max at 120p edge
+                    throttle = (-(0.00875) * height) + 2.05 # 0.2 minimum at 200p heigh, max at 120p height
 
                 else:
                     throttle = 0
@@ -172,7 +169,7 @@ def main():
                     steering = -1
                 elif steering > 1:
                     steering = 1
-                if yBot >= 255:
+                if height >= 250 or yBot >= 250:
                     throttle = 0
 
             else:
