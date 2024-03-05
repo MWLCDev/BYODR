@@ -126,7 +126,6 @@ class Platform(Configurable):
         _master_uri = parse_option("ras.master.uri", str, "192.168.1.32", errors, **kwargs)
         _master_uri = "tcp://{}".format(_master_uri)
         _speed_factor = parse_option("ras.non.sensor.speed.factor", float, 0.50, errors, **kwargs)
-        _master_uri = f"tcp://{_master_uri}"
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
         _gps_host = parse_option("gps.provider.host", str, "192.168.1.1", errors, **kwargs)
