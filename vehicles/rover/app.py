@@ -16,7 +16,9 @@ from ConfigParser import SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThread, PTZCamera
 
 logger = logging.getLogger(__name__)
-log_format = '%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s'
+log_format = (
+    "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
+)
 
 
 class RasRemoteError(IOError):
