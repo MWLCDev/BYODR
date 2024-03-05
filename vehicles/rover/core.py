@@ -6,14 +6,13 @@ import threading
 import time
 
 import requests
-from pymodbus.client.sync import ModbusTcpClient
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
-from requests.auth import HTTPDigestAuth
-
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_image_source
+from pymodbus.client import ModbusTcpClient
+from pymodbus.constants import Endian
+from pymodbus.payload import BinaryPayloadDecoder
+from requests.auth import HTTPDigestAuth
 
 logger = logging.getLogger(__name__)
 
