@@ -74,9 +74,9 @@ class ConfigurableImageGstSource(Configurable):
         self._close()
         _errors = []
         _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=_errors, **kwargs)
-        assert _type in gst_commands.keys(), "Unrecognized camera type '{}'.".format(_type)
-        framerate = 25 if self._name == 'front' else 12
-        framerate = (parse_option(self._name + '.camera.framerate', int, framerate, errors=_errors, **kwargs))
+            self._name + ".camera.type", str, "h264/rtsp", errors=_errors, **kwargs
+        )
+        assert _type in gst_commands.keys(), "Unrecognized camera type '{_type}'."
         out_width, out_height = [int(x) for x in parse_option(self._name + '.camera.shape', str, '320x240',
                                                               errors=_errors, **kwargs).split('x')]
         if _type == 'h264/rtsp':
@@ -103,7 +103,7 @@ class ConfigurableImageGstSource(Configurable):
         _command = gst_commands.get(_type).format(**config)
         self._sink = create_image_source(self._name, shape=self._shape, command=_command)
         self._sink.add_listener(self._publish)
-        logger.info("Gst '{}' command={}".format(self._name, _command))
+        logger.info(f"Gst '{self._name}' command={ _command}")
         return _errors
 
 
@@ -156,7 +156,8 @@ class CameraPtzThread(threading.Thread):
         elif operation != prev:
             ret = self._run(operation)
             if ret and ret.status_code != 200:
-                logger.warning("Got status {} on operation {}.".format(ret.status_code, operation))
+                logger.warning(
+                    f"Got status {ret.status_code} on operation {operation}.")
 
     def _run(self, operation):
         ret = None
@@ -243,6 +244,7 @@ class PTZCamera(Configurable):
             _port = 80 if _protocol == 'http' else 443
             _url = '{protocol}://{server}:{port}{path}'.format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
             logger.info("PTZ camera url={}.".format(_url))
+            logger.info(f"PTZ camera url={_url}.")
             if self._worker is None:
                 self._worker = CameraPtzThread(_url, _user, _password, speed=_speed, flip=_flipcode)
                 self._worker.start()
