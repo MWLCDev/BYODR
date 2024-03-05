@@ -1,10 +1,10 @@
 import collections
 import logging
 import multiprocessing
+import queue
 import threading
 import time
 
-import Queue
 import requests
 from pymodbus.client.sync import ModbusTcpClient
 from pymodbus.constants import Endian
