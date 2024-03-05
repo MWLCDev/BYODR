@@ -125,7 +125,7 @@ class CameraPtzThread(threading.Thread):
         </PTZData>
         """
         self.set_auth(user, password)
-        self._queue = Queue.Queue(maxsize=1)
+        self._queue = queue.Queue(maxsize=1)
         self._previous = (0, 0)
 
     def set_url(self, url):
@@ -181,7 +181,7 @@ class CameraPtzThread(threading.Thread):
     def add(self, command):
         try:
             self._queue.put_nowait(command)
-        except Queue.Full:
+        except queue.Full:
             pass
 
     def quit(self):
@@ -200,7 +200,7 @@ class CameraPtzThread(threading.Thread):
                     elif 'pan' in cmd and 'tilt' in cmd:
                         operation = (self._norm(cmd.get('pan')) * self._flip[0], self._norm(cmd.get('tilt')) * self._flip[1])
                     self._perform(operation)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except IOError as e:
                 # E.g. a requests ConnectionError to the ip camera.
