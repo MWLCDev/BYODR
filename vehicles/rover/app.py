@@ -12,7 +12,7 @@ from byodr.utils.ipc import (ImagePublisher, JSONPublisher, LocalIPCServer,
                              ReceiverThread, json_collector)
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import hash_dict, parse_option
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThread, PTZCamera
 
 logger = logging.getLogger(__name__)
