@@ -12,11 +12,13 @@ from byodr.utils.ipc import (ImagePublisher, JSONPublisher, LocalIPCServer,
                              ReceiverThread, json_collector)
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import hash_dict, parse_option
-from ConfigParser import SafeConfigParser
+from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThread, PTZCamera
 
 logger = logging.getLogger(__name__)
-log_format = '%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s'
+log_format = (
+    "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
+)
 
 
 class RasRemoteError(IOError):
@@ -102,7 +104,9 @@ class Platform(Configurable):
                 except RasRemoteError as rre:
                     # After 5 seconds do a hard reboot of the remote connection.
                     if rre.timeout > 5000:
-                        logger.info("Hard odometer reboot at {} ms timeout.".format(rre.timeout))
+                        logger.info(
+                            f"Hard odometer reboot at {rre.timeout} ms timeout."
+                        )
                         self._quit_odometer()
                         self._start_odometer()
             return dict(latitude_geo=latitude,
@@ -241,7 +245,7 @@ class ConfigFiles:
             if not os.path.exists(file_path):
                 template_file = template_files[file]
                 shutil.copyfile(template_file, file_path)
-                logger.info("Created {} from template.".format(file))
+                logger.info(f"Created {file} from template.")
 
             # Verify and add missing keys
             self._verify_and_add_missing_keys(file_path, template_files[file])
@@ -260,7 +264,9 @@ class ConfigFiles:
             for key, value in template_config.items(section):
                 if not config.has_option(section, key):
                     config.set(section, key, value)
-                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+                    logger.info(
+                        f"Added missing key '{key}' in section '[{section}]' to {ini_file}"
+                    )
 
         # Write changes to the ini file
         with open(ini_file, "w") as configfile:
@@ -306,9 +312,9 @@ class ConfigFiles:
 
             # Print changes made
             if changes_made_in_file:
-                logger.info("Updated {} with new ip address".format(file))
+                logger.info("Updated {file} with new ip address")
             else:
-                logger.info("No changes needed for {}.".format(file))
+                logger.info(f"No changes needed for {file}.")
 
 
 class RoverApplication(Application):
@@ -349,7 +355,7 @@ class RoverApplication(Application):
                     self.ipc_server.register_start(self._handler.get_errors(), self._capabilities())
                     _frequency = self._handler.get_process_frequency()
                     self.set_hz(_frequency)
-                    self.logger.info("Processing at {} Hz.".format(_frequency))
+                    self.logger.info(f"Processing at {_frequency} Hz.")
 
     def finish(self):
         self._handler.quit()

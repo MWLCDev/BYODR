@@ -55,21 +55,28 @@ class JSONPublisher(object):
 
 
 class ImagePublisher(object):
-    def __init__(self, url, topic='', hwm=1, clean_start=True):
-        if clean_start and url.startswith('ipc://') and os.path.exists(url[6:]):
+    def __init__(self, url, topic="", hwm=1, clean_start=True):
+        if clean_start and url.startswith("ipc://") and os.path.exists(url[6:]):
             os.remove(url[6:])
         publisher = zmq.Context().socket(zmq.PUB)
         publisher.set_hwm(hwm)
         publisher.bind(url)
         self._publisher = publisher
-        self._topic = topic
+        self._topic = topic.encode(
+            "utf-8"
+        )  # Encode the topic to bytes at initialization
 
     def publish(self, _img, topic=None):
-        _topic = self._topic if topic is None else topic
-        self._publisher.send_multipart([_topic,
-                                        json.dumps(dict(time=timestamp(), shape=_img.shape)),
-                                        np.ascontiguousarray(_img, dtype=np.uint8)],
-                                       flags=zmq.NOBLOCK)
+        _topic = self._topic if topic is None else topic.encode("utf-8")
+        # json.dumps(...) returns a string, it needs to be encoded into bytes.
+        self._publisher.send_multipart(
+            [
+                _topic,
+                json.dumps(dict(time=timestamp(), shape=_img.shape)).encode("utf-8"),
+                np.ascontiguousarray(_img, dtype=np.uint8),
+            ],
+            flags=zmq.NOBLOCK,
+        )
 
 
 class JSONReceiver(object):
