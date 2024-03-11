@@ -11,6 +11,7 @@ import concurrent.futures
 import configparser
 import user_agents  # Check in the request header if it is a phone or not
 
+
 from concurrent.futures import ThreadPoolExecutor
 from pymongo import MongoClient
 from tornado import ioloop, web
@@ -22,13 +23,15 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.ssh import Router
+from byodr.utils.option import parse_option
+from six.moves.configparser import SafeConfigParser
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
 
 from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from .getSSID import fetch_ssid
 
 logger = logging.getLogger(__name__)
 
@@ -41,6 +44,9 @@ quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
 
+# Variables in use for the throttle_control() function
+current_throttle = 0.0
+throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -67,6 +73,7 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._motor_scale = 0
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -78,7 +85,7 @@ class TeleopApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
-
+    
     def get_user_config_file(self):
         return self._user_config_file
 
@@ -126,10 +133,23 @@ class RunGetSSIDPython(tornado.web.RequestHandler):
         try:
             # Use the IOLoop to run fetch_ssid in a thread
             loop = tornado.ioloop.IOLoop.current()
-            router = Router()
 
+            config = configparser.ConfigParser()
+            config.read("/config/config.ini")
+            front_camera_ip = config["camera"]["front.camera.ip"]
+            parts = front_camera_ip.split(".")
+            network_prefix = ".".join(parts[:3])
+            router_IP = f"{network_prefix}.1"
             # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(None, router.fetch_ssid)
+            ssid = await loop.run_in_executor(
+                None,
+                fetch_ssid,
+                router_IP,
+                22,
+                "root",
+                "Modem001",
+                "uci get wireless.@wifi-iface[0].ssid",
+            )
 
             logger.info(f"SSID of current robot: {ssid}")
             self.write(ssid)
@@ -252,8 +272,12 @@ def main():
         ),
         hz=16,
     )
-    log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
-    package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
+    log_application = LogApplication(
+        _mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config
+    )
+    package_application = PackageApplication(
+        _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
+    )
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
@@ -298,12 +322,58 @@ def main():
     def get_navigation_image(image_id):
         return route_store.get_image(image_id)
 
+    def throttle_control(cmd):
+        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
+        global throttle_change_step # Always 0.1
+
+
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
+        if "throttle" in cmd:
+
+            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
+            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
+
+            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
+            if first_key == "steering":
+                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
+                braking_sign = -1 if current_throttle < 0 else 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we were going forwards or backwards
+                current_throttle = current_throttle - (braking_sign*throttle_change_step)
+                
+                # Capping the value at 0 so that the robot does not move while idle
+                if braking_sign > 0 and current_throttle < 0:
+                    current_throttle = 0.0
+
+            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
+            else:
+                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
+                accelerate_sign = 0
+                if target_throttle < current_throttle:
+                    accelerate_sign = -1
+                elif target_throttle > current_throttle:
+                    accelerate_sign = 1
+
+                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                # Dec or Inc depends on if we want to go forwards or backwards
+                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
+                
+                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
+                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
+                    current_throttle = target_throttle
+                
+            # Sending commands to Coms/Pilot
+            cmd["throttle"] = current_throttle
+            teleop_publish(cmd)
+
+        # When we receive commands without throttle in them, we reset the current throttle value to 0
+        else:
+            current_throttle = 0
+
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
-
-        # if cmd.get("throttle") != 0:
-        #    logger.info(f"Command to be send to Coms: {cmd}")
         teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -333,7 +403,7 @@ def main():
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
                     MobileControllerCommands,
-                    dict(fn_control=teleop_publish),
+                    dict(fn_control=throttle_control),
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
@@ -347,11 +417,15 @@ def main():
                     JPEGImageRequestHandler,
                     dict(mongo_box=_mongo),
                 ),  # Get the commands from the controller in normal UI
-                (r"/ws/ctl", ControlServerSocket, dict(fn_control=teleop_publish)),
+                (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_control)),
                 (
                     r"/ws/log",
                     MessageServerSocket,
-                    dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek()))),
+                    dict(
+                        fn_state=(
+                            lambda: (pilot.peek(), vehicle.peek(), inference.peek())
+                        )
+                    ),
                 ),
                 (
                     r"/ws/cam/front",
@@ -366,7 +440,9 @@ def main():
                 (
                     r"/ws/nav",
                     NavImageHandler,
-                    dict(fn_get_image=(lambda image_id: get_navigation_image(image_id))),
+                    dict(
+                        fn_get_image=(lambda image_id: get_navigation_image(image_id))
+                    ),
                 ),
                 (
                     # Get or save the options for the user
@@ -398,9 +474,7 @@ def main():
                     web.StaticFileHandler,
                     {"path": os.path.join(os.path.sep, "app", "htm", "static")},
                 ),
-            ],  # Disable request logging with an empty lambda expression
-            # Always restart after you change path of folder/file
-            log_function=lambda *args, **kwargs: None,
+            ]
         )
         http_server = HTTPServer(main_app, xheaders=True)
         port_number = 8080
