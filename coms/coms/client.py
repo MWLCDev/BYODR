@@ -48,6 +48,7 @@ class Segment_client():
 
         while not self.socket_initialized:
             try:
+                # logger.info(f"[Client] Trying to connect the server: {self.server_ip}:{self.server_port}...")
                 self.client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # Remake the socket and reconnect
                 self.client_socket.settimeout(self.timeout) # Set the timeout for all the back and forth between the server/client
                 self.client_socket.connect((self.server_ip, self.server_port)) # Connect to the server
@@ -77,11 +78,22 @@ class Segment_client():
 
     # Sending data to the server
     def send_to_FL(self):
-        message_to_send = json.dumps(self.msg_to_server).encode("utf-8")
+        if self.msg_to_server is not None:
+            message_to_send = json.dumps(self.msg_to_server).encode("utf-8")
+        else:
+            message_to_send = json.dumps({'cmd': '-'}).encode("utf-8")
+            logger.warning(f"[Client] Empty message was about to be sent to the server")
         self.client_socket.send(message_to_send)
 
 
     # Receiving data from the server
     def recv_from_FL(self):
         recv_message = self.client_socket.recv(512).decode("utf-8")
-        self.msg_from_server = json.loads(recv_message)
+
+        try:
+            self.msg_from_server = json.loads(recv_message)
+        except json.JSONDecodeError as e:
+            logger.error(f"[Client] Error while decoding JSON from client: {e}")
+            # logger.exception("[Client] Exception details:")
+            logger.error(f"Received message: {repr(recv_message)}")
+            self.msg_from_server = {'rep': '-'}
