@@ -73,4 +73,12 @@ class Segment_server():
     # Receiving from the client
     def recv_from_LD(self):
         recv_message = self.client_socket.recv(512)
-        self.msg_from_client = json.loads(recv_message.decode("utf-8"))
+
+        try:
+            self.msg_from_client = json.loads(recv_message.decode("utf-8"))
+        except json.JSONDecodeError as e:
+            logger.error(f"[Server] Error while decoding JSON from client: {e}")
+            # logger.exception("[Server] Exception details:")
+            logger.error(f"Received message: {repr(recv_message)}")
+            self.msg_from_client = {'msg': '-'}
+            
