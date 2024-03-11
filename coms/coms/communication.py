@@ -132,10 +132,11 @@ def command_receiver(socket_manager, segment_client, local_ip, head_ip, msg_from
         Nothing
     """
     global global_watchdog_status_list
+    previous_command = {'steering': 0.0, 'throttle': 0, 'time': 0, 'navigator': {'route': None}, 'velocity': 0.0}
     stop_counter = 0
     counter = 0
 
-    # The head segment forwards commands from teleop
+    # The head segment forwards commands from teleop to pilot
     # This block is only used by the Head segment
     if local_ip == head_ip:
 
@@ -149,12 +150,17 @@ def command_receiver(socket_manager, segment_client, local_ip, head_ip, msg_from
 
             # Getting the local watchdog status
             status_dictionary = socket_manager.get_watchdog_status()
+            while status_dictionary is None:
+                status_dictionary = socket_manager.get_watchdog_status()
             global_watchdog_status_list[0] = status_dictionary.get("status")
 
             # Receiving the commands that we will process/forward to our FL, from Teleop
             segment_client.msg_to_server = socket_manager.get_teleop_input()
             if segment_client.msg_to_server is None:
-                segment_client.msg_to_server = {'steering': 0.0, 'throttle': 0, 'time': 0, 'navigator': {'route': None}, 'velocity': 0.0}
+                segment_client.msg_to_server = previous_command
+                segment_client.msg_to_server['time'] = timestamp()
+            else:
+                previous_command = segment_client.msg_to_server
 
             # Forwarding commands to pilot
             socket_manager.publish_to_pilot(segment_client.msg_to_server)
@@ -172,21 +178,18 @@ def command_receiver(socket_manager, segment_client, local_ip, head_ip, msg_from
             #     counter = 0
             # print(global_watchdog_status_list)
 
-    # All other segments are forwarding commands from the COM server
+    # All other segments are forwarding commands from the LD COM to pilot
     else:
 
         previous_command = {'steering': 0.0, 'throttle': 0, 'time': 0, 'navigator': {'route': None}, 'velocity': 0.0}
-
-        # Getting the local watchdog status
-        status_dictionary = socket_manager.get_watchdog_status()
-        while status_dictionary is None:
-            status_dictionary = socket_manager.get_watchdog_status()
 
         while not quit_event.is_set():
             time_counter = time.perf_counter()
 
             # Getting the local watchdog status
             status_dictionary = socket_manager.get_watchdog_status()
+            while status_dictionary is None:
+                status_dictionary = socket_manager.get_watchdog_status()
             global_watchdog_status_list[0] = status_dictionary.get("status")
 
             # Receiving the commands that we will process/forward to our FL, from our current LD
@@ -239,11 +242,6 @@ def client_code(socket_manager, segment_client):
         # The client will not start unless the command we have from Teleop or our LD is not None
         segment_client.connect_to_server()
 
-        # Getting velocity from the Pi>Vehicle>Coms
-        dict_with_velocity = socket_manager.get_velocity()
-        while dict_with_velocity is None:
-            dict_with_velocity = socket_manager.get_velocity()
-
         # Start the send/recv cycle only if the socket was successfully made
         while segment_client.socket_initialized:
             time_counter = time.perf_counter()
@@ -255,29 +253,29 @@ def client_code(socket_manager, segment_client):
 
                 # Getting velocity from the Pi>Vehicle>Coms
                 dict_with_velocity = socket_manager.get_velocity()
+                while dict_with_velocity is None:
+                    dict_with_velocity = socket_manager.get_velocity()
                 segment_client.msg_to_server.update(dict_with_velocity)
                 
-                if counter_client == 100:
+                if counter_client == 200:
                     logger.info(f"[Client] Sent message to server: {segment_client.msg_to_server}")
                 # Sending the command to our FL
                 segment_client.send_to_FL()
 
                 # Receiving a reply from the FL
                 segment_client.recv_from_FL()
-                if counter_client == 100:
-                    logger.info(f"[Client] Received from server: {repr(segment_client.msg_from_server)}")
 
                 # Updating the list with the status received from the FL
                 global_watchdog_status_list[1:] = segment_client.msg_from_server
 
-                if counter_client == 100:
+                if counter_client == 200:
                     logger.info(f"[Client] Watchdog status list: {global_watchdog_status_list}")
             
                 ######################################################################################################
                 stop_time = time.perf_counter()
 
-                if counter_client == 100:
-                    logger.info(f"[Client] A round took {(stop_time-time_counter)*1000:.3f}ms\n")
+                if counter_client == 200:
+                    logger.info(f"[Client] A round took {(stop_time-time_counter)*1000:.3f}ms\n\n\n")
                     counter_client = 0
 
             # Catching potential exceptions and attempting to reconnect each time
@@ -323,8 +321,6 @@ def server_code(segment_server, msg_from_server_queue):
 
                 # Receiving movement commands from the LD
                 segment_server.recv_from_LD()
-                if counter_server == 100:
-                    logger.info(f"[Server] Received from client: {type(segment_server.msg_from_client)}")
                 
                 # Making a new seperate object that has the same values as the original message
                 # Using processed_command = msg_from_client, creates a reference(processed_command) to the same object in memory(msg_from_client)
@@ -362,13 +358,12 @@ def server_code(segment_server, msg_from_server_queue):
                     # Placing the message from the server in the queue
                     msg_from_server_queue.append(segment_server.processed_command)
 
-                if counter_server == 100:
-                    logger.info(f"[Server] Edited message from client: {type(segment_server.processed_command)}")
-                    logger.info(f"[Server] Watchdog status list: {global_watchdog_status_list}")
+                if counter_server == 200:
+                    logger.info(f"[Server] Edited message from client: {segment_server.processed_command}")
 
                 # Sending a reply to the LD
                 segment_server.msg_to_client = global_watchdog_status_list
-                if counter_server == 100:
+                if counter_server == 200:
                     logger.info(f"[Server] Sent to client: {segment_server.msg_to_client}")
                 segment_server.send_to_LD()
 
@@ -376,8 +371,8 @@ def server_code(segment_server, msg_from_server_queue):
                 
                 stop_time = time.perf_counter()
 
-                if counter_server == 100:
-                    logger.info(f"[Server] A round took {(stop_time-time_counter)*1000:.3f}ms\n")
+                if counter_server == 200:
+                    logger.info(f"[Server] A round took {(stop_time-time_counter)*1000:.3f}ms\n\n\n")
                     counter_server = 0
 
             # Catching potential exceptions and exiting the communication loop
