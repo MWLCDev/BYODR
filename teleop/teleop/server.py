@@ -146,6 +146,27 @@ class ControlServerSocket(websocket.WebSocketHandler):
             pass
 
 
+class ConfidenceHandler(websocket.WebSocketHandler):
+    def initialize(self, inference_s, vehicle_s):
+        self.inference = inference_s
+        self.vehicle = vehicle_s
+
+    def open(self):
+        self.start_time = time.clock()
+        logger.info("Confidence websocket connection opened.")
+        self.runner = OverviewConfidence(self.inference, self.vehicle)
+        self.write_message("Connection established.")
+
+    def on_message(self, message):
+        if message == "Start overview confidence":
+            self.runner.start()
+        elif message == "Stop overview confidence":
+            self.runner.stop()
+            delta_time = time.clock() - self.start_time
+
+            self.write_message(f"{len(self.runner.merged_data)} in {delta_time:.3f}sec")
+
+
 class MessageServerSocket(websocket.WebSocketHandler):
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
