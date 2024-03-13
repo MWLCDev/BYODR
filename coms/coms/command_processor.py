@@ -15,7 +15,7 @@ steering_queue = deque() # A queue in which steering values other than 0 will be
 
 time_now = 0.0 # Default values for the current time 
 delay = 0.0 # Default values for the delay amount 
-distance = 1.8 # Distance between the motors of the current segment and the LD segment in m
+distance = 1.2 # Distance between the motors of the current segment and the LD segment in m
 use_steering_queue = False # Variable that tells the function when it is time to use the queue for steering values
 started_counting_down = False # Variable that tells the function to start counting down. We dont want the function to start counting down unless it receives steering first
 
@@ -123,6 +123,6 @@ def process(movement_command):
     movement_command["throttle"] = (movement_command["throttle"])
 
     # We apply the steering.
-    movement_command["steering"] = applied_steering
+    movement_command["steering"] = -applied_steering
 
     return movement_command
