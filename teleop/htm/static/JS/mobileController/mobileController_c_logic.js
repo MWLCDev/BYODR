@@ -96,7 +96,7 @@ function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
   // This is the definition of an XNOR gate, and the equivalent in JS is the '===' operator
   // In this case, the robot will not decelerate slowly, it will immediately stop
   if (isTopTriangle === isTouchBelowCenter)
-    // Removing the throttle key in the JSON, since the robot will only forward commands if they have the 'throttle' key inside
+    // Removing the throttle key in the JSON, since the robot will forward 0 commands if they have the 'throttle' key inside
     CTRL_STAT.throttleSteeringJson = {};
 
   // In any other case, we produce commands normally

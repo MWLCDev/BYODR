@@ -367,9 +367,10 @@ def main():
             cmd["throttle"] = current_throttle
             teleop_publish(cmd)
 
-        # When we receive commands without throttle in them, we reset the current throttle value to 0
+        # When we receive commands without throttle in them, we reset the current throttle value to 0 and send a 0 command
         else:
             current_throttle = 0
+            teleop_publish({'steering': 0.0, 'throttle': 0, 'time': timestamp(), 'navigator': {'route': None}, 'button_b': 1})
 
     def teleop_publish(cmd):
         # We are the authority on route state.
