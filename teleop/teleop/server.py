@@ -18,7 +18,7 @@ from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 from tornado.gen import coroutine
 
-from byodr.utils import timestamp
+from .tel_utils import *
 
 logger = logging.getLogger(__name__)
 
