@@ -370,6 +370,12 @@ def main():
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (
+                    # POST method to toggle overview confidence
+                    r"/ws/switch_confidence",
+                    ConfidenceHandler,
+                    dict(inference_s=inference, vehicle_s=vehicle),
+                ),
+                (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,
                     dict(mongo_box=_mongo),
