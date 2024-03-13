@@ -173,7 +173,7 @@ class VESCDrive(object):
                 try:
                     self._ser.write(pyvesc.encode_request(GetValues))
                     if self._ser.in_waiting > 78:
-                        (response, consumed) = pyvesc.decode(self._ser.read(79))
+                        (response, consumed) = pyvesc.decode(self._ser.read(self._ser.in_waiting))
                         return response.rpm
                     else:
                         raise AssertionError(
