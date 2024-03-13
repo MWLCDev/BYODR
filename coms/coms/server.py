@@ -2,6 +2,9 @@ import socket
 import logging
 import json
 from byodr.utils.ssh import Nano
+# import signal
+# signal.signal(signal.SIGPIPE,signal.SIG_DFL)
+
 nano_ip = Nano.get_ip_address()
 
 
@@ -32,6 +35,7 @@ class Segment_server():
         self.timeout = arg_timeout # Maybe 100ms
         self.msg_to_client = {'rep': '-'}
         self.msg_from_client = {'msg': '-'}
+        self.prev_msg = None
         self.processed_command = {'cmd': '-'}
 
         # The server socket that will wait for clients to connect
@@ -76,9 +80,8 @@ class Segment_server():
 
         try:
             self.msg_from_client = json.loads(recv_message.decode("utf-8"))
+            self.prev_msg = self.msg_from_client
         except json.JSONDecodeError as e:
             logger.error(f"[Server] Error while decoding JSON from client: {e}")
-            # logger.exception("[Server] Exception details:")
-            logger.error(f"Received message: {repr(recv_message)}")
-            self.msg_from_client = {'msg': '-'}
+            self.msg_from_client = self.prev_msg
             

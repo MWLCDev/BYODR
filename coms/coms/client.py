@@ -3,6 +3,9 @@ import logging
 import time
 import json
 from byodr.utils.ssh import Nano
+# import signal
+# signal.signal(signal.SIGPIPE,signal.SIG_DFL)
+
 nano_ip = Nano.get_ip_address()
 
 
@@ -37,6 +40,7 @@ class Segment_client():
         self.socket_initialized = False # Variable that keeps track if we have a functioning socket to a server
         self.msg_to_server = {'cmd': '-'}
         self.msg_from_server = {'rep': '-'}
+        self.prev_msg = None
         self.client_socket = None # The client socket that will connect to the server
 
 
@@ -92,8 +96,7 @@ class Segment_client():
 
         try:
             self.msg_from_server = json.loads(recv_message)
+            self.prev_msg = self.msg_from_server
         except json.JSONDecodeError as e:
             logger.error(f"[Client] Error while decoding JSON from client: {e}")
-            # logger.exception("[Client] Exception details:")
-            logger.error(f"Received message: {repr(recv_message)}")
-            self.msg_from_server = {'rep': '-'}
+            self.msg_from_server = self.prev_msg
