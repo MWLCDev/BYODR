@@ -331,7 +331,7 @@ class DualVescDriver(AbstractDriver):
             return (self._drive1.get_velocity() + self._drive2.get_velocity()) / 2.0
         except Exception as e:
             logger.warning(e)
-            return 0
+            return 999
 
     def drive(self, steering, throttle):
         _motor_scale = self._throttle_config.get("scale")
