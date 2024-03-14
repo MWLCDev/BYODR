@@ -32,16 +32,23 @@ class OverviewConfidence:
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
 
-    def record_gps(self):
+    def clean_list(self):
+        """
+        Cleans merged_data [confidence, longitude, latitude] by removing duplicates based on the confidence value
+        """
         try:
-            while self.running:
-                messages = self.vehicle.get()
-                for message in messages:
-                    latitude_geo = message.get("latitude_geo")
-                    longitude_geo = message.get("longitude_geo")
-                    time_geo = message.get("time")
-                    if latitude_geo is not None and longitude_geo is not None:
-                        self.geo_location.append([latitude_geo, longitude_geo, time_geo])
+            # Convert merged_data into a DataFrame
+            df = pd.DataFrame(self.merged_data, columns=["confidence", "longitude", "latitude"])
+
+            # Sort by 'confidence' in descending order to ensure the highest confidence entry is retained after dropping duplicates
+            df_sorted = df.sort_values("confidence", ascending=False)
+
+            # Drop duplicates based on 'longitude' and 'latitude', keeping the first entry (highest confidence due to sort)
+            df_cleaned = df_sorted.drop_duplicates(subset=["longitude", "latitude"], keep="first")
+
+            # Convert the cleaned DataFrame back into a list
+            self.cleaned_data = df_cleaned.values.tolist()
+
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
 
