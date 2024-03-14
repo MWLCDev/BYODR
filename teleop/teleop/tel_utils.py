@@ -7,26 +7,28 @@ logger = logging.getLogger(__name__)
 
 
 class OverviewConfidence:
-    def __init__(self, inference, vehicle):
+    def __init__(self, inference, vehicle, rut_gps_poller):
         self.inference = inference
         self.vehicle = vehicle
         self.running = False
-        self.threads = []
-        self.steer_confidences = []
-        self.geo_location = []
         self.merged_data = []
+        self.cleaned_data = []
+        self.rut_gps_poller = rut_gps_poller
 
-
-    def record_confidence(self):
+    def record_data(self):
+        """Get confidence from inference socket and long, lat from vehicle socket then store them in a variable"""
         try:
             while self.running:
-                messages = self.inference.get()
-                # inference sends a message as list with 20 entries inside
-                for message in messages:
-                    steer_confidence = message.get("steer_confidence")
-                    steer_confidence_time = message.get("time")
-                    if steer_confidence is not None:
-                        self.steer_confidences.append([steer_confidence, steer_confidence_time])
+                inference_messages = self.inference.get()
+                for inf_message in inference_messages:
+                    # Process paired messages
+                    steer_confidence = inf_message.get("steer_confidence")
+                    latitude = self.rut_gps_poller.get_latitude()
+                    longitude = self.rut_gps_poller.get_longitude()
+                    if steer_confidence is not None and latitude is not None and longitude is not None:
+                        self.merged_data.append([round(steer_confidence, 5), latitude, longitude])
+                    # logger.info(self.merged_data[:-1])
+                    # time.sleep(1)
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
 
