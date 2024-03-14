@@ -69,6 +69,7 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self.rut_ip = None
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -84,9 +85,31 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
+    def read_user_config(self):
+        """
+        Reads the configuration file, flattens the configuration sections and keys,
+        and initializes components with specific configuration values.
+        """
+        config = configparser.ConfigParser()
+        config.read(self.get_user_config_file())
+
+        # Flatten the configuration sections and keys into a single dictionary
+        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
+
+        errors = []
+        # print(config_dict)
+        # Use the flattened config dictionary as **kwargs to parse_option
+        # A close implementation for how the parse_option is called in the internal_start function for each service.
+        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
+
+        if errors:
+            for error in errors:
+                print(f"Configuration error: {error}")
+
     def setup(self):
         if self.active():
             self._check_user_config()
+            self.read_user_config()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
