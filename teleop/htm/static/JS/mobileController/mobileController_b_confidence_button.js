@@ -11,6 +11,7 @@ class ToggleButtonHandler {
 
   initializeConfidenceWS() {
     let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
+    this.currentURL = `${document.location.protocol}`
     let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/switch_confidence`;
     this.confidenceWS.websocket = new WebSocket(WSurl);
 
@@ -21,6 +22,8 @@ class ToggleButtonHandler {
 
     this.confidenceWS.websocket.onmessage = (event) => {
       console.log('Message from server:', event.data);
+      this.updateButtonState(event.data);
+
     };
 
     this.confidenceWS.websocket.onerror = (error) => {
@@ -56,6 +59,18 @@ class ToggleButtonHandler {
     // Determine the command based on the opposite of the current button text
     let currentText = this.toggleButton.innerText;
     this.sendSwitchFollowingRequest(currentText);
+  }
+  updateButtonState(message) {
+    if (message === 'loading') {
+      this.toggleButton.innerHTML = 'Loading...'; 
+      this.toggleButton.disabled = true;
+    } else if (message.endsWith('.html')) {
+      this.toggleButton.innerHTML = 'View Results'
+      this.toggleButton.disabled = false;
+      this.toggleButton.onclick = () => {
+        window.location.href = `${this.currentURL}/overview_confidence/${message}`; 
+      };
+    }
   }
 
   /**
