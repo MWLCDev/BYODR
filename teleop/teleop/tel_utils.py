@@ -1,7 +1,17 @@
-import threading
+import collections
 import logging
+import multiprocessing
+import os
+import threading
 import time
+from datetime import datetime
+
+import folium
 import numpy as np
+import pandas as pd
+
+# needs to be installed on the router
+from pysnmp.hlapi import *
 
 logger = logging.getLogger(__name__)
 
@@ -134,19 +144,18 @@ class OverviewConfidence:
         return content
 
     def start(self):
+        """Start the thread and clear the merged data lists"""
         if not self.running:
             self.running = True
-            self.steer_confidences = []
-            self.geo_location = []
+            self.merged_data = []
             self.record_data_thread = threading.Thread(target=self.record_data)
-            # self.record_gps_thread = threading.Thread(target=self.record_gps)
-            self.threads = [self.record_data_thread]
-            [t.start() for t in self.threads]
+            self.record_data_thread.start()
 
     def stop(self):
         if self.running:
             self.running = False
-            [t.join() for t in self.threads]
+            self.record_data_thread.join()
+
 
 class GpsPollerThreadSNMP(threading.Thread):
     """
