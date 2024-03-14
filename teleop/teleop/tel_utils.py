@@ -76,6 +76,49 @@ class OverviewConfidence:
             processed_data.append([confidence, lon, lat, color])
         return processed_data
 
+    # delete it after the user clicks on view
+    def plot_data_on_map(self, base_folder="./htm/overview_confidence"):
+        """
+        Plot the processed data on a map and save it as an HTML file.
+        The processed data should have the structure [confidence, longitude, latitude, color].
+        Args:
+        - processed_data (list): List of processed data points.
+        - file_name (str): Name of the HTML file to save the map.
+        """
+        self.cleaned_data = self.process_data_and_assign_colors()
+        current_time = datetime.now().strftime("%Y-%m-%dT%H%M%S")
+        # Create the directory structure
+        os.makedirs(base_folder, exist_ok=True)
+        file_name = f"{current_time}map.html"
+        file_path = os.path.join(base_folder, file_name)
+
+        # Create a map centered at an average location
+        average_lat = sum(item[2] for item in self.cleaned_data) / len(self.cleaned_data)
+        average_lon = sum(item[1] for item in self.cleaned_data) / len(self.cleaned_data)
+        m = folium.Map(location=[average_lat, average_lon], zoom_start=12, max_zoom=22)
+        # be able to zoom more into the view
+
+        bounds = []
+        # Plot each point and extend bounds
+        for _, lon, lat, color in self.cleaned_data:
+            folium.CircleMarker(location=[lat, lon], radius=5, color=color, fill=True, fill_color=color).add_to(m)
+            bounds.append([lat, lon])
+
+        # Fit map to bounds if not empty
+        if bounds:
+            m.fit_bounds(bounds)
+
+        # Save the map to an HTML file
+        m.save(file_path)
+        with open(file_path, "r") as file:
+            content = file.read()
+        offline_dep = self.use_local_files(content)
+
+        with open(file_path, "w") as file:
+            file.write(offline_dep)
+
+        self.map_name = file_name
+
     def start(self):
         if not self.running:
             self.running = True
