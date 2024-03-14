@@ -147,24 +147,34 @@ class ControlServerSocket(websocket.WebSocketHandler):
 
 
 class ConfidenceHandler(websocket.WebSocketHandler):
-    def initialize(self, inference_s, vehicle_s):
+    def initialize(self, inference_s, vehicle_s, rut_gps_poller):
         self.inference = inference_s
         self.vehicle = vehicle_s
+        self.rut_gps_poller = rut_gps_poller
 
     def open(self):
         self.start_time = time.clock()
         logger.info("Confidence websocket connection opened.")
-        self.runner = OverviewConfidence(self.inference, self.vehicle)
+        self.runner = OverviewConfidence(self.inference, self.vehicle, self.rut_gps_poller)
         self.write_message("Connection established.")
+
+    def send_loading_message(self):
+        self.write_message("loading")
 
     def on_message(self, message):
         if message == "Start overview confidence":
             self.runner.start()
+            self.write_message("Received start")
         elif message == "Stop overview confidence":
-            self.runner.stop()
+            self.write_message("Received stopping command")
+            self.send_loading_message()
             delta_time = time.clock() - self.start_time
+            self.runner.stop()
+            self.runner.clean_list()
+            self.runner.plot_data_on_map()
+            self.write_message(f"{len(self.runner.cleaned_data)} \n in {self.runner.map_name}")
+            # self.write_message(self.runner.map_name)
 
-            self.write_message(f"{len(self.runner.merged_data)} in {delta_time:.3f}sec")
 
 
 class MessageServerSocket(websocket.WebSocketHandler):
