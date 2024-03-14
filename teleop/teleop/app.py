@@ -386,7 +386,7 @@ def main():
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (
-                    # POST method to toggle overview confidence
+                (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle, rut_gps_poller=gps_poller_snmp)),
                     r"/ws/switch_confidence",
                     ConfidenceHandler,
                     dict(inference_s=inference, vehicle_s=vehicle),
