@@ -50,20 +50,32 @@ class OverviewConfidence:
             self.cleaned_data = df_cleaned.values.tolist()
 
         except Exception as e:
-            logger.error(f"Error collecting data: {e}")
+            logger.error(f"An error occurred: {e}")
 
+    def process_data_and_assign_colors(self):
+        """
+        Process the input data to assign colors based on confidence levels.
+        Each data point will be transformed to [confidence, longitude, latitude, color].
+        Args:
+        - data (list): List of data points [confidence, lat, lon].
 
-    # WOULD NEED TO MERGE THE DATA ALL. THEN CLEAN THEM IN A WAY THAT THERE WON'T BE A BIG GAP BETWEEN THE LONGITUDE AND LATITUDE SO THERE ISN'T GAP IN THE LINE
-    # add data that is only similar in the time
-    # is there a way to clean it to a limit?
-    # it needs to remove with the x axis
-    # merge the lists first and then convert the merged list to a NumPy array
-    def merge_data_array(self):
-        merged_list = [[s, geo] for s, geo in zip(self.steer_confidences, self.geo_location)]
-        merged_array = np.array(merged_list)
-        merged_array = np.around(merged_array, decimals=5)
+        Returns:
+        - list: List of processed data points [confidence, lon, lat, color].
+        """
+        processed_data = []
+        for confidence, lat, lon in self.cleaned_data:
+            if confidence <= 0.25:
+                color = "darkred"
+            elif confidence <= 0.50:
+                color = "lightred"
+            elif confidence <= 0.75:
+                color = "orange"
+            else:
+                color = "green"
 
-    # make if condition if the value of gps is zero
+            processed_data.append([confidence, lon, lat, color])
+        return processed_data
+
     def start(self):
         if not self.running:
             self.running = True
