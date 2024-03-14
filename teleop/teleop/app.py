@@ -311,16 +311,9 @@ def main():
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
+    gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, gps_poller_snmp]
 
-    threads = [
-        camera_front,
-        camera_rear,
-        pilot,
-        vehicle,
-        inference,
-        logbox_thread,
-        package_thread,
-    ]
     if quit_event.is_set():
         return 0
 
