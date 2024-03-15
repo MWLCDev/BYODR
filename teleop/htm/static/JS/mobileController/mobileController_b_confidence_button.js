@@ -62,13 +62,16 @@ class ToggleButtonHandler {
   }
   updateButtonState(message) {
     if (message === 'loading') {
-      this.toggleButton.innerHTML = 'Loading...'; 
+      this.toggleButton.innerHTML = 'Loading...';
       this.toggleButton.disabled = true;
     } else if (message.endsWith('.html')) {
+      // Extract the filename from the message
+      const filename = message.match(/[\w-]+\.html$/)[0];
+
       this.toggleButton.innerHTML = 'View Results'
       this.toggleButton.disabled = false;
       this.toggleButton.onclick = () => {
-        window.location.href = `${this.currentURL}/overview_confidence/${message}`; 
+        window.location.href = `${this.currentURL}/overview_confidence/${filename}`;
       };
     }
   }
