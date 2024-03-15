@@ -86,7 +86,17 @@ class OverviewConfidence:
             processed_data.append([confidence, lon, lat, color])
         return processed_data
 
-    # delete it after the user clicks on view
+    def clean_directory(self, base_folder):
+        """
+        Delete all .html files in the specified directory.
+        """
+        for file_path in glob.glob(os.path.join(base_folder, "*.html")):
+            try:
+                os.remove(file_path)
+                logger.info(f"Deleted old map file: {file_path}")
+            except OSError as e:
+                logger.info(f"Error deleting file {file_path}: {e}")
+
     def plot_data_on_map(self, base_folder="./htm/overview_confidence"):
         """
         Plot the processed data on a map and save it as an HTML file.
