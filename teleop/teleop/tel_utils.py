@@ -46,19 +46,18 @@ class OverviewConfidence:
         """
         Cleans merged_data [confidence, longitude, latitude] by removing duplicates based on the confidence value
         """
+
+    def clean_list(self, list_to_clean):
+        """Cleans a list of [confidence, longitude, latitude] by dropping 'confidence' duplicates."""
         try:
-            # Convert merged_data into a DataFrame
-            df = pd.DataFrame(self.merged_data, columns=["confidence", "longitude", "latitude"])
 
-            # Sort by 'confidence' in descending order to ensure the highest confidence entry is retained after dropping duplicates
-            df_sorted = df.sort_values("confidence", ascending=False)
+            # Convert to DataFrame
+            df = pd.DataFrame(list_to_clean, columns=["Confidence", "Latitude", "Longitude"])
 
-            # Drop duplicates based on 'longitude' and 'latitude', keeping the first entry (highest confidence due to sort)
-            df_cleaned = df_sorted.drop_duplicates(subset=["longitude", "latitude"], keep="first")
-
-            # Convert the cleaned DataFrame back into a list
-            self.cleaned_data = df_cleaned.values.tolist()
-
+            # Drop duplicates based on the 'Confidence' column
+            cleaned_df = df.drop_duplicates(subset=["Confidence"])
+            cleaned_list = cleaned_df.values.tolist()
+            return cleaned_list
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
