@@ -24,6 +24,7 @@ class OverviewConfidence:
         self.merged_data = []
         self.cleaned_data = []
         self.rut_gps_poller = rut_gps_poller
+        self.sleep_time = 0.2
 
     def record_data(self):
         """Get confidence from inference socket and long, lat from vehicle socket then store them in a variable"""
@@ -36,9 +37,8 @@ class OverviewConfidence:
                     latitude = self.rut_gps_poller.get_latitude()
                     longitude = self.rut_gps_poller.get_longitude()
                     if steer_confidence is not None and latitude is not None and longitude is not None:
-                        self.merged_data.append([round(steer_confidence, 5), latitude, longitude])
-                    # logger.info(self.merged_data[:-1])
-                    # time.sleep(1)
+                        self.merged_list.append([round(steer_confidence, 5), latitude, longitude])
+                        time.sleep(self.sleep_time)
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
 
