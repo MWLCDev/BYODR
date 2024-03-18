@@ -1,14 +1,24 @@
+/**
+ * Handles toggle button interactions and manages WebSocket connections for real-time data updates.
+ */
 class ToggleButtonHandler {
+  /**
+   * Constructs a ToggleButtonHandler instance.
+   * @param {string} buttonId The ID of the button element to be managed.
+   */
   constructor(buttonId) {
     this.toggleButton = document.getElementById(buttonId);
     this.toggleButton.addEventListener('click', () => {
       this.handleButtonClick();
     });
     this.confidenceWS = {}; // Placeholder for WebSocket.
-    this.autoReconnectInterval = 9000; // Time to wait before attempting to reconnect
-    this.initializeConfidenceWS(); // Automatically try to open the WebSocket upon instantiation.
+    this.autoReconnectInterval = 9000; 
+    this.initializeConfidenceWS(); 
   }
 
+  /**
+   * Initializes the WebSocket connection for real-time data updates and sets up event listeners.
+   */
   initializeConfidenceWS() {
     let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
     this.currentURL = `${document.location.protocol}`
@@ -21,7 +31,7 @@ class ToggleButtonHandler {
     };
 
     this.confidenceWS.websocket.onmessage = (event) => {
-      console.log('Message from server:', event.data);
+      console.log('Confidence WS:', event.data);
       this.updateButtonState(event.data);
 
     };
@@ -38,13 +48,19 @@ class ToggleButtonHandler {
     };
   }
 
+  /**
+   * Checks the WebSocket's current state and attempts to reconnect if it's closed.
+   */
   checkAndReconnectWebSocket() {
-    // Check if WebSocket is not instantiated or if the connection is closed
     if (!this.confidenceWS.websocket || this.confidenceWS.websocket.readyState === WebSocket.CLOSED) {
       this.initializeConfidenceWS();
     }
   }
 
+  /**
+   * Sends a command to the server via WebSocket.
+   * @param {string} command The command to be sent to the server.
+   */
   sendSwitchFollowingRequest(command) {
     if (this.confidenceWS.websocket && this.confidenceWS.websocket.readyState === WebSocket.OPEN) {
       this.confidenceWS.websocket.send(command);
@@ -55,11 +71,19 @@ class ToggleButtonHandler {
     }
   }
 
+  /**
+   * Handles button click events by sending appropriate commands based on the button's current state.
+   */
   handleButtonClick() {
     // Determine the command based on the opposite of the current button text
     let currentText = this.toggleButton.innerText;
     this.sendSwitchFollowingRequest(currentText);
   }
+
+  /**
+   * Updates the button's appearance based on the received WebSocket message.
+   * @param {string} message The message received from the WebSocket.
+   */
   updateButtonState(message) {
     if (message === 'loading') {
       this.toggleButton.innerHTML = 'Loading...';
@@ -77,35 +101,50 @@ class ToggleButtonHandler {
   }
 
   /**
-   * 
-   * @param {string} command Current text of the toggle button 
+   * Changes the button's appearance based on the current command.
+   * @param {string} command The current text of the toggle button used to determine the new appearance.
    */
   toggleButtonAppearance(command) {
     this.toggleButton.innerText = command === "Start overview confidence" ? "Stop overview confidence" : "Start overview confidence";
     this.toggleButton.style.backgroundColor = command === "Start overview confidence" ? "#ff6347" : "#67b96a";
   }
 
-
+  /**
+   * Retrieves the value of a specified attribute of the toggle button.
+   * @param {string} attributeName The name of the attribute to retrieve.
+   * @returns {string} The value of the attribute.
+   */
   getAttribute(attributeName) {
     return this.toggleButton.getAttribute(attributeName);
   }
 
+  /**
+   * Sets the value of a specified attribute of the toggle button.
+   * @param {string} attributeName The name of the attribute to set.
+   * @param {string} value The value to set for the attribute.
+   */
   setAttribute(attributeName, value) {
     this.toggleButton.setAttribute(attributeName, value);
   }
 
+  /**
+   * Retrieves the style value of a specified property of the toggle button.
+   * @param {string} property The CSS property name to retrieve.
+   * @returns {string} The value of the CSS property.
+   */
   getStyle(property) {
     return this.toggleButton.style[property];
   }
 
+  /**
+   * Sets the style of a specified property of the toggle button.
+   * @param {string} property The CSS property name to set.
+   * @param {string} value The value to set for the CSS property.
+   */
   setStyle(property, value) {
     this.toggleButton.style[property] = value;
   }
 }
 
-// Usage
-const toggleButtonHandler = new ToggleButtonHandler('confidenceToggleButton');
 
-// If needed to export
-
-export { toggleButtonHandler };
+export { ToggleButtonHandler };
