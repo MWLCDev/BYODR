@@ -1,4 +1,5 @@
 import collections
+import glob
 import logging
 import multiprocessing
 import os
@@ -21,8 +22,9 @@ class OverviewConfidence:
         self.inference = inference
         self.vehicle = vehicle
         self.running = False
-        self.merged_data = []
-        self.cleaned_data = []
+        self.merged_list = []
+        self.cleaned_list = []
+        self.coloured_list = []
         self.rut_gps_poller = rut_gps_poller
         self.sleep_time = 0.2
 
@@ -61,7 +63,7 @@ class OverviewConfidence:
         except Exception as e:
             logger.error(f"An error occurred: {e}")
 
-    def process_data_and_assign_colors(self):
+    def assign_colors(self, assign_colours_list):
         """
         Process the input data to assign colors based on confidence levels.
         Each data point will be transformed to [confidence, longitude, latitude, color].
@@ -72,7 +74,7 @@ class OverviewConfidence:
         - list: List of processed data points [confidence, lon, lat, color].
         """
         processed_data = []
-        for confidence, lat, lon in self.cleaned_data:
+        for confidence, lat, lon in assign_colours_list:
             if confidence <= 0.25:
                 color = "darkred"
             elif confidence <= 0.50:
@@ -96,36 +98,36 @@ class OverviewConfidence:
             except OSError as e:
                 logger.info(f"Error deleting file {file_path}: {e}")
 
-    def plot_data_on_map(self, base_folder="./htm/overview_confidence"):
+    # store the output with and without the cleaning
+    def plot_data_on_map(self, list_to_plot, base_folder="./htm/overview_confidence"):
         """
         Plot the processed data on a map with a continuous line where each segment has the color of the starting point.
         The processed data should have the structure [confidence, longitude, latitude, color].
         """
         self.clean_directory(base_folder)
-
-        self.cleaned_data = self.process_data_and_assign_colors()
         current_time = datetime.now().strftime("%Y-%m-%dT%H%M%S")
         # Create the directory structure
         os.makedirs(base_folder, exist_ok=True)
         file_name = f"{current_time}map.html"
         file_path = os.path.join(base_folder, file_name)
+        self.debug_data(list_to_plot, current_time, base_folder)
 
         # Create a map centered at an average location
-        average_lat = sum(item[2] for item in self.cleaned_data) / len(self.cleaned_data)
-        average_lon = sum(item[1] for item in self.cleaned_data) / len(self.cleaned_data)
+        average_lat = sum(item[2] for item in list_to_plot) / len(list_to_plot)
+        average_lon = sum(item[1] for item in list_to_plot) / len(list_to_plot)
         m = folium.Map(location=[average_lat, average_lon], zoom_start=12, max_zoom=25)
 
         # Draw a line for each segment with the color of the starting point
-        for i in range(len(self.cleaned_data) - 1):
-            _, lon1, lat1, color = self.cleaned_data[i]
-            _, lon2, lat2, _ = self.cleaned_data[i + 1]
+        for i in range(len(list_to_plot) - 1):
+            _, lon1, lat1, color = list_to_plot[i]
+            _, lon2, lat2, _ = list_to_plot[i + 1]
             folium.PolyLine([(lat1, lon1), (lat2, lon2)], color=color, weight=2.5, opacity=1).add_to(m)
 
         # Save the map to an HTML file
         m.save(file_path)
         with open(file_path, "r") as file:
             content = file.read()
-        offline_dep = self.use_local_files(content) 
+        offline_dep = self.use_local_files(content)  # Ensure this method is defined to handle local file dependencies
 
         with open(file_path, "w") as file:
             file.write(offline_dep)
@@ -165,7 +167,7 @@ class OverviewConfidence:
         """Start the thread and clear the merged data lists"""
         if not self.running:
             self.running = True
-            self.merged_data = []
+            self.merged_list = []
             self.record_data_thread = threading.Thread(target=self.record_data)
             self.record_data_thread.start()
 
