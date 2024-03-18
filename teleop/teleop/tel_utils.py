@@ -42,10 +42,10 @@ class OverviewConfidence:
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
 
-    def clean_list(self):
-        """
-        Cleans merged_data [confidence, longitude, latitude] by removing duplicates based on the confidence value
-        """
+    def process_data(self):
+        self.cleaned_list = self.clean_list(self.merged_list)
+        self.coloured_list = self.assign_colors(self.cleaned_list)
+        self.plot_data_on_map(self.coloured_list)
 
     def clean_list(self, list_to_clean):
         """Cleans a list of [confidence, longitude, latitude] by dropping 'confidence' duplicates."""
