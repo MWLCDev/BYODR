@@ -33,10 +33,42 @@ body {
   border: 2px solid cyan;
 }
 
-div.speed_value {
-  display: inline-block;
-  font-size: 8px;
+.flex-container {
+  display: flex;
+  /* Enables flex layout */
+  align-items: center;
+  /* Centers items vertically */
+  overflow: hidden;
+  width: 100% !important;
+  text-align: center;
+  color: white;
+  font-family: Verdana;
 }
+
+#control_bar {}
+
+#mjpeg_camera_preview_image,
+#confidence_button_normal_controller,
+#overlay_control_container img {
+  max-height: 100%;
+  /* Ensures the elements don't exceed the container's height */
+}
+
+#confidence_button_normal_controller {
+  border-radius: 5px;
+  padding: 10px 15px;
+  /* Adjust padding as needed */
+}
+
+#overlay_control_container img {
+  width: 30px;
+  height: 30px;
+  border-radius: 5px;
+  background: white;
+}
+
+/* Rest of the CSS remains the same */
+
 
 div#pilot_drive_values>p {
   margin-block-start: 0;
@@ -68,12 +100,6 @@ a.active {
   color: lightblue;
 }
 
-img.caret_img {
-  cursor: pointer;
-  background: white;
-  width: 15px;
-  height: 15px;
-}
 
 img.preview_img {
   height: 60px;
@@ -175,42 +201,79 @@ div.overlay_distance {
 
 #mjpeg_stream_controls {
   float: left;
-  padding: 38px 0 0 10px;
+  padding: 0 10px;
   font-family: 'Lucida Console';
   font-size: 15px;
+  display: flex;
+  flex-direction: column;
+  /* Stack children vertically */
+  align-items: center;
 }
 
+#mjpeg_quality_val {
+  display: block;
+  width: 36px;
+  text-align: center;
+  margin: 0 3px;
+}
 
 #caret_up {
   transform: rotate(180deg);
 }
 
+img.caret_img {
+  cursor: pointer;
+  background: white;
+  width: 15px;
+  height: 15px;
+
+}
+
+div.speed_value {
+  display: inline-block;
+  font-size: 8px;
+  margin: 10px 0;
+}
+
+#control_bar {
+  display: flex;
+  align-items: stretch;
+  margin: 0 50px 0 0;
+  align-items: center;
+
+}
+
 #preview_container {
-  float: left;
-  margin: 5px 0 5px 5px;
+  margin-right: 5px;
 }
 
 #mjpeg_camera_preview_image {
   width: 240px;
   cursor: pointer;
+  object-fit: cover;
+}
+
+#confidence_button_normal_controller {
+  border-radius: 5px;
+  padding: 10px 15px;
+  margin: 0 5px;
+  height: 5%;
+  cursor: pointer;
 }
 
 #overlay_control_container {
-  display: grid;
-  float: left;
-  margin: 5px 0 0 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-#overlay_control_container *:first-child {
+#overlay_control_container img {
   width: 30px;
   height: 30px;
   border-radius: 5px;
   background: white;
 }
 
-#overlay_control_container button {
-  padding: 0
-}
 
 #popupWindow {
   display: none;
@@ -246,7 +309,8 @@ div.overlay_distance {
 
 #dashboard {
   float: left;
-  padding: 0 0 5px 15%;
+  /* padding: 0 0 5px 15%; */
+  /*I have no clue why is it exactly 15%*/
 }
 
 #autopilot_status {
@@ -284,6 +348,7 @@ div.overlay_distance {
   color: white;
   font-family: Lucida Console;
   font-size: 11px;
+  margin-left: auto;
 }
 
 #navigation_image_container {
@@ -376,8 +441,4 @@ div.overlay_distance {
   display: inline-block;
   margin-left: 10px;
   min-width: 80px;
-}
-
-.caret_img {
-  transform: rotate(90deg);
 }
