@@ -133,6 +133,21 @@ class OverviewConfidence:
 
         self.map_name = file_name
 
+    def debug_data(self, data_to_debug, current_time, base_folder):
+        file_name_txt = f"{current_time}coordinates.txt"
+        file_path_txt = os.path.join(base_folder, file_name_txt)
+        # Save coordinates and confidence to a txt file
+        with open(file_path_txt, "w") as file_txt:
+            file_txt.write(f"Sleep time : {self.sleep_time}\n")
+            for item in data_to_debug:
+                # print(item)
+                file_txt.write(f"Confidence: {item[0]}, Longitude: {item[1]}, Latitude: {item[2]}, Color: {item[3]}\n")
+
+            # Optionally, write non-cleaned data
+            file_txt.write("\nNon-cleaned data:\n")
+            for item in self.merged_list:
+                file_txt.write(f"{item}\n")
+
     def use_local_files(self, content):
         """Replace online src attributes with local file paths"""
         content = content.replace("https://cdn.jsdelivr.net/npm/leaflet@1.6.0/dist/leaflet.js", "/static/external/leaflet.js")
