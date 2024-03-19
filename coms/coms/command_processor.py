@@ -15,9 +15,12 @@ steering_queue = deque() # A queue in which steering values other than 0 will be
 
 time_now = 0.0 # Default values for the current time 
 delay = 0.0 # Default values for the delay amount 
-distance = 1.2 # Distance between the motors of the current segment and the LD segment in m
+distance = 1.35 # Distance between the motors of the current segment and the LD segment in m
 use_steering_queue = False # Variable that tells the function when it is time to use the queue for steering values
 started_counting_down = False # Variable that tells the function to start counting down. We dont want the function to start counting down unless it receives steering first
+
+
+counter = 0
 
 
 def process(movement_command):
@@ -50,6 +53,7 @@ def process(movement_command):
     global delay
     global use_steering_queue
     global started_counting_down
+    global counter
 
     
     velocity = movement_command["velocity"] # Velocity of the LD segment in m/s
@@ -57,6 +61,12 @@ def process(movement_command):
     steering = movement_command["steering"] # Getting the steering value from the command we just got
     applied_steering = 0.0 # The steering value that the final command will include
     time_counter = time.perf_counter() # Getting the current time value
+
+    counter = counter + 1
+
+    # Clearing the queue when the robot is standing still
+    if movement_command["throttle"] == 0:
+        steering_queue.clear()
 
     # If we detect that the LD is turning
     if steering != 0:
@@ -71,10 +81,12 @@ def process(movement_command):
         except ZeroDivisionError:
 
             # We reverse throttle
-            movement_command["throttle"] = (movement_command["throttle"])
+            movement_command["throttle"] = -movement_command["throttle"]
 
             # We apply the steering.
             movement_command["steering"] = -movement_command["steering"]
+
+            counter = 0
 
             return movement_command
 
@@ -95,7 +107,9 @@ def process(movement_command):
     # If we need to start counting down
     # AND
     # If the time difference between the function time and the time in which we first received steering is "delay" seconds
-    # print(time_counter - time_now)
+    if counter == 50:
+        print(f"Time counter: {time_counter - time_now}\nDelay: {delay}")
+        counter = 0
     if started_counting_down and time_counter - time_now >= delay:
         # We mark the time we start applying the values for the next iteration of the function
         time_now = time_counter
@@ -103,12 +117,12 @@ def process(movement_command):
         # We turn the trigger into True, making the function use steering from the queue
         use_steering_queue = True
 
-
     # Trigger that tells the function to use steering from the queue
     if use_steering_queue:
         # We take the first item in the deque and we apply it in the processed movement command
         # Since we will first apply the steering that was first added to the deque (oldest steering first),
         # our data structure needs to be FIFO (First in First out)
+        started_counting_down = False
         try:
             applied_steering = steering_queue.popleft()
             # print("popped")
@@ -116,11 +130,11 @@ def process(movement_command):
             # If the queue is empty, we put steering = 0 and turn the triggers to False
             applied_steering = 0.0
             use_steering_queue = False
-            started_counting_down = False
+            # started_counting_down = False
 
 
     # We reverse throttle
-    movement_command["throttle"] = (movement_command["throttle"])
+    movement_command["throttle"] = -movement_command["throttle"]
 
     # We apply the steering.
     movement_command["steering"] = -applied_steering
