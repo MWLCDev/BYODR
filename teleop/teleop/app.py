@@ -382,7 +382,6 @@ def main():
                 
             # Sending commands to Coms/Pilot
             cmd["throttle"] = current_throttle
-            print(f"Sending command: {cmd}")
             teleop_publish(cmd)
 
         # When we receive commands without throttle in them, we reset the current throttle value to 0
