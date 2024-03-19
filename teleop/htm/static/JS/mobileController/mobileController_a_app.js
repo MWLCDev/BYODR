@@ -1,10 +1,10 @@
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import { Dot } from "/JS/mobileController/mobileController_b_shape_dot.js"
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { Dot } from "./mobileController_b_shape_dot.js"
 import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
-  from "/JS/mobileController/mobileController_c_logic.js"
+  from "./mobileController_c_logic.js"
 
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
-import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
+import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
+import { redraw, app } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 // The function would keep stacking, sending commands more often than 10 times a second

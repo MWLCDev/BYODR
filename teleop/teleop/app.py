@@ -490,7 +490,7 @@ def main():
                     # Path to where the static files are stored (JS,CSS, images)
                     r"/(.*)",
                     web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm", "static")},
+                    {"path": os.path.join(os.path.sep, "app", "htm")},
                 ),
             ]
         )
