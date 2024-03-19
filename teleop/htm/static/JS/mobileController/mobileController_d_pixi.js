@@ -1,6 +1,6 @@
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import { topRectangle, bottomRectangle } from "/JS/mobileController/mobileController_b_shape_red_rectangle.js"
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
+import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
   width: window.innerWidth,
@@ -18,8 +18,7 @@ document.body.appendChild(app.view);
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
-function redraw(yOffset = 0)
-{
+function redraw(yOffset = 0) {
   app.stage.removeChildren();
   topTriangle.drawTriangle(yOffset);
   bottomTriangle.drawTriangle(yOffset);
@@ -31,8 +30,7 @@ function redraw(yOffset = 0)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
-function drawTopTriangle_BottomRectangle(yOffset = 0)
-{
+function drawTopTriangle_BottomRectangle(yOffset = 0) {
   app.stage.removeChildren();
   topTriangle.drawTriangle(yOffset);
   app.stage.addChild(topTriangle.graphics);
@@ -45,8 +43,7 @@ function drawTopTriangle_BottomRectangle(yOffset = 0)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
-function drawBottomTriangle_TopRectangle(yOffset = 0)
-{
+function drawBottomTriangle_TopRectangle(yOffset = 0) {
   app.stage.removeChildren();
   bottomTriangle.drawTriangle(yOffset);
   app.stage.addChild(bottomTriangle.graphics);
