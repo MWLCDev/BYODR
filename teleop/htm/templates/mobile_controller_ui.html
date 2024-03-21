@@ -21,22 +21,34 @@
 
     .input-group {
       margin-bottom: 10px;
+      display: flex;
+      align-items: center;
     }
 
     .input-group label {
-      display: inline-block;
       width: 150px;
       text-align: right;
+      margin-right: 10px;
+    }
+
+    .input-box-container {
+      display: flex;
+      align-items: center;
     }
 
     .input-box {
       width: 100px;
     }
 
+    .input-box-text {
+      margin-left: 10px;
+      margin-right: 10px;
+    }
+
     .button-container {
-      margin-top: 20px;
-      align-items: center;
-      text-align: center;
+      margin-top: 30px;
+      margin-right: 60px;
+      text-align: right;
     }
 
     .hidden {
@@ -59,11 +71,17 @@
     <div class="input-container">
       <div class="input-group">
         <label for="scaleInput">Max speed(km/h):</label>
-        <input type="number" id="scaleInput" class="input-box">
+        <div class="input-box-container">
+          <input id="scaleInput" class="input-box">
+          <span class="input-box-text">Between 0 and 10</span>
+        </div>
       </div>
       <div class="input-group">
         <label for="offsetInput">Steering offset:</label>
-        <input type="number" id="offsetInput" class="input-box">
+        <div class="input-box-container">
+          <input id="offsetInput" class="input-box">
+          <span class="input-box-text">Between -2 and 2</span>
+        </div>
       </div>
       <div class="button-container">
         <button id="confirmButton" class="confirm-button" disabled>Confirm</button>
