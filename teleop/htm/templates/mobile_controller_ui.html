@@ -1,17 +1,78 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" type="text/css" href="../static/CSS/mobileController.css">
   <link rel="shortcut icon" href="#" />
   <title>Mobile controller</title>
+  <style>
+    /* CSS styles for layout */
+    .mobile_view_container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+    }
+
+    .input-container {
+      position: absolute;
+      top: 20px;
+    }
+
+    .input-group {
+      margin-bottom: 10px;
+    }
+
+    .input-group label {
+      display: inline-block;
+      width: 150px;
+      text-align: right;
+    }
+
+    .input-box {
+      width: 100px;
+    }
+
+    .button-container {
+      margin-top: 20px;
+      align-items: center;
+      text-align: center;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Add this part to make the screen "stable".
+    Without this, the screen can be moved to the right or left,
+    making objects on the canvas appear inconsistent. */
+    html, body {
+      padding: 0;
+      margin: 0;
+    }
+  </style>
 </head>
 
 <body>
-  <script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
-  <script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
+  <div class="mobile_view_container">
+    <!-- Input container -->
+    <div class="input-container">
+      <div class="input-group">
+        <label for="scaleInput">Max speed(km/h):</label>
+        <input type="number" id="scaleInput" class="input-box">
+      </div>
+      <div class="input-group">
+        <label for="offsetInput">Steering offset:</label>
+        <input type="number" id="offsetInput" class="input-box">
+      </div>
+      <div class="button-container">
+        <button id="confirmButton" class="confirm-button" disabled>Confirm</button>
+      </div>
+    </div>
+    
+    <!-- JavaScript file for handling user interaction -->
+    <script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
+    <script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
+  </div>
 </body>
-
 </html>
