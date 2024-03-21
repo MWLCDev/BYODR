@@ -213,5 +213,96 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
+// Get the input elements
+const scaleInput = document.getElementById('scaleInput');
+const offsetInput = document.getElementById('offsetInput');
+const confirmButton = document.getElementById('confirmButton');
+
+// Function to check if the max speed input is valid
+function isValidScaleInput(value)
+{
+  const min = 0.0;
+  const max = 10.0;
+  const scale_regex = /^(\d\d?(\.\d\d?)?)?$/;
+  /*
+  Regex explanation:
+  ^ Start of expression
+  (\d\d?(\.\d\d?)?)? Checks if the \d\d?(\.\d\d?)?) expression appears 0 or 1 time
+  \d Checks if a digit 0-9 appears 1 time
+  \d? Checks if a digit 0-9 appears 0 or 1 time
+  (\.\d\d?)? Checks if the (\.\d\d?) expression appears 0 or 1 time
+  \. Checks if the . character appears 1 time
+  \d Checks if a digit 0-9 appears 1 time
+  \d? Checks if a digit 0-9 appears 0 or 1 time
+  $ End of expression
+  */
+
+  return (scale_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
+}
+
+// Function to check if the steering offset input is valid
+function isValidOffsetInput(value)
+{
+  const min = -2.0;
+  const max = 2.0;
+  const offset_regex = /^(\-?\d(\.\d\d?)?)?$/;
+  /*
+  Regex explanation:
+  ^ Start of expression
+  (\-?\d(\.\d\d?)?)? Checks if the \-?\d(\.\d\d?)? expression appears 0 or 1 time
+  \-? Checks if the - character appears 0 or 1 time
+  \d Checks if a digit 0-9 appears 1 time
+  (\.\d\d?)? Checks if the (\.\d\d?) expression appears 0 or 1 time
+  \. Checks if the . character appears 1 time
+  \d Checks if a digit 0-9 appears 1 time
+  \d? Checks if a digit 0-9 appears 0 or 1 time
+  $ End of expression
+  */
+ 
+  return (offset_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
+}
+
+// Function to enable or disable confirm button based on input validity
+function updateConfirmButton()
+{
+  const scaleValue = scaleInput.value;
+  const offsetValue = offsetInput.value;
+  
+  /*
+  If one OR both input boxes are empty
+  AND
+  Both input boxes have valid values (an empty string is a valid value)
+  Then enable the button
+  */
+  if ( (scaleValue || offsetValue) && (isValidScaleInput(scaleValue) || isValidOffsetInput(offsetValue)) )
+    confirmButton.removeAttribute('disabled');
+  else
+    confirmButton.setAttribute('disabled', true);
+}
+
+// Add event listeners to input boxes
+scaleInput.addEventListener('input', function() 
+{
+  updateConfirmButton();
+});
+
+// Add event listeners to input boxes
+offsetInput.addEventListener('input', function() 
+{
+  updateConfirmButton();
+});
+
+// Add event listener to confirm button
+confirmButton.addEventListener('click', function()
+{
+  // Retrieve values from input boxes
+  const scaleValue = parseFloat(scaleInput.value);
+  const offsetValue = parseFloat(offsetInput.value);
+  
+  // Perform further actions with the values if needed
+  console.log('Max speed:', scaleValue);
+  console.log('Steering offset:', offsetValue);
+});
+
 export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
   detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, hideInputElements, showInputElements };
