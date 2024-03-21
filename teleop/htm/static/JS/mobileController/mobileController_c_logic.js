@@ -3,6 +3,7 @@ import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle
 import CTRL_STAT from './mobileController_z_state.js';
 import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
 
+
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
   // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
@@ -36,6 +37,18 @@ function initializeWS() {
     CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
   console.log('Created Mobile controller (WS)');
+}
+
+// Hide the input boxes and all related objects when the triangles are pressed
+function hideInputElements()
+{
+  document.querySelector('.input-container').classList.add('hidden');
+}
+
+// Show the input boxes and all related objects when the triangles are not pressed
+function showInputElements()
+{
+  document.querySelector('.input-container').classList.remove('hidden');
 }
 
 /**
@@ -200,4 +213,5 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
+  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, hideInputElements, showInputElements };
