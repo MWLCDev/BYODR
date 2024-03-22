@@ -2,6 +2,7 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import CTRL_STAT from './mobileController_z_state.js';
 import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -200,4 +201,65 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+// Add event listeners to input boxes
+MotorDataInput.SCALEINPUT.addEventListener('input', function() 
+{
+  MotorDataInput.updateConfirmButton();
+});
+
+// Add event listeners to input boxes
+MotorDataInput.OFFSETINPUT.addEventListener('input', function() 
+{
+  MotorDataInput.updateConfirmButton();
+});
+
+// Add event listener to confirm button
+MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
+{
+  // Create an array to store non-empty key-value pairs
+  let scaleOffsetData = [];
+
+  // Check and add non-empty scaleValue
+  if (MotorDataInput.SCALEINPUT.value !== "")
+    scaleOffsetData.push(["ras.driver.motor.scale", MotorDataInput.SCALEINPUT.value]);
+
+  // Check and add non-empty offsetValue
+  if (MotorDataInput.OFFSETINPUT.value !== "")
+    scaleOffsetData.push(["ras.driver.steering.offset", MotorDataInput.OFFSETINPUT.value]);
+
+  // Create the data object that will be sent to the backend via POST
+  let data = { "vehicle": scaleOffsetData };
+
+  console.log('Data to send:', data);
+        
+  // Make POST request to the backend endpoint
+  fetch('/teleop/user/options', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (response.ok)
+    {
+      console.log('Data sent successfully.');
+
+      // Showing the confirmation text and then hiding it after 3 seconds
+      MotorDataInput.CONFIRM_CHANGE_TEXT.classList.remove('hidden');
+      setTimeout(() => {
+        MotorDataInput.CONFIRM_CHANGE_TEXT.classList.add('hidden');
+      }, 3000);
+
+    }
+
+    else 
+      console.error('Failed to send data.');
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
+});
+
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
+  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
