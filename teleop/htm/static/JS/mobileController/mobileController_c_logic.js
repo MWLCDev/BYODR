@@ -39,18 +39,6 @@ function initializeWS() {
   console.log('Created Mobile controller (WS)');
 }
 
-// Hide the input boxes and all related objects when the triangles are pressed
-function hideInputElements()
-{
-  document.querySelector('.input-container').classList.add('hidden');
-}
-
-// Show the input boxes and all related objects when the triangles are not pressed
-function showInputElements()
-{
-  document.querySelector('.input-container').classList.remove('hidden');
-}
-
 /**
  * Check if a point is inside a triangle using barycentric
  * @param {number} px Point's x-coord
@@ -218,6 +206,35 @@ const scaleInput = document.getElementById('scaleInput');
 const offsetInput = document.getElementById('offsetInput');
 const confirmButton = document.getElementById('confirmButton');
 
+// Hide the input boxes and all related objects when the triangles are pressed
+function hideInputElements()
+{
+  document.querySelector('.input-container').classList.add('hidden');
+}
+
+// Show the input boxes and all related objects when the triangles are not pressed
+// Also when the boxes appear, show the data that is currently applied
+function showInputElements()
+{
+  document.querySelector('.input-container').classList.remove('hidden');
+  
+  // Make a GET request to fetch data and make it appear inside the text boxes
+  fetch('/teleop/user/options')
+  .then(response => response.json())
+  .then(data => {
+    // Update input boxes with received data
+    scaleInput.value = data.vehicle["ras.driver.motor.scale"];
+    offsetInput.value = data.vehicle["ras.driver.steering.offset"]
+    console.log('Motor scale received:', scaleInput.value);
+    console.log('Steering offset received:', offsetInput.value);
+    updateConfirmButton();
+
+  })
+  .catch(error => {
+    console.error('Error fetching data:', error);
+  });
+}
+
 // Function to check if the max speed input is valid
 function isValidScaleInput(value)
 {
@@ -228,7 +245,7 @@ function isValidScaleInput(value)
   Regex explanation:
   ^ Start of expression
   (\d\d?(\.\d\d?)?)? Checks if the \d\d?(\.\d\d?)?) expression appears 0 or 1 time
-  \d Checks if a digit 0-9 appears 1 time
+  [1-9] Checks if a digit 1-9 appears 1 time
   \d? Checks if a digit 0-9 appears 0 or 1 time
   (\.\d\d?)? Checks if the (\.\d\d?) expression appears 0 or 1 time
   \. Checks if the . character appears 1 time
@@ -236,6 +253,8 @@ function isValidScaleInput(value)
   \d? Checks if a digit 0-9 appears 0 or 1 time
   $ End of expression
   */
+  // console.log("Scale:", value)
+  // console.log(scale_regex.test(value))
 
   return (scale_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
 }
@@ -258,6 +277,8 @@ function isValidOffsetInput(value)
   \d? Checks if a digit 0-9 appears 0 or 1 time
   $ End of expression
   */
+  // console.log("Offset:", value)
+  // console.log(offset_regex.test(value))
 
   return (offset_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
 }
@@ -265,16 +286,13 @@ function isValidOffsetInput(value)
 // Function to enable or disable confirm button based on input validity
 function updateConfirmButton()
 {
-  const scaleValue = scaleInput.value;
-  const offsetValue = offsetInput.value;
-  
   /*
   If one OR both input boxes are empty
   AND
   Both input boxes have valid values (an empty string is a valid value)
   Then enable the button
   */
-  if ( (scaleValue || offsetValue) && (isValidScaleInput(scaleValue) || isValidOffsetInput(offsetValue)) )
+  if ( isValidScaleInput(scaleInput.value) && isValidOffsetInput(offsetInput.value) )
     confirmButton.removeAttribute('disabled');
   else
     confirmButton.setAttribute('disabled', true);
