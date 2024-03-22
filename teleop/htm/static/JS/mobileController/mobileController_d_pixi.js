@@ -1,6 +1,6 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
-import { showInputElements, hideInputElements } from "./mobileController_c_logic.js";
+import { hideInputElements, showInputElements } from "./mobileController_c_logic.js";
 import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
@@ -20,9 +20,6 @@ app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
 function redraw(yOffset = 0) {
-
-  // Show the input boxes and all related objects when the triangles are not pressed
-  showInputElements();
 
   app.stage.removeChildren();
   topTriangle.drawTriangle(yOffset);
