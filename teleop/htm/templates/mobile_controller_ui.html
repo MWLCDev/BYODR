@@ -10,25 +10,26 @@
     .mobile_view_container {
       display: flex;
       flex-direction: column;
-      align-items: center;
       position: relative;
     }
 
     .input-container {
       position: absolute;
+      display: flex;
+      flex-direction: column;
+      align-items: left;
       top: 20px;
     }
 
     .input-group {
-      margin-bottom: 10px;
+      font-size: 14px;
       display: flex;
       align-items: center;
+      margin-left: 10px;
     }
 
     .input-group label {
-      width: 150px;
-      text-align: right;
-      margin-right: 10px;
+      width: 110px;
     }
 
     .input-box-container {
@@ -37,17 +38,15 @@
     }
 
     .input-box {
-      width: 100px;
+      width: 50px;
     }
 
     .input-box-text {
       margin-left: 10px;
-      margin-right: 10px;
     }
 
     .button-container {
-      margin-top: 30px;
-      margin-right: 60px;
+      margin-top: 10px;
       text-align: right;
     }
 
@@ -69,23 +68,30 @@
   <div class="mobile_view_container">
     <!-- Input container -->
     <div class="input-container">
+
+      <!-- Scale input container -->
       <div class="input-group">
-        <label for="scaleInput">Max speed(km/h):</label>
+        <label for="scaleInput">Max km/h:</label>
         <div class="input-box-container">
           <input id="scaleInput" class="input-box">
-          <span class="input-box-text">Between 1 and 10</span>
+          <span class="input-box-text">Between 1,10</span>
         </div>
       </div>
+
+      <!-- Offset input container -->
       <div class="input-group">
         <label for="offsetInput">Steering offset:</label>
         <div class="input-box-container">
           <input id="offsetInput" class="input-box">
-          <span class="input-box-text">Between -2 and 2</span>
+          <span class="input-box-text">Between -2,2</span>
         </div>
       </div>
+
+      <!-- Button container -->
       <div class="button-container">
         <button id="confirmButton" class="confirm-button" disabled>Confirm</button>
       </div>
+
     </div>
     
     <!-- JavaScript file for handling user interaction -->
