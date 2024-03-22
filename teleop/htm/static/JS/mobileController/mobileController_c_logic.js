@@ -223,7 +223,7 @@ function isValidScaleInput(value)
 {
   const min = 0.0;
   const max = 10.0;
-  const scale_regex = /^(\d\d?(\.\d\d?)?)?$/;
+  const scale_regex = /^([1-9]\d?(\.\d\d?)?)?$/;
   /*
   Regex explanation:
   ^ Start of expression
@@ -258,7 +258,7 @@ function isValidOffsetInput(value)
   \d? Checks if a digit 0-9 appears 0 or 1 time
   $ End of expression
   */
- 
+
   return (offset_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
 }
 
@@ -296,12 +296,42 @@ offsetInput.addEventListener('input', function()
 confirmButton.addEventListener('click', function()
 {
   // Retrieve values from input boxes
-  const scaleValue = parseFloat(scaleInput.value);
-  const offsetValue = parseFloat(offsetInput.value);
+  const scaleValue = scaleInput.value;
+  const offsetValue = offsetInput.value;
   
-  // Perform further actions with the values if needed
-  console.log('Max speed:', scaleValue);
-  console.log('Steering offset:', offsetValue);
+  // Create an array to store non-empty key-value pairs
+  let scaleOffsetData = [];
+
+  // Check and add non-empty scaleValue
+  if (scaleValue !== "")
+    scaleOffsetData.push(["ras.driver.motor.scale", scaleValue]);
+
+  // Check and add non-empty offsetValue
+  if (offsetValue !== "")
+    scaleOffsetData.push(["ras.driver.steering.offset", offsetValue]);
+
+  // Create the data object that will be sent to the backend via POST
+  let data = { "vehicle": scaleOffsetData };
+
+  console.log('Data to send:', data);
+        
+  // Make POST request to the backend endpoint
+  fetch('/teleop/user/options', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(data)
+  })
+  .then(response => {
+    if (response.ok) 
+      console.log('Data sent successfully.');
+    else 
+      console.error('Failed to send data.');
+  })
+  .catch(error => {
+    console.error('Error:', error);
+  });
 });
 
 export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
