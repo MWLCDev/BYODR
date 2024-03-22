@@ -241,8 +241,18 @@ MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
     body: JSON.stringify(data)
   })
   .then(response => {
-    if (response.ok) 
+    if (response.ok)
+    {
       console.log('Data sent successfully.');
+
+      // Showing the confirmation text and then hiding it after 3 seconds
+      MotorDataInput.CONFIRM_CHANGE_TEXT.classList.remove('hidden');
+      setTimeout(() => {
+        MotorDataInput.CONFIRM_CHANGE_TEXT.classList.add('hidden');
+      }, 3000);
+
+    }
+
     else 
       console.error('Failed to send data.');
   })
