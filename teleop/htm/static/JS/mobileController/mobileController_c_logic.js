@@ -2,7 +2,7 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import CTRL_STAT from './mobileController_z_state.js';
 import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
-
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -201,132 +201,31 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-// Get the input elements
-const scaleInput = document.getElementById('scaleInput');
-const offsetInput = document.getElementById('offsetInput');
-const confirmButton = document.getElementById('confirmButton');
-
-// Hide the input boxes and all related objects when the triangles are pressed
-function hideInputElements()
-{
-  document.querySelector('.input-container').classList.add('hidden');
-}
-
-// Show the input boxes and all related objects when the triangles are not pressed
-// Also when the boxes appear, show the data that is currently applied
-function showInputElements()
-{
-  document.querySelector('.input-container').classList.remove('hidden');
-  
-  // Make a GET request to fetch data and make it appear inside the text boxes
-  fetch('/teleop/user/options')
-  .then(response => response.json())
-  .then(data => {
-    // Update input boxes with received data
-    scaleInput.value = data.vehicle["ras.driver.motor.scale"];
-    offsetInput.value = data.vehicle["ras.driver.steering.offset"]
-    console.log('Motor scale received:', scaleInput.value);
-    console.log('Steering offset received:', offsetInput.value);
-    updateConfirmButton();
-
-  })
-  .catch(error => {
-    console.error('Error fetching data:', error);
-  });
-}
-
-// Function to check if the max speed input is valid
-function isValidScaleInput(value)
-{
-  const min = 0.0;
-  const max = 10.0;
-  const scale_regex = /^([1-9]\d?(\.\d\d?)?)?$/;
-  /*
-  Regex explanation:
-  ^ Start of expression
-  (\d\d?(\.\d\d?)?)? Checks if the \d\d?(\.\d\d?)?) expression appears 0 or 1 time
-  [1-9] Checks if a digit 1-9 appears 1 time
-  \d? Checks if a digit 0-9 appears 0 or 1 time
-  (\.\d\d?)? Checks if the (\.\d\d?) expression appears 0 or 1 time
-  \. Checks if the . character appears 1 time
-  \d Checks if a digit 0-9 appears 1 time
-  \d? Checks if a digit 0-9 appears 0 or 1 time
-  $ End of expression
-  */
-  // console.log("Scale:", value)
-  // console.log(scale_regex.test(value))
-
-  return (scale_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
-}
-
-// Function to check if the steering offset input is valid
-function isValidOffsetInput(value)
-{
-  const min = -2.0;
-  const max = 2.0;
-  const offset_regex = /^(\-?\d(\.\d\d?)?)?$/;
-  /*
-  Regex explanation:
-  ^ Start of expression
-  (\-?\d(\.\d\d?)?)? Checks if the \-?\d(\.\d\d?)? expression appears 0 or 1 time
-  \-? Checks if the - character appears 0 or 1 time
-  \d Checks if a digit 0-9 appears 1 time
-  (\.\d\d?)? Checks if the (\.\d\d?) expression appears 0 or 1 time
-  \. Checks if the . character appears 1 time
-  \d Checks if a digit 0-9 appears 1 time
-  \d? Checks if a digit 0-9 appears 0 or 1 time
-  $ End of expression
-  */
-  // console.log("Offset:", value)
-  // console.log(offset_regex.test(value))
-
-  return (offset_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
-}
-
-// Function to enable or disable confirm button based on input validity
-function updateConfirmButton()
-{
-  /*
-  If one OR both input boxes are empty
-  AND
-  Both input boxes have valid values (an empty string is a valid value)
-  Then enable the button
-  */
-  if ( isValidScaleInput(scaleInput.value) && isValidOffsetInput(offsetInput.value) )
-    confirmButton.removeAttribute('disabled');
-  else
-    confirmButton.setAttribute('disabled', true);
-}
-
 // Add event listeners to input boxes
-scaleInput.addEventListener('input', function() 
+MotorDataInput.SCALEINPUT.addEventListener('input', function() 
 {
-  updateConfirmButton();
+  MotorDataInput.updateConfirmButton();
 });
 
 // Add event listeners to input boxes
-offsetInput.addEventListener('input', function() 
+MotorDataInput.OFFSETINPUT.addEventListener('input', function() 
 {
-  updateConfirmButton();
+  MotorDataInput.updateConfirmButton();
 });
 
 // Add event listener to confirm button
-confirmButton.addEventListener('click', function()
+MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
 {
-  // Retrieve values from input boxes
-  const scaleValue = scaleInput.value;
-  const offsetValue = offsetInput.value;
-  
   // Create an array to store non-empty key-value pairs
   let scaleOffsetData = [];
 
   // Check and add non-empty scaleValue
-  if (scaleValue !== "")
-    scaleOffsetData.push(["ras.driver.motor.scale", scaleValue]);
+  if (MotorDataInput.SCALEINPUT.value !== "")
+    scaleOffsetData.push(["ras.driver.motor.scale", MotorDataInput.SCALEINPUT.value]);
 
   // Check and add non-empty offsetValue
-  if (offsetValue !== "")
-    scaleOffsetData.push(["ras.driver.steering.offset", offsetValue]);
+  if (MotorDataInput.OFFSETINPUT.value !== "")
+    scaleOffsetData.push(["ras.driver.steering.offset", MotorDataInput.OFFSETINPUT.value]);
 
   // Create the data object that will be sent to the backend via POST
   let data = { "vehicle": scaleOffsetData };
@@ -353,4 +252,4 @@ confirmButton.addEventListener('click', function()
 });
 
 export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
-  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, hideInputElements, showInputElements };
+  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };

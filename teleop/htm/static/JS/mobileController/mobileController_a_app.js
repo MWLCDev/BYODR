@@ -1,8 +1,8 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { Dot } from "./mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, showInputElements }
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "./mobileController_c_logic.js"
-
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
 
@@ -11,10 +11,10 @@ import { redraw, app } from "./mobileController_d_pixi.js";
 // Now we call it once, and we just change the commands that are being sent
 // At first we send a default value
 CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
-sendJSONCommand()
+sendJSONCommand();
 
 // Making the text boxes show the current data that exist on the robot
-showInputElements()
+MotorDataInput.showInputElements();
 
 
 window.addEventListener('load', () => {
@@ -78,7 +78,7 @@ app.view.addEventListener('touchend', () => {
   }
 
   // Making the text boxes show the current data that exist on the robot
-  showInputElements()
+  MotorDataInput.showInputElements();
 });
 
 function onTouchMove(event) {
