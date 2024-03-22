@@ -5,91 +5,38 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link rel="shortcut icon" href="#" />
   <title>Mobile controller</title>
-  <style>
-    /* CSS styles for layout */
-    .mobile_view_container {
-      display: flex;
-      flex-direction: column;
-      position: relative;
-    }
-
-    .input-container {
-      position: absolute;
-      display: flex;
-      flex-direction: column;
-      align-items: left;
-      top: 20px;
-    }
-
-    .input-group {
-      font-size: 14px;
-      display: flex;
-      align-items: center;
-      margin-left: 10px;
-    }
-
-    .input-group label {
-      width: 110px;
-    }
-
-    .input-box-container {
-      display: flex;
-      align-items: center;
-    }
-
-    .input-box {
-      width: 50px;
-    }
-
-    .input-box-text {
-      margin-left: 10px;
-    }
-
-    .button-container {
-      margin-top: 10px;
-      text-align: right;
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Add this part to make the screen "stable".
-    Without this, the screen can be moved to the right or left,
-    making objects on the canvas appear inconsistent. */
-    html, body {
-      padding: 0;
-      margin: 0;
-    }
-  </style>
+  
+  <!-- Link to external CSS file -->
+  <link rel="stylesheet" href="../static/CSS/mobileController.css" />
 </head>
 
 <body>
   <div class="mobile_view_container">
     <!-- Input container -->
-    <div class="input-container">
+    <div class="mobile-controller-motor-settings-container">
 
       <!-- Scale input container -->
-      <div class="input-group">
-        <label for="scaleInput">Max km/h:</label>
-        <div class="input-box-container">
-          <input id="scaleInput" class="input-box">
-          <span class="input-box-text">Between 1,10</span>
+      <div class="scale-offset-input-containers">
+        <label for="scale_input_box_ID">Max km/h:</label>
+        <div class="scale-offset-input-box-containers">
+          <input id="scale_input_box_ID" class="scale-offset-input-box">
+          <span class="scale-offset-input-box-text">Between 1,10</span>
         </div>
       </div>
 
       <!-- Offset input container -->
-      <div class="input-group">
-        <label for="offsetInput">Steering offset:</label>
-        <div class="input-box-container">
-          <input id="offsetInput" class="input-box">
-          <span class="input-box-text">Between -2,2</span>
+      <div class="scale-offset-input-containers">
+        <label for="offset_input_box_ID">Steering offset:</label>
+        <div class="scale-offset-input-box-containers">
+          <input id="offset_input_box_ID" class="scale-offset-input-box">
+          <span class="scale-offset-input-box-text">Between -2,2</span>
         </div>
       </div>
 
       <!-- Button container -->
-      <div class="button-container">
-        <button id="confirmButton" class="confirm-button" disabled>Confirm</button>
+      <div class="scale-offset-confirm-button-containers">
+        <button id="scale_offset_confirm_button_ID" class="confirm-button" disabled>Confirm</button>
+        <span class="scale-offset-confirm-text hidden">Applied changes.</span>
       </div>
 
     </div>
