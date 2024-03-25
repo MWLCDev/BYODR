@@ -11,20 +11,48 @@ class InferenceToggleButton {
     this.toggleButtonContainer = document.getElementById('toggle_button_container');
     this.optionsContainer = document.getElementById('inference_options_container');
     this.hideOptionsButton = document.getElementById('hide_options');
+    this.inferenceTrainingButton = document.getElementById('inference_training_toggle');
+    this.InferenceAutoNavigationToggle = document.getElementById('inference_auto_navigation_toggle');
     this.confidenceWS = {}; // Placeholder for WebSocket.
     this.autoReconnectInterval = 9000;
     this.initializeConfidenceWS();
+    this.buttonsEventListener()
+  }
+
+  buttonsEventListener() {
     this.toggleButton.addEventListener('click', () => this.showInferenceOptions());
     this.hideOptionsButton.addEventListener('click', () => this.hideInferenceOptions());
+    this.InferenceAutoNavigationToggle.addEventListener('click', () => this.sendAutoNavigationRequest());
+    this.inferenceTrainingButton.addEventListener('click', () => this.sendInferenceTrainRequest());
   }
 
   hideInferenceOptions() {
-    this.optionsContainer.style.display = 'none'; // Hide the options container
-    this.toggleButtonContainer.style.display = 'block'; // Show the toggle button
+    this.optionsContainer.style.display = 'none';
+    this.toggleButtonContainer.style.display = 'block';
   }
   showInferenceOptions() {
-    this.optionsContainer.style.display = 'block'; // Show the options container
-    this.toggleButtonContainer.style.display = 'none'; // Hide the toggle button
+    this.optionsContainer.style.display = 'block';
+    this.toggleButtonContainer.style.display = 'none';
+  }
+
+  sendInferenceTrainRequest() {
+    let currentText = this.inferenceTrainingButton.innerText;
+    this.sendInferenceRequest(currentText)
+    this.toggleTrainButtonAppearance(currentText)
+  }
+  sendAutoNavigationRequest() {
+    let currentText = this.InferenceAutoNavigationToggle.innerText;
+    this.sendInferenceRequest(currentText)
+    this.toggleAutoNavigationButtonAppearance(currentText)
+
+  }
+
+  toggleTrainButtonAppearance(command) {
+    this.inferenceTrainingButton.innerText = command === "Start Training" ? "Stop Training" : "Start Training";
+  }
+
+  toggleAutoNavigationButtonAppearance(command) {
+    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
   }
 
   /**
