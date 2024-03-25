@@ -1,17 +1,27 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/mobileController.css" />
+		<link rel="shortcut icon" href="#" />
+		<title>Mobile controller</title>
+	</head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <link rel="stylesheet" type="text/css" href="../static/CSS/mobileController.css">
-  <link rel="shortcut icon" href="#" />
-  <title>Mobile controller</title>
-</head>
+	<body>
+		<div class="mobile_controller_button_container">
+			<div id="toggle_button_container">
+				<!-- FOR OT and MC: add your buttons here with the same class name -->
+				<button id="inference_toggle_button" class="mobile_option_button">Autopilot options</button>
+			</div>
 
-<body>
-  <script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
-  <script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
-</body>
-
+			<div id="inference_options_container">
+				<button id="inference_training_toggle" class="mobile_option_button">Start Training</button>
+				<button id="inference_auto_navigation_toggle" class="mobile_option_button">Start Auto-navigation</button>
+				<button id="hide_options" class="mobile_option_button">Hide Options</button>
+			</div>
+		</div>
+		<script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
+		<script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
+	</body>
 </html>

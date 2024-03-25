@@ -2,6 +2,7 @@ import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle
 import { Dot } from "./mobileController_b_shape_dot.js"
 import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "./mobileController_c_logic.js"
+  import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
@@ -16,6 +17,7 @@ sendJSONCommand()
 
 window.addEventListener('load', () => {
   initializeWS()
+  new InferenceToggleButton("inference_toggle_button")
 });
 
 window.addEventListener('resize', () => {
