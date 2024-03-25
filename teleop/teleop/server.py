@@ -146,6 +146,31 @@ class ControlServerSocket(websocket.WebSocketHandler):
             pass
 
 
+class InferenceHandler(websocket.WebSocketHandler):
+    def initialize(self, inference_s):
+        self.inference = inference_s
+
+    def open(self):
+        logger.info("Inference websocket connection opened.")
+        self.write_message("Connection established.")
+
+    def send_loading_message(self):
+        self.write_message("loading")
+
+    def on_message(self, message):
+        if message == "Start Auto-navigation":
+            self.write_message("Received start")
+
+        elif message == "Stop Auto-navigation":
+            self.write_message("Received stop")
+
+        elif message == "Start Training":
+            self.write_message("Received start")
+
+        elif message == "Stop Training":
+            self.write_message("Received stop")
+
+
 class MessageServerSocket(websocket.WebSocketHandler):
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
