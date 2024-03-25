@@ -3,7 +3,7 @@
  */
 class InferenceToggleButton {
   /**
-   * Constructs a ToggleButtonHandler instance.
+   * Constructs a InferenceToggleButton instance.
    * @param {string} buttonId The ID of the button element to be managed.
    */
   constructor(buttonId) {
@@ -16,7 +16,14 @@ class InferenceToggleButton {
     this.confidenceWS = {}; // Placeholder for WebSocket.
     this.autoReconnectInterval = 9000;
     this.initializeConfidenceWS();
+    //Means no smoothing for the other classes
+    this._isInference = false;
+
     this.buttonsEventListener()
+  }
+
+  get isInference() {
+    return this._isInference;
   }
 
   buttonsEventListener() {
@@ -27,12 +34,15 @@ class InferenceToggleButton {
   }
 
   hideInferenceOptions() {
+    this._isInference = false
     this.optionsContainer.style.display = 'none';
     this.toggleButtonContainer.style.display = 'block';
   }
+
   showInferenceOptions() {
     this.optionsContainer.style.display = 'block';
     this.toggleButtonContainer.style.display = 'none';
+    this._isInference = true
   }
 
   sendInferenceTrainRequest() {

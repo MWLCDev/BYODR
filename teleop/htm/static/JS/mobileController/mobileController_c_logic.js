@@ -1,7 +1,7 @@
 
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import CTRL_STAT from './mobileController_z_state.js';
-import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
+import { redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -163,7 +163,7 @@ function detectTriangle(x, y) {
  * limit the triangles not to go outside the borders of the screen
  * @param {number} y Y-coord where the user's input is 
  */
-function handleTriangleMove(y) {
+function handleTriangleMove(y, isInference) {
   const midScreen = window.innerHeight / 2;
   let yOffset = y - midScreen;
 
@@ -176,11 +176,14 @@ function handleTriangleMove(y) {
   } else {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
-
-  if(CTRL_STAT.detectedTriangle === 'top')
-    drawTopTriangle_BottomRectangle(yOffset);
-  else
-    drawBottomTriangle_TopRectangle(yOffset);
+  if (isInference) {
+    redraw(yOffset);
+  } else {
+    if (CTRL_STAT.detectedTriangle === 'top')
+      drawTopTriangle_BottomRectangle(yOffset);
+    else
+      drawBottomTriangle_TopRectangle(yOffset);
+  }
 }
 
 

@@ -2,7 +2,7 @@ import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle
 import { Dot } from "./mobileController_b_shape_dot.js"
 import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "./mobileController_c_logic.js"
-  import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
+import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
@@ -13,11 +13,12 @@ import { redraw, app } from "./mobileController_d_pixi.js";
 // At first we send a default value
 CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
 sendJSONCommand()
-
+let intervalId;
+let inferenceToggleButton
 
 window.addEventListener('load', () => {
   initializeWS()
-  new InferenceToggleButton("inference_toggle_button")
+  inferenceToggleButton = new InferenceToggleButton("inference_toggle_button")
 });
 
 window.addEventListener('resize', () => {
@@ -27,7 +28,6 @@ window.addEventListener('resize', () => {
   redraw();
 });
 
-let intervalId;
 app.view.addEventListener('touchstart', (event) => {
   CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
   detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
@@ -51,14 +51,6 @@ app.view.addEventListener('touchstart', (event) => {
   }
 });
 
-function startOperating(event) {
-  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
-  CTRL_STAT.cursorFollowingDot = new Dot();
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
-  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-  handleTriangleMove(event.touches[0].clientY);
-}
-
 
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
@@ -76,6 +68,15 @@ app.view.addEventListener('touchend', () => {
     clearTimeout(intervalId);
   }
 });
+
+function startOperating(event) {
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
+  CTRL_STAT.cursorFollowingDot = new Dot();
+  handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
+  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  //pass the smoothing here
+  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.isInference);
+}
 
 function onTouchMove(event) {
   event.preventDefault(); // Prevent scrolling while moving the triangles
