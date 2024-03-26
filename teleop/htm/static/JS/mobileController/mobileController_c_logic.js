@@ -107,40 +107,37 @@ function SetStatistics(x, y, user_touch_Y, getInferenceState) {
       mobileInferenceState: getInferenceState,
     };
 }
-
 /**
- * Set the value for the dot on the screen, and limit the movement to be inside the triangle the user touched first
- * @param {number} x position of the touch
- * @param {number} y position of the touch
+ * Handles the movement of the dot within specified triangle boundaries.
+ * @param {number} touchX - X position of the touch.
+ * @param {number} touchY - Y position of the touch.
+ * @param {*} getInferenceState - Function to get the current inference state.
  */
 function handleDotMove(touchX, touchY, getInferenceState) {
-  // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
-  let minY, maxY, triangle;
-  if (CTRL_STAT.selectedTriangle === 'top') {
-    minY = CTRL_STAT.midScreen - topTriangle.height;
-    maxY = CTRL_STAT.midScreen;
-    triangle = topTriangle;
-  } else if (CTRL_STAT.selectedTriangle === 'bottom') {
-    minY = CTRL_STAT.midScreen;
-    maxY = CTRL_STAT.midScreen + bottomTriangle.height;
-    triangle = bottomTriangle;
-  }
-  let triangleMidX = triangle.baseWidth / 2
+  // Determine the triangle and its vertical boundaries based on the selection.
+  const isTopTriangle = CTRL_STAT.selectedTriangle === 'top';
+  const triangle = isTopTriangle ? topTriangle : bottomTriangle;
+  const minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
+  const maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
+
+  // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
-  //represents the fraction of the distance the dot is from the tip of the triangle it is inside
-  const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
-  //limit the movement of the ball
-  const maxXDeviation = Math.abs(relativeY) * (triangleMidX);
 
-  //The sent variable to the motors(hemisphere shape)
-  let x = Math.max(Math.min(touchX, (window.innerWidth / 2) + triangleMidX), (window.innerWidth / 2) - triangleMidX);
+  // Calculate the relative Y position within the triangle to determine horizontal movement limit.
+  let relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
+  let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
 
-  //X value to visually limit the movement of the ball
+  // Constrain the X position within the calculated horizontal movement limit.
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
 
-  deltaCoordinatesFromTip(x, y, touchY, getInferenceState);
+  // Log for debugging.
+  console.log(minY, y, relativeY, maxXDeviation, xOfDot)
+
+  // Update the dot's position and calculate coordinates relative to the tip.
+  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
+  deltaCoordinatesFromTip(touchX, y, touchY, getInferenceState);
 }
+
 
 /**
  * Second way to limit the user's interactions, to be only inside the two triangles (first one is the if condition in handleTriangleMove() to limit the borders of the triangles)
