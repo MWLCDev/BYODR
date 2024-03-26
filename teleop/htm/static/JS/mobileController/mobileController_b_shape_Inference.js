@@ -59,6 +59,13 @@ class InferenceToggleButton {
 
   toggleTrainButtonAppearance(command) {
     this.inferenceTrainingButton.innerText = command === "Start Training" ? "Stop Training" : "Start Training";
+    if (command == "Start Training") {
+      // Switch to driver_mode.inference.dnn mode
+      addKeyToSentCommand("button_y", 1)
+    } else {
+      // Switch to driver_mode.teleop.direct mode 
+      addKeyToSentCommand("button_b", 1)
+    }
   }
 
   toggleAutoNavigationButtonAppearance(command) {
