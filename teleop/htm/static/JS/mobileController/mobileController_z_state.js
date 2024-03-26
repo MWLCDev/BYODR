@@ -58,13 +58,6 @@ class MobileControllerState {
     return this.#stateErrors;
   }
 
-  set throttleSteeringJson(value) {
-    this.#throttleSteeringJson = value;
-  }
-  get throttleSteeringJson() {
-    return this.#throttleSteeringJson;
-  }
-
   set websocket(value) {
     this.#ws = value;
   }
