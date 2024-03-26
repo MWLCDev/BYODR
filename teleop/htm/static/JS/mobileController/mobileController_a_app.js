@@ -73,7 +73,7 @@ app.view.addEventListener('touchend', () => {
 function startOperating(event) {
   CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
   CTRL_STAT.cursorFollowingDot = new Dot();
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
+  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.isInference);
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
   //pass the smoothing here
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.isInference);
@@ -84,6 +84,6 @@ function onTouchMove(event) {
 
   // Update the dot's position
   if (CTRL_STAT.cursorFollowingDot) {
-    handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
+    handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.isInference);
   }
 }
