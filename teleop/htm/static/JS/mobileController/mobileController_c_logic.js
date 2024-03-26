@@ -73,18 +73,17 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
 }
 
 /**
- * Prints x,y and distance from the tip of the triangle to the current place of the ball.
- * @param {number} x current position of the ball (same as touch)
- * @param {*} y current position for the ball (same as touch)
+ * Calculate and set differences in y coordinate relative to the screen's center,
+ * effectively determining the position and movement of the control dot relative to the triangle tip.
+ * @param {number} user_touch_X - X position of the user's touch input.
  */
-function deltaCoordinatesFromTip(x, y, user_touch_Y, getInferenceState) {
-  // Calculate the differences in x and y coordinates to get coordinates relative to the tip
-  const relativeX = x - window.innerWidth / 2;
-  const relativeY = y - window.innerHeight / 2;
-  SetStatistics(relativeX, relativeY, user_touch_Y, getInferenceState);
+function deltaCoordinatesFromTip(user_touch_X) {
+  let relativeX = user_touch_X - window.innerWidth / 2;
+  return relativeX
 }
 
-function SetStatistics(x, y, user_touch_Y, getInferenceState) {
+
+function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
   const isTopTriangle = CTRL_STAT.selectedTriangle === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
@@ -93,8 +92,7 @@ function SetStatistics(x, y, user_touch_Y, getInferenceState) {
   // top triangle in use AND finger below the center
   // OR
   // bottom triangle in use AND finger above the center
-  // This is the definition of an XNOR gate, and the equivalent in JS is the '===' operator
-  // In this case, the robot will not decelerate slowly, it will immediately stop
+  // In this case will immediately stop
   if (isTopTriangle === isTouchBelowCenter)
     // Removing the throttle key in the JSON, since the robot will only forward commands if they have the 'throttle' key inside
     CTRL_STAT.throttleSteeringJson = {};
@@ -102,8 +100,8 @@ function SetStatistics(x, y, user_touch_Y, getInferenceState) {
   // In any other case, we produce commands normally
   else
     CTRL_STAT.throttleSteeringJson = {
-      throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
-      steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
+      throttle: -(y).toFixed(3),
+      steering: Number((user_touch_X / (shapeHeight / Math.sqrt(3))).toFixed(3)),
       mobileInferenceState: getInferenceState,
     };
 }
@@ -117,26 +115,41 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Determine the triangle and its vertical boundaries based on the selection.
   const isTopTriangle = CTRL_STAT.selectedTriangle === 'top';
   const triangle = isTopTriangle ? topTriangle : bottomTriangle;
-  const minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
-  const maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
+  const midScreen = window.innerHeight / 2;
+
+  // Calculate minY and maxY based on the mode.
+  let minY, maxY, relative_x;
+  if (getInferenceState === "auto") {
+    // For auto mode, use midScreen as reference for triangle positioning.
+    minY = isTopTriangle ? midScreen - triangle.height : midScreen;
+    maxY = isTopTriangle ? midScreen : midScreen + triangle.height;
+  } else {
+    // For non-auto mode, use CTRL_STAT.midScreen as reference to allow for dynamic triangle positioning.
+    minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
+    maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
+  }
 
   // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
 
   // Calculate the relative Y position within the triangle to determine horizontal movement limit.
-  let relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
+  let relativeY = (y - (getInferenceState === "auto" ? midScreen : CTRL_STAT.midScreen)) / triangle.height;
   let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
 
-  // Constrain the X position within the calculated horizontal movement limit.
+  // Constrain the X position within the calculated horizontal movement limit for both modes.
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
 
-  // Log for debugging.
-  console.log(minY, y, relativeY, maxXDeviation, xOfDot)
+  // // Log for debugging (optional).
+  // console.log('MinY:', minY, 'MaxY:', maxY, 'RelativeY:', relativeY, 'MaxXDeviation:', maxXDeviation, 'XOfDot:', xOfDot);
 
   // Update the dot's position and calculate coordinates relative to the tip.
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-  deltaCoordinatesFromTip(touchX, y, touchY, getInferenceState);
+  relative_x = deltaCoordinatesFromTip(touchX);
+  SetStatistics(relative_x, touchY, relativeY, getInferenceState);
 }
+
+
+
 
 
 /**
@@ -173,13 +186,13 @@ function handleTriangleMove(y, getInferenceState) {
   } else {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
-  if (isInference) {
-  if (getInferenceState == "true") {
-    redraw(yOffset);
-  } else {
-    if (CTRL_STAT.detectedTriangle === 'top')
+  // to not move the triangle, it is good
+  if (getInferenceState != "auto") {
+    if (getInferenceState == "true")
+      redraw(yOffset);
+    else if (CTRL_STAT.detectedTriangle === 'top')
       drawTopTriangle_BottomRectangle(yOffset);
-    else
+    else if (CTRL_STAT.detectedTriangle === 'bottom')
       drawBottomTriangle_TopRectangle(yOffset);
   }
 }
