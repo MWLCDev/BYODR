@@ -186,21 +186,46 @@ function handleTriangleMove(y, isInference) {
   }
 }
 
+/**
+ * Function to add a temporary key-value pair to the sent command through mobile controller socket
+ * @param {string} key 
+ * @param {string} value 
+ */
+function addKeyToSentCommand(key, value) {
+  CTRL_STAT.throttleSteeringJson[key + "_temp"] = value;
 
+}
 
 function sendJSONCommand() {
   if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-    CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-    CTRL_STAT.isWebSocketOpen = true; // Set the flag to true when WebSocket is open
+    // Create a copy of the data to send, removing '_temp' from temporary keys
+    const dataToSend = {};
+    for (const key in CTRL_STAT.throttleSteeringJson) {
+      if (key.endsWith('_temp')) {
+        const originalKey = key.slice(0, -5); // Remove last 5 characters ('_temp')
+        dataToSend[originalKey] = CTRL_STAT.throttleSteeringJson[key];
+      } else {
+        dataToSend[key] = CTRL_STAT.throttleSteeringJson[key];
+      }
+    }
+
+    CTRL_STAT.websocket.send(JSON.stringify(dataToSend));
+    CTRL_STAT.isWebSocketOpen = true;
+
+    Object.keys(CTRL_STAT.throttleSteeringJson).forEach(key => {
+      if (key.endsWith('_temp')) {
+        delete CTRL_STAT.throttleSteeringJson[key];
+      }
+    });
+
   } else {
     if (CTRL_STAT.isWebSocketOpen) {
-      // Log the error only once when the WebSocket is first closed
       console.error('WebSocket is not open. Unable to send data.');
-      CTRL_STAT.isWebSocketOpen = false; // Reset the flag
+      CTRL_STAT.isWebSocketOpen = false;
     }
   }
 
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand };
