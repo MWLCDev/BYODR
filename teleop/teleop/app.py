@@ -345,9 +345,9 @@ def main():
 
 
         # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        if "throttle" in cmd:
-
-            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
+        if cmd.get("applySmooth", False) == True:
+            cmd.pop("applySmooth")
+            teleop_publish(cmd)
             target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
 
             # If steering is the 1st key of the dict, then it means the user gives no throttle input 

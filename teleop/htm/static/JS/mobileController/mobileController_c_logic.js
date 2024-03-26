@@ -77,14 +77,14 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
  * @param {number} x current position of the ball (same as touch)
  * @param {*} y current position for the ball (same as touch)
  */
-function deltaCoordinatesFromTip(x, y, triangle_in_use, user_touch_Y) {
+function deltaCoordinatesFromTip(x, y, triangle_in_use, user_touch_Y, isInference) {
   // Calculate the differences in x and y coordinates to get coordinates relative to the tip
   const relativeX = x - window.innerWidth / 2;
   const relativeY = y - window.innerHeight / 2;
-  SetStatistics(relativeX, relativeY, triangle_in_use, user_touch_Y);
+  SetStatistics(relativeX, relativeY, triangle_in_use, user_touch_Y, isInference);
 }
 
-function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
+function SetStatistics(x, y, triangle_in_use, user_touch_Y, isInference) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
   const isTopTriangle = triangle_in_use === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
@@ -113,7 +113,7 @@ function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
  * @param {number} x position of the touch
  * @param {number} y position of the touch
  */
-function handleDotMove(touchX, touchY) {
+function handleDotMove(touchX, touchY, isInference) {
   // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
   let minY, maxY, triangle;
   if (CTRL_STAT.selectedTriangle === 'top') {
@@ -139,7 +139,7 @@ function handleDotMove(touchX, touchY) {
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
 
-  deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY);
+  deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY, isInference);
 }
 
 /**
