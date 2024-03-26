@@ -11,6 +11,7 @@ function initializeWS() {
 
   CTRL_STAT.websocket.onopen = function (event) {
     console.log('Mobile controller (WS) connection opened');
+    addKeyToSentCommand("button_b", 1)
     CTRL_STAT.stateErrors = ""
     CTRL_STAT.isWebSocketOpen = true;
   };
