@@ -50,6 +50,24 @@ app.view.addEventListener('touchstart', (event) => {
 });
 
 
+function startOperating(event) {
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
+  CTRL_STAT.cursorFollowingDot = new Dot();
+  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+}
+
+function onTouchMove(event) {
+  event.preventDefault(); // Prevent scrolling while moving the triangles
+
+  // Update the dot's position
+  if (CTRL_STAT.cursorFollowingDot) {
+    handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  }
+}
+
+
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
@@ -62,25 +80,8 @@ app.view.addEventListener('touchend', () => {
     }
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
-    CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
+    CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0, }; // send the stopping signal for the motors
     clearTimeout(intervalId);
   }
 });
 
-function startOperating(event) {
-  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
-  CTRL_STAT.cursorFollowingDot = new Dot();
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.isInference);
-  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-  //pass the smoothing here
-  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.isInference);
-}
-
-function onTouchMove(event) {
-  event.preventDefault(); // Prevent scrolling while moving the triangles
-
-  // Update the dot's position
-  if (CTRL_STAT.cursorFollowingDot) {
-    handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.isInference);
-  }
-}

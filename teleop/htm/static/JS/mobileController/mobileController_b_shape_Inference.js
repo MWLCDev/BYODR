@@ -17,13 +17,18 @@ class InferenceToggleButton {
     this.autoReconnectInterval = 9000;
     this.initializeConfidenceWS();
     //Means no smoothing for the other classes
-    this._isInference = false;
+    // false == working on normal mode
+    // true == Inference is working on mobile controller 
+    // train == Inference is on training mode
+    // auto == Inference is on training mode
+    this._inferenceState = "false";
 
     this.buttonsEventListener()
   }
 
   get isInference() {
-    return this._isInference;
+  get getInferenceState() {
+    return this._inferenceState;
   }
 
   buttonsEventListener() {
@@ -34,7 +39,7 @@ class InferenceToggleButton {
   }
 
   hideInferenceOptions() {
-    this._isInference = false
+    this._inferenceState = "false"
     this.optionsContainer.style.display = 'none';
     this.toggleButtonContainer.style.display = 'block';
   }
@@ -42,16 +47,18 @@ class InferenceToggleButton {
   showInferenceOptions() {
     this.optionsContainer.style.display = 'block';
     this.toggleButtonContainer.style.display = 'none';
-    this._isInference = true
+    this._inferenceState = "true"
   }
 
   sendInferenceTrainRequest() {
     let currentText = this.inferenceTrainingButton.innerText;
+    this._inferenceState = "train"
     this.sendInferenceRequest(currentText)
     this.toggleTrainButtonAppearance(currentText)
   }
   sendAutoNavigationRequest() {
     let currentText = this.InferenceAutoNavigationToggle.innerText;
+    this._inferenceState = "auto"
     this.sendInferenceRequest(currentText)
     this.toggleAutoNavigationButtonAppearance(currentText)
 

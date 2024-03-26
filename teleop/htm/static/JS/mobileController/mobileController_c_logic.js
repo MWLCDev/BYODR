@@ -77,14 +77,14 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
  * @param {number} x current position of the ball (same as touch)
  * @param {*} y current position for the ball (same as touch)
  */
-function deltaCoordinatesFromTip(x, y, user_touch_Y, isInference) {
+function deltaCoordinatesFromTip(x, y, user_touch_Y, getInferenceState) {
   // Calculate the differences in x and y coordinates to get coordinates relative to the tip
   const relativeX = x - window.innerWidth / 2;
   const relativeY = y - window.innerHeight / 2;
-  SetStatistics(relativeX, relativeY, user_touch_Y, isInference);
+  SetStatistics(relativeX, relativeY, user_touch_Y, getInferenceState);
 }
 
-function SetStatistics(x, y, user_touch_Y, isInference) {
+function SetStatistics(x, y, user_touch_Y, getInferenceState) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
   const isTopTriangle = CTRL_STAT.selectedTriangle === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
@@ -104,7 +104,7 @@ function SetStatistics(x, y, user_touch_Y, isInference) {
     CTRL_STAT.throttleSteeringJson = {
       throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
       steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
-      applySmooth: isInference,
+      mobileInferenceState: getInferenceState,
     };
 }
 
@@ -113,7 +113,7 @@ function SetStatistics(x, y, user_touch_Y, isInference) {
  * @param {number} x position of the touch
  * @param {number} y position of the touch
  */
-function handleDotMove(touchX, touchY, isInference) {
+function handleDotMove(touchX, touchY, getInferenceState) {
   // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
   let minY, maxY, triangle;
   if (CTRL_STAT.selectedTriangle === 'top') {
@@ -139,7 +139,7 @@ function handleDotMove(touchX, touchY, isInference) {
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
 
-  deltaCoordinatesFromTip(x, y, touchY, isInference);
+  deltaCoordinatesFromTip(x, y, touchY, getInferenceState);
 }
 
 /**
@@ -163,7 +163,7 @@ function detectTriangle(x, y) {
  * limit the triangles not to go outside the borders of the screen
  * @param {number} y Y-coord where the user's input is 
  */
-function handleTriangleMove(y, isInference) {
+function handleTriangleMove(y, getInferenceState) {
   const midScreen = window.innerHeight / 2;
   let yOffset = y - midScreen;
 
@@ -177,6 +177,7 @@ function handleTriangleMove(y, isInference) {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
   if (isInference) {
+  if (getInferenceState == "true") {
     redraw(yOffset);
   } else {
     if (CTRL_STAT.detectedTriangle === 'top')

@@ -345,8 +345,8 @@ def main():
 
 
         # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        if cmd.get("applySmooth", False) == True:
-            cmd.pop("applySmooth")
+        if cmd.get("mobileInferenceState") == "true":
+            cmd.pop("mobileInferenceState")
             teleop_publish(cmd)
             target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
 
@@ -391,6 +391,8 @@ def main():
 
     def teleop_publish(cmd):
         # We are the authority on route state.
+        if cmd.get("mobileInferenceState"):
+            cmd.pop("mobileInferenceState")
         cmd["navigator"] = dict(route=route_store.get_selected_route())
         teleop_publisher.publish(cmd)
 
