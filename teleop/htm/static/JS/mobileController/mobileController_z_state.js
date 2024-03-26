@@ -9,7 +9,8 @@ class MobileControllerState {
   #cursorFollowingDot = new Dot();
   #selectedTriangle = null;
   // Hold the current value for steering and throttle to be sent through the websocket
-  #throttleSteeringJson = {};
+  // At first we send a default value
+  #throttleSteeringJson = { steering: 0, throttle: 0, button_b: 1 };
   //stands for WebSocket
   #ws;
   #stateErrors;

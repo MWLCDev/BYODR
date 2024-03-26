@@ -10,9 +10,6 @@ import { redraw, app } from "./mobileController_d_pixi.js";
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 // The function would keep stacking, sending commands more often than 10 times a second
 // Now we call it once, and we just change the commands that are being sent
-// At first we send a default value
-CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
-CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0, button_b: 1 };
 sendJSONCommand()
 let intervalId;
 let inferenceToggleButton
