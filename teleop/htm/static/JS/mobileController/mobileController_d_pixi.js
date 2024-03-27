@@ -18,12 +18,34 @@ document.body.appendChild(app.view);
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
-function redraw(yOffset = 0) {
+
+function removeTriangles() {
+  // Check if the top triangle's graphics are currently a child of the stage
+  if (app.stage.children.includes(topTriangle.graphics)) {
+    app.stage.removeChild(topTriangle.graphics);
+  }
+
+  // Check if the bottom triangle's graphics are currently a child of the stage
+  if (app.stage.children.includes(bottomTriangle.graphics)) {
+    app.stage.removeChild(bottomTriangle.graphics);
+  }
+}
+
+
+function redraw(drawOption = "both", yOffset = 0) {
   app.stage.removeChildren();
-  topTriangle.drawTriangle(yOffset);
-  bottomTriangle.drawTriangle(yOffset);
-  app.stage.addChild(topTriangle.graphics);
-  app.stage.addChild(bottomTriangle.graphics);
+
+  // Draw top triangle based on the drawOption
+  if (drawOption === "top" || drawOption === "both") {
+    topTriangle.drawTriangle(yOffset);
+    app.stage.addChild(topTriangle.graphics);
+  }
+
+  // Draw bottom triangle based on the drawOption
+  if (drawOption === "bottom" || drawOption === "both") {
+    bottomTriangle.drawTriangle(yOffset);
+    app.stage.addChild(bottomTriangle.graphics);
+  }
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
