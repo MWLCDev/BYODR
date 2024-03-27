@@ -19,11 +19,13 @@ class InferenceToggleButton {
     this.logWSmessage;
     this.autoReconnectInterval = 9000;
     this.initializeLogWS();
-    //Means no smoothing for the other classes
-    // false == working on normal mode
-    // true == Inference is working on mobile controller 
-    // train == Inference is on training mode
-    // auto == Inference is on training mode
+    /*
+    Means no smoothing for the other classes
+     false == working on normal mode
+     true == Inference is working on mobile controller 
+     train == Inference is on training mode
+     auto == Inference is on training mode
+    */
     this._inferenceState = "false";
     this.currentAutoSpeed = 0
     this.buttonsEventListener()
@@ -46,12 +48,21 @@ class InferenceToggleButton {
   hideInferenceOptions() {
     redraw(undefined, undefined, true)
     this.InferenceAutoSpeedText.style.display = "none"
-    this._inferenceState = "false"
     this.optionsContainer.style.display = 'none';
     this.toggleButtonContainer.style.display = 'block';
-
     // Switch to driver_mode.teleop.direct mode 
     addKeyToSentCommand("button_b", 1)
+    changeTrianglesColor()
+    console.log(this._inferenceState)
+    // it should turn off all the buttons to start state
+    if (this._inferenceState == "auto") {
+      this.handleAutoNavigationClick
+      this._inferenceState = "false"
+    } else if (this._inferenceState == "train") {
+      this.toggleTrainButton()
+      this._inferenceState = "false"
+    }
+    this._inferenceState = "false"
   }
 
   showInferenceOptions() {
@@ -63,13 +74,29 @@ class InferenceToggleButton {
   }
 
   handleAutoNavigationClick() {
-    topTriangle.changeText("Raise Speed", 25)
-    bottomTriangle.changeText("Lower Speed", 25);
     redraw()
     let currentText = this.InferenceAutoNavigationToggle.innerText;
     this._inferenceState = "auto"
     this.toggleAutoNavigationButton(currentText)
+  }
 
+  toggleAutoNavigationButton(command) {
+    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
+    if (command == "Start Auto-navigation") {
+      redraw()
+      addKeyToSentCommand("button_y", 1)
+      topTriangle.changeText("Raise Speed", 25)
+      bottomTriangle.changeText("Lower Speed", 25);
+      this.InferenceAutoSpeedText.style.display = "block"
+      this.hideOptionsButton.innerText = "go to manual mode"
+      this.inferenceTrainingButton.style.display = "none"
+    } else if (command == "Stop Auto-navigation") {
+      removeTriangles()
+      addKeyToSentCommand("button_b", 1)
+      this.InferenceAutoSpeedText.style.display = "none"
+      this.inferenceTrainingButton.style.display = "flex"
+      this.hideOptionsButton.innerText = "Hide Options"
+    }
   }
 
 
@@ -80,38 +107,18 @@ class InferenceToggleButton {
     this.toggleTrainButton(currentText)
   }
 
-
-  toggleAutoNavigationButton(command) {
-    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
-    if (command == "Start Auto-navigation") {
-      // Switch to driver_mode.inference.dnn mode
-      addKeyToSentCommand("button_y", 1)
-      this.InferenceAutoSpeedText.style.display = "block"
-      redraw()
-      this.hideOptionsButton.style.display = "none"
-      this.inferenceTrainingButton.style.display = "none"
-    } else if (command == "Stop Auto-navigation") {
-      this.InferenceAutoSpeedText.style.display = "none"
-      removeTriangles()
-      addKeyToSentCommand("button_b", 1)
-      this.hideOptionsButton.style.display = "flex"
-      this.inferenceTrainingButton.style.display = "flex"
-    }
-  }
-
-
   toggleTrainButton(command) {
     this.inferenceTrainingButton.innerText = command === "Start Training" ? "Stop Training" : "Start Training";
     if (command == "Start Training") {
-      addKeyToSentCommand("button_y", 1)
       redraw("top", undefined, undefined)
-      this.hideOptionsButton.style.display = "none"
+      addKeyToSentCommand("button_y", 1)
+      this.hideOptionsButton.innerText = "go to manual mode"
       this.InferenceAutoNavigationToggle.style.display = "none"
     } else {
-      this.hideOptionsButton.style.display = "flex"
-      this.InferenceAutoNavigationToggle.style.display = "flex"
       removeTriangles()
       addKeyToSentCommand("button_b", 1)
+      this.hideOptionsButton.innerText = "Hide Options"
+      this.InferenceAutoNavigationToggle.style.display = "flex"
     }
 
   }
