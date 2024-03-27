@@ -36,7 +36,7 @@ function changeTrianglesColor(color) {
   bottomTriangle.drawTriangle(undefined, color);
 }
 
-function redraw(drawOption = "both", yOffset = 0) {
+function redraw(drawOption = "both", yOffset = 0, resetText = false) {
   app.stage.removeChildren();
 
   if (drawOption === "top" || drawOption === "both") {
@@ -49,6 +49,11 @@ function redraw(drawOption = "both", yOffset = 0) {
     app.stage.addChild(bottomTriangle.graphics);
   }
 
+  if (resetText) {
+    topTriangle.changeText(topTriangle.currentSSID)
+    bottomTriangle.changeText("Backwards")
+    redraw()
+  }
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
@@ -81,4 +86,4 @@ function drawBottomTriangle_TopRectangle(yOffset = 0) {
 }
 
 
-export { app, redraw, removeTriangles, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
+export { app, changeTrianglesColor, redraw, removeTriangles, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
