@@ -30,6 +30,17 @@ class InferenceToggleButton {
   get getInferenceState() {
     return this._inferenceState;
   }
+  // add case when two buttons cannot be clicked together
+  // send stopping command when hiding the menu
+  // it should reset all the values to zero and turn off all the buttons when exit inf mode
+
+  handleSpeedControl(touchedTriangle) {
+    if (touchedTriangle == "top") {
+      addKeyToSentCommand("arrow_up", 1)
+    } else if (touchedTriangle == "bottom") {
+      addKeyToSentCommand("arrow_down", 1)
+    }
+  }
 
   buttonsEventListener() {
     this.toggleButton.addEventListener('click', () => this.showInferenceOptions());
