@@ -14,7 +14,7 @@ app.view.style.marginTop = '10px';
 app.view.style.marginBottom = '10px';
 document.body.appendChild(app.view);
 
-//Then add them to the canvas 9it is called stage in PiXi)
+//Then add them to the canvas (it is called stage in PiXi)
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
@@ -79,4 +79,4 @@ function drawBottomTriangle_TopRectangle(yOffset = 0) {
 }
 
 
-export { app, redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
+export { app, redraw, removeTriangles, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }

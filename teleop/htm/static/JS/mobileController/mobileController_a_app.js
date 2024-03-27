@@ -29,6 +29,7 @@ window.addEventListener('resize', () => {
 app.view.addEventListener('touchstart', (event) => {
   CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
   detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
   //if condition to make sure it will move only if the user clicks inside one of the two triangles
   if (CTRL_STAT.detectedTriangle !== 'none') {
     switch (CTRL_STAT.stateErrors) {
@@ -51,11 +52,10 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
   CTRL_STAT.cursorFollowingDot = new Dot();
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
   if (inferenceToggleButton.getInferenceState == "train") {
     document.getElementById('inference_options_container').style.display = 'none';
   }
@@ -74,6 +74,7 @@ function onTouchMove(event) {
 
 
 app.view.addEventListener('touchend', () => {
+
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
     redraw(); // Reset triangles to their original position

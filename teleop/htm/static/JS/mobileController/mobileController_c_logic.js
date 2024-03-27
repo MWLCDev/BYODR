@@ -5,7 +5,6 @@ import { redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangl
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
   let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
   CTRL_STAT.websocket = new WebSocket(WSurl);
 
@@ -106,6 +105,7 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
       mobileInferenceState: getInferenceState,
     };
 }
+
 /**
  * Handles the movement of the dot within specified triangle boundaries.
  * @param {number} touchX - X position of the touch.
@@ -173,7 +173,7 @@ function detectTriangle(x, y) {
  * limit the triangles not to go outside the borders of the screen
  * @param {number} y Y-coord where the user's input is 
  */
-function handleTriangleMove(y, getInferenceState) {
+function handleTriangleMove(y, inferenceToggleButton) {
   const midScreen = window.innerHeight / 2;
   let yOffset = y - midScreen;
 
