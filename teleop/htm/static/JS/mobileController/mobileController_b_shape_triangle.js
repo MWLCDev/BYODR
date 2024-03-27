@@ -94,9 +94,9 @@ class Triangle {
   }
 
 
-  drawTriangle(yOffset = 0) {
+  drawTriangle(yOffset = 0, color = 0x000000) {
     this.graphics.clear();
-    this.graphics.beginFill(0x000000);
+    this.graphics.beginFill(color); // Use this.color or default to black
     const midScreen = window.innerHeight / 2;
     const yOffsetAdjustment = this.direction === 'up' ? -5 : 5;// Tip between the two triangle
 

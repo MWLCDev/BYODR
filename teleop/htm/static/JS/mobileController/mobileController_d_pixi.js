@@ -31,6 +31,10 @@ function removeTriangles() {
   }
 }
 
+function changeTrianglesColor(color) {
+  topTriangle.drawTriangle(undefined, color);
+  bottomTriangle.drawTriangle(undefined, color);
+}
 
 function redraw(drawOption = "both", yOffset = 0) {
   app.stage.removeChildren();
