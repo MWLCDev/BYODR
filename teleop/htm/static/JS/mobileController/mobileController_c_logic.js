@@ -167,6 +167,7 @@ function detectTriangle(x, y) {
   } else {
     CTRL_STAT.detectedTriangle = 'none';
   }
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
 }
 
 /**

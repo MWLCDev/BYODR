@@ -35,13 +35,11 @@ function removeTriangles() {
 function redraw(drawOption = "both", yOffset = 0) {
   app.stage.removeChildren();
 
-  // Draw top triangle based on the drawOption
   if (drawOption === "top" || drawOption === "both") {
     topTriangle.drawTriangle(yOffset);
     app.stage.addChild(topTriangle.graphics);
   }
 
-  // Draw bottom triangle based on the drawOption
   if (drawOption === "bottom" || drawOption === "both") {
     bottomTriangle.drawTriangle(yOffset);
     app.stage.addChild(bottomTriangle.graphics);

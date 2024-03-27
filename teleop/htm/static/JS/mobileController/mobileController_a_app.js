@@ -29,7 +29,6 @@ window.addEventListener('resize', () => {
 app.view.addEventListener('touchstart', (event) => {
   CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
   detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
-  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
   //if condition to make sure it will move only if the user clicks inside one of the two triangles
   if (CTRL_STAT.detectedTriangle !== 'none') {
     switch (CTRL_STAT.stateErrors) {
@@ -52,9 +51,13 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-  CTRL_STAT.cursorFollowingDot = new Dot();
+  if (app.stage.children.includes(CTRL_STAT.cursorFollowingDot)) {
+    CTRL_STAT.cursorFollowingDot.show()
+  }
+  else {
+    CTRL_STAT.cursorFollowingDot = new Dot();
+  }
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
-  app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
   if (inferenceToggleButton.getInferenceState == "train") {
     document.getElementById('inference_options_container').style.display = 'none';
@@ -78,12 +81,7 @@ app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
     redraw(); // Reset triangles to their original position
-
-    // Remove the dot
-    if (CTRL_STAT.cursorFollowingDot) {
-      CTRL_STAT.cursorFollowingDot.remove();
-      CTRL_STAT.cursorFollowingDot = null;
-    }
+    CTRL_STAT.cursorFollowingDot.hide()
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
     CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
