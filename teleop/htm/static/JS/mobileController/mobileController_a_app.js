@@ -8,8 +8,6 @@ import CTRL_STAT from './mobileController_z_state.js'; // Stands for control sta
 import { redraw, app } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
-// The function would keep stacking, sending commands more often than 10 times a second
-// Now we call it once, and we just change the commands that are being sent
 sendJSONCommand()
 let intervalId;
 let inferenceToggleButton
