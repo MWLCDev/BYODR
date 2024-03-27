@@ -24,7 +24,7 @@ canvas {
 
 .mobile_option_button {
   display: block;
-  margin-bottom: 5px;
+  margin-right: 5px;
   width: 10vh;
   height: 10vh;
   background-color: #67b96a;
@@ -38,6 +38,7 @@ canvas {
 }
 
 #inference_options_container {
-  display: none;
   /* Initially hidden */
+  display: none;
+  flex-direction: row-reverse;
 }
