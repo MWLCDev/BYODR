@@ -119,7 +119,7 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   const midScreen = window.innerHeight / 2;
 
   // Calculate minY and maxY based on the mode.
-  let minY, maxY, relative_x;
+  let minY, maxY;
   if (getInferenceState === "auto") {
     // For auto mode, use midScreen as reference for triangle positioning.
     minY = isTopTriangle ? midScreen - triangle.height : midScreen;
@@ -139,19 +139,18 @@ function handleDotMove(touchX, touchY, getInferenceState) {
 
   // Constrain the X position within the calculated horizontal movement limit for both modes.
   let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-
   // // Log for debugging (optional).
   // console.log('MinY:', minY, 'MaxY:', maxY, 'RelativeY:', relativeY, 'MaxXDeviation:', maxXDeviation, 'XOfDot:', xOfDot);
 
-  // Update the dot's position and calculate coordinates relative to the tip.
+  // Update the dot's position.
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-  relative_x = deltaCoordinatesFromTip(touchX);
-  SetStatistics(relative_x, touchY, relativeY, getInferenceState);
+
+  // Execute the following only when not in auto mode.
+  if (getInferenceState !== "auto") {
+    let relative_x = deltaCoordinatesFromTip(touchX);
+    SetStatistics(relative_x, touchY, relativeY, getInferenceState);
+  }
 }
-
-
-
-
 
 /**
  * Second way to limit the user's interactions, to be only inside the two triangles (first one is the if condition in handleTriangleMove() to limit the borders of the triangles)
