@@ -428,11 +428,6 @@ def main():
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (
-                    r"/ws/switch_inference",
-                    InferenceHandler,
-                    dict(inference_s=inference),
-                ),
-                (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,
                     dict(mongo_box=_mongo),
