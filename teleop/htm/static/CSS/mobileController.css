@@ -40,10 +40,11 @@ canvas {
 }
 
 #inference_auto_speed {
-  display: block;
-  margin-bottom: 10px;
+  display: none;
   text-align: center;
   width: 100%;
+  font-size: large;
+  margin-bottom: 10px;
 }
 
 #inference_options_container {
@@ -52,9 +53,4 @@ canvas {
   align-items: center;
   justify-content: center;
   width: 100%;
-}
-
-#inference_auto_speed {
-  display: none;
-  margin-bottom: 10px;
 }
