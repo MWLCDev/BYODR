@@ -31,7 +31,7 @@ function removeTriangles() {
   }
 }
 
-function changeTrianglesColor(color) {
+function changeTrianglesColor(color = "0x000000") {
   topTriangle.drawTriangle(undefined, color);
   bottomTriangle.drawTriangle(undefined, color);
 }
@@ -39,25 +39,43 @@ function changeTrianglesColor(color) {
 function redraw(drawOption = "both", yOffset = 0, resetText = false) {
   app.stage.removeChildren();
 
-  if (drawOption === "top" || drawOption === "both") {
-    topTriangle.drawTriangle(yOffset);
-    app.stage.addChild(topTriangle.graphics);
-  }
+  // Define a function to conditionally draw triangles based on the drawOption
+  const drawTriangles = (option) => {
+    if (option === "top" || option === "both") {
+      topTriangle.drawTriangle(yOffset);
+      app.stage.addChild(topTriangle.graphics);
+    }
 
-  if (drawOption === "bottom" || drawOption === "both") {
-    bottomTriangle.drawTriangle(yOffset);
-    app.stage.addChild(bottomTriangle.graphics);
-  }
+    if (option === "bottom" || option === "both") {
+      bottomTriangle.drawTriangle(yOffset);
+      app.stage.addChild(bottomTriangle.graphics);
+    }
+  };
+
+  // Initially draw triangles based on the drawOption
+  drawTriangles(drawOption);
 
   if (resetText) {
-    topTriangle.changeText(topTriangle.currentSSID)
-    bottomTriangle.changeText("Backwards")
-    redraw()
+    // Only change text for the topTriangle or both if CTRL_STAT.stateErrors is empty
+    if ((drawOption === "top" || drawOption === "both") && !CTRL_STAT.stateErrors) {
+      topTriangle.changeText(topTriangle.currentSSID);
+    }
+
+    // Always allow text change for the bottomTriangle when resetText is true
+    if (drawOption === "bottom" || drawOption === "both") {
+      bottomTriangle.changeText("Backwards");
+    }
+
+    // Recursive call to redraw with resetText set to false to avoid infinite loop
+    redraw(drawOption, yOffset, false);
   }
-  // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-  if (CTRL_STAT.isWebSocketOpen)
+
+  // Always add cursorFollowingDot to the stage if the WebSocket is open
+  if (CTRL_STAT.isWebSocketOpen) {
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  }
 }
+
 
 function drawTopTriangle_BottomRectangle(yOffset = 0) {
   app.stage.removeChildren();
