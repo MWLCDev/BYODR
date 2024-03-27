@@ -56,11 +56,16 @@ function startOperating(event) {
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  if (inferenceToggleButton.getInferenceState == "train") {
+    document.getElementById('inference_options_container').style.display = 'none';
+  }
 }
 
 function onTouchMove(event) {
   event.preventDefault(); // Prevent scrolling while moving the triangles
-
+  if (inferenceToggleButton.getInferenceState == "train") {
+    document.getElementById('inference_options_container').style.display = 'none';
+  }
   // Update the dot's position
   if (CTRL_STAT.cursorFollowingDot) {
     handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
@@ -80,7 +85,15 @@ app.view.addEventListener('touchend', () => {
     }
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
-    CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0, }; // send the stopping signal for the motors
+    CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
+    // so it doesn't show the div when in inference mode
+    if (inferenceToggleButton.getInferenceState == "false") {
+      document.getElementById('toggle_button_container').style.display = 'block';
+    }
+    if (inferenceToggleButton.getInferenceState == "train") {
+      document.getElementById('inference_options_container').style.display = 'flex';
+    }
+
     clearTimeout(intervalId);
   }
 });

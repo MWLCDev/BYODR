@@ -58,6 +58,7 @@ class Triangle {
     this.drawText(newText);
 
   }
+
   drawText(newText) {
     this.textObj = new PIXI.Text(newText, Triangle.headerTextStyle);
 

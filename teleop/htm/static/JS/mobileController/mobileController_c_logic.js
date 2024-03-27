@@ -187,14 +187,27 @@ function handleTriangleMove(y, getInferenceState) {
   } else {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
-  // to not move the triangle, it is good
-  if (getInferenceState != "auto") {
-    if (getInferenceState == "true")
-      redraw(yOffset);
-    else if (CTRL_STAT.detectedTriangle === 'top')
-      drawTopTriangle_BottomRectangle(yOffset);
-    else if (CTRL_STAT.detectedTriangle === 'bottom')
-      drawBottomTriangle_TopRectangle(yOffset);
+
+  let INFState = inferenceToggleButton.getInferenceState
+  console.log(CTRL_STAT.selectedTriangle, CTRL_STAT.detectedTriangle)
+  if (INFState == "true")
+    redraw(CTRL_STAT.selectedTriangle, yOffset);
+  //cannot move it while on training mode
+  else if (INFState == "auto") {
+    inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
+    topTriangle.changeText("asd")
+    //you should be able to move it while on training mode
+  } else if (INFState == "train") {
+    redraw(CTRL_STAT.selectedTriangle, yOffset);
+  }
+
+  else if (CTRL_STAT.detectedTriangle === 'top') {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawTopTriangle_BottomRectangle(yOffset);
+  }
+  else if (CTRL_STAT.detectedTriangle === 'bottom') {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawBottomTriangle_TopRectangle(yOffset);
   }
 }
 
