@@ -8,6 +8,7 @@ class Triangle {
     this.subText;
     this.container = new PIXI.Container();
     this.graphics = new PIXI.Graphics();
+    this.currentSSID;
     this.container.addChild(this.graphics);
     this.updateDimensions();
     this.drawTriangle();
@@ -21,46 +22,42 @@ class Triangle {
       }
     }
   }
-  static headerTextStyle = new PIXI.TextStyle({
-    fontSize: 28,
-    fill: 'white',
-    align: 'center',
-  });
 
-  static subTextStyle = new PIXI.TextStyle({
-    fontSize: 15,
-    fill: this.headerTextStyle.fill,
-    align: this.headerTextStyle.align,
-  });
 
   async getSSID() {
     try {
       const response = await fetch('/run_get_SSID');
-      const data = await response.text();
-      this.drawText(data); // Call function to redraw the text after it has being fetched
+      this.currentSSID = await response.text();
+      this.drawText(this.currentSSID); // Call function to redraw the text after it has being fetched
     } catch (error) {
       console.error("Error fetching SSID for current robot:", error);
     }
   }
 
-  changeText(newText) {
-    if (newText == "controlError") {
-      newText = "Control Lost"
-      this.subText = "Refresh the Page"
-    } else if (newText == "connectionError") {
-      newText = "Connection Lost"
-      this.subText = "Please reconnect"
+  changeText(newText, fontSize = undefined) {
+    if (newText === "controlError") {
+      newText = "Control Lost";
+      this.subText = "Refresh the Page";
+    } else if (newText === "connectionError") {
+      newText = "Connection Lost";
+      this.subText = "Please reconnect";
     }
     if (this.textObj) {
       this.graphics.removeChild(this.textObj);
     }
     this.text = newText;
-    this.drawText(newText);
-
+    this.drawText(newText, fontSize);
   }
 
-  drawText(newText) {
-    this.textObj = new PIXI.Text(newText, Triangle.headerTextStyle);
+
+  drawText(newText, fontSize) {
+    const headerTextStyle = new PIXI.TextStyle({
+      fontSize: fontSize || 28, // Use provided fontSize or default to 28
+      fill: 'white',
+      align: 'center',
+    });
+
+    this.textObj = new PIXI.Text(newText, headerTextStyle);
 
     // Remove previous subTextObj if it exists
     if (this.subTextObj) {
@@ -69,7 +66,12 @@ class Triangle {
 
     // Check and draw subText
     if (this.direction === 'up' && this.subText) {
-      this.subTextObj = new PIXI.Text(this.subText, Triangle.subTextStyle);
+      const subTextStyle = new PIXI.TextStyle({
+        fontSize: (fontSize ? fontSize * 0.5 : 15), // Example: smaller font size for subText
+        fill: 'white',
+        align: 'center',
+      });
+      this.subTextObj = new PIXI.Text(this.subText, subTextStyle);
       this.subTextObj.anchor.set(0.5, 0); // Horizontally center and vertically top
       this.graphics.addChild(this.subTextObj);
     }
