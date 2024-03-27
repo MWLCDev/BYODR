@@ -23,6 +23,7 @@ function initializeWS() {
       //Place holder until implementation with multi segment is over
     } else if (parsedData["control"] == "viewer") {
       CTRL_STAT.stateErrors = "controlError"
+      redraw(undefined, undefined, true)
     }
   };
 
@@ -33,6 +34,7 @@ function initializeWS() {
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
     CTRL_STAT.stateErrors = "connectionError"
+    redraw(undefined, undefined, true)
     CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
   console.log('Created Mobile controller (WS)');
@@ -196,7 +198,7 @@ function handleTriangleMove(y, inferenceToggleButton) {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
     //you should be able to move it while on training mode
   } else if (INFState == "train") {
-    redraw(CTRL_STAT.selectedTriangle, yOffset);
+    redraw(CTRL_STAT.selectedTriangle, yOffset, true);
   }
 
   else if (CTRL_STAT.detectedTriangle === 'top') {
