@@ -5,7 +5,7 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
-import { redraw, app } from "./mobileController_d_pixi.js";
+import { redraw, app, changeTrianglesColor } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 sendJSONCommand()
@@ -15,6 +15,7 @@ let inferenceToggleButton
 window.addEventListener('load', () => {
   initializeWS()
   inferenceToggleButton = new InferenceToggleButton("inference_toggle_button")
+  changeTrianglesColor()
 });
 
 window.addEventListener('resize', () => {
