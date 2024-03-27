@@ -1,5 +1,7 @@
 import { addKeyToSentCommand } from "./mobileController_c_logic.js"
-import { redraw, removeTriangles } from './mobileController_d_pixi.js';
+import { redraw, removeTriangles, changeTrianglesColor } from './mobileController_d_pixi.js';
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+
 
 /**
  * Handles toggle button interactions and manages WebSocket connections for real-time data updates.
@@ -7,14 +9,16 @@ import { redraw, removeTriangles } from './mobileController_d_pixi.js';
 class InferenceToggleButton {
   constructor(buttonId) {
     this.toggleButton = document.getElementById(buttonId);
-    this.toggleButtonContainer = document.getElementById('toggle_button_container');
     this.optionsContainer = document.getElementById('inference_options_container');
+    this.toggleButtonContainer = document.getElementById('toggle_button_container');
     this.inferenceTrainingButton = document.getElementById('inference_training_toggle');
     this.InferenceAutoNavigationToggle = document.getElementById('inference_auto_navigation_toggle');
+    this.InferenceAutoSpeedText = document.getElementById('inference_auto_speed');
     this.hideOptionsButton = document.getElementById('hide_options');
-    this.inferenceWS = {}; // Placeholder for WebSocket.
+    this.logWS = {}; // Placeholder for WebSocket.
+    this.logWSmessage;
     this.autoReconnectInterval = 9000;
-    this.initializeInferenceWS();
+    this.initializeLogWS();
     //Means no smoothing for the other classes
     // false == working on normal mode
     // true == Inference is working on mobile controller 
@@ -28,27 +32,20 @@ class InferenceToggleButton {
   get getInferenceState() {
     return this._inferenceState;
   }
-  // add case when two buttons cannot be clicked together
-  // send stopping command when hiding the menu
+  // add case that two buttons cannot be clicked together
   // it should reset all the values to zero and turn off all the buttons when exit inf mode
 
-  handleSpeedControl(touchedTriangle) {
-    if (touchedTriangle == "top") {
-      addKeyToSentCommand("arrow_up", 1)
-    } else if (touchedTriangle == "bottom") {
-      addKeyToSentCommand("arrow_down", 1)
-    }
-  }
 
   buttonsEventListener() {
     this.toggleButton.addEventListener('click', () => this.showInferenceOptions());
     this.hideOptionsButton.addEventListener('click', () => this.hideInferenceOptions());
-    this.inferenceTrainingButton.addEventListener('click', () => this.sendInferenceTrainRequest());
-    this.InferenceAutoNavigationToggle.addEventListener('click', () => this.sendAutoNavigationRequest());
+    this.inferenceTrainingButton.addEventListener('click', () => this.handleInferenceTrainClick());
+    this.InferenceAutoNavigationToggle.addEventListener('click', () => this.handleAutoNavigationClick());
   }
 
   hideInferenceOptions() {
-    redraw()
+    redraw(undefined, undefined, true)
+    this.InferenceAutoSpeedText.style.display = "none"
     this._inferenceState = "false"
     this.optionsContainer.style.display = 'none';
     this.toggleButtonContainer.style.display = 'block';
@@ -65,89 +62,152 @@ class InferenceToggleButton {
 
   }
 
-  sendInferenceTrainRequest() {
-    redraw()
-    let currentText = this.inferenceTrainingButton.innerText;
-    this._inferenceState = "train"
-    this.sendInferenceRequest(currentText)
-    this.toggleTrainButton(currentText)
-    // Switch to driver_mode.inference.dnn mode
-    addKeyToSentCommand("button_y", 1)
-  }
-
-  sendAutoNavigationRequest() {
+  handleAutoNavigationClick() {
+    topTriangle.changeText("Raise Speed", 25)
+    bottomTriangle.changeText("Lower Speed", 25);
     redraw()
     let currentText = this.InferenceAutoNavigationToggle.innerText;
     this._inferenceState = "auto"
-    this.sendInferenceRequest(currentText)
-    this.toggleAutoNavigationButtonAppearance(currentText)
-    // Switch to driver_mode.inference.dnn mode
-    addKeyToSentCommand("button_y", 1)
+    this.toggleAutoNavigationButton(currentText)
 
   }
+
+
+  handleInferenceTrainClick() {
+    redraw()
+    let currentText = this.inferenceTrainingButton.innerText;
+    this._inferenceState = "train"
+    this.toggleTrainButton(currentText)
+  }
+
+
+  toggleAutoNavigationButton(command) {
+    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
+    if (command == "Start Auto-navigation") {
+      // Switch to driver_mode.inference.dnn mode
+      addKeyToSentCommand("button_y", 1)
+      this.InferenceAutoSpeedText.style.display = "block"
+      redraw()
+      this.hideOptionsButton.style.display = "none"
+      this.inferenceTrainingButton.style.display = "none"
+    } else if (command == "Stop Auto-navigation") {
+      this.InferenceAutoSpeedText.style.display = "none"
+      removeTriangles()
+      addKeyToSentCommand("button_b", 1)
+      this.hideOptionsButton.style.display = "flex"
+      this.inferenceTrainingButton.style.display = "flex"
+    }
+  }
+
 
   toggleTrainButton(command) {
     this.inferenceTrainingButton.innerText = command === "Start Training" ? "Stop Training" : "Start Training";
+    if (command == "Start Training") {
+      addKeyToSentCommand("button_y", 1)
+      redraw("top", undefined, undefined)
+      this.hideOptionsButton.style.display = "none"
+      this.InferenceAutoNavigationToggle.style.display = "none"
+    } else {
+      this.hideOptionsButton.style.display = "flex"
+      this.InferenceAutoNavigationToggle.style.display = "flex"
+      removeTriangles()
+      addKeyToSentCommand("button_b", 1)
+    }
 
   }
 
-  toggleAutoNavigationButtonAppearance(command) {
-    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
-  }
 
   /**
-   * Initializes the WebSocket connection for real-time data updates and sets up event listeners.
+   * Send message to increase to decrease the autopilot mode 
+   * @param {string} touchedTriangle - name of the triangle selected
    */
-  initializeInferenceWS() {
+  handleSpeedControl(touchedTriangle) {
+    // Retrieve the current speed from the element
+    const speedElement = document.getElementById("inference_auto_speed");
+    // Round the received number to the nearest 0.5 for consistency
+    let roundedSpeed = Math.round(this.logWSmessage.max_speed * 2) / 2;
+
+    // Update the speed display, ensuring it always has one decimal place
+    speedElement.innerHTML = `${roundedSpeed.toFixed(1)} Km/h`;
+
+    if (touchedTriangle == "top" && roundedSpeed < 6) {
+      addKeyToSentCommand("arrow_up", 1);
+    } else if (touchedTriangle == "bottom" && roundedSpeed > 0) {
+      addKeyToSentCommand("arrow_down", 1);
+    }
+  }
+
+
+  initializeLogWS() {
     let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
-    this.currentURL = `${document.location.protocol}`
-    let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/switch_inference`;
-    this.inferenceWS.websocket = new WebSocket(WSurl);
+    let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/log`;
+    this.logWS.websocket = new WebSocket(WSurl);
+    this.errorCount = 0; // Initialize error count
 
-    this.inferenceWS.websocket.onopen = (event) => {
-      // console.log('Inference websocket connection opened');
-      this.inferenceWS.isWebSocketOpen = true;
+    this.logWS.websocket.onopen = (event) => {
+      console.log('Log WS connection opened');
+      this.logWS.isWebSocketOpen = true;
+      this.errorCount = 0; // Reset error count on successful connection
+      this.sendInterval = setInterval(() => {
+        if (this.logWS.websocket.readyState === WebSocket.OPEN) {
+          this.logWS.websocket.send('{}');
+        } else {
+          clearInterval(this.sendInterval); // Clear interval if not open
+        }
+      }, 40);
     };
 
-    this.inferenceWS.websocket.onmessage = (event) => {
-      console.log('Inference WS:', event.data);
-      // this.updateButtonState(event.data);
+    this.logWS.websocket.onmessage = (event) => {
+      let jsonLogWSmessage = JSON.parse(event.data);
+      this.decorate_server_message(jsonLogWSmessage)
+      // console.log('Log WS:', this.logWSmessage);
 
+      if (this.logWSmessage._is_on_autopilot
+        && this.logWSmessage._has_passage == false
+        && this._inferenceState != "train") {
+        changeTrianglesColor(0xFF0000)
+      }
     };
 
-    this.inferenceWS.websocket.onerror = (error) => {
-      // console.error('WebSocket Error:', error);
+    this.logWS.websocket.onerror = (error) => {
+      if (this.errorCount < 5) {
+        console.error('WebSocket Error:', error);
+        this.errorCount++;
+      }
     };
 
-    this.inferenceWS.websocket.onclose = (event) => {
-      console.log('Inference websocket connection closed');
-      this.inferenceWS.isWebSocketOpen = false;
+    this.logWS.websocket.onclose = (event) => {
+      console.log('Log WS connection closed');
+      this.logWS.isWebSocketOpen = false;
+      clearInterval(this.sendInterval); // Ensure interval is cleared on close
       // Automatically try to reconnect after a specified interval
       setTimeout(() => this.checkAndReconnectWebSocket(), this.autoReconnectInterval);
     };
+
+
   }
 
   /**
-   * Checks the WebSocket's current state and attempts to reconnect if it's closed.
+   * Add fields related to INF state to the message
+   * @param {json} message Message received from log endpoint
    */
-  checkAndReconnectWebSocket() {
-    if (!this.inferenceWS.websocket || this.inferenceWS.websocket.readyState === WebSocket.CLOSED) {
-      this.initializeInferenceWS();
-    }
-  }
-
-  /**
-   * Sends a command to the server via WebSocket.
-   * @param {string} command The command to be sent to the server.
-   */
-  sendInferenceRequest(command) {
-    if (this.inferenceWS.websocket && this.inferenceWS.websocket.readyState === WebSocket.OPEN) {
-      this.inferenceWS.websocket.send(command);
+  decorate_server_message(message) {
+    message._is_on_autopilot = message.ctl == 5;
+    message._has_passage = message.inf_total_penalty < 1;
+    if (message.geo_head == undefined) {
+      message.geo_head_text = 'n/a';
     } else {
-      console.error("Inference websocket is not open. Command not sent. Attempting to reconnect...");
-      this.checkAndReconnectWebSocket();
+      message.geo_head_text = message.geo_head.toFixed(2);
+    }
+    this.logWSmessage = message
+  }
+
+  checkAndReconnectWebSocket() {
+    if (!this.logWS.websocket || this.logWS.websocket.readyState === WebSocket.CLOSED) {
+      this.initializeLogWS();
     }
   }
+
 }
 
 
