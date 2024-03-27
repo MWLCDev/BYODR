@@ -90,6 +90,7 @@ app.view.addEventListener('touchend', () => {
     }
     if (inferenceToggleButton.getInferenceState == "train") {
       document.getElementById('inference_options_container').style.display = 'flex';
+      redraw("top", undefined, true)
     }
 
     clearTimeout(intervalId);
