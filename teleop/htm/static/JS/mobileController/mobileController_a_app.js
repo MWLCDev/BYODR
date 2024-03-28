@@ -2,19 +2,22 @@ import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle
 import { Dot } from "./mobileController_b_shape_dot.js"
 import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "./mobileController_c_logic.js"
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
-import { toggleButtonHandler } from "./mobileController_b_following.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 // The function would keep stacking, sending commands more often than 10 times a second
 // Now we call it once, and we just change the commands that are being sent
-// At first we send a default command
+// At first we send a default value
 CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
-sendJSONCommand()
+sendJSONCommand();
+
+// Making the text boxes show the current data that exist on the robot
+MotorDataInput.showInputElements();
 
 
 window.addEventListener('load', () => {
@@ -87,6 +90,9 @@ app.view.addEventListener('touchend', () => {
 
   // Show the button again when touch ends
   toggleButtonHandler.setStyle('display', 'block');
+
+  // Making the text boxes show the current data that exist on the robot
+  MotorDataInput.showInputElements();
 });
 
 function onTouchMove(event) {

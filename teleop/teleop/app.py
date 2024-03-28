@@ -6,7 +6,6 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
@@ -25,6 +24,7 @@ from byodr.utils import Application, hash_dict, ApplicationExit, timestamp
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
+from six.moves.configparser import SafeConfigParser
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -77,6 +77,7 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._motor_scale = 0
         self.rut_ip = None
 
     def _check_user_config(self):
@@ -89,7 +90,7 @@ class TeleopApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
-
+    
     def get_user_config_file(self):
         return self._user_config_file
 
@@ -450,6 +451,7 @@ def main():
         # When we receive commands without throttle in them, we reset the current throttle value to 0
         else:
             current_throttle = 0
+            teleop_publish({'steering': 0.0, 'throttle': 0, 'time': timestamp(), 'navigator': {'route': None}, 'button_b': 1})
 
     def teleop_publish(cmd):
         # We are the authority on route state.

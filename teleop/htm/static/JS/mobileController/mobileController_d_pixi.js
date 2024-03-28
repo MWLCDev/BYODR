@@ -1,5 +1,6 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
@@ -18,8 +19,8 @@ document.body.appendChild(app.view);
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
-function redraw(yOffset = 0)
-{
+function redraw(yOffset = 0) {
+
   app.stage.removeChildren();
   topTriangle.drawTriangle(yOffset);
   bottomTriangle.drawTriangle(yOffset);
@@ -31,9 +32,12 @@ function redraw(yOffset = 0)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
-function drawTopTriangle_BottomRectangle(yOffset = 0)
-{
+function drawTopTriangle_BottomRectangle(yOffset = 0) {
   app.stage.removeChildren();
+
+  // Hide the input boxes and all related objects when the triangles are pressed
+  MotorDataInput.hideInputElements();
+
   topTriangle.drawTriangle(yOffset);
   app.stage.addChild(topTriangle.graphics);
 
@@ -45,9 +49,12 @@ function drawTopTriangle_BottomRectangle(yOffset = 0)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
-function drawBottomTriangle_TopRectangle(yOffset = 0)
-{
+function drawBottomTriangle_TopRectangle(yOffset = 0) {
   app.stage.removeChildren();
+  
+  // Hide the input boxes and all related objects when the triangles are pressed
+  MotorDataInput.hideInputElements();
+
   bottomTriangle.drawTriangle(yOffset);
   app.stage.addChild(bottomTriangle.graphics);
 
@@ -58,5 +65,6 @@ function drawBottomTriangle_TopRectangle(yOffset = 0)
   if (CTRL_STAT.isWebSocketOpen)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
+
 
 export { app, redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
