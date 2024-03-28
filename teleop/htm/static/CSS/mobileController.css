@@ -15,7 +15,7 @@ canvas {
 #confidenceToggleButton {
   position: fixed;
   bottom: 5%;
-  left: 5%;
+  left: 70%;
   width: 10vh;
   height: 10vh;
   margin-right: 0;
@@ -32,4 +32,24 @@ canvas {
   /* Center horizontally */
   align-items: center;
   /* Center vertically */
+}
+
+#toggleButton {
+  position: fixed;
+  bottom: 5%;
+  left: 5%;
+  width: 80px;
+  height: 80px;
+  margin-right: 0;
+  transform: translate(0, 0);
+  z-index: 9999;
+  padding: 0;
+  background-color: #67b96a;
+  color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  justify-content: center; /* Center horizontally */
+  align-items: center; /* Center vertically */
 }

@@ -5,9 +5,9 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
 
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
-import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
-import { toggleButtonHandler } from "/JS/mobileController/mobileController_b_following.js";
+import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
+import { redraw, app } from "./mobileController_d_pixi.js";
+import { toggleButtonHandler } from "./mobileController_b_following.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 // The function would keep stacking, sending commands more often than 10 times a second

@@ -1,6 +1,6 @@
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import { topRectangle, bottomRectangle } from "/JS/mobileController/mobileController_b_shape_red_rectangle.js"
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
+import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
   width: window.innerWidth,

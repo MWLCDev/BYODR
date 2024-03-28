@@ -1,7 +1,7 @@
 
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
-import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from '/JS/mobileController/mobileController_d_pixi.js';
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import CTRL_STAT from './mobileController_z_state.js';
+import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
 
 
 function initializeWS() {

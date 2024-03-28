@@ -17,7 +17,7 @@ from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 from tornado.gen import coroutine
-
+from byodr.utils import timestamp
 from .tel_utils import *
 
 logger = logging.getLogger(__name__)
@@ -190,10 +190,11 @@ class ConfidenceHandler(websocket.WebSocketHandler):
             self.send_loading_message()
             delta_time = time.clock() - self.start_time
             self.runner.stop()
-            self.runner.clean_list()
-            self.runner.plot_data_on_map()
-            self.write_message(f"{len(self.runner.cleaned_data)} \n in {self.runner.map_name}")
-            # self.write_message(self.runner.map_name)
+            # self.runner.clean_list(self.runner.merged_list)
+            # self.runner.plot_data_on_map(self.runner.coloured_list)
+            self.runner.process_data()
+            # self.write_message(f"{len(self.runner.cleaned_data)} \n in {self.runner.map_name}")
+            self.write_message(self.runner.map_name)
 
 
 

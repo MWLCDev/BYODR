@@ -24,6 +24,7 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit, timestamp
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -502,10 +503,9 @@ def main():
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (
-                (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle, rut_gps_poller=gps_poller_snmp)),
                     r"/ws/switch_confidence",
                     ConfidenceHandler,
-                    dict(inference_s=inference, vehicle_s=vehicle),
+                    dict(inference_s=inference, vehicle_s=vehicle, rut_gps_poller=gps_poller_snmp),
                 ),
                 (
                     r"/api/datalog/event/v10/table",
