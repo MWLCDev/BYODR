@@ -165,7 +165,7 @@ class RealMonitoringRelay(AbstractRelay):
             parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
         )
         _pi_uri = parse_option(
-            "ras.master.uri", str, "tcp://192.168.1.32", errors, **_config
+            "ras.master.uri", str, "tcp://192.168.7.32", errors, **_config
         )
         if self._pi_client is not None:
             self._pi_client.quit()

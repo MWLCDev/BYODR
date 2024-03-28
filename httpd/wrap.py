@@ -25,7 +25,7 @@ def _check_config(config_file):
         #haproxy is a load balancer
         with open('haproxy_ssl.template' if _ssl else 'haproxy.template', 'r') as _template:
             with open(config_file, 'w') as _file:
-                _file.write(_template.read().replace('192.168.1.32', _ip))
+                _file.write(_template.read().replace('192.168.7.32', _ip))
         logger.info("Updated the existing proxy configuration using ip '{}'.".format(_ip))
 
 

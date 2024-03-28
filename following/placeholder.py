@@ -104,7 +104,7 @@ def main():
     while True:
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
-        # results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.1.64z554/Streaming/Channels/102', classes=0, stream=True)
+        # results = model.predict(source='rtsp://user1:HaikuPlot876@192.168.7.64z554/Streaming/Channels/102', classes=0, stream=True)
         results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
         logger.info("got results")
         # 'for' loop used when yolov8 model parameter stream = True

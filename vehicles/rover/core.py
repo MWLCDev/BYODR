@@ -81,7 +81,7 @@ class ConfigurableImageGstSource(Configurable):
                                                               errors=_errors, **kwargs).split('x')]
         if _type == 'h264/rtsp':
             config = {
-                'ip': (parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=_errors, **kwargs)),
+                'ip': (parse_option(self._name + '.camera.ip', str, '192.168.7.64', errors=_errors, **kwargs)),
                 'port': (parse_option(self._name + '.camera.port', int, 554, errors=_errors, **kwargs)),
                 'user': (parse_option(self._name + '.camera.user', str, 'user1', errors=_errors, **kwargs)),
                 'password': (parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=_errors, **kwargs)),
@@ -229,7 +229,7 @@ class PTZCamera(Configurable):
         _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=errors, **kwargs)
         ptz_enabled = _type == 'h264/rtsp' and parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=errors, **kwargs)
         if ptz_enabled:
-            _server = parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=errors, **kwargs)
+            _server = parse_option(self._name + '.camera.ip', str, '192.168.7.64', errors=errors, **kwargs)
             _user = parse_option(self._name + '.camera.user', str, 'user1', errors=errors, **kwargs)
             _password = parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=errors, **kwargs)
             _protocol = 'http'
@@ -265,7 +265,7 @@ class GpsPollerThread(threading.Thread):
     https://pymodbus.readthedocs.io/en/v1.3.2/examples/modbus-payload.html
     """
 
-    def __init__(self, host='192.168.1.1', port='502'):
+    def __init__(self, host='192.168.7.1', port='502'):
         super(GpsPollerThread, self).__init__()
         self._host = host
         self._port = port
