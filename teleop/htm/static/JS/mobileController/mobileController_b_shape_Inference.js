@@ -34,9 +34,6 @@ class InferenceToggleButton {
   get getInferenceState() {
     return this._inferenceState;
   }
-  // add case that two buttons cannot be clicked together
-  // it should reset all the values to zero and turn off all the buttons when exit inf mode
-
 
   buttonsEventListener() {
     this.toggleButton.addEventListener('click', () => this.showInferenceOptions());
@@ -46,17 +43,18 @@ class InferenceToggleButton {
   }
 
   hideInferenceOptions() {
+
     redraw(undefined, undefined, true)
     this.InferenceAutoSpeedText.style.display = "none"
     this.optionsContainer.style.display = 'none';
     this.toggleButtonContainer.style.display = 'block';
     // Switch to driver_mode.teleop.direct mode 
     addKeyToSentCommand("button_b", 1)
+    //Make it start with dark colour
     changeTrianglesColor()
-    console.log(this._inferenceState)
-    // it should turn off all the buttons to start state
+    // Turn off all the buttons to start state
     if (this._inferenceState == "auto") {
-      this.handleAutoNavigationClick
+      this.handleAutoNavigationClick()
       this._inferenceState = "false"
     } else if (this._inferenceState == "train") {
       this.toggleTrainButton()
@@ -70,58 +68,70 @@ class InferenceToggleButton {
     this.optionsContainer.style.display = 'flex';
     this.toggleButtonContainer.style.display = 'none';
     this._inferenceState = "true"
-
   }
 
+  /**
+   * Toggle the auto-navigation state
+   */
   handleAutoNavigationClick() {
-    redraw()
-    let currentText = this.InferenceAutoNavigationToggle.innerText;
-    this._inferenceState = "auto"
-    this.toggleAutoNavigationButton(currentText)
-  }
-
-  toggleAutoNavigationButton(command) {
-    this.InferenceAutoNavigationToggle.innerText = command === "Start Auto-navigation" ? "Stop Auto-navigation" : "Start Auto-navigation";
-    if (command == "Start Auto-navigation") {
-      redraw()
-      addKeyToSentCommand("button_y", 1)
-      topTriangle.changeText("Raise Speed", 25)
-      bottomTriangle.changeText("Lower Speed", 25);
-      this.InferenceAutoSpeedText.style.display = "block"
-      this.hideOptionsButton.innerText = "go to manual mode"
-      this.inferenceTrainingButton.style.display = "none"
-    } else if (command == "Stop Auto-navigation") {
-      removeTriangles()
-      addKeyToSentCommand("button_b", 1)
-      this.InferenceAutoSpeedText.style.display = "none"
-      this.inferenceTrainingButton.style.display = "flex"
-      this.hideOptionsButton.innerText = "Hide Options"
-    }
-  }
-
-
-  handleInferenceTrainClick() {
-    redraw()
-    let currentText = this.inferenceTrainingButton.innerText;
-    this._inferenceState = "train"
-    this.toggleTrainButton(currentText)
-  }
-
-  toggleTrainButton(command) {
-    this.inferenceTrainingButton.innerText = command === "Start Training" ? "Stop Training" : "Start Training";
-    if (command == "Start Training") {
-      redraw("top", undefined, undefined)
-      addKeyToSentCommand("button_y", 1)
-      this.hideOptionsButton.innerText = "go to manual mode"
-      this.InferenceAutoNavigationToggle.style.display = "none"
+    this._inferenceState = this._inferenceState === "auto" ? "true" : "auto";
+    // Now decide what to do based on the new state
+    if (this._inferenceState === "auto") {
+      this.startAutoNavigation();
     } else {
-      removeTriangles()
-      addKeyToSentCommand("button_b", 1)
-      this.hideOptionsButton.innerText = "Hide Options"
-      this.InferenceAutoNavigationToggle.style.display = "flex"
+      this.stopAutoNavigation();
     }
-
   }
+
+  startAutoNavigation() {
+    this.InferenceAutoNavigationToggle.innerText = "Stop Auto-navigation";
+    redraw();
+    addKeyToSentCommand("button_y", 1);
+    topTriangle.changeText("Raise Speed", 25);
+    bottomTriangle.changeText("Lower Speed", 25);
+    this.InferenceAutoSpeedText.style.display = "block";
+    this.hideOptionsButton.innerText = "Go to manual mode";
+    this.inferenceTrainingButton.style.display = "none";
+  }
+
+  stopAutoNavigation() {
+    this.InferenceAutoNavigationToggle.innerText = "Start Auto-navigation";
+    removeTriangles();
+    addKeyToSentCommand("button_b", 1);
+    this.InferenceAutoSpeedText.style.display = "none";
+    this.inferenceTrainingButton.style.display = "flex";
+    this.hideOptionsButton.innerText = "Hide Options";
+  }
+
+  /**
+   * Toggle the training state
+   * */
+  handleInferenceTrainClick() {
+    this._inferenceState = this._inferenceState === "train" ? "true" : "train";
+
+    if (this._inferenceState === "train") {
+      this.startTraining();
+    } else {
+      this.stopTraining();
+    }
+  }
+
+  startTraining() {
+    this.inferenceTrainingButton.innerText = "Stop Training";
+    redraw("top", undefined, undefined);
+    addKeyToSentCommand("button_y", 1);
+    this.hideOptionsButton.innerText = "Go to manual mode";
+    this.InferenceAutoNavigationToggle.style.display = "none";
+  }
+
+  stopTraining() {
+    this.inferenceTrainingButton.innerText = "Start Training";
+    removeTriangles(); // Assuming this is correct for your context
+    addKeyToSentCommand("button_b", 1);
+    this.hideOptionsButton.innerText = "Hide Options";
+    this.InferenceAutoNavigationToggle.style.display = "flex";
+  }
+
 
 
   /**
