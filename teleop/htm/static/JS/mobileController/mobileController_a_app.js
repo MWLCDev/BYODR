@@ -5,6 +5,7 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
+import { followingButtonHandler } from "./mobileController_b_following.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
@@ -46,8 +47,8 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
-        if (toggleButtonHandler.toggleButton.innerText === "Stop Following") {
-          toggleButtonHandler.sendSwitchFollowingRequest("Stop Following")
+        if (followingButtonHandler.toggleButton.innerText === "Stop Following") {
+          followingButtonHandler.sendSwitchFollowingRequest("Stop Following")
         }
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
@@ -66,7 +67,7 @@ function startOperating(event) {
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 
   // Hide the button when triangles are pressed
-  toggleButtonHandler.setStyle('display', 'none');
+  followingButtonHandler.setStyle('display', 'none');
 
   handleTriangleMove(event.touches[0].clientY);
 }
@@ -89,7 +90,7 @@ app.view.addEventListener('touchend', () => {
   }
 
   // Show the button again when touch ends
-  toggleButtonHandler.setStyle('display', 'block');
+  followingButtonHandler.setStyle('display', 'block');
 
   // Making the text boxes show the current data that exist on the robot
   MotorDataInput.showInputElements();

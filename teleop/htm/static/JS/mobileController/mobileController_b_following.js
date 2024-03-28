@@ -53,8 +53,8 @@ class ToggleButtonHandler {
 }
 
 // Usage
-const toggleButtonHandler = new ToggleButtonHandler('toggleButton');
+const followingButtonHandler = new ToggleButtonHandler('toggleButton');
 
 // If needed to export
 
-export { toggleButtonHandler };
+export { followingButtonHandler };
