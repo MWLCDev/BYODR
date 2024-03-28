@@ -5,8 +5,16 @@ import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJS
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
 
-import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
-import { redraw, app } from "./mobileController_d_pixi.js";
+import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js'; // Stands for control state
+import { redraw, app } from "/JS/mobileController/mobileController_d_pixi.js";
+import { toggleButtonHandler } from "/JS/mobileController/mobileController_b_following.js";
+
+// Initialize sending commands only once, instead of calling it each time we touch the triangles
+// The function would keep stacking, sending commands more often than 10 times a second
+// Now we call it once, and we just change the commands that are being sent
+// At first we send a default command
+CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
+sendJSONCommand()
 
 
 window.addEventListener('load', () => {
@@ -35,10 +43,12 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        if (toggleButtonHandler.toggleButton.innerText === "Stop Following") {
+          toggleButtonHandler.sendSwitchFollowingRequest("Stop Following")
+        }
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
-        // Arrow function to send the command through websocket 
-        sendJSONCommand()
+        // Arrow function to send the command through websocket
         break;
     }
   } else {
@@ -51,6 +61,10 @@ function startOperating(event) {
   CTRL_STAT.cursorFollowingDot = new Dot();
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY);
   app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+
+  // Hide the button when triangles are pressed
+  toggleButtonHandler.setStyle('display', 'none');
+
   handleTriangleMove(event.touches[0].clientY);
 }
 
@@ -68,8 +82,11 @@ app.view.addEventListener('touchend', () => {
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
     CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
-    clearInterval(intervalId);
+    clearTimeout(intervalId);
   }
+
+  // Show the button again when touch ends
+  toggleButtonHandler.setStyle('display', 'block');
 });
 
 function onTouchMove(event) {
