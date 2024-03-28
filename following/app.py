@@ -162,9 +162,9 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    steering = (0.0036) * xCen - (1.008)  # 0 minimum at 280p edge, -0.8 max at 30p
-                    if steering < -0.9:
-                        steering = -0.9
+                    steering = (0.0024) * xCen - (0.672)  # 0 minimum at 280p edge, -0.8 max at 30p
+                    if steering < -0.6:
+                        steering = -0.6
                     if throttle == 0:
                         throttle = -(0.00142857) * xCen + 0.5
                         steering = -1
@@ -172,9 +172,9 @@ def main():
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    steering = (0.0036) * xCen - (1.296) # 0 minimum at 360p edge, 0.8 max at 610p
-                    if steering > 0.9:
-                        steering = 0.9
+                    steering = (0.0024) * xCen - (0.864) # 0 minimum at 360p edge, 0.8 max at 610p
+                    if steering > 0.6:
+                        steering = 0.6
                     if throttle == 0:
                         throttle = (0.00142857) * xCen - (0.414286)
                         steering = 1
