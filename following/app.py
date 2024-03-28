@@ -28,7 +28,7 @@ quit_event = multiprocessing.Event()
 #     os.rename("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
 
 # Choosing the trained model
-model = YOLO('50ep320imgsz.pt')
+model = YOLO('customDefNano.pt')
 # model = YOLO('yolov8n.pt')
 #model.to(device=device)
 
@@ -73,7 +73,20 @@ def main():
         request = teleop.get()
         # logger.info(f"Message from teleop chatter: {request}")
         # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
-        if request is None or request['following'] == "Stop Following":
+        try:
+            if request is None or request['following'] == "Stop Following":
+                cmd = {
+                    'throttle': 0,
+                    'steering': 0,
+                    'button_b': 1,
+                    'time': timestamp(),
+                    'navigator': {'route': None}
+                }
+                # Publishing the command to Teleop
+                following_publisher.publish(cmd)
+                return
+        except:
+            print("can't get message from following")
             cmd = {
                 'throttle': 0,
                 'steering': 0,
@@ -82,7 +95,6 @@ def main():
                 'navigator': {'route': None}
             }
             # Publishing the command to Teleop
-            # logger.info(f"Sending command to teleop: {cmd}")
             following_publisher.publish(cmd)
             return
         # Initializing the recognition model
@@ -94,8 +106,11 @@ def main():
             request = teleop.get()
             if request is not None:
                 print(request['following'])
-            if request is not None and request['following'] == "Stop Following":
-                return
+            try:
+                if request is not None and request['following'] == "Stop Following":
+                    return
+            except:
+                print("can't get message from teleop")
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
@@ -126,9 +141,9 @@ def main():
                 logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
 
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(240 / 640 * img.shape[1])   # Left edge, 240p away from the left end of the screen
-                rightE = int(400 / 640 * img.shape[1])  # Right edge, 240p away from the right end if image width = 640p
-                botE = int(200 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
+                leftE = int(280 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
+                rightE = int(360 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
+                botE = int(300 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
@@ -137,8 +152,9 @@ def main():
                     # throttle = 0.7
                     # Linear increase of throttle
                     # throttle = (-(0.01) * yBot) + 2.2 # 0.2 minimum at 200p edge, max at 120p edge
-                    throttle = (-(0.00875) * height) + 2.05 # 0.2 minimum at 200p heigh, max at 120p height
-
+                    throttle = (-(0.01) * height) + 3.2 # 0.2 minimum at 300p heigh, max at 220p height
+                    if throttle > 1:
+                        throttle = 1
                 else:
                     throttle = 0
 
@@ -146,30 +162,26 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    steering = (0.0025) * xCen - (0.8)  # 0.2 minimum at 240p edge
-                    # Robot needs throttle to turn left/right
-                    if throttle < abs(steering):
-                        throttle = abs(steering)
+                    steering = (0.0036) * xCen - (1.008)  # 0 minimum at 280p edge, -0.8 max at 30p
+                    if steering < -0.9:
+                        steering = -0.9
+                    if throttle == 0:
+                        throttle = -(0.00142857) * xCen + 0.5
+                        steering = -1
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    steering = (0.0025) * xCen - (0.8) # 0.2 minimum at 400p edge
-                    # Robot needs throttle to turn left/right
-                    if throttle < abs(steering):
-                        throttle = abs(steering)
+                    steering = (0.0036) * xCen - (1.296) # 0 minimum at 360p edge, 0.8 max at 610p
+                    if steering > 0.9:
+                        steering = 0.9
+                    if throttle == 0:
+                        throttle = (0.00142857) * xCen - (0.414286)
+                        steering = 1
                 else:
                     steering = 0
 
-                
-                #caveman
-                if throttle > 1:
-                    throttle = 1
-                if steering < -1:
-                    steering = -1
-                elif steering > 1:
-                    steering = 1
-                if height >= 250 or yBot >= 250:
+                if height >= 340 or yBot >= 340:
                     throttle = 0
 
             else:
@@ -179,8 +191,12 @@ def main():
                 logger.info(f"No human detected for {no_human_counter} frames")
 
 
-
-                if no_human_counter == 15:
+                if throttle != 0 and abs(steering) == 1 and no_human_counter >= 15:
+                    print("______________________________________stoppedstopped after rotating")
+                    throttle = 0
+                    steering = 0
+                elif no_human_counter == 5:
+                    print("______________________________________stopped after losing")
                     throttle = 0
                     steering = 0
 
@@ -188,20 +204,22 @@ def main():
             cmd = {
                 'throttle':throttle,
                 'steering':steering,
+                # 'throttle':0.6,
+                # 'steering':1,
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
             }
             # Publishing the command to Teleop
-            # logger.info(f"Sending command to teleop: {cmd}")
+            logger.info(f"Sending command to teleop: {cmd}")
             following_publisher.publish(cmd)
 
 if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
-    # results = model.predict(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3)
+    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.7.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    # results = model.track(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3, persist=True)
 
     while True:
         main()
