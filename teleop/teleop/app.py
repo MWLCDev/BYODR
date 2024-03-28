@@ -100,13 +100,19 @@ class TeleopApplication(Application):
         config.read(self.get_user_config_file())
 
         # Flatten the configuration sections and keys into a single dictionary
-        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
+        config_dict = {
+            f"{section}.{option}": value
+            for section in config.sections()
+            for option, value in config.items(section)
+        }
 
         errors = []
         # print(config_dict)
         # Use the flattened config dictionary as **kwargs to parse_option
         # A close implementation for how the parse_option is called in the internal_start function for each service.
-        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
+        self.rut_ip = parse_option(
+            "vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict
+        )
 
         if errors:
             for error in errors:
@@ -226,9 +232,6 @@ class TestFeatureUI(tornado.web.RequestHandler):
         self.render("../htm/templates/testFeature.html")
 
 
-
-
-
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -334,9 +337,9 @@ def main():
             while stats == "Start Following":
                 # logger.info (stats)
                 ctrl = following.get()
-                
+
                 if ctrl is not None:
-                    ctrl['time'] = timestamp()
+                    ctrl["time"] = timestamp()
                     # logger.info(f"Message from Following: {ctrl}")
                     teleop_publish(ctrl)
                 #     prev_command = ctrl
@@ -359,7 +362,7 @@ def main():
         logbox_thread,
         package_thread,
         follow_thread,
-        gps_poller_snmp
+        gps_poller_snmp,
     ]
 
     if quit_event.is_set():
@@ -400,7 +403,7 @@ def main():
 
     def throttle_control(cmd):
         global current_throttle  # The throttle value that we will send in this iteration of the function. Starts as 0.0
-        global stats # Checking if Following is running, so that the throttle control does not send commands at the same time as following
+        global stats  # Checking if Following is running, so that the throttle control does not send commands at the same time as following
         throttle_change_step = 0.1  # Always 0.1
 
         # Is it ugly, i know
@@ -481,14 +484,11 @@ def main():
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-
     def teleop_publish_to_following(cmd):
         global stats
 
-        # logger.info(f"Permission from teleop:{cmd['following']}")
         chatter.publish(cmd)
         stats = cmd["following"]
-
 
     io_loop = ioloop.IOLoop.instance()
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
@@ -526,7 +526,11 @@ def main():
                 (
                     r"/ws/switch_confidence",
                     ConfidenceHandler,
-                    dict(inference_s=inference, vehicle_s=vehicle, rut_gps_poller=gps_poller_snmp),
+                    dict(
+                        inference_s=inference,
+                        vehicle_s=vehicle,
+                        rut_gps_poller=gps_poller_snmp,
+                    ),
                 ),
                 (
                     r"/api/datalog/event/v10/table",

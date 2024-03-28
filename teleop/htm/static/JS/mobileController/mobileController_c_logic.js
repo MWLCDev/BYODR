@@ -1,7 +1,7 @@
 
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import CTRL_STAT from './mobileController_z_state.js';
-import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
+import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle, redraw } from './mobileController_d_pixi.js';
 import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 function initializeWS() {
@@ -192,21 +192,17 @@ function handleTriangleMove(y, inferenceToggleButton) {
   }
 
   let INFState = inferenceToggleButton.getInferenceState
-  if (INFState == "true")
-    redraw(CTRL_STAT.selectedTriangle, yOffset);
   //cannot move it while on training mode
-  else if (INFState == "auto") {
+  if (INFState == "auto") {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
     //you should be able to move it while on training mode
   } else if (INFState == "train") {
     redraw(CTRL_STAT.selectedTriangle, yOffset, true);
-  }
-
-  else if (CTRL_STAT.detectedTriangle === 'top') {
+  } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
   }
-  else if (CTRL_STAT.detectedTriangle === 'bottom') {
+  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawBottomTriangle_TopRectangle(yOffset);
   }
@@ -255,20 +251,17 @@ function sendJSONCommand() {
 }
 
 // Add event listeners to input boxes
-MotorDataInput.SCALEINPUT.addEventListener('input', function() 
-{
+MotorDataInput.SCALEINPUT.addEventListener('input', function () {
   MotorDataInput.updateConfirmButton();
 });
 
 // Add event listeners to input boxes
-MotorDataInput.OFFSETINPUT.addEventListener('input', function() 
-{
+MotorDataInput.OFFSETINPUT.addEventListener('input', function () {
   MotorDataInput.updateConfirmButton();
 });
 
 // Add event listener to confirm button
-MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
-{
+MotorDataInput.CONFIRMBUTTON.addEventListener('click', function () {
   // Create an array to store non-empty key-value pairs
   let scaleOffsetData = [];
 
@@ -284,7 +277,7 @@ MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
   let data = { "vehicle": scaleOffsetData };
 
   console.log('Data to send:', data);
-        
+
   // Make POST request to the backend endpoint
   fetch('/teleop/user/options', {
     method: 'POST',
@@ -293,26 +286,27 @@ MotorDataInput.CONFIRMBUTTON.addEventListener('click', function()
     },
     body: JSON.stringify(data)
   })
-  .then(response => {
-    if (response.ok)
-    {
-      console.log('Data sent successfully.');
+    .then(response => {
+      if (response.ok) {
+        console.log('Data sent successfully.');
 
-      // Showing the confirmation text and then hiding it after 3 seconds
-      MotorDataInput.CONFIRM_CHANGE_TEXT.classList.remove('hidden');
-      setTimeout(() => {
-        MotorDataInput.CONFIRM_CHANGE_TEXT.classList.add('hidden');
-      }, 3000);
+        // Showing the confirmation text and then hiding it after 3 seconds
+        MotorDataInput.CONFIRM_CHANGE_TEXT.classList.remove('hidden');
+        setTimeout(() => {
+          MotorDataInput.CONFIRM_CHANGE_TEXT.classList.add('hidden');
+        }, 3000);
 
-    }
+      }
 
-    else 
-      console.error('Failed to send data.');
-  })
-  .catch(error => {
-    console.error('Error:', error);
-  });
+      else
+        console.error('Failed to send data.');
+    })
+    .catch(error => {
+      console.error('Error:', error);
+    });
 });
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
-  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+export {
+  pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
+  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand
+};

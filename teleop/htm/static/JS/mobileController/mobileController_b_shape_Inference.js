@@ -43,23 +43,22 @@ class InferenceToggleButton {
   }
 
   hideInferenceOptions() {
-
-    redraw(undefined, undefined, true)
     this.InferenceAutoSpeedText.style.display = "none"
     this.optionsContainer.style.display = 'none';
-    this.toggleButtonContainer.style.display = 'block';
-    // Switch to driver_mode.teleop.direct mode 
-    addKeyToSentCommand("button_b", 1)
-    //Make it start with dark colour
-    changeTrianglesColor()
+    this.toggleButtonContainer.style.display = 'flex';
     // Turn off all the buttons to start state
     if (this._inferenceState == "auto") {
       this.handleAutoNavigationClick()
       this._inferenceState = "false"
     } else if (this._inferenceState == "train") {
-      this.toggleTrainButton()
+      this.handleInferenceTrainClick()
       this._inferenceState = "false"
     }
+    // Switch to driver_mode.teleop.direct mode 
+    addKeyToSentCommand("button_b", 1)
+    //Make it start with dark colour
+    changeTrianglesColor()
+    redraw(undefined, undefined, true)
     this._inferenceState = "false"
   }
 

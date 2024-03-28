@@ -1,7 +1,5 @@
 body,
 html {
-body,
-html {
   margin: 0;
   padding: 0;
   width: 100%;
@@ -51,6 +49,14 @@ canvas {
   margin-bottom: 10px;
 }
 
+#toggle_button_container {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
 #inference_options_container {
   display: none;
   flex-direction: row-reverse;
@@ -58,6 +64,7 @@ canvas {
   justify-content: center;
   width: 100%;
 }
+
 .mobile_view_container {
   display: flex;
   flex-direction: column;
@@ -110,46 +117,4 @@ canvas {
 
 .hidden {
   display: none;
-}
-
-#confidenceToggleButton {
-  position: fixed;
-  bottom: 5%;
-  left: 70%;
-  width: 10vh;
-  height: 10vh;
-  margin-right: 0;
-  transform: translate(0, 0);
-  z-index: 9999;
-  padding: 0;
-  background-color: #67b96a;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  justify-content: center;
-  /* Center horizontally */
-  align-items: center;
-  /* Center vertically */
-}
-
-#toggleButton {
-  position: fixed;
-  bottom: 5%;
-  left: 5%;
-  width: 80px;
-  height: 80px;
-  margin-right: 0;
-  transform: translate(0, 0);
-  z-index: 9999;
-  padding: 0;
-  background-color: #67b96a;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  display: flex;
-  justify-content: center; /* Center horizontally */
-  align-items: center; /* Center vertically */
 }

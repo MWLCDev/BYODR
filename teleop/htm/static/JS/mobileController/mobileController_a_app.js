@@ -59,10 +59,10 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-  
+
   // Hide the button when triangles are pressed
   followingButtonHandler.setStyle('display', 'none');
-  
+
   if (app.stage.children.includes(CTRL_STAT.cursorFollowingDot)) {
     CTRL_STAT.cursorFollowingDot.show()
   }
@@ -92,14 +92,16 @@ app.view.addEventListener('touchend', () => {
 
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
-    redraw(); // Reset triangles to their original position
+    if (inferenceToggleButton.getInferenceState != "true") {
+      redraw(); // Reset triangles to their original position
+    }
     CTRL_STAT.cursorFollowingDot.hide()
     CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
     app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
     CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
     // so it doesn't show the div when in inference mode
     if (inferenceToggleButton.getInferenceState == "false") {
-      document.getElementById('toggle_button_container').style.display = 'block';
+      document.getElementById('toggle_button_container').style.display = 'flex';
     }
     if (inferenceToggleButton.getInferenceState == "train") {
       document.getElementById('inference_options_container').style.display = 'flex';
