@@ -10,7 +10,7 @@ RUN apt-get update && apt-get install -y \
 # Install necessary Python libraries
 RUN python3 -m pip install --upgrade pip
 # libraries from utils libraries
-RUN python3 -m pip install numpy pyzmq lap
+RUN python3 -m pip install numpy pyzmq lap simple-pid
 
 # Copy your application files
 COPY ./common/ /common/
