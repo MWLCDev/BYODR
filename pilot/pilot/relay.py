@@ -167,6 +167,7 @@ class RealMonitoringRelay(AbstractRelay):
         _pi_uri = parse_option(
             "ras.master.uri", str, "tcp://192.168.7.32", errors, **_config
         )
+        _pi_uri = f"tcp://{_pi_uri}"
         if self._pi_client is not None:
             self._pi_client.quit()
         if self._pi_status is not None:
