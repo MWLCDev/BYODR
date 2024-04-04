@@ -28,7 +28,7 @@ class RasRemoteError(IOError):
 
 class RasSpeedOdometer(object):
     def __init__(self, master_uri, speed_factor):
-        self._ras_uri = "tcp://{}".format(master_uri)
+        self._ras_uri = master_uri
         # The speed factor must be in m/s.
         self._motor_effort_speed_factor = speed_factor
         self._values = collections.deque(maxlen=1)
