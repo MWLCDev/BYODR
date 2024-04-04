@@ -1,19 +1,18 @@
 import collections
 import logging
 import multiprocessing
+import queue
 import threading
 import time
 
-import Queue
 import requests
-from pymodbus.client.sync import ModbusTcpClient
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
-from requests.auth import HTTPDigestAuth
-
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_image_source
+from pymodbus.client import ModbusTcpClient
+from pymodbus.constants import Endian
+from pymodbus.payload import BinaryPayloadDecoder
+from requests.auth import HTTPDigestAuth
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +73,7 @@ class ConfigurableImageGstSource(Configurable):
         self._close()
         _errors = []
         _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=_errors, **kwargs)
-        assert _type in gst_commands.keys(), "Unrecognized camera type '{}'.".format(_type)
+        assert _type in gst_commands.keys(), "Unrecognized camera type '{_type}'."
         framerate = 25 if self._name == 'front' else 12
         framerate = (parse_option(self._name + '.camera.framerate', int, framerate, errors=_errors, **kwargs))
         out_width, out_height = [int(x) for x in parse_option(self._name + '.camera.shape', str, '320x240',
@@ -103,7 +102,7 @@ class ConfigurableImageGstSource(Configurable):
         _command = gst_commands.get(_type).format(**config)
         self._sink = create_image_source(self._name, shape=self._shape, command=_command)
         self._sink.add_listener(self._publish)
-        logger.info("Gst '{}' command={}".format(self._name, _command))
+        logger.info(f"Gst '{self._name}' command={ _command}")
         return _errors
 
 
@@ -126,7 +125,7 @@ class CameraPtzThread(threading.Thread):
         </PTZData>
         """
         self.set_auth(user, password)
-        self._queue = Queue.Queue(maxsize=1)
+        self._queue = queue.Queue(maxsize=1)
         self._previous = (0, 0)
 
     def set_url(self, url):
@@ -156,7 +155,8 @@ class CameraPtzThread(threading.Thread):
         elif operation != prev:
             ret = self._run(operation)
             if ret and ret.status_code != 200:
-                logger.warning("Got status {} on operation {}.".format(ret.status_code, operation))
+                logger.warning(
+                    f"Got status {ret.status_code} on operation {operation}.")
 
     def _run(self, operation):
         ret = None
@@ -181,7 +181,7 @@ class CameraPtzThread(threading.Thread):
     def add(self, command):
         try:
             self._queue.put_nowait(command)
-        except Queue.Full:
+        except queue.Full:
             pass
 
     def quit(self):
@@ -200,7 +200,7 @@ class CameraPtzThread(threading.Thread):
                     elif 'pan' in cmd and 'tilt' in cmd:
                         operation = (self._norm(cmd.get('pan')) * self._flip[0], self._norm(cmd.get('tilt')) * self._flip[1])
                     self._perform(operation)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except IOError as e:
                 # E.g. a requests ConnectionError to the ip camera.
@@ -243,6 +243,7 @@ class PTZCamera(Configurable):
             _port = 80 if _protocol == 'http' else 443
             _url = '{protocol}://{server}:{port}{path}'.format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
             logger.info("PTZ camera url={}.".format(_url))
+            logger.info(f"PTZ camera url={_url}.")
             if self._worker is None:
                 self._worker = CameraPtzThread(_url, _user, _password, speed=_speed, flip=_flipcode)
                 self._worker.start()
@@ -265,7 +266,7 @@ class GpsPollerThread(threading.Thread):
     https://pymodbus.readthedocs.io/en/v1.3.2/examples/modbus-payload.html
     """
 
-    def __init__(self, host='192.168.7.1', port='502'):
+    def __init__(self, host, port="502"):
         super(GpsPollerThread, self).__init__()
         self._host = host
         self._port = port

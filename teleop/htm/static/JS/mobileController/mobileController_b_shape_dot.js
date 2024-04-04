@@ -18,6 +18,14 @@ class Dot {
   remove() {
     this.graphics.clear();
   }
+
+  hide() {
+    this.graphics.alpha = 0;
+  }
+
+  show() {
+    this.graphics.alpha = 1;
+  }
 }
 
 export { Dot };

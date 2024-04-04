@@ -6,7 +6,6 @@ import asyncio
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 import tornado.web
 import concurrent.futures
 import configparser
@@ -24,6 +23,8 @@ import tornado.web
 from byodr.utils import Application, hash_dict, ApplicationExit, timestamp
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
+from six.moves.configparser import SafeConfigParser
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -42,14 +43,11 @@ signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
-
+current_throttle = 0
 
 # Variable in use for the following
 stats = None
 
-# Variables in use for the throttle_control() function
-current_throttle = 0.0
-throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -76,6 +74,8 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._motor_scale = 0
+        self.rut_ip = None
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -91,9 +91,37 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
+    def read_user_config(self):
+        """
+        Reads the configuration file, flattens the configuration sections and keys,
+        and initializes components with specific configuration values.
+        """
+        config = configparser.ConfigParser()
+        config.read(self.get_user_config_file())
+
+        # Flatten the configuration sections and keys into a single dictionary
+        config_dict = {
+            f"{section}.{option}": value
+            for section in config.sections()
+            for option, value in config.items(section)
+        }
+
+        errors = []
+        # print(config_dict)
+        # Use the flattened config dictionary as **kwargs to parse_option
+        # A close implementation for how the parse_option is called in the internal_start function for each service.
+        self.rut_ip = parse_option(
+            "vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict
+        )
+
+        if errors:
+            for error in errors:
+                print(f"Configuration error: {error}")
+
     def setup(self):
         if self.active():
             self._check_user_config()
+            self.read_user_config()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
@@ -204,9 +232,6 @@ class TestFeatureUI(tornado.web.RequestHandler):
         self.render("../htm/templates/testFeature.html")
 
 
-
-
-
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -312,9 +337,9 @@ def main():
             while stats == "Start Following":
                 # logger.info (stats)
                 ctrl = following.get()
-                
+
                 if ctrl is not None:
-                    ctrl['time'] = timestamp()
+                    ctrl["time"] = timestamp()
                     # logger.info(f"Message from Following: {ctrl}")
                     teleop_publish(ctrl)
                 #     prev_command = ctrl
@@ -325,7 +350,7 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     follow_thread = threading.Thread(target=send_command)
-
+    gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
 
     threads = [
         camera_front,
@@ -337,7 +362,9 @@ def main():
         logbox_thread,
         package_thread,
         follow_thread,
+        gps_poller_snmp,
     ]
+
     if quit_event.is_set():
         return 0
 
@@ -375,55 +402,78 @@ def main():
         return route_store.get_image(image_id)
 
     def throttle_control(cmd):
-        global stats # Checking if Following is running, so that the throttle control does not send commands at the same time as following
-        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
-        global throttle_change_step # Always 0.1
+        global current_throttle  # The throttle value that we will send in this iteration of the function. Starts as 0.0
+        global stats  # Checking if Following is running, so that the throttle control does not send commands at the same time as following
+        throttle_change_step = 0.1  # Always 0.1
 
-
-        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        if "throttle" in cmd and stats != "Start Following":
-
-            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
-            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
-
-            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
-            if first_key == "steering":
-                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
-                braking_sign = -1 if current_throttle < 0 else 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we were going forwards or backwards
-                current_throttle = current_throttle - (braking_sign*throttle_change_step)
-                
-                # Capping the value at 0 so that the robot does not move while idle
-                if braking_sign > 0 and current_throttle < 0:
-                    current_throttle = 0.0
-
-            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
-            else:
-                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
-                accelerate_sign = 0
-                if target_throttle < current_throttle:
-                    accelerate_sign = -1
-                elif target_throttle > current_throttle:
-                    accelerate_sign = 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we want to go forwards or backwards
-                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
-                
-                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
-                    current_throttle = target_throttle
-                
-            # Sending commands to Coms/Pilot
-            cmd["throttle"] = current_throttle
-            # print("Throttle control running")
+        # Is it ugly, i know
+        if (
+            cmd.get("mobileInferenceState") == "true"
+            or cmd.get("mobileInferenceState") == "auto"
+            or cmd.get("mobileInferenceState") == "train"
+        ):
+            # cmd.pop("mobileInferenceState")
             teleop_publish(cmd)
-
-        # When we receive commands without throttle in them, we reset the current throttle value to 0
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
         else:
-            current_throttle = 0
+            if "throttle" in cmd and stats != "Start Following":
+                # First key of the dict, checking if its throttle or steering
+                first_key = next(iter(cmd))
+                # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
+                target_throttle = float(cmd.get("throttle"))
+
+                # If steering is the 1st key of the dict, then it means the user gives no throttle input
+                if first_key == "steering":
+                    # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
+                    braking_sign = -1 if current_throttle < 0 else 1
+
+                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                    # Dec or Inc depends on if we were going forwards or backwards
+                    current_throttle = current_throttle - (
+                        braking_sign * throttle_change_step
+                    )
+
+                    # Capping the value at 0 so that the robot does not move while idle
+                    if braking_sign > 0 and current_throttle < 0:
+                        current_throttle = 0.0
+
+                # If throttle is the 1st key of the dict, then it means the user gives throttle input
+                else:
+                    # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
+                    accelerate_sign = 0
+                    if target_throttle < current_throttle:
+                        accelerate_sign = -1
+                    elif target_throttle > current_throttle:
+                        accelerate_sign = 1
+
+                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                    # Dec or Inc depends on if we want to go forwards or backwards
+                    current_throttle = current_throttle + (
+                        accelerate_sign * throttle_change_step
+                    )
+
+                    # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
+                    if (accelerate_sign > 0 and current_throttle > target_throttle) or (
+                        accelerate_sign < 0 and current_throttle < target_throttle
+                    ):
+                        current_throttle = target_throttle
+
+                # Sending commands to Coms/Pilot
+                cmd["throttle"] = current_throttle
+                teleop_publish(cmd)
+
+            # When we receive commands without throttle in them, we reset the current throttle value to 0
+            else:
+                current_throttle = 0
+                teleop_publish(
+                    {
+                        "steering": 0.0,
+                        "throttle": 0,
+                        "time": timestamp(),
+                        "navigator": {"route": None},
+                        "button_b": 1,
+                    }
+                )
 
     def teleop_publish(cmd):
         # We are the authority on route state.
@@ -434,14 +484,11 @@ def main():
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
-
     def teleop_publish_to_following(cmd):
         global stats
 
-        # logger.info(f"Permission from teleop:{cmd['following']}")
         chatter.publish(cmd)
         stats = cmd["following"]
-
 
     io_loop = ioloop.IOLoop.instance()
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
@@ -476,6 +523,15 @@ def main():
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
+                (
+                    r"/ws/switch_confidence",
+                    ConfidenceHandler,
+                    dict(
+                        inference_s=inference,
+                        vehicle_s=vehicle,
+                        rut_gps_poller=gps_poller_snmp,
+                    ),
+                ),
                 (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,
@@ -541,7 +597,7 @@ def main():
                     # Path to where the static files are stored (JS,CSS, images)
                     r"/(.*)",
                     web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm", "static")},
+                    {"path": os.path.join(os.path.sep, "app", "htm")},
                 ),
             ]
         )
