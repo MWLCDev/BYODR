@@ -12,8 +12,10 @@ import multiprocessing
 # yolov8 library
 from ultralytics import YOLO
 # import torch
-from simple_pid import PID
-pid = PID(0.6, 0.1, 0.05, setpoint=0)
+
+# from simple_pid import PID
+# pid = PID(0.002, 2.8, 0, setpoint=0)
+# pid.output_limits = (-1, 1)
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
@@ -105,6 +107,7 @@ def main():
         logger.info("got results")
 
         for r in results:
+            # lastThrottle = throttle
             request = teleop.get()
             if request is not None:
                 print(request['following'])
@@ -143,8 +146,8 @@ def main():
                 logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
 
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(290 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
-                rightE = int(350 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
+                leftE = int(280 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
+                rightE = int(360 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
                 botE = int(300 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
@@ -164,7 +167,7 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    steering = (0.0016) * xCen - (0.564)  # 0.1 minimum at 290p edge, 0.5 max at 40p
+                    steering = (0.00178571) * xCen - (0.5)  # 0.1 minimum at 290p edge, 0.5 max at 40p
                     if steering < -0.5:
                         steering = -0.5
                     if throttle == 0:
@@ -174,7 +177,7 @@ def main():
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    steering = (0.0016) * xCen - (0.46) # 0.1 minimum at 350p edge, 0.5 max at 600p
+                    steering = (0.00178571) * xCen - (0.642857) # 0.1 minimum at 350p edge, 0.5 max at 600p
                     if steering > 0.5:
                         steering = 0.5
                     if throttle == 0:
@@ -182,6 +185,9 @@ def main():
                         steering = 1
                 else:
                     steering = 0
+
+                # pid.setpoint = throttle
+                # throttle = pid(lastThrottle)
 
                 if height >= 340 or yBot >= 340:
                     throttle = 0
@@ -193,11 +199,7 @@ def main():
                 logger.info(f"No human detected for {no_human_counter} frames")
 
 
-                if throttle != 0 and abs(steering) == 1 and no_human_counter >= 10:
-                    print("______________________________________stoppedstopped after rotating")
-                    throttle = 0
-                    steering = 0
-                elif no_human_counter >= 5:
+                if no_human_counter >= 1:
                     print("______________________________________stopped after losing")
                     throttle = 0
                     steering = 0
