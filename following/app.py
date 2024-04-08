@@ -146,15 +146,14 @@ def main():
                 logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
 
                 # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(300 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
-                rightE = int(340 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
+                leftE = int(310 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
+                rightE = int(330 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
                 botE = int(300 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
                 # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
                 if height <= botE or yBot <= botE:
-                    # throttle = 0.7
                     # Linear increase of throttle
                     # throttle = (-(0.01) * yBot) + 2.2 # 0.2 minimum at 200p edge, max at 120p edge
                     throttle = (-(0.02) * height) + 6.2 # 0.2 minimum at 300p heigh, 1 max at 260p height
@@ -167,29 +166,21 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    steering = (0.0015) * xCen - (0.55)  # 0.1 minimum at 300p edge, 0.4 max at 100p
-                    if steering < -0.4:
-                        steering = -0.4
-                    if throttle > 0.85:
-                        steering = (0.00075) * xCen - (0.275) # 0.05 minimum at 300p edge, 0.2 max at 100p
-                        if steering < -0.2:
-                            steering = -0.2
-                    elif throttle == 0:
-                        throttle = abs(steering)
+                    steering = ((0.00238095) * xCen - (0.738095))*(1.2-throttle)  # 0 minimum at 310p edge, 0.5 max at 100p
+                    if steering < -0.5:
+                        steering = -0.5
+                    if throttle == 0:
+                        throttle = abs(steering)/1.2
                         steering = -1
                 # Bbox center crossed the right edge
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    steering = (0.0015) * xCen - (0.41) # 0.1 minimum at 340p edge, 0.4 max at 540p
-                    if steering > 0.4:
-                        steering = 0.4
-                    if throttle > 0.85:
-                        steering = (0.00075) * xCen - (0.205) # 0.05 minimum at 340p edge, 0.2 max at 540p
-                        if steering > 0.2:
-                            steering = 0.2
-                    elif throttle == 0:
-                        throttle = steering
+                    steering = ((0.00238095) * xCen - (0.785714))*(1.2-throttle) # 0 minimum at 330p edge, 0.5 max at 540p
+                    if steering > 0.5:
+                        steering = 0.5
+                    if throttle == 0:
+                        throttle = steering/1.2
                         steering = 1
                 else:
                     steering = 0
@@ -216,8 +207,8 @@ def main():
             cmd = {
                 'throttle':throttle,
                 'steering':-steering,
-                # 'throttle':0.6,
-                # 'steering':0,
+                # 'throttle':1,
+                # 'steering':0.1,
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
