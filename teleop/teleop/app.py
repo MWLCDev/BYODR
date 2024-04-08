@@ -79,8 +79,12 @@ class TeleopApplication(Application):
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) > 0:
-            self._user_config_file = _candidates[0]
+        for file_path in _candidates:
+            # Extract the filename from the path
+            file_name = os.path.basename(file_path)
+            if file_name == "config.ini":
+                self._user_config_file = file_path
+            
 
     def _config(self):
         parser = SafeConfigParser()
