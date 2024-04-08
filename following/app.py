@@ -157,9 +157,9 @@ def main():
                     # throttle = 0.7
                     # Linear increase of throttle
                     # throttle = (-(0.01) * yBot) + 2.2 # 0.2 minimum at 200p edge, max at 120p edge
-                    throttle = (-(0.013333) * height) + 4.2 # 0.2 minimum at 300p heigh, max at 240p height
-                    if throttle > 1:
-                        throttle = 1
+                    throttle = (-(0.01875) * height) + 5.825 # 0.2 minimum at 300p heigh, 0.95 max at 260p height
+                    if throttle > 0.95:
+                        throttle = 0.95
                 else:
                     throttle = 0
 
@@ -167,9 +167,9 @@ def main():
                 if xCen <= leftE:
                     # steering = -0.4
                     # Linear increase of steering
-                    steering = (0.00178571) * xCen - (0.5)  # 0.1 minimum at 290p edge, 0.5 max at 40p
-                    if steering < -0.5:
-                        steering = -0.5
+                    steering = (0.00166667) * xCen - (0.566667)  # 0.1 minimum at 280p edge, 0.4 max at 100p
+                    if steering < -0.4:
+                        steering = -0.4
                     if throttle == 0:
                         throttle = abs(steering)
                         steering = -1
@@ -177,9 +177,9 @@ def main():
                 elif xCen >= rightE:
                     # steering = 0.4
                     # Linear increase of steering
-                    steering = (0.00178571) * xCen - (0.642857) # 0.1 minimum at 350p edge, 0.5 max at 600p
-                    if steering > 0.5:
-                        steering = 0.5
+                    steering = (0.0016667) * xCen - (0.5) # 0.1 minimum at 360p edge, 0.4 max at 540p
+                    if steering > 0.4:
+                        steering = 0.4
                     if throttle == 0:
                         throttle = steering
                         steering = 1
@@ -207,9 +207,9 @@ def main():
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
-                'steering':steering,
+                'steering':-steering,
                 # 'throttle':0.6,
-                # 'steering':1,
+                # 'steering':0,
                 'button_b':1,
                 'time':timestamp(),
                 'navigator': {'route': None}
@@ -222,7 +222,7 @@ if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.7.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
     # results = model.track(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3, persist=True)
 
     while True:
