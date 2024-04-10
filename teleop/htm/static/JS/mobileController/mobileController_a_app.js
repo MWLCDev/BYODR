@@ -39,6 +39,8 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        document.getElementById("mobile-controller-top-input-container").style.display = "none";
+        //shoudl do the same style for the bottom toggles container
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
         // Arrow function to send the command through websocket 
@@ -61,6 +63,7 @@ function startOperating(event) {
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
+    document.getElementById("mobile-controller-top-input-container").style.display = "flex";
     redraw(); // Reset triangles to their original position
 
     // Remove the dot
