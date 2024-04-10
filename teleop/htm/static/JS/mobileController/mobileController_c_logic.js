@@ -114,8 +114,9 @@ function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
  * @param {number} y position of the touch
  */
 function handleDotMove(touchX, touchY) {
-  // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
   let minY, maxY, triangle;
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  let deadZoneWidth = window.innerWidth * parseFloat(deadZoneSlider.value);
   if (CTRL_STAT.selectedTriangle === 'top') {
     minY = CTRL_STAT.midScreen - topTriangle.height;
     maxY = CTRL_STAT.midScreen;
@@ -125,22 +126,34 @@ function handleDotMove(touchX, touchY) {
     maxY = CTRL_STAT.midScreen + bottomTriangle.height;
     triangle = bottomTriangle;
   }
-  let triangleMidX = triangle.baseWidth / 2
+  let triangleMidX = triangle.baseWidth / 2;
   let y = Math.max(minY, Math.min(touchY, maxY));
-  //represents the fraction of the distance the dot is from the tip of the triangle it is inside
-  const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
-  //limit the movement of the ball
-  const maxXDeviation = Math.abs(relativeY) * (triangleMidX);
 
-  //The sent variable to the motors(hemisphere shape)
-  let x = Math.max(Math.min(touchX, (window.innerWidth / 2) + triangleMidX), (window.innerWidth / 2) - triangleMidX);
+  let deadZoneMinX = (window.innerWidth / 2) - (deadZoneWidth / 2);
+  let deadZoneMaxX = (window.innerWidth / 2) + (deadZoneWidth / 2);
 
-  //X value to visually limit the movement of the ball
-  let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  // Check if the touch is within the dead zone width
+  let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
+
+  let x = touchX; // default x position is where the user touched
+  let xOfDot = touchX; // For visual representation, xOfDot will start at the touch point
+
+  if (inDeadZone) {
+    // If in the dead zone, lock x to the horizontal center of the screen for movement
+    x = window.innerWidth / 2;
+    xOfDot = x;
+  } else {
+    // Only allow horizontal movement if outside the dead zone
+    const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
+    const maxXDeviation = Math.abs(relativeY) * triangleMidX;
+    x = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+    xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  }
+
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-
   deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY);
 }
+
 
 /**
  * Second way to limit the user's interactions, to be only inside the two triangles (first one is the if condition in handleTriangleMove() to limit the borders of the triangles)
