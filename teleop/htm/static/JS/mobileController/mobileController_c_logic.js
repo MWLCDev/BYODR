@@ -108,7 +108,16 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
       mobileInferenceState: getInferenceState,
     };
 }
+// Save dead zone width to local storage
+function saveDeadZoneWidth(value) {
+  localStorage.setItem('deadZoneWidth', value);
+}
 
+// Retrieve dead zone width from local storage
+function getSavedDeadZoneWidth() {
+  // If there's a saved value in local storage, use it; otherwise default to 0.1
+  return localStorage.getItem('deadZoneWidth') || '0.1';
+}
 /**
  * Handles the movement of the dot within specified triangle boundaries.
  * @param {number} touchX - X position of the touch.
@@ -124,11 +133,9 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Calculate minY and maxY based on the mode.
   let minY, maxY;
   if (getInferenceState === "auto") {
-    // For auto mode, use midScreen as reference for triangle positioning.
     minY = isTopTriangle ? midScreen - triangle.height : midScreen;
     maxY = isTopTriangle ? midScreen : midScreen + triangle.height;
   } else {
-    // For non-auto mode, use CTRL_STAT.midScreen as reference to allow for dynamic triangle positioning.
     minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
     maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
   }
@@ -136,24 +143,41 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
 
-  // Calculate the relative Y position within the triangle to determine horizontal movement limit.
+  // Calculate the relative Y position within the triangle.
+  // This is initialized here to ensure it has a value in all code paths.
   let relativeY = (y - (getInferenceState === "auto" ? midScreen : CTRL_STAT.midScreen)) / triangle.height;
-  let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
 
-  // Constrain the X position within the calculated horizontal movement limit for both modes.
-  let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-  // // Log for debugging (optional).
-  // console.log('MinY:', minY, 'MaxY:', maxY, 'RelativeY:', relativeY, 'MaxXDeviation:', maxXDeviation, 'XOfDot:', xOfDot);
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  let savedDeadZoneWidth = getSavedDeadZoneWidth();
+  deadZoneSlider.value = savedDeadZoneWidth; // Set the slider to the saved value
+  let deadZoneWidth = window.innerWidth * parseFloat(savedDeadZoneWidth);
+
+  let deadZoneMinX = (window.innerWidth / 2) - (deadZoneWidth / 2);
+  let deadZoneMaxX = (window.innerWidth / 2) + (deadZoneWidth / 2);
+  let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
+
+  // Modify the logic to handle the X position considering the dead zone
+  let xOfDot; // For visual representation, initialize xOfDot
+
+  if (inDeadZone) {
+    xOfDot = window.innerWidth / 2;
+    // Optionally adjust relativeY if needed when in dead zone
+    relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
+  } else {
+    let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
+    xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  }
 
   // Update the dot's position.
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
 
   // Execute the following only when not in auto mode.
   if (getInferenceState !== "auto") {
-    let relative_x = deltaCoordinatesFromTip(touchX);
-    SetStatistics(relative_x, touchY, relativeY, getInferenceState);
+    let relative_x = deltaCoordinatesFromTip(touchX); 
+    SetStatistics(relative_x, touchY, relativeY, getInferenceState); 
   }
 }
+
 
 /**
  * Second way to limit the user's interactions, to be only inside the two triangles (first one is the if condition in handleTriangleMove() to limit the borders of the triangles)
@@ -308,5 +332,5 @@ MotorDataInput.CONFIRMBUTTON.addEventListener('click', function () {
 
 export {
   pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
-  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand
+  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand, getSavedDeadZoneWidth, saveDeadZoneWidth
 };
