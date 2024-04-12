@@ -128,12 +128,11 @@ def main():
                 # Getting each coordinate of the bbox corners
                 if boxes.id is not None and boxes.id.size > 1:
                     for box in boxes:
-                        if box.id == boxes.id[0]:
+                        if box.id == boxes.id[-1]:
                             x1 = box.xyxy[0,0]
                             y1 = box.xyxy[0,1]
                             x2 = box.xyxy[0,2]
                             y2 = box.xyxy[0,3]
-                            print(box.id)
                 else:
                     x1 = xyxy[0, 0]
                     y1 = xyxy[0, 1]
@@ -169,7 +168,7 @@ def main():
                     steering = ((0.00238095) * xCen - (0.738095))  # 0 minimum at 310p edge, 0.5 max at 100p 
                     if steering < -0.5:
                         steering = -0.5
-                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.4 depending on throttle value
+                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
                     if throttle == 0:
                         throttle = abs(steering)/1.15
                         steering = -1
@@ -180,7 +179,7 @@ def main():
                     steering = ((0.00238095) * xCen - (0.785714)) # 0 minimum at 330p edge, 0.5 max at 540p 
                     if steering > 0.5:
                         steering = 0.5
-                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.4
+                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5
                     if throttle == 0:
                         throttle = steering/1.15
                         steering = 1
@@ -217,7 +216,7 @@ def main():
             }
             # Publishing the command to Teleop
             logger.info(f"Sending command to teleop: {cmd}")
-            following_publisher.publish(cmd)
+            # following_publisher.publish(cmd)
 
 if __name__ == "__main__":
     pub_init()
