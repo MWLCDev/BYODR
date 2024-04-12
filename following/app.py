@@ -52,7 +52,7 @@ teleop.start()
 following_publisher = JSONPublisher(
     url="ipc:///byodr/following.sock", topic="aav/following/controls"
 )
-logger.info(f"Following working")
+logger.info(f"Initializing the Following service")
 
 # Sending a subscriptable object to teleop
 def pub_init():
@@ -90,7 +90,7 @@ def main():
                 following_publisher.publish(cmd)
                 return
         except:
-            print("can't get message from following")
+            logger.info("Failed to receive a 'Start' request from Teleop")
             cmd = {
                 'throttle': 0,
                 'steering': 0,
@@ -104,22 +104,21 @@ def main():
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
         # 'for' loop used when yolov8 model parameter stream = True
-        logger.info("got results")
+        logger.info("Loading YOLO model results")
 
         for r in results:
             # lastThrottle = throttle
             request = teleop.get()
             if request is not None:
-                print(request['following'])
+                logger.info(f"Received request from Teleop:{request['following']}")
             try:
                 if request is not None and request['following'] == "Stop Following":
                     return
             except:
-                print("can't get message from teleop")
+                logger.info("Failed to receive a 'Stop' request from Teleop")
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
             img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
-            # print(img.shape)
 
             if xyxy.size > 0:                   # If anything detected
 
@@ -142,7 +141,7 @@ def main():
                 xCen = int((x1 + x2) / 2)   # Center of the bbox
                 yBot = int(y2)  # Bottom edge of the bbox
                 height = int(y2 - y1) # Height of the bbox
-                logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
+                # logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
 
                 # Edges on the screen beyond which robot should start moving to keep distance
                 leftE = int(310 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
@@ -199,8 +198,7 @@ def main():
                 logger.info(f"No human detected for {no_human_counter} frames")
 
 
-                if no_human_counter >= 1:
-                    print("______________________________________stopped after losing")
+                if no_human_counter >= 4:
                     throttle = 0
                     steering = 0
 
@@ -221,7 +219,7 @@ def main():
 if __name__ == "__main__":
     pub_init()
 
-    logger.info(f"Starting following model")
+    logger.info(f"Starting YOLOv8 model")
     results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
     # results = model.track(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3, persist=True)
 
