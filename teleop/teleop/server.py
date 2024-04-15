@@ -13,6 +13,7 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+from byodr.utils import timestamp
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
@@ -155,7 +156,9 @@ class ConfidenceHandler(websocket.WebSocketHandler):
     def open(self):
         self.start_time = time.clock()
         logger.info("Confidence websocket connection opened.")
-        self.runner = OverviewConfidence(self.inference, self.vehicle, self.rut_gps_poller)
+        self.runner = OverviewConfidence(
+            self.inference, self.vehicle, self.rut_gps_poller
+        )
         self.write_message("Connection established.")
 
     def send_loading_message(self):
@@ -168,13 +171,9 @@ class ConfidenceHandler(websocket.WebSocketHandler):
         elif message == "Stop overview confidence":
             self.write_message("Received stopping command")
             self.send_loading_message()
-            delta_time = time.clock() - self.start_time
             self.runner.stop()
-            self.runner.clean_list()
-            self.runner.plot_data_on_map()
-            self.write_message(f"{len(self.runner.cleaned_data)} \n in {self.runner.map_name}")
-            # self.write_message(self.runner.map_name)
-
+            self.runner.process_data()
+            self.write_message(self.runner.map_name)
 
 
 class MessageServerSocket(websocket.WebSocketHandler):
