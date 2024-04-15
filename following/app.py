@@ -216,13 +216,13 @@ def main():
             }
             # Publishing the command to Teleop
             logger.info(f"Sending command to teleop: {cmd}")
-            # following_publisher.publish(cmd)
+            following_publisher.publish(cmd)
 
 if __name__ == "__main__":
     pub_init()
 
     logger.info(f"Starting following model")
-    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.4.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
     # results = model.track(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3, persist=True)
 
     while True:
