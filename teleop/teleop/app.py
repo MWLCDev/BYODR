@@ -3,34 +3,32 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
+import concurrent.futures
+import configparser
 import glob
 import multiprocessing
 import signal
 import subprocess  # to run the python script
-import tornado.web
-import concurrent.futures
-import configparser
-import user_agents  # Check in the request header if it is a phone or not
-
-
 from concurrent.futures import ThreadPoolExecutor
+
+import tornado.ioloop
+import tornado.web
+import user_agents  # Check in the request header if it is a phone or not
+from byodr.utils import Application, ApplicationExit, hash_dict
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
+from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from logbox.app import LogApplication, PackageApplication
+from logbox.core import MongoLogBox, SharedState, SharedUser
+from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-import tornado.ioloop
-import tornado.web
 
-from byodr.utils import Application, hash_dict, ApplicationExit
-from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from logbox.app import LogApplication, PackageApplication
-from logbox.core import MongoLogBox, SharedUser, SharedState
-from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
-from .server import *
-
-from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 from .getSSID import fetch_ssid
+from .server import *
 
 logger = logging.getLogger(__name__)
 
@@ -94,13 +92,19 @@ class TeleopApplication(Application):
         config.read(self.get_user_config_file())
 
         # Flatten the configuration sections and keys into a single dictionary
-        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
+        config_dict = {
+            f"{section}.{option}": value
+            for section in config.sections()
+            for option, value in config.items(section)
+        }
 
         errors = []
         # print(config_dict)
         # Use the flattened config dictionary as **kwargs to parse_option
         # A close implementation for how the parse_option is called in the internal_start function for each service.
-        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
+        self.rut_ip = parse_option(
+            "vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict
+        )
 
         if errors:
             for error in errors:
@@ -312,7 +316,16 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread, gps_poller_snmp]
+    threads = [
+        camera_front,
+        camera_rear,
+        pilot,
+        vehicle,
+        inference,
+        logbox_thread,
+        package_thread,
+        gps_poller_snmp,
+    ]
 
     if quit_event.is_set():
         return 0
