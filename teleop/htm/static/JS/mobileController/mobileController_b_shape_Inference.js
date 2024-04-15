@@ -15,6 +15,8 @@ class InferenceToggleButton {
     this.InferenceAutoNavigationToggle = document.getElementById('inference_auto_navigation_toggle');
     this.InferenceAutoSpeedText = document.getElementById('inference_auto_speed');
     this.hideOptionsButton = document.getElementById('hide_options');
+    this.speedElement = document.getElementById("inference_auto_speed");
+
     this.logWS = {}; // Placeholder for WebSocket.
     this.logWSmessage;
     this.autoReconnectInterval = 9000;
@@ -97,6 +99,7 @@ class InferenceToggleButton {
     this.InferenceAutoSpeedText.style.display = "none";
     this.inferenceTrainingButton.style.display = "flex";
     this.hideOptionsButton.innerText = "Hide Options";
+    this.speedElement.innerHTML = `0 Km/h`;
   }
 
   handleInferenceTrainClick() {
@@ -110,7 +113,7 @@ class InferenceToggleButton {
 
   startTraining() {
     this.inferenceTrainingButton.innerText = "Stop Training";
-    redraw(undefined, true, false, false);
+    redraw(undefined, true, false, true);
     addKeyToSentCommand("button_y", 1);
     this.hideOptionsButton.innerText = "Go to manual mode";
     this.InferenceAutoNavigationToggle.style.display = "none";
@@ -130,7 +133,6 @@ class InferenceToggleButton {
    */
   handleSpeedControl(touchedTriangle) {
     // Retrieve the current speed from the element
-    const speedElement = document.getElementById("inference_auto_speed");
     // Round the received number to the nearest 0.5 for consistency
     let roundedSpeed = Math.round(this.logWSmessage.max_speed * 2) / 2;
     if (!this.logWSmessage._is_on_autopilot) {
@@ -138,7 +140,7 @@ class InferenceToggleButton {
       console.log(this.logWSmessage._is_on_autopilot)
     }
     // Update the speed display, ensuring it always has one decimal place
-    speedElement.innerHTML = `${roundedSpeed.toFixed(1)} Km/h`;
+    this.speedElement.innerHTML = `${roundedSpeed.toFixed(1)} Km/h`;
     if (touchedTriangle == "top" && roundedSpeed < 6) {
       addKeyToSentCommand("arrow_up", 1);
     } else if (touchedTriangle == "bottom" && roundedSpeed > 0) {
@@ -173,7 +175,7 @@ class InferenceToggleButton {
 
       if (this.logWSmessage._is_on_autopilot
         && this.logWSmessage._has_passage == false
-        && this._inferenceState != "train") {
+        && this._inferenceState == "auto") {
         changeTrianglesColor(0xFF0000)
       }
 

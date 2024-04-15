@@ -219,7 +219,6 @@ function handleTriangleMove(y, inferenceToggleButton) {
   let INFState = inferenceToggleButton.getInferenceState
   if (INFState == "auto") {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
-    //you should be able to move it while on training mode
   } else if (INFState == "train") {
     redraw(yOffset, true, false, true);
   } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
