@@ -6,6 +6,8 @@ html {
   height: 100%;
   overflow: hidden;
   /* This will prevent scrollbar from appearing */
+  overflow: hidden;
+  /* This will prevent scrollbar from appearing */
 }
 
 canvas {
@@ -18,6 +20,8 @@ canvas {
   display: flex;
   align-items: center;
   justify-content: center;
+  flex-direction: column;
+  margin: 1vh 0;
 }
 
 #dead-zone-container {
@@ -47,24 +51,107 @@ input[type=range]::-webkit-slider-thumb {
   background: #555;
   margin-top: -4px;
 }
-#confidenceToggleButton {
+
+/* Adjusted styles for the container and option buttons to center them horizontally at the bottom of the page */
+.mobile_controller_button_container {
   position: fixed;
-  bottom: 5%;
-  left: 5%;
+  bottom: 2vw;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 10px;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.mobile_option_button {
+  display: flex;
+  margin: 0 5px;
   width: 10vh;
   height: 10vh;
-  margin-right: 0;
-  transform: translate(0, 0);
-  z-index: 9999;
-  padding: 0;
   background-color: #67b96a;
   color: white;
   border: none;
   border-radius: 50%;
   cursor: pointer;
-  display: flex;
   justify-content: center;
-  /* Center horizontally */
   align-items: center;
-  /* Center vertically */
+}
+
+#inference_auto_speed {
+  display: none;
+  text-align: center;
+  width: 100%;
+  font-size: large;
+  margin-bottom: 10px;
+}
+
+#toggle_button_container {
+  display: flex;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+#inference_options_container {
+  display: none;
+  flex-direction: row-reverse;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+}
+
+.mobile_view_container {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.mobile-controller-motor-settings-container {
+  display: flex;
+  flex-direction: column;
+  align-items: left;
+  top: 20px;
+}
+
+.scale-offset-input-containers {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+}
+
+.scale-offset-input-containers label {
+  width: 110px;
+}
+
+.scale-offset-input-box-containers {
+  display: flex;
+  align-items: center;
+}
+
+.scale-offset-input-box {
+  width: 50px;
+}
+
+.scale-offset-input-box-text {
+  margin-left: 10px;
+}
+
+.scale-offset-confirm-button-containers {
+  margin-top: 10px;
+  margin-left: 10px;
+  text-align: left;
+  position: relative;
+}
+
+.scale-offset-confirm-text {
+  font-size: 14px;
+  margin-left: 10px;
+}
+
+.hidden {
+  display: none;
 }

@@ -14,12 +14,25 @@
 				<label for="deadZoneWidth">Dead Zone Width:</label>
 				<input type="range" id="deadZoneWidth" name="deadZoneWidth" min="0" max="0.5" step="0.01" value="0.1" />
 			</div>
+			<!-- Add the motor control offset here -->
 		</div>
 
 		<div id="mobile-controller-bottom-input-container">
-			<!-- Place holder for toggle buttons related to other service -->
+			<div class="mobile_controller_button_container">
+				<div id="toggle_button_container">
+					<!-- FOR OT and MC: add your buttons here with the same class name -->
+					<button id="inference_toggle_button" class="mobile_option_button">Autopilot options</button>
+					<button id="confidenceToggleButton" class="mobile_option_button">Start overview confidence</button>
+				</div>
+				<div id="inference_auto_speed">0.0 Km/h</div>
+				<div id="inference_options_container">
+					<button id="inference_training_toggle" class="mobile_option_button">Start Training</button>
+					<button id="inference_auto_navigation_toggle" class="mobile_option_button">Start Auto-navigation</button>
+					<button id="hide_options" class="mobile_option_button">Hide Options</button>
+				</div>
+			</div>
 		</div>
-  <button id="confidenceToggleButton">Start overview confidence</button>
+
 		<script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
 		<script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
 	</body>

@@ -40,11 +40,8 @@ signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
+current_throttle = 0
 
-# Variables in use for the throttle_control() function
-prev_throttle = 0.0
-current_throttle = 0.0
-throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -83,7 +80,7 @@ class TeleopApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
-    
+
     def get_user_config_file(self):
         return self._user_config_file
 
@@ -367,54 +364,77 @@ def main():
         return route_store.get_image(image_id)
 
     def throttle_control(cmd):
-        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
-        global throttle_change_step # Always 0.1
+        global current_throttle  # The throttle value that we will send in this iteration of the function. Starts as 0.0
+        throttle_change_step = 0.1  # Always 0.1
 
-
-        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        if "throttle" in cmd:
-
-            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
-            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
-
-            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
-            if first_key == "steering":
-                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
-                braking_sign = -1 if current_throttle < 0 else 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we were going forwards or backwards
-                current_throttle = current_throttle - (braking_sign*throttle_change_step)
-                
-                # Capping the value at 0 so that the robot does not move while idle
-                if braking_sign > 0 and current_throttle < 0:
-                    current_throttle = 0.0
-
-            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
-            else:
-                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
-                accelerate_sign = 0
-                if target_throttle < current_throttle:
-                    accelerate_sign = -1
-                elif target_throttle > current_throttle:
-                    accelerate_sign = 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we want to go forwards or backwards
-                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
-                
-                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
-                    current_throttle = target_throttle
-                
-            # Sending commands to Coms/Pilot
-            cmd["throttle"] = current_throttle
+        # Is it ugly, i know
+        if (
+            cmd.get("mobileInferenceState") == "true"
+            or cmd.get("mobileInferenceState") == "auto"
+            or cmd.get("mobileInferenceState") == "train"
+        ):
+            # cmd.pop("mobileInferenceState")
             teleop_publish(cmd)
-
-        # When we receive commands without throttle in them, we reset the current throttle value to 0
+        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
         else:
-            current_throttle = 0
-            teleop_publish({'steering': 0.0, 'throttle': 0, 'time': timestamp(), 'navigator': {'route': None}, 'button_b': 1})
+            if "throttle" in cmd:
+                # First key of the dict, checking if its throttle or steering
+                first_key = next(iter(cmd))
+                # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
+                target_throttle = float(cmd.get("throttle"))
+
+                # If steering is the 1st key of the dict, then it means the user gives no throttle input
+                if first_key == "steering":
+                    # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
+                    braking_sign = -1 if current_throttle < 0 else 1
+
+                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                    # Dec or Inc depends on if we were going forwards or backwards
+                    current_throttle = current_throttle - (
+                        braking_sign * throttle_change_step
+                    )
+
+                    # Capping the value at 0 so that the robot does not move while idle
+                    if braking_sign > 0 and current_throttle < 0:
+                        current_throttle = 0.0
+
+                # If throttle is the 1st key of the dict, then it means the user gives throttle input
+                else:
+                    # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
+                    accelerate_sign = 0
+                    if target_throttle < current_throttle:
+                        accelerate_sign = -1
+                    elif target_throttle > current_throttle:
+                        accelerate_sign = 1
+
+                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
+                    # Dec or Inc depends on if we want to go forwards or backwards
+                    current_throttle = current_throttle + (
+                        accelerate_sign * throttle_change_step
+                    )
+
+                    # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
+                    if (accelerate_sign > 0 and current_throttle > target_throttle) or (
+                        accelerate_sign < 0 and current_throttle < target_throttle
+                    ):
+                        current_throttle = target_throttle
+
+                # Sending commands to Coms/Pilot
+                cmd["throttle"] = current_throttle
+                teleop_publish(cmd)
+
+            # When we receive commands without throttle in them, we reset the current throttle value to 0
+            else:
+                current_throttle = 0
+                teleop_publish(
+                    {
+                        "steering": 0.0,
+                        "throttle": 0,
+                        "time": timestamp(),
+                        "navigator": {"route": None},
+                        "button_b": 1,
+                    }
+                )
 
     def teleop_publish(cmd):
         # We are the authority on route state.

@@ -1,5 +1,6 @@
-import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
-import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
+import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
+import { bottomRectangle, topRectangle } from "./mobileController_b_shape_red_rectangle.js";
+import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js";
 import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
@@ -14,21 +15,54 @@ app.view.style.marginTop = '10px';
 app.view.style.marginBottom = '10px';
 document.body.appendChild(app.view);
 
-//Then add them to the canvas 9it is called stage in PiXi)
+//Then add them to the canvas (it is called stage in PiXi)
 app.stage.addChild(topTriangle.graphics);
 app.stage.addChild(bottomTriangle.graphics);
 
-function redraw(yOffset = 0) {
+
+function removeTriangles() {
+  // Check if the top triangle's graphics are currently a child of the stage
+  if (app.stage.children.includes(topTriangle.graphics)) {
+    app.stage.removeChild(topTriangle.graphics);
+  }
+
+  // Check if the bottom triangle's graphics are currently a child of the stage
+  if (app.stage.children.includes(bottomTriangle.graphics)) {
+    app.stage.removeChild(bottomTriangle.graphics);
+  }
+}
+
+function changeTrianglesColor(color = "0x000000") {
+  topTriangle.drawTriangle(undefined, color);
+  bottomTriangle.drawTriangle(undefined, color);
+}
+
+// Redraw function with added parameters to control display of triangles and reset their text.
+function redraw(yOffset = 0, showTopTriangle = true, showBottomTriangle = true, resetText = false) {
   app.stage.removeChildren();
-  topTriangle.drawTriangle(yOffset);
-  bottomTriangle.drawTriangle(yOffset);
-  app.stage.addChild(topTriangle.graphics);
-  app.stage.addChild(bottomTriangle.graphics);
+
+  if (resetText) {
+    topTriangle.changeText(topTriangle.currentSSID);
+    bottomTriangle.changeText("Backwards");
+  }
+
+  if (showTopTriangle) {
+    topTriangle.drawTriangle(yOffset);
+    app.stage.addChild(topTriangle.graphics);
+  }
+
+  if (showBottomTriangle) {
+    bottomTriangle.drawTriangle(yOffset);
+    app.stage.addChild(bottomTriangle.graphics);
+  }
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-  if (CTRL_STAT.isWebSocketOpen)
-    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+  if (CTRL_STAT.isWebSocketOpen) {
+    app.stage.addChild(cursorFollowingDot.graphics);
+  }
 }
+
+
 
 function drawTopTriangle_BottomRectangle(yOffset = 0) {
   app.stage.removeChildren();
@@ -40,7 +74,7 @@ function drawTopTriangle_BottomRectangle(yOffset = 0) {
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
-    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+    app.stage.addChild(cursorFollowingDot.graphics);
 }
 
 function drawBottomTriangle_TopRectangle(yOffset = 0) {
@@ -53,8 +87,8 @@ function drawBottomTriangle_TopRectangle(yOffset = 0) {
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
-    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+    app.stage.addChild(cursorFollowingDot.graphics);
 }
 
 
-export { app, redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
+export { app, changeTrianglesColor, drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw, removeTriangles };
