@@ -1,7 +1,9 @@
 
-import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
+import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js";
+
+import { drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw } from './mobileController_d_pixi.js';
 import CTRL_STAT from './mobileController_z_state.js';
-import { redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from './mobileController_d_pixi.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -23,7 +25,7 @@ function initializeWS() {
       //Place holder until implementation with multi segment is over
     } else if (parsedData["control"] == "viewer") {
       CTRL_STAT.stateErrors = "controlError"
-      redraw(undefined, undefined, true)
+      redraw(undefined, true, true, false);
     }
   };
 
@@ -34,10 +36,9 @@ function initializeWS() {
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
     CTRL_STAT.stateErrors = "connectionError"
-    redraw(undefined, undefined, true)
+    redraw(undefined, true, true, false);
     CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
-  console.log('Created Mobile controller (WS)');
 }
 
 /**
@@ -171,7 +172,7 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   }
 
   // Update the dot's position.
-  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
+  cursorFollowingDot.setPosition(xOfDot, y);
 
   // Execute the following only when not in auto mode.
   if (getInferenceState !== "auto") {
@@ -221,7 +222,7 @@ function handleTriangleMove(y, inferenceToggleButton) {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
     //you should be able to move it while on training mode
   } else if (INFState == "train") {
-    redraw(CTRL_STAT.selectedTriangle, yOffset, true);
+    redraw(yOffset, true, false, true);
   } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
@@ -284,4 +285,5 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand, saveDeadZoneWidth, getSavedDeadZoneWidth };
+export { addKeyToSentCommand, deltaCoordinatesFromTip, detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, pointInsideTriangle, saveDeadZoneWidth, sendJSONCommand };
+

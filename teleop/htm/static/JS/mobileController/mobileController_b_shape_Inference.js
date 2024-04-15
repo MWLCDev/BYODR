@@ -57,7 +57,7 @@ class InferenceToggleButton {
       this._inferenceState = "false"
     }
     //Make it start with dark colour
-    redraw("both", 0, true)
+    redraw(undefined, true, true, true);
     changeTrianglesColor(0x000000)
     this._inferenceState = "false"
   }
@@ -81,7 +81,7 @@ class InferenceToggleButton {
 
   startAutoNavigation() {
     this.InferenceAutoNavigationToggle.innerText = "Stop Auto-navigation";
-    redraw();
+    redraw(undefined, true, true, false);
     addKeyToSentCommand("button_y", 1);
     topTriangle.changeText("Raise Speed", 25);
     bottomTriangle.changeText("Lower Speed", 25);
@@ -110,7 +110,7 @@ class InferenceToggleButton {
 
   startTraining() {
     this.inferenceTrainingButton.innerText = "Stop Training";
-    redraw("top", undefined, undefined);
+    redraw(undefined, true, false, false);
     addKeyToSentCommand("button_y", 1);
     this.hideOptionsButton.innerText = "Go to manual mode";
     this.InferenceAutoNavigationToggle.style.display = "none";
@@ -133,10 +133,12 @@ class InferenceToggleButton {
     const speedElement = document.getElementById("inference_auto_speed");
     // Round the received number to the nearest 0.5 for consistency
     let roundedSpeed = Math.round(this.logWSmessage.max_speed * 2) / 2;
-
+    if (!this.logWSmessage._is_on_autopilot) {
+      addKeyToSentCommand("button_y", 1);
+      console.log(this.logWSmessage._is_on_autopilot)
+    }
     // Update the speed display, ensuring it always has one decimal place
     speedElement.innerHTML = `${roundedSpeed.toFixed(1)} Km/h`;
-
     if (touchedTriangle == "top" && roundedSpeed < 6) {
       addKeyToSentCommand("arrow_up", 1);
     } else if (touchedTriangle == "bottom" && roundedSpeed > 0) {

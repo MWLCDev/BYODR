@@ -1,13 +1,12 @@
-import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
-import { Dot } from "./mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, getSavedDeadZoneWidth, saveDeadZoneWidth }
-  from "./mobileController_c_logic.js"
 import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
+import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js"
+import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, saveDeadZoneWidth, sendJSONCommand } from "./mobileController_c_logic.js"
+import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
 
 import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
 
+import { app, changeTrianglesColor, redraw } from "./mobileController_d_pixi.js"
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
-import { redraw, app, changeTrianglesColor } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 sendJSONCommand();
@@ -63,12 +62,7 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-  if (app.stage.children.includes(CTRL_STAT.cursorFollowingDot)) {
-    CTRL_STAT.cursorFollowingDot.show()
-  }
-  else {
-    CTRL_STAT.cursorFollowingDot = new Dot();
-  }
+  cursorFollowingDot.show()
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
   if (inferenceToggleButton.getInferenceState == "train") {
@@ -82,9 +76,7 @@ function onTouchMove(event) {
     document.getElementById('inference_options_container').style.display = 'none';
   }
   // Update the dot's position
-  if (CTRL_STAT.cursorFollowingDot) {
-    handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
-  }
+  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
 }
 
 
@@ -97,11 +89,6 @@ app.view.addEventListener('touchend', () => {
 
       redraw(); // Reset triangles to their original position
 
-      // Remove the dot
-      if (CTRL_STAT.cursorFollowingDot) {
-        CTRL_STAT.cursorFollowingDot.remove();
-        CTRL_STAT.cursorFollowingDot = null;
-      }
       CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
       app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
       CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
@@ -111,9 +98,9 @@ app.view.addEventListener('touchend', () => {
       }
       if (inferenceToggleButton.getInferenceState == "train") {
         document.getElementById('inference_options_container').style.display = 'flex';
-        redraw("top", undefined, true)
+        redraw(undefined, true, true, true)
       }
-
+      cursorFollowingDot.hide()
       clearTimeout(intervalId);
     }
   }

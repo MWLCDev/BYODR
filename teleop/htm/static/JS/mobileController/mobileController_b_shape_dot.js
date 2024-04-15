@@ -28,4 +28,6 @@ class Dot {
   }
 }
 
-export { Dot };
+const cursorFollowingDot = new Dot();
+
+export { cursorFollowingDot };
