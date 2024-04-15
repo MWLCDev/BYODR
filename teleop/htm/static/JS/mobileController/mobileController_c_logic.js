@@ -87,7 +87,7 @@ function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
   const isTopTriangle = triangle_in_use === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
-  
+
   // Stopping the robot urgently depending on where the finger of the user is. We stop in these cases:
   // top triangle in use AND finger below the center
   // OR
@@ -107,50 +107,69 @@ function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
     };
 }
 
+// Save dead zone width to local storage
+function saveDeadZoneWidth(value) {
+  localStorage.setItem('deadZoneWidth', value);
+}
+
+// Retrieve dead zone width from local storage
+function getSavedDeadZoneWidth() {
+  // If there's a saved value in local storage, use it; otherwise default to 0.1
+  return localStorage.getItem('deadZoneWidth') || '0.1';
+}
+
 /**
  * Set the value for the dot on the screen, and limit the movement to be inside the triangle the user touched first
  * @param {number} x position of the touch
  * @param {number} y position of the touch
  */
-function handleDotMove(touchX, touchY) {
-  let minY, maxY, triangle;
-  let deadZoneSlider = document.getElementById('deadZoneWidth');
-  let deadZoneWidth = window.innerWidth * parseFloat(deadZoneSlider.value);
-  if (CTRL_STAT.selectedTriangle === 'top') {
-    minY = CTRL_STAT.midScreen - topTriangle.height;
-    maxY = CTRL_STAT.midScreen;
-    triangle = topTriangle;
-  } else if (CTRL_STAT.selectedTriangle === 'bottom') {
-    minY = CTRL_STAT.midScreen;
-    maxY = CTRL_STAT.midScreen + bottomTriangle.height;
-    triangle = bottomTriangle;
+function handleDotMove(touchX, touchY, getInferenceState) {
+  // Determine the triangle and its vertical boundaries based on the selection.
+  const isTopTriangle = CTRL_STAT.selectedTriangle === 'top';
+  const triangle = isTopTriangle ? topTriangle : bottomTriangle;
+  const midScreen = window.innerHeight / 2;
+
+  // Calculate minY and maxY based on the mode.
+  let minY, maxY;
+  if (getInferenceState === "auto") {
+    minY = isTopTriangle ? midScreen - triangle.height : midScreen;
+    maxY = isTopTriangle ? midScreen : midScreen + triangle.height;
+  } else {
+    minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
+    maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
   }
-  let triangleMidX = triangle.baseWidth / 2;
+
+  // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
+
+  // Calculate the relative Y position within the triangle.
+  // This is initialized here to ensure it has a value in all code paths.
+  let relativeY = (y - (getInferenceState === "auto" ? midScreen : CTRL_STAT.midScreen)) / triangle.height;
+
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  let savedDeadZoneWidth = getSavedDeadZoneWidth();
+  deadZoneSlider.value = savedDeadZoneWidth; // Set the slider to the saved value
+  let deadZoneWidth = window.innerWidth * parseFloat(savedDeadZoneWidth);
 
   let deadZoneMinX = (window.innerWidth / 2) - (deadZoneWidth / 2);
   let deadZoneMaxX = (window.innerWidth / 2) + (deadZoneWidth / 2);
-
-  // Check if the touch is within the dead zone width
   let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
 
-  let x = touchX; // default x position is where the user touched
-  let xOfDot = touchX; // For visual representation, xOfDot will start at the touch point
+  // Modify the logic to handle the X position considering the dead zone
+  let xOfDot; // For visual representation, initialize xOfDot
 
   if (inDeadZone) {
-    // If in the dead zone, lock x to the horizontal center of the screen for movement
-    x = window.innerWidth / 2;
-    xOfDot = x;
+    xOfDot = window.innerWidth / 2;
+    // Optionally adjust relativeY if needed when in dead zone
+    relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
   } else {
-    // Only allow horizontal movement if outside the dead zone
-    const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
-    const maxXDeviation = Math.abs(relativeY) * triangleMidX;
-    x = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+    let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
     xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
   }
 
+  // Update the dot's position.
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-  deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY);
+  deltaCoordinatesFromTip(xOfDot, y, CTRL_STAT.selectedTriangle, touchY);
 }
 
 
@@ -189,7 +208,7 @@ function handleTriangleMove(y) {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
 
-  if(CTRL_STAT.detectedTriangle === 'top')
+  if (CTRL_STAT.detectedTriangle === 'top')
     drawTopTriangle_BottomRectangle(yOffset);
   else
     drawBottomTriangle_TopRectangle(yOffset);
@@ -212,4 +231,4 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, saveDeadZoneWidth, getSavedDeadZoneWidth };

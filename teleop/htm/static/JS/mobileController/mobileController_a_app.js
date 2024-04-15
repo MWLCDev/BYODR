@@ -1,6 +1,6 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { Dot } from "./mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, getSavedDeadZoneWidth, saveDeadZoneWidth }
   from "./mobileController_c_logic.js"
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
@@ -15,10 +15,18 @@ import { redraw, app } from "./mobileController_d_pixi.js";
 CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
 sendJSONCommand()
 
-
 window.addEventListener('load', () => {
   initializeWS()
   new ToggleButtonHandler('confidenceToggleButton')
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
+});
+
+// Dead zone width slider input event listener
+document.getElementById('deadZoneWidth').addEventListener('input', function () {
+  let value = this.value;
+  // Save the new dead zone width to local storage after handling the dot move
+  saveDeadZoneWidth(value);
 });
 
 window.addEventListener('resize', () => {
