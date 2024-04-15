@@ -3,6 +3,8 @@ import { Dot } from "./mobileController_b_shape_dot.js"
 import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
   from "./mobileController_c_logic.js"
 
+import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
+
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app } from "./mobileController_d_pixi.js";
 
@@ -16,6 +18,7 @@ sendJSONCommand()
 
 window.addEventListener('load', () => {
   initializeWS()
+  new ToggleButtonHandler('confidenceToggleButton')
 });
 
 window.addEventListener('resize', () => {

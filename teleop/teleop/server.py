@@ -13,12 +13,13 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+from byodr.utils import timestamp
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 from tornado.gen import coroutine
 
-from byodr.utils import timestamp
+from .tel_utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -146,6 +147,35 @@ class ControlServerSocket(websocket.WebSocketHandler):
             pass
 
 
+class ConfidenceHandler(websocket.WebSocketHandler):
+    def initialize(self, inference_s, vehicle_s, rut_gps_poller):
+        self.inference = inference_s
+        self.vehicle = vehicle_s
+        self.rut_gps_poller = rut_gps_poller
+
+    def open(self):
+        self.start_time = time.clock()
+        logger.info("Confidence websocket connection opened.")
+        self.runner = OverviewConfidence(
+            self.inference, self.vehicle, self.rut_gps_poller
+        )
+        self.write_message("Connection established.")
+
+    def send_loading_message(self):
+        self.write_message("loading")
+
+    def on_message(self, message):
+        if message == "Start overview confidence":
+            self.runner.start()
+            self.write_message("Received start")
+        elif message == "Stop overview confidence":
+            self.write_message("Received stopping command")
+            self.send_loading_message()
+            self.runner.stop()
+            self.runner.process_data()
+            self.write_message(self.runner.map_name)
+
+
 class MessageServerSocket(websocket.WebSocketHandler):
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
@@ -243,43 +273,43 @@ class MessageServerSocket(websocket.WebSocketHandler):
             nav_direction, nav_path = self._translate_navigation_path(inference_path)
             response = {
                 "ctl": self._translate_driver(pilot, inference),
-                "ctl_activation": 0
-                if pilot is None
-                else pilot.get("driver_activation_time", 0),
-                "inf_brake_critic": 0
-                if inference is None
-                else inference.get("brake_critic_out"),
+                "ctl_activation": (
+                    0 if pilot is None else pilot.get("driver_activation_time", 0)
+                ),
+                "inf_brake_critic": (
+                    0 if inference is None else inference.get("brake_critic_out")
+                ),
                 "inf_brake": 0 if inference is None else inference.get("obstacle"),
-                "inf_total_penalty": 0
-                if inference is None
-                else inference.get("total_penalty"),
-                "inf_steer_penalty": 0
-                if inference is None
-                else inference.get("steer_penalty"),
-                "inf_brake_penalty": 0
-                if inference is None
-                else inference.get("brake_penalty"),
-                "inf_surprise": 0
-                if inference is None
-                else inference.get("surprise_out"),
+                "inf_total_penalty": (
+                    0 if inference is None else inference.get("total_penalty")
+                ),
+                "inf_steer_penalty": (
+                    0 if inference is None else inference.get("steer_penalty")
+                ),
+                "inf_brake_penalty": (
+                    0 if inference is None else inference.get("brake_penalty")
+                ),
+                "inf_surprise": (
+                    0 if inference is None else inference.get("surprise_out")
+                ),
                 "inf_critic": 0 if inference is None else inference.get("critic_out"),
                 "inf_hz": 0 if inference is None else inference.get("_fps"),
                 "rec_act": False if recorder is None else recorder.get("active"),
                 "rec_mod": self._translate_recorder(recorder),
                 "ste": 0 if pilot is None else pilot.get("steering"),
                 "thr": 0 if pilot is None else pilot.get("throttle"),
-                "vel_y": 0
-                if vehicle is None
-                else vehicle.get("velocity") * speed_scale,
+                "vel_y": (
+                    0 if vehicle is None else vehicle.get("velocity") * speed_scale
+                ),
                 "geo_lat": 0 if vehicle is None else vehicle.get("latitude_geo"),
                 "geo_long": 0 if vehicle is None else vehicle.get("longitude_geo"),
                 "geo_head": 0 if vehicle is None else vehicle.get("heading"),
-                "des_speed": 0
-                if pilot is None
-                else pilot.get("desired_speed") * speed_scale,
-                "max_speed": 0
-                if pilot is None
-                else pilot.get("cruise_speed") * speed_scale,
+                "des_speed": (
+                    0 if pilot is None else pilot.get("desired_speed") * speed_scale
+                ),
+                "max_speed": (
+                    0 if pilot is None else pilot.get("cruise_speed") * speed_scale
+                ),
                 "head": 0 if vehicle is None else vehicle.get("heading"),
                 "nav_active": pilot_navigation_active,
                 "nav_point": pilot_match_point,

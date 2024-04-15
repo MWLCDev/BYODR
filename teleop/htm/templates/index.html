@@ -1,139 +1,144 @@
 <!DOCTYPE html>
 <html lang="en">
+	<head>
+		<meta charset="UTF-8" />
+		<meta http-equiv="X-UA-Compatible" content="IE=edge" />
+		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+		<title>teleop</title>
+		<link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
+		<script src="../static/external/jquery-3.4.1.min.js"></script>
+		<link rel="shortcut icon" href="#" />
+	</head>
 
-<head>
-  <meta charset="UTF-8" />
-  <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>teleop</title>
-  <link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
-  <script src="../static/external/jquery-3.4.1.min.js"></script>
-  <link rel="shortcut icon" href="#" />
-</head>
+	<body>
+		<div id="main_container">
+			<div id="debug_drive_bar" title="Drive values">
+				<div id="debug_drive_values">
+					<p>front <span id="front_camera_framerate">0</span></p>
+					<p>rear <span id="rear_camera_framerate">0</span></p>
+					<p>inference <span id="inference_fps">0</span></p>
+					<p>st-mu <span id="inference_surprise">0</span></p>
+					<p>st-cri <span id="inference_critic">0</span></p>
+					<p>ob-mu <span id="inference_brake_critic">0</span></p>
+					<p>ob <span id="inference_obstacle">0</span></p>
+					<p>ds <span id="inference_desired_speed">0</span></p>
+					<p>lat <span id="navigation_geo_lat">0</span></p>
+					<p>lon <span id="navigation_geo_long">0</span></p>
+					<p>bea <span id="navigation_heading">0</span></p>
+					<p>dist <span id="navigation_match_image_distance">0</span></p>
+					<p>cmd <span id="navigation_current_command">0</span></p>
+					<p>dir <span id="navigation_direction">0</span></p>
+					<p><span id="debug_screen_dimension"></span></p>
+				</div>
+			</div>
+			<div id="message_box_container">
+				<div style="flex: 1">
+					<input id="message_box_button_take_control" type="button" value="Take over control" />
+				</div>
+				<div id="message_box_message"></div>
+			</div>
+			<div id="horizontal_bar" class="flex-container">
+				<div id="home_menu" title="Settings">
+					<a title="navigate to user menu page" href="/user_menu">
+						<img id="home_menu_icon" src="../static/assets/index-menu.png" />
+					</a>
+				</div>
+				<div>
+					<div id="stream_links">
+						<a id="video_stream_h264" href="#" title="Display the main camera video-stream">h264</a>
+						<br />
+						<a id="video_stream_mjpeg" href="#" title="Display the main camera motion jpeg stream (attempt manual latency control)">mjpeg</a>
+					</div>
+				</div>
+				<div id="mjpeg_stream_controls" style="display: flex; flex-direction: column; align-items: center">
+					<img id="caret_up" src="../static/assets/caret.png" class="caret_img" title="Increase motion jpeg quality" />
+					<div id="speed_value" style="margin: 10px 0">
+						<span id="mjpeg_quality_val">0</span>
+					</div>
+					<img id="caret_down" src="../static/assets/caret.png" class="caret_img" title="Decrease motion jpeg quality" />
+				</div>
+				<div id="control_bar">
+					<div id="preview_container" title="Show this camera on the main display">
+						<img id="mjpeg_camera_preview_image" class="preview_img" />
+					</div>
+					<div id="overlay_control_container">
+						<img src="../static/assets/expand-collapse-icon-8.jpg" id="expand_camera_icon" title="Expand or collapse the camera overlay" />
+					</div>
+					<button id="confidence_button_normal_controller">Start overview confidence</button>
+				</div>
 
-<body>
-  <div id="main_container">
-    <div id="debug_drive_bar" title="Drive values">
-      <div id="debug_drive_values">
-        <p>front <span id="front_camera_framerate">0</span></p>
-        <p>rear <span id="rear_camera_framerate">0</span></p>
-        <p>inference <span id="inference_fps">0</span></p>
-        <p>st-mu <span id="inference_surprise">0</span></p>
-        <p>st-cri <span id="inference_critic">0</span></p>
-        <p>ob-mu <span id="inference_brake_critic">0</span></p>
-        <p>ob <span id="inference_obstacle">0</span></p>
-        <p>ds <span id="inference_desired_speed">0</span></p>
-        <p>lat <span id="navigation_geo_lat">0</span></p>
-        <p>lon <span id="navigation_geo_long">0</span></p>
-        <p>bea <span id="navigation_heading">0</span></p>
-        <p>dist <span id="navigation_match_image_distance">0</span></p>
-        <p>cmd <span id="navigation_current_command">0</span></p>
-        <p>dir <span id="navigation_direction">0</span></p>
-        <p><span id="debug_screen_dimension"></span></p>
-      </div>
-    </div>
-    <div id="message_box_container">
-      <div style="flex: 1">
-        <input id="message_box_button_take_control" type="button" value="Take over control" />
-      </div>
-      <div id="message_box_message"></div>
-    </div>
-    <div id="horizontal_bar">
-      <div id="home_menu" title="Settings">
-        <a title="navigate to user menu page" href="/user_menu">
-          <img id="home_menu_icon" src="../static/assets/index-menu.png" />
-        </a>
-      </div>
-      <div id="stream_links">
-        <a id="video_stream_h264" href="#" title="Display the main camera video-stream">h264</a>
-        <br />
-        <a id="video_stream_mjpeg" href="#"
-          title="Display the main camera motion jpeg stream (attempt manual latency control)">mjpeg</a>
-      </div>
-      <div id="mjpeg_stream_controls">
-        <span id="mjpeg_quality_val">0</span>
-        <img id="caret_down" src="../static/assets/caret.png" class="caret_img" title="Decrease motion jpeg quality" />
-        <img id="caret_up" src="../static/assets/caret.png" class="caret_img" title="Increase motion jpeg quality" />
-      </div>
-      <div id="preview_container" title="Show this camera on the main display">
-        <img id="mjpeg_camera_preview_image" class="preview_img" />
-      </div>
-      <div id="overlay_control_container">
-        <img src="../static/assets/expand-collapse-icon-8.jpg" id="expand_camera_icon"
-          title="Expand or collapse the camera overlay" />
-        <a id="open_training_sessions_list" href="#"><img src="../static/assets/gps_icon.jpg"
-            title="Show training sessions" /></a>
-      </div>
-      <div id="dashboard">
-        <span id="autopilot_status"></span>
-        <img id="arrow" />
-        <div id="alpha_speed" class="speed_value">
-          <div id="alpha_speed_value">0</div>
-          <div id="alpha_speed_label"></div>
-        </div>
-        <img id="steeringWheel" />
-        <div id="beta_speed" class="speed_value">
-          <div id="beta_speed_value">0</div>
-          <div id="beta_speed_label">km/h</div>
-        </div>
-      </div>
-      <div id="pilot_drive_values" title="Toggle debug values">
-        <p><span id="pilot_steering">0</span>ste</p>
-        <p><span id="pilot_throttle">0</span>thr</p>
-      </div>
-      <div id="navigation_image_container">
-        <img id="current_navigation_image" class="preview_img"
-          title="Start or pause the selected route. This image is the most recent recognized navigation point." />
-        <img id="next_navigation_image" class="preview_img" title="This image is the next expected navigation point." />
-      </div>
-      <div id="navigation_route_container" title="Navigation points and their images will be displayed when matched">
-        <p>
-          <span id="navigation_route_sel_prev" title="Select the previous route, if any">
-            <img src="../static/assets/caret.png" class="caret_img" />
-          </span>
-          <span id="navigation_route_name"></span>
-          <span id="navigation_route_sel_next" title="Select the next route, if any">
-            <img src="../static/assets/caret.png" class="caret_img" />
-          </span>
-        </p>
-        <p>
-          <span id="navigation_point_name"></span>
-        </p>
-      </div>
-    </div>
-    <div id="viewport_container">
-      <canvas id="viewport_canvas" width="640" height="480"> </canvas>
-      <div id="overlay_image_container">
-        <img id="overlay_image" width="320" height="240" />
-      </div>
-      <div id="overlay_center_distance0" class="overlay_distance">1.0</div>
-      <div id="overlay_center_distance1" class="overlay_distance">0.5</div>
-      <div id="overlay_left_marker0" class="overlay_distance">0.5</div>
-      <div id="overlay_left_marker1" class="overlay_distance">0.25</div>
-      <div id="overlay_right_marker0" class="overlay_distance">0.5</div>
-      <div id="overlay_right_marker1" class="overlay_distance">0.25</div>
-      <div id="popupWindow">
-        <h2>Training sessions</h2>
-        <p>You can see a map where the robot have trained.</p>
-        <ul id="fileList"></ul>
-        <button id="reload_training_sessions_files" onclick="run_draw_map_python()">Load</button>
-        <button id="close" onclick="hidePopup()">X</button>
-      </div>
-    </div>
-  </div>
+				<div id="dashboard">
+					<span id="autopilot_status"></span>
+					<img id="arrow" />
+					<div id="alpha_speed" class="speed_value">
+						<div id="alpha_speed_value">0</div>
+						<div id="alpha_speed_label"></div>
+					</div>
+					<img id="steeringWheel" />
+					<div id="beta_speed" class="speed_value">
+						<div id="beta_speed_value">0</div>
+						<div id="beta_speed_label">km/h</div>
+					</div>
+				</div>
 
-  <!-- The script is moved here to give the HTML time to load before any of the JavaScript loads -->
-  <script src="../static/JS/Index/index.js"></script>
-  <script src="../static/JS/Index/index_a_utils.js"></script>
-  <script src="../static/JS/Index/index_b_gamepad.js"></script>
-  <script src="../static/JS/Index/index_c_screen.js"></script>
-  <script src="../static/JS/Index/index_d_navigator.js"></script>
-  <script src="../static/JS/Index/index_e_teleop.js"></script>
-  <script src="../static/JS/Index/index_f_trainingSessions.js"></script>
-  <script src="../static/JS/Index/index_video_hlp.js"></script>
-  <script src="../static/JS/Index/index_video_mjpeg.js"></script>
-  <script src="../static/JS/http-live-player.js"></script>
-  <script src="../static/JS/performance-polyfill.js"></script>
-</body>
+				<div id="navigation_image_container">
+					<img id="current_navigation_image" class="preview_img" title="Start or pause the selected route. This image is the most recent recognized navigation point." />
+					<img id="next_navigation_image" class="preview_img" title="This image is the next expected navigation point." />
+				</div>
+				<div id="navigation_route_container" title="Navigation points and their images will be displayed when matched">
+					<p>
+						<span id="navigation_route_sel_prev" title="Select the previous route, if any">
+							<img src="../static/assets/caret.png" class="caret_img" />
+						</span>
+						<span id="navigation_route_name"></span>
+						<span id="navigation_route_sel_next" title="Select the next route, if any">
+							<img src="../static/assets/caret.png" class="caret_img" />
+						</span>
+					</p>
+					<p>
+						<span id="navigation_point_name"></span>
+					</p>
+				</div>
+				<div id="pilot_drive_values" title="Toggle debug values">
+					<p><span id="pilot_steering">0</span>ste</p>
+					<p><span id="pilot_throttle">0</span>thr</p>
+				</div>
+			</div>
+			<div id="viewport_container">
+				<canvas id="viewport_canvas" width="640" height="480"> </canvas>
+				<div id="overlay_image_container">
+					<img id="overlay_image" width="320" height="240" />
+				</div>
+				<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
+				<div id="overlay_center_distance1" class="overlay_distance">0.5</div>
+				<div id="overlay_left_marker0" class="overlay_distance">0.5</div>
+				<div id="overlay_left_marker1" class="overlay_distance">0.25</div>
+				<div id="overlay_right_marker0" class="overlay_distance">0.5</div>
+				<div id="overlay_right_marker1" class="overlay_distance">0.25</div>
+			</div>
+		</div>
 
+		<!-- The script is moved here to give the HTML time to load before any of the JavaScript loads -->
+		<script src="../static/JS/Index/index.js"></script>
+		<script src="../static/JS/Index/index_a_utils.js"></script>
+		<script src="../static/JS/Index/index_b_gamepad.js"></script>
+		<script src="../static/JS/Index/index_c_screen.js"></script>
+		<script src="../static/JS/Index/index_d_navigator.js"></script>
+		<script src="../static/JS/Index/index_e_teleop.js"></script>
+		<!-- <script type="module" src="../static/JS/Index/index_f_trainingSessions.js"></script> -->
+		<script type="module" src="../static/JS/mobileController/mobileController_b_confidence_button.js"></script>
+		<script type="module">
+			// Import the module from its path
+			import { ToggleButtonHandler } from '../static/JS/mobileController/mobileController_b_confidence_button.js';
+
+			// Add your window load event listener
+			window.addEventListener('load', () => {
+				new ToggleButtonHandler('confidence_button_normal_controller');
+			});
+		</script>
+		<script src="../static/JS/Index/index_video_hlp.js"></script>
+		<script src="../static/JS/Index/index_video_mjpeg.js"></script>
+		<script src="../static/JS/http-live-player.js"></script>
+		<script src="../static/JS/performance-polyfill.js"></script>
+	</body>
 </html>
