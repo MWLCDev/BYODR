@@ -1,4 +1,5 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
 import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
@@ -25,9 +26,35 @@ function redraw(yOffset = 0) {
   app.stage.addChild(bottomTriangle.graphics);
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-  if (CTRL_STAT.isWebSocketOpen) {
+  if (CTRL_STAT.isWebSocketOpen)
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
-  }
 }
 
-export { app, redraw }
+function drawTopTriangle_BottomRectangle(yOffset = 0) {
+  app.stage.removeChildren();
+  topTriangle.drawTriangle(yOffset);
+  app.stage.addChild(topTriangle.graphics);
+
+  // Draw the red area at the bottom
+  app.stage.addChild(bottomRectangle.graphics);
+
+  // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
+  if (CTRL_STAT.isWebSocketOpen)
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+}
+
+function drawBottomTriangle_TopRectangle(yOffset = 0) {
+  app.stage.removeChildren();
+  bottomTriangle.drawTriangle(yOffset);
+  app.stage.addChild(bottomTriangle.graphics);
+
+  // Draw the red area at the bottom
+  app.stage.addChild(topRectangle.graphics);
+
+  // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
+  if (CTRL_STAT.isWebSocketOpen)
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
+}
+
+
+export { app, redraw, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }
