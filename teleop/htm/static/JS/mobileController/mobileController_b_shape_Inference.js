@@ -173,8 +173,6 @@ class InferenceToggleButton {
         && this.logWSmessage._has_passage == false
         && this._inferenceState != "train") {
         changeTrianglesColor(0xFF0000)
-      } else {
-        changeTrianglesColor(0x000000)
       }
 
     };

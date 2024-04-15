@@ -34,7 +34,6 @@ function removeTriangles() {
 function changeTrianglesColor(color = "0x000000") {
   topTriangle.drawTriangle(undefined, color);
   bottomTriangle.drawTriangle(undefined, color);
-  
 }
 
 function redraw(drawOption = "both", yOffset = 0, resetText = false) {
