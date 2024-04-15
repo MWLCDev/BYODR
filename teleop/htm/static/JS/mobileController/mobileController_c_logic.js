@@ -172,9 +172,8 @@ function handleDotMove(touchX, touchY, getInferenceState) {
 
   // Update the dot's position.
   cursorFollowingDot.setPosition(xOfDot, y);
-
   if (inDeadZone) {
-    SetStatistics(xOfDot, y, relativeY, getInferenceState);
+    SetStatistics(0, y, relativeY, getInferenceState);
   } else if (getInferenceState !== "auto") {
     let relative_x = deltaCoordinatesFromTip(touchX);
     SetStatistics(relative_x, touchY, relativeY, getInferenceState);
