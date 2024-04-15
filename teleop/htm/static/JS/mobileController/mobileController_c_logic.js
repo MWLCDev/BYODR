@@ -160,11 +160,10 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
 
   // Modify the logic to handle the X position considering the dead zone
-  let xOfDot; // For visual representation, initialize xOfDot
+  let xOfDot;
 
   if (inDeadZone) {
     xOfDot = window.innerWidth / 2;
-    // Optionally adjust relativeY if needed when in dead zone
     relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
   } else {
     let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
@@ -174,8 +173,9 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Update the dot's position.
   cursorFollowingDot.setPosition(xOfDot, y);
 
-  // Execute the following only when not in auto mode.
-  if (getInferenceState !== "auto") {
+  if (inDeadZone) {
+    SetStatistics(xOfDot, y, relativeY, getInferenceState);
+  } else if (getInferenceState !== "auto") {
     let relative_x = deltaCoordinatesFromTip(touchX);
     SetStatistics(relative_x, touchY, relativeY, getInferenceState);
   }
