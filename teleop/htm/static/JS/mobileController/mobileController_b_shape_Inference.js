@@ -43,23 +43,22 @@ class InferenceToggleButton {
   }
 
   hideInferenceOptions() {
-
-    redraw(undefined, undefined, true)
     this.InferenceAutoSpeedText.style.display = "none"
     this.optionsContainer.style.display = 'none';
-    this.toggleButtonContainer.style.display = 'block';
+    this.toggleButtonContainer.style.display = 'flex';
     // Switch to driver_mode.teleop.direct mode 
     addKeyToSentCommand("button_b", 1)
-    //Make it start with dark colour
-    changeTrianglesColor()
     // Turn off all the buttons to start state
     if (this._inferenceState == "auto") {
       this.handleAutoNavigationClick()
       this._inferenceState = "false"
     } else if (this._inferenceState == "train") {
-      this.toggleTrainButton()
+      this.handleInferenceTrainClick()
       this._inferenceState = "false"
     }
+    //Make it start with dark colour
+    redraw("both", 0, true)
+    changeTrianglesColor(0x000000)
     this._inferenceState = "false"
   }
 
@@ -70,9 +69,6 @@ class InferenceToggleButton {
     this._inferenceState = "true"
   }
 
-  /**
-   * Toggle the auto-navigation state
-   */
   handleAutoNavigationClick() {
     this._inferenceState = this._inferenceState === "auto" ? "true" : "auto";
     // Now decide what to do based on the new state
@@ -103,12 +99,8 @@ class InferenceToggleButton {
     this.hideOptionsButton.innerText = "Hide Options";
   }
 
-  /**
-   * Toggle the training state
-   * */
   handleInferenceTrainClick() {
     this._inferenceState = this._inferenceState === "train" ? "true" : "train";
-
     if (this._inferenceState === "train") {
       this.startTraining();
     } else {
@@ -126,13 +118,11 @@ class InferenceToggleButton {
 
   stopTraining() {
     this.inferenceTrainingButton.innerText = "Start Training";
-    removeTriangles(); // Assuming this is correct for your context
+    removeTriangles();
     addKeyToSentCommand("button_b", 1);
     this.hideOptionsButton.innerText = "Hide Options";
     this.InferenceAutoNavigationToggle.style.display = "flex";
   }
-
-
 
   /**
    * Send message to increase to decrease the autopilot mode 
@@ -183,7 +173,10 @@ class InferenceToggleButton {
         && this.logWSmessage._has_passage == false
         && this._inferenceState != "train") {
         changeTrianglesColor(0xFF0000)
+      } else {
+        changeTrianglesColor(0x000000)
       }
+
     };
 
     this.logWS.websocket.onerror = (error) => {

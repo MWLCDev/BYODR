@@ -1,21 +1,33 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { Dot } from "./mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, getSavedDeadZoneWidth, saveDeadZoneWidth }
   from "./mobileController_c_logic.js"
 import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
+
+import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app, changeTrianglesColor } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
-sendJSONCommand()
+sendJSONCommand();
 let intervalId;
 let inferenceToggleButton
 
 window.addEventListener('load', () => {
   initializeWS()
   inferenceToggleButton = new InferenceToggleButton("inference_toggle_button")
-  changeTrianglesColor()
+  changeTrianglesColor(0x000000)
+  new ToggleButtonHandler('confidenceToggleButton')
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
+});
+
+// Dead zone width slider input event listener
+document.getElementById('deadZoneWidth').addEventListener('input', function () {
+  let value = this.value;
+  // Save the new dead zone width to local storage after handling the dot move
+  saveDeadZoneWidth(value);
 });
 
 window.addEventListener('resize', () => {
@@ -38,9 +50,10 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        document.getElementById("mobile-controller-top-input-container").style.display = "none";
+        document.getElementById("mobile-controller-bottom-input-container").style.display = "none";
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
-        // Arrow function to send the command through websocket 
         break;
     }
   } else {
@@ -76,24 +89,32 @@ function onTouchMove(event) {
 
 
 app.view.addEventListener('touchend', () => {
-
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
-    redraw(); // Reset triangles to their original position
-    CTRL_STAT.cursorFollowingDot.hide()
-    CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
-    app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
-    CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
-    // so it doesn't show the div when in inference mode
-    if (inferenceToggleButton.getInferenceState == "false") {
-      document.getElementById('toggle_button_container').style.display = 'block';
-    }
-    if (inferenceToggleButton.getInferenceState == "train") {
-      document.getElementById('inference_options_container').style.display = 'flex';
-      redraw("top", undefined, true)
-    }
+    if (inferenceToggleButton.getInferenceState != "true") {
+      document.getElementById("mobile-controller-top-input-container").style.display = "flex";
+      document.getElementById("mobile-controller-bottom-input-container").style.display = "flex";
 
-    clearTimeout(intervalId);
+      redraw(); // Reset triangles to their original position
+
+      // Remove the dot
+      if (CTRL_STAT.cursorFollowingDot) {
+        CTRL_STAT.cursorFollowingDot.remove();
+        CTRL_STAT.cursorFollowingDot = null;
+      }
+      CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
+      app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
+      CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
+      // so it doesn't show the div when in inference mode
+      if (inferenceToggleButton.getInferenceState == "false") {
+        document.getElementById('toggle_button_container').style.display = 'flex';
+      }
+      if (inferenceToggleButton.getInferenceState == "train") {
+        document.getElementById('inference_options_container').style.display = 'flex';
+        redraw("top", undefined, true)
+      }
+
+      clearTimeout(intervalId);
+    }
   }
 });
-

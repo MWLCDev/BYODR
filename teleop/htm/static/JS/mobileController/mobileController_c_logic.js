@@ -90,6 +90,7 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
   const isTopTriangle = CTRL_STAT.selectedTriangle === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
 
+
   // Stopping the robot urgently depending on where the finger of the user is. We stop in these cases:
   // top triangle in use AND finger below the center
   // OR
@@ -108,6 +109,17 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
     };
 }
 
+// Save dead zone width to local storage
+function saveDeadZoneWidth(value) {
+  localStorage.setItem('deadZoneWidth', value);
+}
+
+// Retrieve dead zone width from local storage
+function getSavedDeadZoneWidth() {
+  // If there's a saved value in local storage, use it; otherwise default to 0.1
+  return localStorage.getItem('deadZoneWidth') || '0.1';
+}
+
 /**
  * Handles the movement of the dot within specified triangle boundaries.
  * @param {number} touchX - X position of the touch.
@@ -123,11 +135,9 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Calculate minY and maxY based on the mode.
   let minY, maxY;
   if (getInferenceState === "auto") {
-    // For auto mode, use midScreen as reference for triangle positioning.
     minY = isTopTriangle ? midScreen - triangle.height : midScreen;
     maxY = isTopTriangle ? midScreen : midScreen + triangle.height;
   } else {
-    // For non-auto mode, use CTRL_STAT.midScreen as reference to allow for dynamic triangle positioning.
     minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
     maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
   }
@@ -135,14 +145,30 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
 
-  // Calculate the relative Y position within the triangle to determine horizontal movement limit.
+  // Calculate the relative Y position within the triangle.
+  // This is initialized here to ensure it has a value in all code paths.
   let relativeY = (y - (getInferenceState === "auto" ? midScreen : CTRL_STAT.midScreen)) / triangle.height;
-  let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
 
-  // Constrain the X position within the calculated horizontal movement limit for both modes.
-  let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-  // // Log for debugging (optional).
-  // console.log('MinY:', minY, 'MaxY:', maxY, 'RelativeY:', relativeY, 'MaxXDeviation:', maxXDeviation, 'XOfDot:', xOfDot);
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  let savedDeadZoneWidth = getSavedDeadZoneWidth();
+  deadZoneSlider.value = savedDeadZoneWidth; // Set the slider to the saved value
+  let deadZoneWidth = window.innerWidth * parseFloat(savedDeadZoneWidth);
+
+  let deadZoneMinX = (window.innerWidth / 2) - (deadZoneWidth / 2);
+  let deadZoneMaxX = (window.innerWidth / 2) + (deadZoneWidth / 2);
+  let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
+
+  // Modify the logic to handle the X position considering the dead zone
+  let xOfDot; // For visual representation, initialize xOfDot
+
+  if (inDeadZone) {
+    xOfDot = window.innerWidth / 2;
+    // Optionally adjust relativeY if needed when in dead zone
+    relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
+  } else {
+    let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
+    xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  }
 
   // Update the dot's position.
   CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
@@ -191,15 +217,20 @@ function handleTriangleMove(y, inferenceToggleButton) {
   }
 
   let INFState = inferenceToggleButton.getInferenceState
-  if (INFState == "true")
-    redraw(CTRL_STAT.selectedTriangle, yOffset);
-  //cannot move it while on training mode
-  else if (INFState == "auto") {
+  if (INFState == "auto") {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
     //you should be able to move it while on training mode
   } else if (INFState == "train") {
     redraw(CTRL_STAT.selectedTriangle, yOffset, true);
+  } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawTopTriangle_BottomRectangle(yOffset);
   }
+  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawBottomTriangle_TopRectangle(yOffset);
+  }
+
 
   else if (CTRL_STAT.detectedTriangle === 'top') {
     document.getElementById('toggle_button_container').style.display = 'none';
@@ -253,4 +284,4 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand };
+export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand, saveDeadZoneWidth, getSavedDeadZoneWidth };

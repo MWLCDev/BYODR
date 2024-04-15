@@ -13,12 +13,13 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+from byodr.utils import timestamp
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 from tornado.gen import coroutine
 
-from byodr.utils import timestamp
+from .tel_utils import *
 
 logger = logging.getLogger(__name__)
 
@@ -144,6 +145,35 @@ class ControlServerSocket(websocket.WebSocketHandler):
             self.write_message(_response)
         except websocket.WebSocketClosedError:
             pass
+
+
+class ConfidenceHandler(websocket.WebSocketHandler):
+    def initialize(self, inference_s, vehicle_s, rut_gps_poller):
+        self.inference = inference_s
+        self.vehicle = vehicle_s
+        self.rut_gps_poller = rut_gps_poller
+
+    def open(self):
+        self.start_time = time.clock()
+        logger.info("Confidence websocket connection opened.")
+        self.runner = OverviewConfidence(
+            self.inference, self.vehicle, self.rut_gps_poller
+        )
+        self.write_message("Connection established.")
+
+    def send_loading_message(self):
+        self.write_message("loading")
+
+    def on_message(self, message):
+        if message == "Start overview confidence":
+            self.runner.start()
+            self.write_message("Received start")
+        elif message == "Stop overview confidence":
+            self.write_message("Received stopping command")
+            self.send_loading_message()
+            self.runner.stop()
+            self.runner.process_data()
+            self.write_message(self.runner.map_name)
 
 
 class MessageServerSocket(websocket.WebSocketHandler):

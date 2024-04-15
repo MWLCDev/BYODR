@@ -34,6 +34,7 @@ function removeTriangles() {
 function changeTrianglesColor(color = "0x000000") {
   topTriangle.drawTriangle(undefined, color);
   bottomTriangle.drawTriangle(undefined, color);
+  
 }
 
 function redraw(drawOption = "both", yOffset = 0, resetText = false) {
@@ -69,7 +70,6 @@ function redraw(drawOption = "both", yOffset = 0, resetText = false) {
     // Recursive call to redraw with resetText set to false to avoid infinite loop
     redraw(drawOption, yOffset, false);
   }
-
   // Always add cursorFollowingDot to the stage if the WebSocket is open
   if (CTRL_STAT.isWebSocketOpen) {
     app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);

@@ -3,35 +3,32 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
+import concurrent.futures
+import configparser
 import glob
 import multiprocessing
 import signal
-import tornado.web
-import concurrent.futures
-import configparser
-import user_agents  # Check in the request header if it is a phone or not
-
-
+import subprocess  # to run the python script
 from concurrent.futures import ThreadPoolExecutor
+
+import tornado.ioloop
+import tornado.web
+import user_agents  # Check in the request header if it is a phone or not
+from byodr.utils import Application, ApplicationExit, hash_dict
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
+from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from logbox.app import LogApplication, PackageApplication
+from logbox.core import MongoLogBox, SharedState, SharedUser
+from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-import tornado.ioloop
-import tornado.web
 
-from byodr.utils import Application, hash_dict, ApplicationExit
-from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.option import parse_option
-from six.moves.configparser import SafeConfigParser
-from logbox.app import LogApplication, PackageApplication
-from logbox.core import MongoLogBox, SharedUser, SharedState
-from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
-from .server import *
-
-from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 from .getSSID import fetch_ssid
+from .server import *
 
 logger = logging.getLogger(__name__)
 
@@ -71,7 +68,7 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self._motor_scale = 0
+        self.rut_ip = None
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -87,9 +84,37 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
+    def read_user_config(self):
+        """
+        Reads the configuration file, flattens the configuration sections and keys,
+        and initializes components with specific configuration values.
+        """
+        config = configparser.ConfigParser()
+        config.read(self.get_user_config_file())
+
+        # Flatten the configuration sections and keys into a single dictionary
+        config_dict = {
+            f"{section}.{option}": value
+            for section in config.sections()
+            for option, value in config.items(section)
+        }
+
+        errors = []
+        # print(config_dict)
+        # Use the flattened config dictionary as **kwargs to parse_option
+        # A close implementation for how the parse_option is called in the internal_start function for each service.
+        self.rut_ip = parse_option(
+            "vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict
+        )
+
+        if errors:
+            for error in errors:
+                print(f"Configuration error: {error}")
+
     def setup(self):
         if self.active():
             self._check_user_config()
+            self.read_user_config()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
@@ -291,7 +316,7 @@ def main():
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-
+    gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
     threads = [
         camera_front,
         camera_rear,
@@ -300,7 +325,9 @@ def main():
         inference,
         logbox_thread,
         package_thread,
+        gps_poller_snmp,
     ]
+
     if quit_event.is_set():
         return 0
 
@@ -445,6 +472,15 @@ def main():
                 ),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
+                (
+                    r"/ws/switch_confidence",
+                    ConfidenceHandler,
+                    dict(
+                        inference_s=inference,
+                        vehicle_s=vehicle,
+                        rut_gps_poller=gps_poller_snmp,
+                    ),
+                ),
                 (
                     r"/api/datalog/event/v10/table",
                     DataTableRequestHandler,

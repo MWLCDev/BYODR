@@ -13,13 +13,7 @@ RUN apt-get update && apt-get install -y \
 # /\ unzip utility
 RUN python3 -m pip install -U pip
 
-RUN pip3 install pymongo
-RUN pip3 install tornado
-RUN pip3 install folium
-RUN pip3 install Flask
-RUN pip3 install flask_socketio
-RUN pip3 install paramiko
-RUN pip3 install user-agents
+RUN pip3 install pymongo tornado folium Flask flask_socketio paramiko user-agents pysnmp pyasn1 pyasn1-modules
 
 
 
