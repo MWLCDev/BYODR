@@ -1,6 +1,6 @@
 import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
 import { Dot } from "./mobileController_b_shape_dot.js"
-import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand }
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, getSavedDeadZoneWidth, saveDeadZoneWidth }
   from "./mobileController_c_logic.js"
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
@@ -15,10 +15,18 @@ import { redraw, app } from "./mobileController_d_pixi.js";
 CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 };
 sendJSONCommand()
 
-
 window.addEventListener('load', () => {
   initializeWS()
   new ToggleButtonHandler('confidenceToggleButton')
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
+});
+
+// Dead zone width slider input event listener
+document.getElementById('deadZoneWidth').addEventListener('input', function () {
+  let value = this.value;
+  // Save the new dead zone width to local storage after handling the dot move
+  saveDeadZoneWidth(value);
 });
 
 window.addEventListener('resize', () => {
@@ -42,6 +50,8 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        document.getElementById("mobile-controller-top-input-container").style.display = "none";
+        //shoudl do the same style for the bottom toggles container
         startOperating(event)
         app.view.addEventListener('touchmove', onTouchMove);
         // Arrow function to send the command through websocket 
@@ -64,6 +74,7 @@ function startOperating(event) {
 app.view.addEventListener('touchend', () => {
   //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
   if (CTRL_STAT.detectedTriangle !== 'none') {
+    document.getElementById("mobile-controller-top-input-container").style.display = "flex";
     redraw(); // Reset triangles to their original position
 
     // Remove the dot
