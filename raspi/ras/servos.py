@@ -413,46 +413,42 @@ class MainApplication(Application):
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Steering and throttle driver.')
-    parser.add_argument('--config', type=str, default='/config/driver.ini', help='Configuration file.')
+    parser = argparse.ArgumentParser(description="Steering and throttle driver.")
+    parser.add_argument("--config", type=str, default="/config/driver.ini", help="Configuration file.")
     args = parser.parse_args()
 
     config_file = args.config
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        parser = SafeConfigParser()
-        parser.read(config_file)
-        kwargs = dict(parser.items('driver')) if parser.has_section('driver') else {}
-        kwargs.update(dict(parser.items('odometer')) if parser.has_section('odometer') else {})
 
-        _relay = SearchUsbRelayFactory().get_relay()
-        assert _relay.is_attached(), "The relay device is not attached."
+    _relay = SearchUsbRelayFactory().get_relay()
+    ras_dynamic_ip = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+    assert _relay.is_attached(), "The relay device is not attached."
 
-        holder = StaticRelayHolder(relay=_relay, default_channels=(0, 1))
-        try:
-            application = MainApplication(quit_event, relay=holder, hz=50, **kwargs)
+    holder = StaticRelayHolder(relay=_relay)
+    try:
 
-            application.publisher = JSONPublisher(url='tcp://0.0.0.0:5555', topic='ras/drive/status')
-            application.platform = JSONServerThread(url='tcp://0.0.0.0:5550', event=quit_event, receive_timeout_ms=50)
+        application = MainApplication(quit_event, config_file, relay=holder, hz=50)
 
-            threads = [application.platform]
-            if quit_event.is_set():
-                return 0
+        application.publisher = JSONPublisher(url="tcp://{}:5555".format(ras_dynamic_ip), topic="ras/drive/status")
+        application.platform = JSONServerThread(url="tcp://{}:5550".format(ras_dynamic_ip), event=quit_event, receive_timeout_ms=50)
+        application.setup_components()  # Set up components including reading the config
 
-            [t.start() for t in threads]
-            application.run()
+        threads = [application.platform]
+        if quit_event.is_set():
+            return 0
 
-            logger.info("Waiting on threads to stop.")
-            [t.join() for t in threads]
-        finally:
-            holder.open()
-    else:
-        shutil.copyfile('ras/driver.template', config_file)
-        logger.info("Created a new driver configuration file from template.")
-        while not quit_event.is_set():
-            time.sleep(1)
+        [t.start() for t in threads]
+        application.run()
+
+        logger.info("Waiting on threads to stop.")
+        [t.join() for t in threads]
+    finally:
+        holder.open()
+
+    while not quit_event.is_set():
+        time.sleep(1)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format=log_format, datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()
