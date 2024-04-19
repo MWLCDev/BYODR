@@ -1,22 +1,12 @@
-# Both libraries to access the yolov8 yaml inside the robot
 import os
 import glob
 import configparser
 
-# import json
-# import time
 import logging
 import multiprocessing
-# import subprocess
-# import cv2
 
 # yolov8 library
 from ultralytics import YOLO
-# import torch
-
-# from simple_pid import PID
-# pid = PID(0.002, 2.8, 0, setpoint=0)
-# pid.output_limits = (-1, 1)
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
@@ -24,22 +14,12 @@ from byodr.utils.option import parse_option
 
 quit_event = multiprocessing.Event()
 
-# # Accessing the yolov8.yaml inside the robot to remove unnecessary classes
-# with open("/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml") as istream:
-#     yamldoc = yaml.safe_load(istream)
-#     yamldoc['nc'] = 1
-# # Replacing the default yaml with a modified one
-# with open("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "w") as ostream:
-#     yaml.dump(yamldoc, ostream, default_flow_style=False, sort_keys=False)
-#     os.rename("/workspace/ultralytics/ultralytics/cfg/models/v8/modified.yaml", "/workspace/ultralytics/ultralytics/cfg/models/v8/yolov8.yaml")
 
 # Choosing the trained model
 model = YOLO('customDefNano.pt')
 # model = YOLO('yolov8n.pt')
-#model.to(device=device)
 
 no_human_counter = 0
-
 
 # Declaring the logger
 logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
@@ -75,15 +55,17 @@ def _config():
     return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
 
 def main():
-        
+        global clear_path
+        clear_path = 4
         global no_human_counter
         throttle = 0
         steering = 0
+        # Edges on the screen beyond which robot should start moving to keep distance
+        left_edge = 310   # Left edge, away from the left end of the screen
+        right_edge = 330  # Right edge, away from the right end if image width = 640p
+        bottom_edge = 300    # Bot edge, away from the top end if image height = 480p
     # Default control commands
-        # logger.info(f"Waiting for request")
         request = teleop.get()
-        # logger.info(f"Message from teleop chatter: {request}")
-        # results = model.predict(source='imgTest/.', classes=0, stream=True)     # imgTest = folder with sample images
         try:
             if request is None or request['following'] == "Stop Following":
                 cmd = {
@@ -111,10 +93,8 @@ def main():
         # Initializing the recognition model
         # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
         # 'for' loop used when yolov8 model parameter stream = True
-        logger.info("Loading YOLO model results")
-
         for r in results:
-            # lastThrottle = throttle
+            clear_path += 1
             request = teleop.get()
             if request is not None:
                 logger.info(f"Received request from Teleop:{request['following']}")
@@ -124,7 +104,7 @@ def main():
             except:
                 logger.info("Failed to receive a 'Stop' request from Teleop")
             boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
-            img = r.orig_img                    # Original image (without bboxes, reshaping)
+            # img = r.orig_img                    # Original image (without bboxes, reshaping)
             xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
 
             if xyxy.size > 0:                   # If anything detected
@@ -132,35 +112,36 @@ def main():
                 no_human_counter = 0
 
                 # Getting each coordinate of the bbox corners
-                if boxes.id is not None and boxes.id.size > 1:
-                    for box in boxes:
-                        if box.id == boxes.id[-1]:
-                            x1 = box.xyxy[0,0]
-                            y1 = box.xyxy[0,1]
-                            x2 = box.xyxy[0,2]
-                            y2 = box.xyxy[0,3]
-                else:
-                    x1 = xyxy[0, 0]
-                    y1 = xyxy[0, 1]
-                    x2 = xyxy[0, 2]
-                    y2 = xyxy[0, 3]
-                # Calculating coordinates on the screen
-                xCen = int((x1 + x2) / 2)   # Center of the bbox
-                yBot = int(y2)  # Bottom edge of the bbox
-                height = int(y2 - y1) # Height of the bbox
-                # logger.info(f"Bottom edge: {yBot}, Center: {xCen}, Height: {height}")
-
-                # Edges on the screen beyond which robot should start moving to keep distance
-                leftE = int(310 / 640 * img.shape[1])   # Left edge, away from the left end of the screen
-                rightE = int(330 / 640 * img.shape[1])  # Right edge, away from the right end if image width = 640p
-                botE = int(300 / 480 * img.shape[0])    # Bot edge, 190p away from the top end if image height = 480p
-                # botE = int(180 / 240 * img.shape[0])  # Bot edge, used only if robot can move backwards
+                for box in boxes:
+                    x1 = box.xyxy[0,0]
+                    y1 = box.xyxy[0,1]
+                    x2 = box.xyxy[0,2]
+                    y2 = box.xyxy[0,3]
+                    if int(y2) >= 340 or int(y2 - y1) >= 340:
+                        clear_path = 0
+                    try:
+                        if box.id == boxes.id[0]:
+                            print("confs: ", boxes.conf, "IDs: ", boxes.id)
+                            print("following conf: ", box.conf, "with ID: ", box.id)
+                            # Calculating coordinates on the screen
+                            box_center = int((x1 + x2) / 2)   # Center of the bbox
+                            box_bottom = int(y2)  # Bottom edge of the bbox
+                            height = int(y2 - y1) # Height of the bbox
+                            logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
+                    except:
+                        if (box.xyxy==boxes.xyxy[0]).all:
+                            print("confs: ", boxes.conf)
+                            print("following conf: ", box.conf)
+                            # Calculating coordinates on the screen
+                            box_center = int((x1 + x2) / 2)   # Center of the bbox
+                            box_bottom = int(y2)  # Bottom edge of the bbox
+                            height = int(y2 - y1) # Height of the bbox
+                            logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
-                if height <= botE or yBot <= botE:
+                if height <= bottom_edge or box_bottom <= bottom_edge:
                     # Linear increase of throttle
-                    # throttle = (-(0.01) * yBot) + 2.2 # 0.2 minimum at 200p edge, max at 120p edge
                     throttle = (-(0.02) * height) + 6.2 # 0.2 minimum at 300p heigh, 1 max at 260p height
                     if throttle > 1:
                         throttle = 1
@@ -168,10 +149,9 @@ def main():
                     throttle = 0
 
                 # Bbox center crossed the left edge
-                if xCen <= leftE:
-                    # steering = -0.4
+                if box_center <= left_edge:
                     # Linear increase of steering
-                    steering = ((0.00238095) * xCen - (0.738095))  # 0 minimum at 310p edge, 0.5 max at 100p 
+                    steering = ((0.00238095) * box_center - (0.738095))  # 0 minimum at 310p edge, 0.5 max at 100p 
                     if steering < -0.5:
                         steering = -0.5
                     steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
@@ -179,10 +159,9 @@ def main():
                         throttle = abs(steering)/1.15
                         steering = -1
                 # Bbox center crossed the right edge
-                elif xCen >= rightE:
-                    # steering = 0.4
+                elif box_center >= right_edge:
                     # Linear increase of steering
-                    steering = ((0.00238095) * xCen - (0.785714)) # 0 minimum at 330p edge, 0.5 max at 540p 
+                    steering = ((0.00238095) * box_center - (0.785714)) # 0 minimum at 330p edge, 0.5 max at 540p 
                     if steering > 0.5:
                         steering = 0.5
                     steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5
@@ -192,22 +171,20 @@ def main():
                 else:
                     steering = 0
 
-                # pid.setpoint = throttle
-                # throttle = pid(lastThrottle)
-
-                if height >= 340 or yBot >= 340:
-                    throttle = 0
-
             else:
 
-                no_human_counter = no_human_counter + 1
+                no_human_counter += 1
 
                 logger.info(f"No human detected for {no_human_counter} frames")
 
-
-                if no_human_counter >= 4:
+                if no_human_counter >= 3:
                     throttle = 0
                     steering = 0
+
+            
+            if clear_path <= 3:
+                throttle = 0
+                logger.info(f"Detected person too close. {clear_path} / 3 frames with clear path")
 
             # Defining the control command to be sent to Teleop
             cmd = {
@@ -226,13 +203,15 @@ def main():
 if __name__ == "__main__":
     pub_init()
 
-    logger.info(f"Starting YOLOv8 model")
-    results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    logger.info(f"Loading YOLOv8 model")
+
     errors = []
     _config = _config()
     stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
     stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103"
     results = model.track(source=stream_uri, classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    logger.info(f"Following ready")
+    # results = model.track(source='testImg/.', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
 
     while True:
         main()
