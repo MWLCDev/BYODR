@@ -271,22 +271,42 @@ class SingularVescDriver(AbstractSteerServoDriver):
 
 
 class DualVescDriver(AbstractDriver):
-    def __init__(self, relay, **kwargs):
+    def __init__(self, relay, config_file_dir, **kwargs):
         super().__init__(relay)
         self._relay.close()
-        _pp_cm = parse_option('drive.distance.cm_per_pole_pair', float, 2.3, **kwargs)
-        self._drive1 = VESCDrive(serial_port=parse_option('drive.0.serial.port', str, '/dev/ttyACM0', **kwargs),
-                                 rpm_drive=False,
-                                 cm_per_pole_pair=_pp_cm)
-        self._drive2 = VESCDrive(serial_port=parse_option('drive.1.serial.port', str, '/dev/ttyACM1', **kwargs),
-                                 rpm_drive=False,
-                                 cm_per_pole_pair=_pp_cm)
+        _pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **kwargs)
+        # Right wheel
+        self._drive1 = VESCDrive(serial_port=parse_option("drive.0.serial.port", str, "/dev/ttyACM0", **kwargs), rpm_drive=False, cm_per_pole_pair=_pp_cm)
+        # Left wheel
+        self._drive2 = VESCDrive(serial_port=parse_option("drive.1.serial.port", str, "/dev/ttyACM1", **kwargs), rpm_drive=False, cm_per_pole_pair=_pp_cm)
+        self._config_file_dir = config_file_dir
         self._steering_offset = 0
-        self._steering_effect = max(0., float(kwargs.get('drive.steering.effect', 1.8)))
-        self._throttle_config = dict(scale=parse_option('throttle.domain.scale', float, 2.0, **kwargs))
-        self._axes_ordered = kwargs.get('drive.axes.mount.order', 'normal') == 'normal'
-        self._axis0_multiplier = 1 if kwargs.get('drive.axis0.mount.direction', 'forward') == 'forward' else -1
-        self._axis1_multiplier = 1 if kwargs.get('drive.axis1.mount.direction', 'forward') == 'forward' else -1
+        self._steering_effect = max(0.0, float(kwargs.get("drive.steering.effect", 1.8)))
+        self._throttle_config = dict(scale=parse_option("throttle.domain.scale", float, 2.0, **kwargs))
+        self._axes_ordered = kwargs.get("drive.axes.mount.order", "normal") == "normal"
+        self._axis0_multiplier = 1 if kwargs.get("drive.axis0.mount.direction", "forward") == "forward" else -1
+        self._axis1_multiplier = 1 if kwargs.get("drive.axis1.mount.direction", "forward") == "forward" else -1
+
+    def update_drive_serial_ports(self, config):
+        parser = ConfigParser()
+        parser.read(self._config_file_dir)
+
+        motor_alternate = config.get("motor_alternate", False)
+        if motor_alternate:
+            parser["driver"]["drive.0.serial.port"] = "/dev/ttyACM1"
+            parser["driver"]["drive.1.serial.port"] = "/dev/ttyACM0"
+        else:
+            parser["driver"]["drive.0.serial.port"] = "/dev/ttyACM0"
+            parser["driver"]["drive.1.serial.port"] = "/dev/ttyACM1"
+        with open(self._config_file_dir, "w") as configfile:
+            parser.write(configfile)
+
+    def set_configuration(self, config):
+        if self.configuration_check(config):
+            self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
+            self._throttle_config["scale"] = max(0, config.get("motor_scale"))
+            if "motor_alternate" in config:
+                self.update_drive_serial_ports(config)
 
     def has_sensors(self):
         return self.is_configured()
@@ -298,28 +318,22 @@ class DualVescDriver(AbstractDriver):
         if on_integrity:
             self._relay.open()
 
-    def set_configuration(self, config):
-        if self.configuration_check(config):
-            logger.info("Received configuration {}.".format(config))
-            self._steering_offset = max(-1., min(1., config.get('steering_offset')))
-            self._throttle_config['scale'] = max(0, config.get('motor_scale'))
-
     def is_configured(self):
         return self._drive1.is_open() and self._drive2.is_open()
 
     def velocity(self):
         try:
-            return (self._drive1.get_velocity() + self._drive2.get_velocity()) / 2.
+            return (self._drive1.get_velocity() + self._drive2.get_velocity()) / 2.0
         except Exception as e:
             logger.warning(e)
             return 0
 
     def drive(self, steering, throttle):
-        _motor_scale = self._throttle_config.get('scale')
+        _motor_scale = self._throttle_config.get("scale")
         # Scale down throttle for one wheel, the other retains its value.
-        steering = min(1., max(-1., steering + self._steering_offset))
-        throttle = min(1., max(-1., throttle))
-        effect = 1 - min(1., abs(steering) * self._steering_effect)
+        steering = min(1.0, max(-1.0, steering + self._steering_offset))
+        throttle = min(1.0, max(-1.0, throttle))
+        effect = 1 - min(1.0, abs(steering) * self._steering_effect)
         left = throttle if steering >= 0 else throttle * effect
         right = throttle if steering < 0 else throttle * effect
         a = (right if self._axes_ordered else left) * self._axis0_multiplier * _motor_scale
