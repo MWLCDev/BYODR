@@ -1,11 +1,23 @@
 class ToggleButtonHandler {
   constructor(buttonId) {
     this.toggleButton = document.getElementById(buttonId);
+    this.checkSavedState();
     this.toggleButton.addEventListener('click', () => {
       this.handleButtonClick();
     });
   }
 
+  checkSavedState(){
+    console.log("Checking button state");
+    if (sessionStorage.getItem("innerText") !== null){
+      console.log("Button state restored")
+      this.toggleButton.innerText = sessionStorage.getItem("innerText");
+      this.toggleButton.style.backgroundColor = sessionStorage.getItem("backgroundColor");
+    }
+    else{
+      console.log("No session storage found")
+    }
+  }
 
   handleButtonClick() {
     // Determine the command based on the opposite of the current button text
@@ -32,6 +44,9 @@ class ToggleButtonHandler {
   toggleButtonAppearance(command) {
     this.toggleButton.innerText = command === "Start Following" ? "Stop Following" : "Start Following";
     this.toggleButton.style.backgroundColor = command === "Start Following" ? "#ff6347" : "#67b96a";
+    sessionStorage.setItem("innerText",this.toggleButton.innerText);
+    sessionStorage.setItem("backgroundColor",this.toggleButton.style.backgroundColor);
+    console.log("Saved button state");
   }
 
 
