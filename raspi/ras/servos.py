@@ -124,7 +124,7 @@ class AbstractSteerServoDriver(AbstractDriver, ABC):
     @staticmethod
     def _angular_servo(message):
         fields = ('pin', 'min_pw', 'max_pw', 'frame')
-        m_config = [message.get(f) for f in fields]
+        m_config = [message.get(f) for f in fields]  # Correctly use 'f' as the argument for 'get'
         pin, min_pw, max_pw, frame = [m_config[0]] + [1e-3 * x for x in m_config[1:]]
         return AngularServo(pin=pin, min_pulse_width=min_pw, max_pulse_width=max_pw, frame_width=frame)
 
