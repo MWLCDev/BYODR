@@ -127,9 +127,9 @@ def create_stream(config_file):
         }
     _command = gst_commands.get(_type).format(**config)
     _socket_ref = parse_option("camera.output.class", str, "http-live", **kwargs)
-    logger.info(
-        "Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command)
-    )
+    location = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:{config['port']}{config['path']}"
+    logger.info("Socket '{}' location={}".format(name, location))
+    # logger.info("Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command))
     return (
         create_video_source(name, shape=(out_height, out_width, 3), command=_command),
         _socket_ref,
