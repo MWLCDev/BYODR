@@ -83,22 +83,54 @@ var menu_settings = {
 
   _settings_form_submit: function () {
     $("input#submit_save_apply").prop('disabled', true);
-    const dirty_inputs = $("form#form_user_options").find(':input').toArray().filter(x => {
-      return x.value != x.defaultValue
-    });
-    p_body = {};
-    dirty_inputs.forEach((x, index, arr) => {
-      const section = x.attributes.section.value;
-      if (!p_body[section]) {
-        p_body[section] = [];
+    const form_inputs = $("form#form_user_options").find(':input').toArray();
+    let p_body = {};
+
+    form_inputs.forEach((input) => {
+      let isDirty = false;
+      let value;
+
+      if (input.type === 'checkbox') {
+        // For checkboxes, compare the checked state with the default checked state
+        isDirty = input.checked !== input.defaultChecked;
+        value = input.checked; // The actual boolean value
+      } else {
+        // For other inputs, compare the value with the defaultValue
+        isDirty = input.value !== input.defaultValue;
+        value = input.value;
       }
-      p_body[section].push([x.name, x.value]);
+
+      if (isDirty) {
+        const section = input.attributes.section.value;
+        p_body[section] = p_body[section] || [];
+        // Push as an array [key, value] to match server expectation
+        p_body[section].push([input.name, value]);
+      }
     });
+
+    // Convert boolean values to string 'true' or 'false' before sending
+    Object.keys(p_body).forEach(section => {
+      p_body[section] = p_body[section].map(setting => {
+        if (typeof setting[1] === 'boolean') { // Check the second element (value) in the setting pair
+          setting[1] = setting[1] ? 'true' : 'false';
+        }
+        return setting;
+      });
+    });
+
     menu_settings._backend._call_save_settings(JSON.stringify(p_body), function (data) {
-      $("form#form_user_options").find(':input').toArray().forEach(el => { el.defaultValue = el.value; });
+      form_inputs.forEach((input) => {
+        if (input.type === 'checkbox') {
+          input.defaultChecked = input.checked; // Set the new default checked state
+        } else {
+          input.defaultValue = input.value; // Set the new default value
+        }
+      });
+      $("input#submit_save_apply").prop('disabled', false);
       menu_settings._start_state_polling();
     });
   },
+
 
   _create_settings_form: function (data) {
     const el_form = $("form#form_user_options");
@@ -107,20 +139,36 @@ var menu_settings = {
       el_table.append($("<caption/>").text(section).css('font-weight', 'bold').css('text-align', 'left'));
       var section_a = Object.keys(data[section]).sort();
       section_a.forEach(name => {
-        //This data is from UserOptions function in server.py
-        var value = data[section][name];
+        var value = data[section][name].toString().toLowerCase(); // Convert to string and lower case for comparison
         var el_row = $("<tr/>");
         el_row.append($("<td/>").text(name));
-        // Setup the input field for the option value.
-        var el_input_td = $("<td/>")
-        el_input_td.append($("<input/>", {
-          section: section,
-          name: name,
-          type: 'text',
-          value: value,
-          size: 40,
-          maxlen: 80
-        }));
+        var el_input_td = $("<td/>");
+
+        // Check if the value is a boolean
+        if (value === 'true' || value === 'false') {
+          // Create a toggle switch
+          var el_input = $("<input/>", {
+            section: section,
+            name: name,
+            type: 'checkbox',
+            checked: value === 'true' // Check if the value is 'true'
+          });
+          // Event listener for the toggle switch to handle the value change
+          el_input.on('change', function () {
+            $(this).attr('value', this.checked);
+          });
+          el_input_td.append(el_input);
+        } else {
+          // Use a text input for non-boolean values
+          el_input_td.append($("<input/>", {
+            section: section,
+            name: name,
+            type: 'text',
+            value: value,
+            size: 40,
+            maxlen: 80
+          }));
+        }
         el_row.append(el_input_td);
         el_table.append(el_row);
       });
