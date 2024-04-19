@@ -356,6 +356,38 @@ class MainApplication(Application):
         else:
             raise AssertionError("Unknown drive type '{}'.".format(_drive_type))
 
+    def check_configuration_files(self):
+        """Checks if the configuration file exists, if not, creates it from the template."""
+        config_file = "driver.ini"
+        template_file_path = "ras/driver.template"
+
+        if not os.path.exists(self.config_file_dir):
+            shutil.copyfile(template_file_path, self.config_file_dir)
+            logger.info("Created {} from template at {}".format(config_file, self.config_file_dir))
+
+        self._verify_and_add_missing_keys(self.config_file_dir, template_file_path)
+
+
+    def _verify_and_add_missing_keys(self, ini_file, template_file):
+        config = ConfigParser()
+        template_config = ConfigParser()
+
+        config.read(ini_file)
+        template_config.read(template_file)
+
+        # Loop through each section and key in the template
+        for section in template_config.sections():
+            if not config.has_section(section):
+                config.add_section(section)
+            for key, value in template_config.items(section):
+                if not config.has_option(section, key):
+                    config.set(section, key, value)
+                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+
+        # Save changes to the ini file if any modifications have been made
+        with open(ini_file, "w") as configfile:
+            config.write(configfile)
+
     def _pop_config(self):
         return self._config_queue.popleft() if bool(self._config_queue) else None
 
