@@ -85,52 +85,43 @@ var menu_settings = {
     $("input#submit_save_apply").prop('disabled', true);
     const form_inputs = $("form#form_user_options").find(':input').toArray();
     let p_body = {};
-
+  
     form_inputs.forEach((input) => {
       let isDirty = false;
       let value;
-
+  
+      // Check if the input is a checkbox and handle boolean values
       if (input.type === 'checkbox') {
-        // For checkboxes, compare the checked state with the default checked state
-        isDirty = input.checked !== input.defaultChecked;
-        value = input.checked; // The actual boolean value
+        isDirty = input.checked.toString().toLowerCase() !== input.defaultValue.toLowerCase();
+        value = input.checked ? 'True' : 'False'; // Convert boolean to string matching server expectation
       } else {
-        // For other inputs, compare the value with the defaultValue
         isDirty = input.value !== input.defaultValue;
         value = input.value;
       }
-
+  
       if (isDirty) {
         const section = input.attributes.section.value;
         p_body[section] = p_body[section] || [];
-        // Push as an array [key, value] to match server expectation
         p_body[section].push([input.name, value]);
       }
     });
-
-    // Convert boolean values to string 'true' or 'false' before sending
-    Object.keys(p_body).forEach(section => {
-      p_body[section] = p_body[section].map(setting => {
-        if (typeof setting[1] === 'boolean') { // Check the second element (value) in the setting pair
-          setting[1] = setting[1] ? 'true' : 'false';
-        }
-        return setting;
-      });
-    });
-
+  
+    // p_body now contains the string 'True' or 'False' for checkboxes,
+    // and the string value for other inputs. No need to map through p_body to convert values.
+  
     menu_settings._backend._call_save_settings(JSON.stringify(p_body), function (data) {
+      // Update the default values to the current state after successful save
       form_inputs.forEach((input) => {
         if (input.type === 'checkbox') {
-          input.defaultChecked = input.checked; // Set the new default checked state
+          input.defaultValue = input.checked.toString(); // Update defaultValue to 'true' or 'false'
         } else {
-          input.defaultValue = input.value; // Set the new default value
+          input.defaultValue = input.value;
         }
       });
       $("input#submit_save_apply").prop('disabled', false);
       menu_settings._start_state_polling();
     });
   },
-
 
   _create_settings_form: function (data) {
     const el_form = $("form#form_user_options");
@@ -152,10 +143,6 @@ var menu_settings = {
             name: name,
             type: 'checkbox',
             checked: value === 'true' // Check if the value is 'true'
-          });
-          // Event listener for the toggle switch to handle the value change
-          el_input.on('change', function () {
-            $(this).attr('value', this.checked);
           });
           el_input_td.append(el_input);
         } else {
