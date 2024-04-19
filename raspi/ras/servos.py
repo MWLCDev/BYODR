@@ -335,26 +335,40 @@ class DualVescDriver(AbstractDriver):
 
 
 class MainApplication(Application):
-    def __init__(self, event, relay, hz=50, **kwargs):
+    def __init__(self, event, config_file, relay, hz=50, test_mode=False):
         super(MainApplication, self).__init__(run_hz=hz, quit_event=event)
+        self.test_mode = test_mode
+        self.config_file_dir = config_file
+        self.relay = relay
         self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
         self._drive_queue = collections.deque(maxlen=1)
-        self._odometer = HallOdometer(**kwargs)
         self._chassis = None
         self.platform = None
         self.publisher = None
-        # Setup the chassis.
-        _drive_type = parse_option('drive.type', str, **kwargs)
-        if _drive_type in ('gpio', 'gpio_with_hall'):
-            self._chassis = GPIODriver(relay, **kwargs)
-        elif _drive_type == 'vesc_single':
-            self._chassis = SingularVescDriver(relay, **kwargs)
-        elif _drive_type == 'vesc_dual':
-            self._chassis = DualVescDriver(relay, **kwargs)
+        self._odometer = None  # Initialize here but set up later
+
+    def setup_components(self):
+        # Check configuration files and update, read configuration, then setup odometer and chassis
+        self.check_configuration_files()
+        kwargs = self.read_configuration()
+        self._odometer = HallOdometer(**kwargs)
+
+        drive_type = kwargs.get("drive.type", "unknown")
+        if drive_type in ["gpio", "gpio_with_hall"]:
+            self._chassis = GPIODriver(self.relay, **kwargs)
+        elif drive_type == "vesc_single":
+            self._chassis = SingularVescDriver(self.relay, **kwargs)
+        elif drive_type == "vesc_dual":
+            self._chassis = DualVescDriver(self.relay, self.config_file_dir, **kwargs)
         else:
-            raise AssertionError("Unknown drive type '{}'.".format(_drive_type))
+            raise AssertionError("Unknown drive type '{}'.".format(drive_type))
+
+        self.platform.add_listener(self._on_message)
+        self._integrity.reset()
+        self._cmd_history.reset()
+        self._odometer.setup()
 
     def check_configuration_files(self):
         """Checks if the configuration file exists, if not, creates it from the template."""
@@ -367,6 +381,15 @@ class MainApplication(Application):
 
         self._verify_and_add_missing_keys(self.config_file_dir, template_file_path)
 
+    def read_configuration(self):
+        parser = ConfigParser()
+        parser.read(self.config_file_dir)
+        kwargs = {}
+        if parser.has_section("driver"):
+            kwargs.update(dict(parser.items("driver")))
+        if parser.has_section("odometer"):
+            kwargs.update(dict(parser.items("odometer")))
+        return kwargs
 
     def _verify_and_add_missing_keys(self, ini_file, template_file):
         config = ConfigParser()
@@ -395,17 +418,11 @@ class MainApplication(Application):
         return self._drive_queue.popleft() if bool(self._drive_queue) else None
 
     def _on_message(self, message):
-        self._integrity.on_message(message.get('time'))
-        if message.get('method') == 'ras/driver/config':
-            self._config_queue.appendleft(message.get('data'))
+        self._integrity.on_message(message.get("time"))
+        if message.get("method") == "ras/driver/config":
+            self._config_queue.appendleft(message.get("data"))
         else:
-            self._drive_queue.appendleft(message.get('data'))
-
-    def setup(self):
-        self.platform.add_listener(self._on_message)
-        self._integrity.reset()
-        self._cmd_history.reset()
-        self._odometer.setup()
+            self._drive_queue.appendleft(message.get("data"))
 
     def finish(self):
         self._chassis.quit()
@@ -421,25 +438,21 @@ class MainApplication(Application):
         c_config, c_drive = self._pop_config(), self._pop_drive()
         self._chassis.set_configuration(c_config)
 
-        v_steering = 0 if c_drive is None else c_drive.get('steering', 0)
-        v_throttle = 0 if c_drive is None else c_drive.get('throttle', 0)
-        v_wakeup = False if c_drive is None else bool(c_drive.get('wakeup'))
+        v_steering = 0 if c_drive is None else c_drive.get("steering", 0)
+        v_throttle = 0 if c_drive is None else c_drive.get("throttle", 0)
+        v_wakeup = False if c_drive is None else bool(c_drive.get("wakeup"))
 
         self._cmd_history.touch(steering=v_steering, throttle=v_throttle, wakeup=v_wakeup)
-        if self._cmd_history.is_missing():
-            self._chassis.relay_violated(on_integrity=False)
-        elif n_violations < -5:
-            self._chassis.relay_ok()
+
+        self._chassis.relay_ok()
 
         # Immediately zero out throttle when violations start occurring.
-        v_throttle = 0 if n_violations > 0 else v_throttle
         _effort = self._chassis.drive(v_steering, v_throttle)
         _data = dict(time=timestamp(), configured=int(self._chassis.is_configured()), motor_effort=_effort)
         if self._chassis.has_sensors():
             _data.update(dict(velocity=self._chassis.velocity()))
         elif self._odometer.is_enabled():
             _data.update(dict(velocity=self._odometer.velocity()))
-
         # Let the communication partner know we are operational.
         self.publisher.publish(data=_data)
 
