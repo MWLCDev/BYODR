@@ -198,7 +198,7 @@ def main():
             }
             # Publishing the command to Teleop
             logger.info(f"Sending command to teleop: {cmd}")
-            # following_publisher.publish(cmd)
+            following_publisher.publish(cmd)
 
 if __name__ == "__main__":
     pub_init()
