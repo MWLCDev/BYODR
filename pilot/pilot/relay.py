@@ -177,8 +177,8 @@ class RealMonitoringRelay(AbstractRelay):
         self._pi_status.start()
         _steering_offset = parse_option(
             "ras.driver.steering.offset", float, 0.0, errors, **_config
-        )
-        _motor_scale = parse_option(
+        _motor_alternate = parse_option("ras.driver.motor.alternate", bool, False, errors, **_config)
+        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, motor_alternate=_motor_alternate)
             "ras.driver.motor.scale", float, 1.0, errors, **_config
         )
         self._servo_config = dict(
