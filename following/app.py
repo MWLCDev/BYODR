@@ -1,6 +1,7 @@
 # Both libraries to access the yolov8 yaml inside the robot
 import os
-import yaml
+import glob
+import configparser
 
 # import json
 # import time
@@ -19,6 +20,7 @@ from ultralytics import YOLO
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
+from byodr.utils.option import parse_option
 
 quit_event = multiprocessing.Event()
 
@@ -66,6 +68,11 @@ def pub_init():
     # Publishing the command to Teleop
     logger.info(f"Sending command to teleop: {cmd}")
     following_publisher.publish(cmd)
+
+def _config():
+    parser = configparser.ConfigParser()
+    [parser.read(_f) for _f in glob.glob(os.path.join("/config", "*.ini"))]
+    return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
 
 def main():
         
@@ -221,7 +228,11 @@ if __name__ == "__main__":
 
     logger.info(f"Starting YOLOv8 model")
     results = model.track(source='rtsp://user1:HaikuPlot876@192.168.1.64:554/Streaming/Channels/103', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
-    # results = model.track(source='imgTest/.', classes=0, stream=True, conf=0.35, max_det=3, persist=True)
+    errors = []
+    _config = _config()
+    stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
+    stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103"
+    results = model.track(source=stream_uri, classes=0, stream=True, conf=0.3, max_det=3, persist=True)
 
     while True:
         main()
