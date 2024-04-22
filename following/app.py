@@ -64,7 +64,7 @@ def main():
         left_edge = 310   # Left edge, away from the left end of the screen
         right_edge = 330  # Right edge, away from the right end if image width = 640p
         bottom_edge = 220    # Bot edge, away from the top end if image height = 480p
-        safe_edge = 300
+        safe_edge = 240
     # Default control commands
         request = teleop.get()
         try:
