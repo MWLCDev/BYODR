@@ -286,6 +286,7 @@ class DualVescDriver(AbstractDriver):
         self._pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **kwargs)
         # Initialize with default configuration
         self.update_drive_instances(kwargs)
+        self.last_config = None  # Attribute to store the last configuration
 
         self._steering_offset = 0
         self._steering_effect = max(0.0, float(kwargs.get("drive.steering.effect", 1.8)))
@@ -316,10 +317,13 @@ class DualVescDriver(AbstractDriver):
             logger.info("Updated wheel port mapping: drive1={}, drive2={}".format(port0, port1))
 
     def set_configuration(self, config):
-        if self.configuration_check(config):
-            self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
-            self._throttle_config["scale"] = max(0, config.get("motor_scale"))
-            self.update_drive_instances(config)
+        if config != self.last_config:
+            if self.configuration_check(config):
+                self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
+                self._throttle_config["scale"] = max(0, config.get("motor_scale"))
+                self.update_drive_instances(config)
+                logger.info("Received new configuration {}.".format(config))
+                self.last_config = config  # Update last configuration
 
     def has_sensors(self):
         return self.is_configured()
