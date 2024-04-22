@@ -111,7 +111,6 @@ class RealMonitoringRelay(AbstractRelay):
     def _drive(self, pilot, teleop):
         pi_status = None if self._pi_status is None else self._pi_status.pop_latest()
         if pi_status is not None and not bool(pi_status.get("configured")):
-            print(self._servo_config)
             self._send_config(self._servo_config)
         if pilot is None:
             self._send_drive()
