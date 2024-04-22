@@ -451,7 +451,6 @@ class MainApplication(Application):
     def _on_message(self, message):
         self._integrity.on_message(message.get("time"))
         if message.get("method") == "ras/driver/config":
-            print(message)
             self._config_queue.appendleft(message.get("data"))
         else:
             self._drive_queue.appendleft(message.get("data"))
@@ -470,21 +469,25 @@ class MainApplication(Application):
         c_config, c_drive = self._pop_config(), self._pop_drive()
         self._chassis.set_configuration(c_config)
 
-        v_steering = 0 if c_drive is None else c_drive.get("steering", 0)
-        v_throttle = 0 if c_drive is None else c_drive.get("throttle", 0)
-        v_wakeup = False if c_drive is None else bool(c_drive.get("wakeup"))
+        v_steering = 0 if c_drive is None else c_drive.get('steering', 0)
+        v_throttle = 0 if c_drive is None else c_drive.get('throttle', 0)
+        v_wakeup = False if c_drive is None else bool(c_drive.get('wakeup'))
 
         self._cmd_history.touch(steering=v_steering, throttle=v_throttle, wakeup=v_wakeup)
-
-        self._chassis.relay_ok()
+        if self._cmd_history.is_missing():
+            self._chassis.relay_violated(on_integrity=False)
+        elif n_violations < -5:
+            self._chassis.relay_ok()
 
         # Immediately zero out throttle when violations start occurring.
+        v_throttle = 0 if n_violations > 0 else v_throttle
         _effort = self._chassis.drive(v_steering, v_throttle)
         _data = dict(time=timestamp(), configured=int(self._chassis.is_configured()), motor_effort=_effort)
         if self._chassis.has_sensors():
             _data.update(dict(velocity=self._chassis.velocity()))
         elif self._odometer.is_enabled():
             _data.update(dict(velocity=self._odometer.velocity()))
+
         # Let the communication partner know we are operational.
         self.publisher.publish(data=_data)
 
