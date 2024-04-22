@@ -41,7 +41,7 @@ def pub_init():
     cmd = {
         'throttle': 0,
         'steering': 0,
-        'button_b': 1,
+        'button_b': 0,
         'time': timestamp(),
         'navigator': {'route': None}
     }
@@ -83,7 +83,7 @@ def main():
             cmd = {
                 'throttle': 0,
                 'steering': 0,
-                'button_b': 1,
+                'button_b': 0,
                 'time': timestamp(),
                 'navigator': {'route': None}
             }
