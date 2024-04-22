@@ -209,7 +209,7 @@ if __name__ == "__main__":
     _config = _config()
     stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
     stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103"
-    results = model.track(source=stream_uri, classes=0, stream=True, conf=0.3, max_det=3, persist=True)
+    results = model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True)
     logger.info(f"Following ready")
     # results = model.track(source='testImg/.', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
 
