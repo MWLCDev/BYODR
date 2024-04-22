@@ -63,7 +63,8 @@ def main():
         # Edges on the screen beyond which robot should start moving to keep distance
         left_edge = 310   # Left edge, away from the left end of the screen
         right_edge = 330  # Right edge, away from the right end if image width = 640p
-        bottom_edge = 300    # Bot edge, away from the top end if image height = 480p
+        bottom_edge = 220    # Bot edge, away from the top end if image height = 480p
+        safe_edge = 300
     # Default control commands
         request = teleop.get()
         try:
@@ -117,7 +118,7 @@ def main():
                     y1 = box.xyxy[0,1]
                     x2 = box.xyxy[0,2]
                     y2 = box.xyxy[0,3]
-                    if int(y2) >= 340 or int(y2 - y1) >= 340:
+                    if int(y2) >= safe_edge or int(y2 - y1) >= safe_edge:
                         clear_path = 0
                     try:
                         if box.id == boxes.id[0]:
@@ -142,7 +143,7 @@ def main():
                 # Bbox center crossed the top edge
                 if height <= bottom_edge or box_bottom <= bottom_edge:
                     # Linear increase of throttle
-                    throttle = (-(0.02) * height) + 6.2 # 0.2 minimum at 300p heigh, 1 max at 260p height
+                    throttle = (-(0.01) * height) + 2.4 # 0.2 minimum at 220 heigh, 1 max at 140p height
                     if throttle > 1:
                         throttle = 1
                 else:
