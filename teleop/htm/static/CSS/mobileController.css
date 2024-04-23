@@ -6,8 +6,6 @@ html {
   height: 100%;
   overflow: hidden;
   /* This will prevent scrollbar from appearing */
-  overflow: hidden;
-  /* This will prevent scrollbar from appearing */
 }
 
 canvas {

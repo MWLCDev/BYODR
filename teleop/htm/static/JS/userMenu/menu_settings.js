@@ -83,19 +83,42 @@ var menu_settings = {
 
   _settings_form_submit: function () {
     $("input#submit_save_apply").prop('disabled', true);
-    const dirty_inputs = $("form#form_user_options").find(':input').toArray().filter(x => {
-      return x.value != x.defaultValue
-    });
-    p_body = {};
-    dirty_inputs.forEach((x, index, arr) => {
-      const section = x.attributes.section.value;
-      if (!p_body[section]) {
-        p_body[section] = [];
+    const form_inputs = $("form#form_user_options").find(':input').toArray();
+    let p_body = {};
+  
+    form_inputs.forEach((input) => {
+      let isDirty = false;
+      let value;
+  
+      // Check if the input is a checkbox and handle boolean values
+      if (input.type === 'checkbox') {
+        isDirty = input.checked.toString().toLowerCase() !== input.defaultValue.toLowerCase();
+        value = input.checked ? 'True' : 'False'; // Convert boolean to string matching server expectation
+      } else {
+        isDirty = input.value !== input.defaultValue;
+        value = input.value;
       }
-      p_body[section].push([x.name, x.value]);
+  
+      if (isDirty) {
+        const section = input.attributes.section.value;
+        p_body[section] = p_body[section] || [];
+        p_body[section].push([input.name, value]);
+      }
     });
+  
+    // p_body now contains the string 'True' or 'False' for checkboxes,
+    // and the string value for other inputs. No need to map through p_body to convert values.
+  
     menu_settings._backend._call_save_settings(JSON.stringify(p_body), function (data) {
-      $("form#form_user_options").find(':input').toArray().forEach(el => { el.defaultValue = el.value; });
+      // Update the default values to the current state after successful save
+      form_inputs.forEach((input) => {
+        if (input.type === 'checkbox') {
+          input.defaultValue = input.checked.toString(); // Update defaultValue to 'true' or 'false'
+        } else {
+          input.defaultValue = input.value;
+        }
+      });
+      $("input#submit_save_apply").prop('disabled', false);
       menu_settings._start_state_polling();
     });
   },
@@ -107,20 +130,32 @@ var menu_settings = {
       el_table.append($("<caption/>").text(section).css('font-weight', 'bold').css('text-align', 'left'));
       var section_a = Object.keys(data[section]).sort();
       section_a.forEach(name => {
-        //This data is from UserOptions function in server.py
-        var value = data[section][name];
+        var value = data[section][name].toString().toLowerCase(); // Convert to string and lower case for comparison
         var el_row = $("<tr/>");
         el_row.append($("<td/>").text(name));
-        // Setup the input field for the option value.
-        var el_input_td = $("<td/>")
-        el_input_td.append($("<input/>", {
-          section: section,
-          name: name,
-          type: 'text',
-          value: value,
-          size: 40,
-          maxlen: 80
-        }));
+        var el_input_td = $("<td/>");
+
+        // Check if the value is a boolean
+        if (value === 'true' || value === 'false') {
+          // Create a toggle switch
+          var el_input = $("<input/>", {
+            section: section,
+            name: name,
+            type: 'checkbox',
+            checked: value === 'true' // Check if the value is 'true'
+          });
+          el_input_td.append(el_input);
+        } else {
+          // Use a text input for non-boolean values
+          el_input_td.append($("<input/>", {
+            section: section,
+            name: name,
+            type: 'text',
+            value: value,
+            size: 40,
+            maxlen: 80
+          }));
+        }
         el_row.append(el_input_td);
         el_table.append(el_row);
       });

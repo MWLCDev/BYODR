@@ -1,18 +1,23 @@
 class RealControlsBackend {
-    constructor() {
-    }
-    _call_get_channel_config(cb) {
-        $.get("/teleop/pilot/controls/relay/conf", function(response) {cb(response['config']);});
-    }
-    _call_get_channel_states(cb) {
-        $.get("/teleop/pilot/controls/relay/state", function(response) {cb(response['states']);});
-    }
-    _call_save_channel_state(channel, value, cb) {
-        const command = {'channel': channel, 'action': ((value == true || value == 'true')? 'on': 'off')};
-        $.post("/teleop/pilot/controls/relay/state", JSON.stringify(command)).done(function(response) {
-            cb(response['channel'], response['value']);
-        });
-    }
+  constructor() {
+  }
+
+  _call_get_channel_config(cb) {
+    $.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/conf`, function (response) {
+      cb(response['config']);
+    });
+  }
+  _call_get_channel_states(cb) {
+    $.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`, function (response) {
+      cb(response['states']);
+    });
+  }
+  _call_save_channel_state(channel, value, cb) {
+    const command = { 'channel': channel, 'action': ((value == true || value == 'true') ? 'on' : 'off') };
+    $.post(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`, JSON.stringify(command), function (response) {
+      cb(response['channel'], response['value']);
+    }, "json");
+  }
 }
 
 class FakeControlsBackend extends RealControlsBackend {

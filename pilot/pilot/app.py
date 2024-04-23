@@ -66,7 +66,6 @@ class PilotApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
         cfg = dict(parser.items('pilot')) if parser.has_section('pilot') else {}
         cfg.update(dict(parser.items('relay')) if parser.has_section('relay') else {})
-        self.logger.info(cfg)
         return cfg
 
     def _set_pulse_channels(self, **kwargs):

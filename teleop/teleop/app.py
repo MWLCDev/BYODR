@@ -218,11 +218,6 @@ class MobileControllerUI(tornado.web.RequestHandler):
         self.render("../htm/templates/mobile_controller_ui.html")
 
 
-class TestFeatureUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
-
-    def get(self):
-        self.render("../htm/templates/testFeature.html")
 
 
 def main():
@@ -459,7 +454,6 @@ def main():
                     r"/mobile_controller_ui",
                     MobileControllerUI,
                 ),  # Navigate to Mobile controller UI
-                (r"/testFeature", TestFeatureUI),  # Navigate to a testing page
                 (
                     r"/run_draw_map_python",
                     RunDrawMapPython,
