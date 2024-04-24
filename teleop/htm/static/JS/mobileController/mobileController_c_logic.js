@@ -1,8 +1,9 @@
 
-import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
+import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js";
+
+import { drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw } from './mobileController_d_pixi.js';
 import CTRL_STAT from './mobileController_z_state.js';
-import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle, redraw } from './mobileController_d_pixi.js';
-import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
@@ -24,7 +25,7 @@ function initializeWS() {
       //Place holder until implementation with multi segment is over
     } else if (parsedData["control"] == "viewer") {
       CTRL_STAT.stateErrors = "controlError"
-      redraw(undefined, undefined, true)
+      redraw(undefined, true, true, false);
     }
   };
 
@@ -35,10 +36,9 @@ function initializeWS() {
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
     CTRL_STAT.stateErrors = "connectionError"
-    redraw(undefined, undefined, true)
+    redraw(undefined, true, true, false);
     CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
-  console.log('Created Mobile controller (WS)');
 }
 
 /**
@@ -91,6 +91,7 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
   const isTopTriangle = CTRL_STAT.selectedTriangle === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
 
+
   // Stopping the robot urgently depending on where the finger of the user is. We stop in these cases:
   // top triangle in use AND finger below the center
   // OR
@@ -108,6 +109,7 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
       mobileInferenceState: getInferenceState,
     };
 }
+
 // Save dead zone width to local storage
 function saveDeadZoneWidth(value) {
   localStorage.setItem('deadZoneWidth', value);
@@ -118,6 +120,7 @@ function getSavedDeadZoneWidth() {
   // If there's a saved value in local storage, use it; otherwise default to 0.1
   return localStorage.getItem('deadZoneWidth') || '0.1';
 }
+
 /**
  * Handles the movement of the dot within specified triangle boundaries.
  * @param {number} touchX - X position of the touch.
@@ -157,11 +160,10 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
 
   // Modify the logic to handle the X position considering the dead zone
-  let xOfDot; // For visual representation, initialize xOfDot
+  let xOfDot;
 
   if (inDeadZone) {
     xOfDot = window.innerWidth / 2;
-    // Optionally adjust relativeY if needed when in dead zone
     relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
   } else {
     let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
@@ -169,15 +171,14 @@ function handleDotMove(touchX, touchY, getInferenceState) {
   }
 
   // Update the dot's position.
-  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
-
-  // Execute the following only when not in auto mode.
-  if (getInferenceState !== "auto") {
-    let relative_x = deltaCoordinatesFromTip(touchX); 
-    SetStatistics(relative_x, touchY, relativeY, getInferenceState); 
+  cursorFollowingDot.setPosition(xOfDot, y);
+  if (inDeadZone) {
+    SetStatistics(0, y, relativeY, getInferenceState);
+  } else if (getInferenceState !== "auto") {
+    let relative_x = deltaCoordinatesFromTip(touchX);
+    SetStatistics(relative_x, touchY, relativeY, getInferenceState);
   }
 }
-
 
 /**
  * Second way to limit the user's interactions, to be only inside the two triangles (first one is the if condition in handleTriangleMove() to limit the borders of the triangles)
@@ -216,13 +217,21 @@ function handleTriangleMove(y, inferenceToggleButton) {
   }
 
   let INFState = inferenceToggleButton.getInferenceState
-  //cannot move it while on training mode
   if (INFState == "auto") {
     inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
-    //you should be able to move it while on training mode
   } else if (INFState == "train") {
-    redraw(CTRL_STAT.selectedTriangle, yOffset, true);
+    redraw(yOffset, true, false, true);
   } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawTopTriangle_BottomRectangle(yOffset);
+  }
+  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawBottomTriangle_TopRectangle(yOffset);
+  }
+
+
+  else if (CTRL_STAT.detectedTriangle === 'top') {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
   }
@@ -274,63 +283,5 @@ function sendJSONCommand() {
   setTimeout(sendJSONCommand, 100);
 }
 
-// Add event listeners to input boxes
-MotorDataInput.SCALEINPUT.addEventListener('input', function () {
-  MotorDataInput.updateConfirmButton();
-});
+export { addKeyToSentCommand, deltaCoordinatesFromTip, detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, pointInsideTriangle, saveDeadZoneWidth, sendJSONCommand };
 
-// Add event listeners to input boxes
-MotorDataInput.OFFSETINPUT.addEventListener('input', function () {
-  MotorDataInput.updateConfirmButton();
-});
-
-// Add event listener to confirm button
-MotorDataInput.CONFIRMBUTTON.addEventListener('click', function () {
-  // Create an array to store non-empty key-value pairs
-  let scaleOffsetData = [];
-
-  // Check and add non-empty scaleValue
-  if (MotorDataInput.SCALEINPUT.value !== "")
-    scaleOffsetData.push(["ras.driver.motor.scale", MotorDataInput.SCALEINPUT.value]);
-
-  // Check and add non-empty offsetValue
-  if (MotorDataInput.OFFSETINPUT.value !== "")
-    scaleOffsetData.push(["ras.driver.steering.offset", MotorDataInput.OFFSETINPUT.value]);
-
-  // Create the data object that will be sent to the backend via POST
-  let data = { "vehicle": scaleOffsetData };
-
-  console.log('Data to send:', data);
-
-  // Make POST request to the backend endpoint
-  fetch('/teleop/user/options', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(data)
-  })
-    .then(response => {
-      if (response.ok) {
-        console.log('Data sent successfully.');
-
-        // Showing the confirmation text and then hiding it after 3 seconds
-        MotorDataInput.CONFIRM_CHANGE_TEXT.classList.remove('hidden');
-        setTimeout(() => {
-          MotorDataInput.CONFIRM_CHANGE_TEXT.classList.add('hidden');
-        }, 3000);
-
-      }
-
-      else
-        console.error('Failed to send data.');
-    })
-    .catch(error => {
-      console.error('Error:', error);
-    });
-});
-
-export {
-  pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove,
-  detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, addKeyToSentCommand, getSavedDeadZoneWidth, saveDeadZoneWidth
-};

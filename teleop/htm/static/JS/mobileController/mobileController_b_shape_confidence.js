@@ -12,8 +12,8 @@ class ToggleButtonHandler {
       this.handleButtonClick();
     });
     this.confidenceWS = {}; // Placeholder for WebSocket.
-    this.autoReconnectInterval = 9000; 
-    this.initializeConfidenceWS(); 
+    this.autoReconnectInterval = 9000;
+    this.initializeConfidenceWS();
   }
 
   /**

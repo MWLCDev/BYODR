@@ -3,35 +3,32 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
+import concurrent.futures
+import configparser
 import glob
 import multiprocessing
 import signal
-import tornado.web
-import concurrent.futures
-import configparser
-import user_agents  # Check in the request header if it is a phone or not
-
-
+import subprocess  # to run the python script
 from concurrent.futures import ThreadPoolExecutor
+
+import tornado.ioloop
+import tornado.web
+import user_agents  # Check in the request header if it is a phone or not
+from byodr.utils import Application, ApplicationExit, hash_dict
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from byodr.utils.option import parse_option
+from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
+from logbox.app import LogApplication, PackageApplication
+from logbox.core import MongoLogBox, SharedState, SharedUser
+from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-import tornado.ioloop
-import tornado.web
 
-from byodr.utils import Application, hash_dict, ApplicationExit, timestamp
-from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.option import parse_option
-from six.moves.configparser import SafeConfigParser
-from logbox.app import LogApplication, PackageApplication
-from logbox.core import MongoLogBox, SharedUser, SharedState
-from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
-from .server import *
-
-from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 from .getSSID import fetch_ssid
+from .server import *
 
 logger = logging.getLogger(__name__)
 
@@ -74,7 +71,6 @@ class TeleopApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self._motor_scale = 0
         self.rut_ip = None
 
     def _check_user_config(self):
@@ -229,11 +225,6 @@ class MobileControllerUI(tornado.web.RequestHandler):
         self.render("../htm/templates/mobile_controller_ui.html")
 
 
-class TestFeatureUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
-
-    def get(self):
-        self.render("../htm/templates/testFeature.html")
 
 
 def main():
@@ -357,15 +348,23 @@ def main():
     gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
 
     threads = [
+        
         camera_front,
+       
         camera_rear,
+       
         pilot,
         following,
+       
         vehicle,
+       
         inference,
+       
         logbox_thread,
+       
         package_thread,
         follow_thread,
+       
         gps_poller_snmp,
     ]
 
@@ -509,7 +508,6 @@ def main():
                     r"/mobile_controller_ui",
                     MobileControllerUI,
                 ),  # Navigate to Mobile controller UI
-                (r"/testFeature", TestFeatureUI),  # Navigate to a testing page
                 (
                     r"/run_draw_map_python",
                     RunDrawMapPython,

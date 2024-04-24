@@ -10,6 +10,15 @@ class PropertyError(ValueError):
         return "{} - {}".format(self.key, self.message)
 
 
+def str_to_bool(value):
+    if value.lower() in ("true", "1", "t", "y", "yes"):
+        return True
+    elif value.lower() in ("false", "0", "f", "n", "no"):
+        return False
+    else:
+        raise ValueError(f"Cannot convert {value} to a boolean.")
+
+
 def _parse(key, fn_type=(lambda x: x), **kwargs):
     try:
         return fn_type(kwargs[key])
@@ -21,11 +30,7 @@ def parse_option(key, fn_type=(lambda x: x), default_value=None, errors=None, **
     """
     Attempts to parse an option from the given keyword arguments based on the specified key.
 
-    This function looks for the key in the keyword arguments and applies a transformation function (fn_type) to its value.
-    If the key is missing and a default value is provided, the default value is used instead. If the key is missing and no
-    default value is provided, a PropertyError is recorded. All encountered PropertyErrors are appended to the provided
-    'errors' list, if any.
-
+    If the key is missing and a default value is provided, the default value is used instead.
     Parameters:
     - key (str): The key to look for in the keyword arguments.
     - fn_type (callable, optional): A function to apply to the value of the found key. Defaults to a no-op lambda that returns the value unchanged.
@@ -42,13 +47,16 @@ def parse_option(key, fn_type=(lambda x: x), default_value=None, errors=None, **
     """
     errors = [] if errors is None else errors
     try:
-        return _parse(key, fn_type=fn_type, **kwargs)
+        if fn_type is bool:
+            # Use custom boolean parser
+            return str_to_bool(kwargs[key])
+        else:
+            return _parse(key, fn_type=fn_type, **kwargs)
     except KeyError:
         if default_value is None:
             errors.append(PropertyError(key, "The key is missing and no default value has been set"))
-    except PropertyError as pe:
-        errors.append(pe)
-    return fn_type(default_value)
+        else:
+            return fn_type(default_value)
 
 
 def hash_dict(**m):
