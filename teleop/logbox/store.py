@@ -168,7 +168,13 @@ image-shape-hwc: "{image_shape}"
                 timestamp = event.timestamp
                 steering = float(event.steering)
                 desired_speed = float(event.desired_speed)
-                heading = float(event.heading)
+                
+                # Handle possible non-numeric 'heading' value
+                try:
+                    heading = float(event.heading)
+                except ValueError:
+                    heading = 0.0  # Default to 0.0 or another appropriate fallback value
+
                 throttle = float(event.throttle)
                 steer_src = event.steer_src
                 filename = "{}__st{:+2.2f}__th{:+2.2f}__dsp{:+2.1f}__he{:+2.2f}__{}.jpg".format(
@@ -178,18 +184,18 @@ image-shape-hwc: "{image_shape}"
                     archive.writestr(filename, BytesIO(np.frombuffer(memoryview(event.jpeg_buffer), dtype=np.uint8)).getvalue())
                 #
                 self._data.loc[len(self._data)] = [timestamp,
-                                                   event.vehicle,
-                                                   event.vehicle_config,
-                                                   filename,
-                                                   event.steer_src,
-                                                   event.speed_src,
-                                                   event.steering,
-                                                   event.desired_speed,
-                                                   event.actual_speed,
-                                                   event.heading,
-                                                   event.throttle,
-                                                   event.command_src,
-                                                   event.command,
-                                                   event.x_coordinate,
-                                                   event.y_coordinate,
-                                                   event.inference_brake]
+                                                  event.vehicle,
+                                                  event.vehicle_config,
+                                                  filename,
+                                                  event.steer_src,
+                                                  event.speed_src,
+                                                  event.steering,
+                                                  event.desired_speed,
+                                                  event.actual_speed,
+                                                  event.heading,
+                                                  event.throttle,
+                                                  event.command_src,
+                                                  event.command,
+                                                  event.x_coordinate,
+                                                  event.y_coordinate,
+                                                  event.inference_brake]
