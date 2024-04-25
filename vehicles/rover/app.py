@@ -360,14 +360,6 @@ class RoverApplication(Application):
     def finish(self):
         self._handler.quit()
 
-    # def run(self):
-    #     from byodr.utils import Profiler
-    #     profiler = Profiler()
-    #     with profiler():
-    #         super(RoverApplication, self).run()
-    #     profiler.dump_stats('/config/rover.stats')
-
-
     # Function that is called continuously
     # Receives commands from pilot and teleop
     def step(self):

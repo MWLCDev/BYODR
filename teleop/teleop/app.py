@@ -93,19 +93,13 @@ class TeleopApplication(Application):
         config.read(self.get_user_config_file())
 
         # Flatten the configuration sections and keys into a single dictionary
-        config_dict = {
-            f"{section}.{option}": value
-            for section in config.sections()
-            for option, value in config.items(section)
-        }
+        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
 
         errors = []
         # print(config_dict)
         # Use the flattened config dictionary as **kwargs to parse_option
         # A close implementation for how the parse_option is called in the internal_start function for each service.
-        self.rut_ip = parse_option(
-            "vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict
-        )
+        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
 
         if errors:
             for error in errors:
@@ -137,9 +131,7 @@ class RunDrawMapPython(tornado.web.RequestHandler):
         with concurrent.futures.ProcessPoolExecutor() as executor:
             future = executor.submit(run_python_script, script_name)
             # Use the `await` keyword to asynchronously wait for the result.
-            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(
-                None, future.result
-            )
+            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(None, future.result)
 
             # Print the list before sending it to the JavaScript function.
             logger.info("Python script result: ", result_list)
@@ -194,9 +186,7 @@ class Index(tornado.web.RequestHandler):
 
         if user_agent.is_mobile:
             # if user is on mobile, redirect to the mobile page
-            logger.info(
-                "User is operating through mobile phone. Redirecting to the mobile UI"
-            )
+            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
             self.redirect("/mobile_controller_ui")
         else:
             # else render the index page
@@ -218,8 +208,6 @@ class MobileControllerUI(tornado.web.RequestHandler):
         self.render("../htm/templates/mobile_controller_ui.html")
 
 
-
-
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -237,18 +225,14 @@ def main():
     """
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
-    parser.add_argument(
-        "--config", type=str, default="/config", help="Config directory path."
-    )
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     parser.add_argument(
         "--routes",
         type=str,
         default="/routes",
         help="Directory with the navigation routes.",
     )
-    parser.add_argument(
-        "--sessions", type=str, default="/sessions", help="Sessions directory."
-    )
+    parser.add_argument("--sessions", type=str, default="/sessions", help="Sessions directory.")
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
@@ -267,30 +251,11 @@ def main():
     application = TeleopApplication(event=quit_event, config_dir=args.config)
     application.setup()
 
-    camera_front = CameraThread(
-        url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event
-    )
-    camera_rear = CameraThread(
-        url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event
-    )
-    pilot = json_collector(
-        url="ipc:///byodr/pilot.sock",
-        topic=b"aav/pilot/output",
-        event=quit_event,
-        hwm=20,
-    )
-    vehicle = json_collector(
-        url="ipc:///byodr/vehicle.sock",
-        topic=b"aav/vehicle/state",
-        event=quit_event,
-        hwm=20,
-    )
-    inference = json_collector(
-        url="ipc:///byodr/inference.sock",
-        topic=b"aav/inference/state",
-        event=quit_event,
-        hwm=20,
-    )
+    camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
+    camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
+    pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
+    vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
+    inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
 
     logbox_user = SharedUser()
     logbox_state = SharedState(
@@ -302,12 +267,8 @@ def main():
         ),
         hz=16,
     )
-    log_application = LogApplication(
-        _mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config
-    )
-    package_application = PackageApplication(
-        _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
-    )
+    log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
+    package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
@@ -328,13 +289,9 @@ def main():
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(
-        url="ipc:///byodr/teleop.sock", topic="aav/teleop/input"
-    )
+    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
-    chatter = JSONPublisher(
-        url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter"
-    )
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(
         urls=[
             "ipc:///byodr/pilot_c.sock",
@@ -363,11 +320,7 @@ def main():
         throttle_change_step = 0.1  # Always 0.1
 
         # Is it ugly, i know
-        if (
-            cmd.get("mobileInferenceState") == "true"
-            or cmd.get("mobileInferenceState") == "auto"
-            or cmd.get("mobileInferenceState") == "train"
-        ):
+        if cmd.get("mobileInferenceState") == "true" or cmd.get("mobileInferenceState") == "auto" or cmd.get("mobileInferenceState") == "train":
             # cmd.pop("mobileInferenceState")
             teleop_publish(cmd)
         # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
@@ -385,9 +338,7 @@ def main():
 
                     # Decreasing or increasing the throttle by each iteration, by the step we have defined.
                     # Dec or Inc depends on if we were going forwards or backwards
-                    current_throttle = current_throttle - (
-                        braking_sign * throttle_change_step
-                    )
+                    current_throttle = current_throttle - (braking_sign * throttle_change_step)
 
                     # Capping the value at 0 so that the robot does not move while idle
                     if braking_sign > 0 and current_throttle < 0:
@@ -404,14 +355,10 @@ def main():
 
                     # Decreasing or increasing the throttle by each iteration, by the step we have defined.
                     # Dec or Inc depends on if we want to go forwards or backwards
-                    current_throttle = current_throttle + (
-                        accelerate_sign * throttle_change_step
-                    )
+                    current_throttle = current_throttle + (accelerate_sign * throttle_change_step)
 
                     # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                    if (accelerate_sign > 0 and current_throttle > target_throttle) or (
-                        accelerate_sign < 0 and current_throttle < target_throttle
-                    ):
+                    if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
                         current_throttle = target_throttle
 
                 # Sending commands to Coms/Pilot
@@ -434,6 +381,7 @@ def main():
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
+        # print(cmd)
         teleop_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -489,11 +437,7 @@ def main():
                 (
                     r"/ws/log",
                     MessageServerSocket,
-                    dict(
-                        fn_state=(
-                            lambda: (pilot.peek(), vehicle.peek(), inference.peek())
-                        )
-                    ),
+                    dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek()))),
                 ),
                 (
                     r"/ws/cam/front",
@@ -508,9 +452,7 @@ def main():
                 (
                     r"/ws/nav",
                     NavImageHandler,
-                    dict(
-                        fn_get_image=(lambda image_id: get_navigation_image(image_id))
-                    ),
+                    dict(fn_get_image=(lambda image_id: get_navigation_image(image_id))),
                 ),
                 (
                     # Get or save the options for the user
