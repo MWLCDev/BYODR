@@ -37,8 +37,8 @@ def _interrupt():
 
 
 class PilotApplication(Application):
-    def __init__(self, event, processor, relay, config_dir=os.getcwd()):
-        super(PilotApplication, self).__init__(quit_event=event)
+    def __init__(self, event, processor, relay, config_dir=os.getcwd(), hz=100):
+        super(PilotApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._processor = processor
         self._monitor = None
