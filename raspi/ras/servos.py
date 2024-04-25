@@ -374,7 +374,7 @@ class MainApplication(Application):
         self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
-        self._drive_queue = collections.deque(maxlen=1)
+        self._drive_queue = collections.deque(maxlen=4)
         self._chassis = None
         self.platform = None
         self.publisher = None
