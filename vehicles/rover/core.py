@@ -20,17 +20,14 @@ CH_NONE, CH_THROTTLE, CH_STEERING, CH_BOTH = (0, 1, 2, 3)
 CTL_LAST = 0
 
 gst_commands = {
-    'h264/rtsp':
-        "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 drop-on-latency=true do-retransmission=false ! "
-        "queue ! rtph264depay ! h264parse ! queue ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
-        "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink",
-    'h264/tcp':
-        "tcpclientsrc host={ip} port={port} ! queue ! gdpdepay ! h264parse ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
-        "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink",
-    'h264/udp':
-        "udpsrc port={port} ! queue ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! "
-        "rtph264depay ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
-        "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink"
+    "h264/rtsp": "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 drop-on-latency=true do-retransmission=false ! "
+    "queue ! rtph264depay ! h264parse ! queue ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
+    "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink",
+    "h264/tcp": "tcpclientsrc host={ip} port={port} ! queue ! gdpdepay ! h264parse ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
+    "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink",
+    "h264/udp": "udpsrc port={port} ! queue ! application/x-rtp,media=video,clock-rate=90000,encoding-name=H264,payload=96 ! "
+    "rtph264depay ! avdec_h264 ! videoconvert ! videorate ! videoscale ! "
+    "video/x-raw,width={width},height={height},framerate={framerate}/1,format=BGR ! queue ! appsink",
 }
 
 
@@ -72,33 +69,27 @@ class ConfigurableImageGstSource(Configurable):
     def internal_start(self, **kwargs):
         self._close()
         _errors = []
-        _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=_errors, **kwargs)
+        _type = parse_option(self._name + ".camera.type", str, "h264/rtsp", errors=_errors, **kwargs)
         assert _type in gst_commands.keys(), "Unrecognized camera type '{_type}'."
-        framerate = 25 if self._name == 'front' else 12
-        framerate = (parse_option(self._name + '.camera.framerate', int, framerate, errors=_errors, **kwargs))
-        out_width, out_height = [int(x) for x in parse_option(self._name + '.camera.shape', str, '320x240',
-                                                              errors=_errors, **kwargs).split('x')]
-        if _type == 'h264/rtsp':
+        framerate = 25 if self._name == "front" else 12
+        framerate = parse_option(self._name + ".camera.framerate", int, framerate, errors=_errors, **kwargs)
+        out_width, out_height = [int(x) for x in parse_option(self._name + ".camera.shape", str, "320x240", errors=_errors, **kwargs).split("x")]
+        if _type == "h264/rtsp":
             config = {
-                'ip': (parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=_errors, **kwargs)),
-                'port': (parse_option(self._name + '.camera.port', int, 554, errors=_errors, **kwargs)),
-                'user': (parse_option(self._name + '.camera.user', str, 'user1', errors=_errors, **kwargs)),
-                'password': (parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=_errors, **kwargs)),
-                'path': (parse_option(self._name + '.camera.path', str, '/Streaming/Channels/102', errors=_errors, **kwargs)),
-                'height': out_height,
-                'width': out_width,
-                'framerate': framerate
+                "ip": (parse_option(self._name + ".camera.ip", str, "192.168.1.64", errors=_errors, **kwargs)),
+                "port": (parse_option(self._name + ".camera.port", int, 554, errors=_errors, **kwargs)),
+                "user": (parse_option(self._name + ".camera.user", str, "user1", errors=_errors, **kwargs)),
+                "password": (parse_option(self._name + ".camera.password", str, "HaikuPlot876", errors=_errors, **kwargs)),
+                "path": (parse_option(self._name + ".camera.path", str, "/Streaming/Channels/102", errors=_errors, **kwargs)),
+                "height": out_height,
+                "width": out_width,
+                "framerate": framerate,
             }
         else:
-            _type = 'h264/udp'
-            config = {
-                'port': (parse_option(self._name + '.camera.port', int, 5000, errors=_errors, **kwargs)),
-                'height': out_height,
-                'width': out_width,
-                'framerate': framerate
-            }
+            _type = "h264/udp"
+            config = {"port": (parse_option(self._name + ".camera.port", int, 5000, errors=_errors, **kwargs)), "height": out_height, "width": out_width, "framerate": framerate}
         self._shape = (out_height, out_width, 3)
-        self._ptz = parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=_errors, **kwargs)
+        self._ptz = parse_option(self._name + ".camera.ptz.enabled", int, 1, errors=_errors, **kwargs)
         _command = gst_commands.get(_type).format(**config)
         self._sink = create_image_source(self._name, shape=self._shape, command=_command)
         self._sink.add_listener(self._publish)
@@ -107,7 +98,7 @@ class ConfigurableImageGstSource(Configurable):
 
 
 class CameraPtzThread(threading.Thread):
-    def __init__(self, url, user, password, preset_duration_sec=3.8, scale=100, speed=1., flip=(1, 1)):
+    def __init__(self, url, user, password, preset_duration_sec=3.8, scale=100, speed=1.0, flip=(1, 1)):
         super(CameraPtzThread, self).__init__()
         self._quit_event = multiprocessing.Event()
         self._lock = threading.Lock()
@@ -150,32 +141,31 @@ class CameraPtzThread(threading.Thread):
     def _perform(self, operation):
         # Goto a preset position takes time.
         prev = self._previous
-        if type(prev) == tuple and prev[0] == 'goto_home' and time.time() - prev[1] < self._preset_duration:
+        if type(prev) == tuple and prev[0] == "goto_home" and time.time() - prev[1] < self._preset_duration:
             pass
         elif operation != prev:
             ret = self._run(operation)
             if ret and ret.status_code != 200:
-                logger.warning(
-                    f"Got status {ret.status_code} on operation {operation}.")
+                logger.warning(f"Got status {ret.status_code} on operation {operation}.")
 
     def _run(self, operation):
         ret = None
         prev = self._previous
-        if type(operation) == tuple and operation[0] == 'set_home':
-            x_count = prev[1] if type(prev) == tuple and prev[0] == 'set_home' else 0
+        if type(operation) == tuple and operation[0] == "set_home":
+            x_count = prev[1] if type(prev) == tuple and prev[0] == "set_home" else 0
             if x_count >= 40 and operation[1]:
                 logger.info("Saving ptz home position.")
-                self._previous = 'ptz_home_set'
-                ret = requests.put(self._url + '/homeposition', auth=self._auth)
+                self._previous = "ptz_home_set"
+                ret = requests.put(self._url + "/homeposition", auth=self._auth)
             else:
-                self._previous = ('set_home', x_count + 1)
-        elif operation == 'goto_home':
-            self._previous = ('goto_home', time.time())
-            ret = requests.put(self._url + '/homeposition/goto', auth=self._auth)
+                self._previous = ("set_home", x_count + 1)
+        elif operation == "goto_home":
+            self._previous = ("goto_home", time.time())
+            ret = requests.put(self._url + "/homeposition/goto", auth=self._auth)
         else:
             pan, tilt = operation
             self._previous = operation
-            ret = requests.put(self._url + '/continuous', data=self._ptz_xml.format(**dict(pan=pan, tilt=tilt)), auth=self._auth)
+            ret = requests.put(self._url + "/continuous", data=self._ptz_xml.format(**dict(pan=pan, tilt=tilt)), auth=self._auth)
         return ret
 
     def add(self, command):
@@ -193,12 +183,12 @@ class CameraPtzThread(threading.Thread):
                 cmd = self._queue.get(block=True, timeout=0.050)
                 with self._lock:
                     operation = (0, 0)
-                    if cmd.get('set_home', 0):
-                        operation = ('set_home', cmd.get('goto_home', 0))
-                    elif cmd.get('goto_home', 0):
-                        operation = 'goto_home'
-                    elif 'pan' in cmd and 'tilt' in cmd:
-                        operation = (self._norm(cmd.get('pan')) * self._flip[0], self._norm(cmd.get('tilt')) * self._flip[1])
+                    if cmd.get("set_home", 0):
+                        operation = ("set_home", cmd.get("goto_home", 0))
+                    elif cmd.get("goto_home", 0):
+                        operation = "goto_home"
+                    elif "pan" in cmd and "tilt" in cmd:
+                        operation = (self._norm(cmd.get("pan")) * self._flip[0], self._norm(cmd.get("tilt")) * self._flip[1])
                     self._perform(operation)
             except queue.Empty:
                 pass
@@ -226,22 +216,22 @@ class PTZCamera(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        _type = parse_option(self._name + '.camera.type', str, 'h264/rtsp', errors=errors, **kwargs)
-        ptz_enabled = _type == 'h264/rtsp' and parse_option(self._name + '.camera.ptz.enabled', int, 1, errors=errors, **kwargs)
+        _type = parse_option(self._name + ".camera.type", str, "h264/rtsp", errors=errors, **kwargs)
+        ptz_enabled = _type == "h264/rtsp" and parse_option(self._name + ".camera.ptz.enabled", int, 1, errors=errors, **kwargs)
         if ptz_enabled:
-            _server = parse_option(self._name + '.camera.ip', str, '192.168.1.64', errors=errors, **kwargs)
-            _user = parse_option(self._name + '.camera.user', str, 'user1', errors=errors, **kwargs)
-            _password = parse_option(self._name + '.camera.password', str, 'HaikuPlot876', errors=errors, **kwargs)
-            _protocol = 'http'
-            _path = '/ISAPI/PTZCtrl/channels/1'
-            _flip = 'tilt'
+            _server = parse_option(self._name + ".camera.ip", str, "192.168.1.64", errors=errors, **kwargs)
+            _user = parse_option(self._name + ".camera.user", str, "user1", errors=errors, **kwargs)
+            _password = parse_option(self._name + ".camera.password", str, "HaikuPlot876", errors=errors, **kwargs)
+            _protocol = "http"
+            _path = "/ISAPI/PTZCtrl/channels/1"
+            _flip = "tilt"
             _speed = 1.9
             _flipcode = [1, 1]
-            if _flip in ('pan', 'tilt', 'both'):
-                _flipcode[0] = -1 if _flip in ('pan', 'both') else 1
-                _flipcode[1] = -1 if _flip in ('tilt', 'both') else 1
-            _port = 80 if _protocol == 'http' else 443
-            _url = '{protocol}://{server}:{port}{path}'.format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
+            if _flip in ("pan", "tilt", "both"):
+                _flipcode[0] = -1 if _flip in ("pan", "both") else 1
+                _flipcode[1] = -1 if _flip in ("tilt", "both") else 1
+            _port = 80 if _protocol == "http" else 443
+            _url = "{protocol}://{server}:{port}{path}".format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
             logger.info("PTZ camera url={}.".format(_url))
             logger.info(f"PTZ camera url={_url}.")
             if self._worker is None:

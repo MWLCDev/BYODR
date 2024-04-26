@@ -8,7 +8,6 @@ import configparser
 import glob
 import multiprocessing
 import signal
-import subprocess  # to run the python script
 from concurrent.futures import ThreadPoolExecutor
 
 import tornado.ioloop
@@ -115,34 +114,6 @@ class TeleopApplication(Application):
                 self._config_hash = _hash
 
 
-def run_python_script(script_name):
-    import subprocess
-
-    result = subprocess.check_output(["python3", script_name], universal_newlines=True)
-    result_list = result.strip().split("\n")
-    return result_list
-
-
-class RunDrawMapPython(tornado.web.RequestHandler):
-    """Run the python script file and get the response of the sessions date and the Create .HTML file for them to be sent to JS function"""
-
-    async def get(self):
-        script_name = "./htm/plot_training_sessions_map/draw_training_sessions.py"
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            future = executor.submit(run_python_script, script_name)
-            # Use the `await` keyword to asynchronously wait for the result.
-            result_list = await tornado.ioloop.IOLoop.current().run_in_executor(None, future.result)
-
-            # Print the list before sending it to the JavaScript function.
-            logger.info("Python script result: ", result_list)
-
-            # Convert the list to a string representation to send it back to the client.
-            result_str = "\n".join(result_list)
-            # logger.info(f"That is coming from the JSON list {result_str}")
-            self.write(result_str)
-            self.finish()
-
-
 class RunGetSSIDPython(tornado.web.RequestHandler):
     """Run a python script to get the SSID of current robot"""
 
@@ -226,12 +197,7 @@ def main():
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
-    parser.add_argument(
-        "--routes",
-        type=str,
-        default="/routes",
-        help="Directory with the navigation routes.",
-    )
+    parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
     parser.add_argument("--sessions", type=str, default="/sessions", help="Sessions directory.")
     args = parser.parse_args()
 
@@ -239,13 +205,7 @@ def main():
     _mongo = MongoLogBox(MongoClient())
     _mongo.ensure_indexes()
 
-    route_store = ReloadableDataSource(
-        FileSystemRouteDataSource(
-            directory=args.routes,
-            fn_load_image=_load_nav_image,
-            load_instructions=False,
-        )
-    )
+    route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
     application = TeleopApplication(event=quit_event, config_dir=args.config)
@@ -259,12 +219,7 @@ def main():
 
     logbox_user = SharedUser()
     logbox_state = SharedState(
-        channels=(
-            camera_front,
-            (lambda: pilot.get()),
-            (lambda: vehicle.get()),
-            (lambda: inference.get()),
-        ),
+        channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())),
         hz=16,
     )
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
@@ -272,16 +227,7 @@ def main():
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-    gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
-    threads = [
-        camera_front,
-        camera_rear,
-        pilot,
-        vehicle,
-        inference,
-        logbox_thread,
-        package_thread,
-    ]
+    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread]
 
     if quit_event.is_set():
         return 0
@@ -291,15 +237,7 @@ def main():
     teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
-    zm_client = JSONZmqClient(
-        urls=[
-            "ipc:///byodr/pilot_c.sock",
-            "ipc:///byodr/inference_c.sock",
-            "ipc:///byodr/vehicle_c.sock",
-            "ipc:///byodr/relay_c.sock",
-            "ipc:///byodr/camera_c.sock",
-        ]
-    )
+    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
 
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
@@ -367,20 +305,13 @@ def main():
             # When we receive commands without throttle in them, we reset the current throttle value to 0
             else:
                 current_throttle = 0
-                teleop_publish(
-                    {
-                        "steering": 0.0,
-                        "throttle": 0,
-                        "time": timestamp(),
-                        "navigator": {"route": None},
-                        "button_b": 1,
-                    }
-                )
+                teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
 
     def teleop_publish(cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=route_store.get_selected_route())
         # print(cmd)
+        # print(vehicle.get())
         teleop_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -401,10 +332,6 @@ def main():
                     r"/mobile_controller_ui",
                     MobileControllerUI,
                 ),  # Navigate to Mobile controller UI
-                (
-                    r"/run_draw_map_python",
-                    RunDrawMapPython,
-                ),  # Run python script to get list of maps
                 (
                     # Getting the commands from the mobile controller (commands are sent in JSON)
                     r"/ws/send_mobile_controller_commands",
