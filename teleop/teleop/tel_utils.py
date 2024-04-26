@@ -27,16 +27,20 @@ class OverviewConfidence:
         try:
             while self.running:
                 inference_messages = self.inference.get()
-                for inf_message in inference_messages:
-                    # Process paired messages
+                vehicle_messages = self.vehicle.get()
+                # Use zip to iterate over both lists simultaneously.
+                for inf_message, veh_message in zip(inference_messages, vehicle_messages):
                     steer_confidence = inf_message.get("steer_confidence")
-                    latitude = self.rut_gps_poller.get_latitude()
-                    longitude = self.rut_gps_poller.get_longitude()
+                    latitude = veh_message.get("latitude_geo")
+                    longitude = veh_message.get("longitude_geo")
+                    # Check if all required data is present before appending.
                     if steer_confidence is not None and latitude is not None and longitude is not None:
                         self.merged_list.append([round(steer_confidence, 5), latitude, longitude])
                         time.sleep(self.sleep_time)
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
+
+
 
     def process_data(self):
         self.cleaned_list = self.clean_list(self.merged_list)
