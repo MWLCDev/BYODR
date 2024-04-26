@@ -41,7 +41,7 @@ def pub_init():
     cmd = {
         'throttle': 0,
         'steering': 0,
-        'button_b': 0,
+        'button_b': 1,
         'time': timestamp(),
         'navigator': {'route': None}
     }
@@ -63,8 +63,8 @@ def main():
         # Edges on the screen beyond which robot should start moving to keep distance
         left_edge = 310   # Left edge, away from the left end of the screen
         right_edge = 330  # Right edge, away from the right end if image width = 640p
-        bottom_edge = 220    # Bot edge, away from the top end if image height = 480p
-        safe_edge = 260
+        bottom_edge = 180    # Bot edge, away from the top end if image height = 480p
+        safe_edge = 220
     # Default control commands
         request = teleop.get()
         try:
@@ -84,7 +84,7 @@ def main():
             cmd = {
                 'throttle': 0,
                 'steering': 0,
-                'button_b': 0,
+                'button_b': 1,
                 'time': timestamp(),
                 'navigator': {'route': None}
             }
@@ -128,6 +128,7 @@ def main():
                             box_center = int((x1 + x2) / 2)   # Center of the bbox
                             box_bottom = int(y2)  # Bottom edge of the bbox
                             height = int(y2 - y1) # Height of the bbox
+                            width = int(x2 - x1)
                             logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
                     except:
                         if (box.xyxy==boxes.xyxy[0]).all:
@@ -137,17 +138,22 @@ def main():
                             box_center = int((x1 + x2) / 2)   # Center of the bbox
                             box_bottom = int(y2)  # Bottom edge of the bbox
                             height = int(y2 - y1) # Height of the bbox
+                            width = int(x2 - x1)
                             logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
                 # throttle: 0 to 1
                 # steering: -1 to 1, - left, + right
                 # Bbox center crossed the top edge
                 if height <= bottom_edge or box_bottom <= bottom_edge:
                     # Linear increase of throttle
-                    throttle = (-(0.01) * height) + 2.4 # 0.2 minimum at 220 heigh, 1 max at 140p height
+                    throttle = (-(0.02) * height) + 3.8 # 0.2 minimum at 220 heigh, 1 max at 140p height
                     if throttle > 1:
                         throttle = 1
                 else:
                     throttle = 0
+
+                # Assuming the person is behind an obstacle
+                if height <= 70 or 1.5 >= height/width >= 5:
+                    clear_path = 0
 
                 # Bbox center crossed the left edge
                 if box_center <= left_edge:
@@ -185,7 +191,7 @@ def main():
             
             if clear_path <= 3:
                 throttle = 0
-                logger.info(f"Detected person too close. {clear_path} / 3 frames with clear path")
+                logger.info(f"Path obstructed. {clear_path} / 3 frames with clear path")
 
             # Defining the control command to be sent to Teleop
             cmd = {
