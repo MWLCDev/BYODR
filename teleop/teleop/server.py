@@ -148,17 +148,14 @@ class ControlServerSocket(websocket.WebSocketHandler):
 
 
 class ConfidenceHandler(websocket.WebSocketHandler):
-    def initialize(self, inference_s, vehicle_s, rut_gps_poller):
+    def initialize(self, inference_s, vehicle_s):
         self.inference = inference_s
         self.vehicle = vehicle_s
-        self.rut_gps_poller = rut_gps_poller
 
     def open(self):
         self.start_time = time.clock()
         logger.info("Confidence websocket connection opened.")
-        self.runner = OverviewConfidence(
-            self.inference, self.vehicle, self.rut_gps_poller
-        )
+        self.runner = OverviewConfidence(self.inference, self.vehicle)
         self.write_message("Connection established.")
 
     def send_loading_message(self):

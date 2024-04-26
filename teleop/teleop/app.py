@@ -281,7 +281,6 @@ def main():
         inference,
         logbox_thread,
         package_thread,
-        gps_poller_snmp,
     ]
 
     if quit_event.is_set():
@@ -420,7 +419,6 @@ def main():
                     dict(
                         inference_s=inference,
                         vehicle_s=vehicle,
-                        rut_gps_poller=gps_poller_snmp,
                     ),
                 ),
                 (

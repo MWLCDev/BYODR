@@ -1,7 +1,5 @@
-import collections
 import glob
 import logging
-import multiprocessing
 import os
 import threading
 import time
@@ -11,21 +9,17 @@ import folium
 import numpy as np
 import pandas as pd
 
-# needs to be installed on the router
-from pysnmp.hlapi import *
-
 logger = logging.getLogger(__name__)
 
 
 class OverviewConfidence:
-    def __init__(self, inference, vehicle, rut_gps_poller):
+    def __init__(self, inference, vehicle):
         self.inference = inference
         self.vehicle = vehicle
         self.running = False
         self.merged_list = []
         self.cleaned_list = []
         self.coloured_list = []
-        self.rut_gps_poller = rut_gps_poller
         self.sleep_time = 0.2
 
     def record_data(self):
@@ -232,7 +226,6 @@ class GpsPollerThreadSNMP(threading.Thread):
             tuple: A tuple containing the latitude and longitude as floats, or `None` if the request fails.
         """
         iterator = getCmd(
-            SnmpEngine(),
             CommunityData(self._community, mpModel=1),
             UdpTransportTarget((self._host, self._port)),
             ContextData(),
