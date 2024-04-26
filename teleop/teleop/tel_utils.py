@@ -1,7 +1,5 @@
-import collections
 import glob
 import logging
-import multiprocessing
 import os
 import threading
 import time
@@ -11,21 +9,17 @@ import folium
 import numpy as np
 import pandas as pd
 
-# needs to be installed on the router
-from pysnmp.hlapi import *
-
 logger = logging.getLogger(__name__)
 
 
 class OverviewConfidence:
-    def __init__(self, inference, vehicle, rut_gps_poller):
+    def __init__(self, inference, vehicle):
         self.inference = inference
         self.vehicle = vehicle
         self.running = False
         self.merged_list = []
         self.cleaned_list = []
         self.coloured_list = []
-        self.rut_gps_poller = rut_gps_poller
         self.sleep_time = 0.2
 
     def record_data(self):
@@ -33,16 +27,20 @@ class OverviewConfidence:
         try:
             while self.running:
                 inference_messages = self.inference.get()
-                for inf_message in inference_messages:
-                    # Process paired messages
+                vehicle_messages = self.vehicle.get()
+                # Use zip to iterate over both lists simultaneously.
+                for inf_message, veh_message in zip(inference_messages, vehicle_messages):
                     steer_confidence = inf_message.get("steer_confidence")
-                    latitude = self.rut_gps_poller.get_latitude()
-                    longitude = self.rut_gps_poller.get_longitude()
+                    latitude = veh_message.get("latitude_geo")
+                    longitude = veh_message.get("longitude_geo")
+                    # Check if all required data is present before appending.
                     if steer_confidence is not None and latitude is not None and longitude is not None:
                         self.merged_list.append([round(steer_confidence, 5), latitude, longitude])
                         time.sleep(self.sleep_time)
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
+
+
 
     def process_data(self):
         self.cleaned_list = self.clean_list(self.merged_list)
@@ -176,93 +174,3 @@ class OverviewConfidence:
             self.running = False
             self.record_data_thread.join()
 
-
-class GpsPollerThreadSNMP(threading.Thread):
-    """
-    A thread class that continuously polls GPS coordinates using SNMP and stores
-    the latest value in a queue. It can be used to retrieve the most recent GPS
-    coordinates that the SNMP-enabled device has reported.
-    https://wiki.teltonika-networks.com/view/RUT955_SNMP
-
-    Attributes:
-        _host (str): IP address of the SNMP-enabled device (e.g., router).
-        _community (str): SNMP community string for authentication.
-        _port (int): Port number where SNMP requests will be sent.
-        _quit_event (threading.Event): Event signal to stop the thread.
-        _queue (collections.deque): Thread-safe queue storing the latest GPS data.
-    Methods:
-        quit: Signals the thread to stop running.
-        get_latitude: Retrieves the latest latitude from the queue.
-        get_longitude: Retrieves the latest longitude from the queue.
-        fetch_gps_coordinates: Fetches GPS coordinates from the SNMP device.
-        run: Continuously polls for GPS coordinates until the thread is stopped.
-    """
-
-    # There was alternative solution with making a post request and fetch a new token https://wiki.teltonika-networks.com/view/Monitoring_via_JSON-RPC_windows_RutOS#GPS_Data
-    def __init__(self, host, community="public", port=161):
-        super(GpsPollerThreadSNMP, self).__init__()
-        self._host = host
-        self._community = community
-        self._port = port
-        self._quit_event = threading.Event()
-        self._queue = collections.deque(maxlen=1)
-
-    def quit(self):
-        self._quit_event.set()
-
-    def get_latitude(self, default=0.0):
-        """
-        Args:
-            default (float): The default value to return if the queue is empty. Defaults to 0.0.
-
-        Returns:
-            float: The latest latitude value, or the default value if no data is available.
-        """
-        return self._queue[0][0] if len(self._queue) > 0 else default
-
-    def get_longitude(self, default=0.0):
-        return self._queue[0][1] if len(self._queue) > 0 else default
-
-    def fetch_gps_coordinates(self):
-        """
-        Sends an SNMP request to the device to retrieve the current
-        latitude and longitude values. If successful, the values are returned.
-
-        Returns:
-            tuple: A tuple containing the latitude and longitude as floats, or `None` if the request fails.
-        """
-        iterator = getCmd(
-            SnmpEngine(),
-            CommunityData(self._community, mpModel=1),
-            UdpTransportTarget((self._host, self._port)),
-            ContextData(),
-            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.1.0")),  # GPS Latitude
-            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.2.0")),  # GPS Longitude
-        )
-
-        errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
-
-        if errorIndication:
-            logger.error(f"Error: {errorIndication}")
-            return None
-        elif errorStatus:
-            logger.error(f"Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}")
-            return None
-        else:
-            latitude, longitude = [float(varBind[1]) for varBind in varBinds]
-            return latitude, longitude
-
-    def run(self):
-        """
-        The main method of the thread that runs continuously until the quit event is set.
-        """
-        while not self._quit_event.is_set():
-            try:
-                coordinates = self.fetch_gps_coordinates()
-                if coordinates:
-                    self._queue.appendleft(coordinates)
-                    # logger.info(f"Latitude: {coordinates[0]}, Longitude: {coordinates[1]}")
-                    time.sleep(0.100)  # Interval for polling
-            except Exception as e:
-                logger.error(f"An error occurred: {e}")
-                time.sleep(10)
