@@ -55,16 +55,16 @@ def _config():
     return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
 
 def main():
-        global clear_path
-        clear_path = 4
-        global no_human_counter
         throttle = 0
         steering = 0
         # Edges on the screen beyond which robot should start moving to keep distance
         left_edge = 310   # Left edge, away from the left end of the screen
         right_edge = 330  # Right edge, away from the right end if image width = 640p
-        bottom_edge = 300    # Bot edge, away from the top end if image height = 480p
-        safe_edge = 320
+        bottom_edge = 450    # Bot edge, away from the top end if image height = 480p
+        safe_edge = 480
+        global no_human_counter
+        global clear_path
+        clear_path = 4
     # Default control commands
         request = teleop.get()
         try:
@@ -145,7 +145,7 @@ def main():
                 # Bbox center crossed the top edge
                 if height <= bottom_edge or box_bottom <= bottom_edge:
                     # Linear increase of throttle
-                    throttle = (-(0.02) * height) + 6.2 # 0.2 minimum at 300 heigh, 1 max at 260p height
+                    throttle = (-(0.008) * height) + 3.88 # 0.2 minimum at 460 heigh, 1 max at 360 height
                     if throttle > 1:
                         throttle = 1
                 else:
@@ -193,6 +193,7 @@ def main():
                 throttle = 0
                 logger.info(f"Path obstructed. {clear_path} / 3 frames with clear path")
 
+            
             # Defining the control command to be sent to Teleop
             cmd = {
                 'throttle':throttle,
@@ -215,7 +216,7 @@ if __name__ == "__main__":
     errors = []
     _config = _config()
     stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
-    stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103"
+    stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103"
     results = model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True)
     logger.info(f"Following ready")
     # results = model.track(source='testImg/.', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
