@@ -150,40 +150,44 @@ def create_stream(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description="Camera web-socket server.")
-    parser.add_argument("--config", type=str, default="/config/stream.ini", help="Configuration file.")
-    parser.add_argument("--port", type=int, default=9101, help="Socket port.")
+    parser.add_argument("--config", type=str, required=True, help="Configuration file.")
+    parser.add_argument("--port", type=int, default=9101, help="Port for the web server.")
+    parser.add_argument("--ip-ending", type=str, required=True, help="Last octet of the IP address.")
     args = parser.parse_args()
 
     config_file = args.config
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        video_stream, socket_type = create_stream(config_file)
-        application = CameraApplication(stream=video_stream, event=quit_event)
-
-        threads = [threading.Thread(target=application.run)]
-        if quit_event.is_set():
-            return 0
-
-        [t.start() for t in threads]
-
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-        io_loop = ioloop.IOLoop.instance()
-        class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
-        web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
-        rear_server = web.HTTPServer(web_app, xheaders=True)
-        rear_server.bind(args.port)
-        rear_server.start()
-        logger.info("Web service started on port {}.".format(args.port))
-        io_loop.start()
-
-        logger.info("Waiting on threads to stop.")
-        [t.join() for t in threads]
-    else:
+    if not os.path.exists(config_file):
         shutil.copyfile("/app/stream/camera.template", config_file)
-        logger.info("Created a new camera configuration file from template.")
-        while not quit_event.is_set():
-            time.sleep(1)
+        logger.info(f"Created a new camera configuration file from template at {config_file}")
+
+    change_segment_config(config_file, args.ip_ending)
+
+    video_stream, socket_type = create_stream(config_file)
+    application = CameraApplication(stream=video_stream, event=quit_event)
+
+    threads = [threading.Thread(target=application.run)]
+    if quit_event.is_set():
+        return 0
+
+    [t.start() for t in threads]
+
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+    io_loop = ioloop.IOLoop.instance()
+    class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
+    web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
+    rear_server = web.HTTPServer(web_app, xheaders=True)
+    rear_server.bind(args.port)
+    rear_server.start()
+    logger.info("Web service started on port {}.".format(args.port))
+    io_loop.start()
+
+    logger.info("Waiting on threads to stop.")
+    [t.join() for t in threads]
+
+    while not quit_event.is_set():
+        time.sleep(1)
 
 
 if __name__ == "__main__":
