@@ -51,7 +51,7 @@ services:
     user: root
     restart: always
     network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9101", "--config", "/config/camera0.ini"]
+    command: ['python3', '-m', 'stream.camera', '--port', '9101', '--config', '/config/camera0.ini', '--ip-ending', '64']
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
@@ -63,7 +63,7 @@ services:
     user: root
     restart: always
     network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9102", "--config", "/config/camera1.ini"]
+    command: ['python3', '-m', 'stream.camera', '--port', '9102', '--config', '/config/camera1.ini', '--ip-ending', '65']
   stream2:
     build:
       context: .
