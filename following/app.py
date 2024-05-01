@@ -1,225 +1,139 @@
 import os
 import glob
 import configparser
-
 import logging
 import multiprocessing
-
-# yolov8 library
 from ultralytics import YOLO
-
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
 from byodr.utils.option import parse_option
 
-quit_event = multiprocessing.Event()
+# Constants
+LEFT_EDGE = 310
+RIGHT_EDGE = 330
+BOTTOM_EDGE = 450
+SAFE_EDGE = 475
+MAX_HUMAN_ABSENCE_FRAMES = 3
+MIN_CLEAR_PATH_FRAMES = 3
 
 
-# Choosing the trained model
-model = YOLO('customDefNano.pt')
-# model = YOLO('yolov8n.pt')
+class FollowingController:
+    def __init__(self, model_path, config_path="/config"):
+        self.quit_event = multiprocessing.Event()
+        self.model = YOLO(model_path)
+        self.no_human_counter = 0
+        self.clear_path = 4
+        self.logger = self.setup_logger()
+        self.config = self.load_config(config_path)
+        self.teleop = self.setup_teleop_receiver()
+        self.publisher = self.setup_publisher()
 
-no_human_counter = 0
+    def setup_logger(self):
+        logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
+        logger = logging.getLogger(__name__)
+        logger.setLevel(logging.INFO)
+        return logger
 
-# Declaring the logger
-logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
-logging.getLogger().setLevel(logging.INFO)
-logger = logging.getLogger(__name__)
+    def load_config(self, path):
+        parser = configparser.ConfigParser()
+        [parser.read(f) for f in glob.glob(os.path.join(path, "*.ini"))]
+        return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
 
-# Declaring the socket to receive messages from Teleop
-teleop = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event, hwm=1,)
-teleop.start()
+    def setup_teleop_receiver(self):
+        teleop = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=self.quit_event, hwm=1)
+        teleop.start()
+        return teleop
 
-# Declaring the socket to send control commands
-following_publisher = JSONPublisher(
-    url="ipc:///byodr/following.sock", topic="aav/following/controls"
-)
-logger.info(f"Initializing the Following service")
+    def setup_publisher(self):
+        return JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
 
-# Sending a subscriptable object to teleop
-def pub_init():
-    cmd = {
-        'throttle': 0,
-        'steering': 0,
-        'button_b': 1,
-        'time': timestamp(),
-        'navigator': {'route': None}
-    }
-    # Publishing the command to Teleop
-    logger.info(f"Sending command to teleop: {cmd}")
-    following_publisher.publish(cmd)
+    def publish_command(self, throttle, steering, button_b=1):
+        cmd = {"throttle": throttle, "steering": steering, "button_b": button_b, "time": timestamp(), "navigator": {"route": None}}
+        self.publisher.publish(cmd)
+        self.logger.info(f"Sending command to teleop: {cmd}")
 
-def _config():
-    parser = configparser.ConfigParser()
-    [parser.read(_f) for _f in glob.glob(os.path.join("/config", "*.ini"))]
-    return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
+    def analyze_frame(self, boxes):
+        clear_path = self.clear_path
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0,:]
+            if y2 >= SAFE_EDGE or (y2 - y1) >= SAFE_EDGE:
+                return 0
+        if self.no_human_counter >= MAX_HUMAN_ABSENCE_FRAMES:
+            return 0
+        clear_path += 1
+        return clear_path
 
-def main():
-        throttle = 0
-        steering = 0
-        # Edges on the screen beyond which robot should start moving to keep distance
-        left_edge = 310   # Left edge, away from the left end of the screen
-        right_edge = 330  # Right edge, away from the right end if image width = 640p
-        bottom_edge = 450    # Bot edge, away from the top end if image height = 480p
-        safe_edge = 480
-        global no_human_counter
-        global clear_path
-        clear_path = 4
-    # Default control commands
-        request = teleop.get()
-        try:
-            if request is None or request['following'] == "Stop Following":
-                cmd = {
-                    'throttle': 0,
-                    'steering': 0,
-                    'button_b': 1,
-                    'time': timestamp(),
-                    'navigator': {'route': None}
-                }
-                # Publishing the command to Teleop
-                following_publisher.publish(cmd)
-                return
-        except:
-            logger.info("Failed to receive a 'Start' request from Teleop")
-            cmd = {
-                'throttle': 0,
-                'steering': 0,
-                'button_b': 1,
-                'time': timestamp(),
-                'navigator': {'route': None}
-            }
-            # Publishing the command to Teleop
-            following_publisher.publish(cmd)
-            return
-        # Initializing the recognition model
-        # Use model.predict for simple prediction, model.track for tracking (when multiple people are present)
-        # 'for' loop used when yolov8 model parameter stream = True
+    def control_logic(self, results):
         for r in results:
-            clear_path += 1
-            request = teleop.get()
-            if request is not None:
-                logger.info(f"Received request from Teleop:{request['following']}")
+            boxes = r.boxes.cpu().numpy()
+            self.clear_path = self.analyze_frame(boxes)
+            throttle, steering = self.decide_control(boxes)
+            request = self.teleop.get()
             try:
-                if request is not None and request['following'] == "Stop Following":
+                if request['following'] == "Stop Following":
+                    self.logger.info("Stopping Following")
+                    self.publish_command(0, 0)
                     return
             except:
-                logger.info("Failed to receive a 'Stop' request from Teleop")
-            boxes = r.boxes.cpu().numpy()       # Bounding boxes around the recognized objects
-            # img = r.orig_img                    # Original image (without bboxes, reshaping)
-            xyxy = boxes.xyxy                   # X and Y coordinates of the top left and bottom right corners of bboxes
+                pass
+            self.publish_command(throttle, steering)
 
-            if xyxy.size > 0:                   # If anything detected
+    def decide_control(self, boxes):
+        if not boxes.xyxy.size:
+            self.no_human_counter += 1
+            # self.logger.info(f"No person detected for: {self.no_human_counter} frames")
+            try:
+                return throttle, steering
+            except:
+                return 0, 0
 
-                no_human_counter = 0
+        throttle, steering = 0, 0
+        self.no_human_counter = 0
+        for box in boxes:
+            x1, y1, x2, y2 = box.xyxy[0,:]
+            box_center = (x1 + x2) / 2
+            box_bottom = y2
+            box_height = y2 - y1
+            self.logger.info(f"Bottom edge: {int(box_bottom)}, Center: {int(box_center)}, Height: {int(box_height)}")
+            if box_bottom <= BOTTOM_EDGE or box_height <= BOTTOM_EDGE:
+                throttle = max(0, min(1, ((-(0.008) * box_height) + 3.88)))
 
-                # Getting each coordinate of the bbox corners
-                for box in boxes:
-                    x1 = box.xyxy[0,0]
-                    y1 = box.xyxy[0,1]
-                    x2 = box.xyxy[0,2]
-                    y2 = box.xyxy[0,3]
-                    if int(y2) >= safe_edge or int(y2 - y1) >= safe_edge:
-                        clear_path = 0
-                    try:
-                        if box.id == boxes.id[0]:
-                            print("confs: ", boxes.conf, "IDs: ", boxes.id)
-                            print("following conf: ", box.conf, "with ID: ", box.id)
-                            # Calculating coordinates on the screen
-                            box_center = int((x1 + x2) / 2)   # Center of the bbox
-                            box_bottom = int(y2)  # Bottom edge of the bbox
-                            height = int(y2 - y1) # Height of the bbox
-                            width = int(x2 - x1)
-                            logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
-                    except:
-                        if (box.xyxy==boxes.xyxy[0]).all:
-                            print("confs: ", boxes.conf)
-                            print("following conf: ", box.conf)
-                            # Calculating coordinates on the screen
-                            box_center = int((x1 + x2) / 2)   # Center of the bbox
-                            box_bottom = int(y2)  # Bottom edge of the bbox
-                            height = int(y2 - y1) # Height of the bbox
-                            width = int(x2 - x1)
-                            logger.info(f"Bottom edge: {box_bottom}, Center: {box_center}, Height: {height}")
-                # throttle: 0 to 1
-                # steering: -1 to 1, - left, + right
-                # Bbox center crossed the top edge
-                if height <= bottom_edge or box_bottom <= bottom_edge:
-                    # Linear increase of throttle
-                    throttle = (-(0.008) * height) + 3.88 # 0.2 minimum at 460 heigh, 1 max at 360 height
-                    if throttle > 1:
-                        throttle = 1
-                else:
-                    throttle = 0
+            if box_center <= LEFT_EDGE:
+                steering = max(-1, min(1, (0.00238095 * box_center - 0.738095)))
+                steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
+                if throttle == 0:
+                    throttle = abs(steering)/1.15
+                    steering = -1
+            elif box_center >= RIGHT_EDGE:
+                steering = max(-1, min(1, (0.00238095 * box_center - 0.785714)))
+                steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
+                if throttle == 0:
+                    throttle = steering/1.15
+                    steering = 1
+        if self.clear_path <= MIN_CLEAR_PATH_FRAMES:
+            # self.logger.info(f"Path obstructed. {self.clear_path} / 3 frames with clear path")
+            throttle = 0
+        return throttle, steering
 
-                # Assuming the person is behind an obstacle
-                if height <= 70 or 1.5 >= height/width >= 5:
-                    clear_path = 0
+    def run(self):
+        self.publish_command(0, 0)  # Initialize with safe values
+        self.logger.info("Loading YOLOv8 model")
+        errors = []
+        _config = self.config
+        stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
+        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103"
+        while True:
+            request = self.teleop.get()
+            try:
+                if request['following'] == "Start Following":
+                    self.logger.info("Starting Following")
+                    results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False)
+                    self.control_logic(results)
+            except:
+                pass
+                
 
-                # Bbox center crossed the left edge
-                if box_center <= left_edge:
-                    # Linear increase of steering
-                    steering = ((0.00238095) * box_center - (0.738095))  # 0 minimum at 310p edge, 0.5 max at 100p 
-                    if steering < -0.5:
-                        steering = -0.5
-                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
-                    if throttle == 0:
-                        throttle = abs(steering)/1.15
-                        steering = -1
-                # Bbox center crossed the right edge
-                elif box_center >= right_edge:
-                    # Linear increase of steering
-                    steering = ((0.00238095) * box_center - (0.785714)) # 0 minimum at 330p edge, 0.5 max at 540p 
-                    if steering > 0.5:
-                        steering = 0.5
-                    steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5
-                    if throttle == 0:
-                        throttle = steering/1.15
-                        steering = 1
-                else:
-                    steering = 0
-
-            else:
-
-                no_human_counter += 1
-
-                logger.info(f"No human detected for {no_human_counter} frames")
-
-                if no_human_counter >= 3:
-                    throttle = 0
-                    steering = 0
-
-            
-            if clear_path <= 3:
-                throttle = 0
-                logger.info(f"Path obstructed. {clear_path} / 3 frames with clear path")
-
-            
-            # Defining the control command to be sent to Teleop
-            cmd = {
-                'throttle':throttle,
-                'steering':-steering,
-                # 'throttle':1,
-                # 'steering':0.1,
-                'button_b':1,
-                'time':timestamp(),
-                'navigator': {'route': None}
-            }
-            # Publishing the command to Teleop
-            logger.info(f"Sending command to teleop: {cmd}")
-            following_publisher.publish(cmd)
 
 if __name__ == "__main__":
-    pub_init()
-
-    logger.info(f"Loading YOLOv8 model")
-
-    errors = []
-    _config = _config()
-    stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
-    stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103"
-    results = model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True)
-    logger.info(f"Following ready")
-    # results = model.track(source='testImg/.', classes=0, stream=True, conf=0.3, max_det=3, persist=True)
-
-    while True:
-        main()
+    controller = FollowingController("customDefNano.pt")
+    controller.run()

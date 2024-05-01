@@ -332,15 +332,11 @@ def main():
             while stats == "Start Following":
                 # logger.info (stats)
                 ctrl = following.get()
-
                 if ctrl is not None:
                     ctrl["time"] = timestamp()
                     # logger.info(f"Message from Following: {ctrl}")
                     teleop_publish(ctrl)
-                #     prev_command = ctrl
-                # else:
-                #     teleop_publisher.publish(prev_command)}
-            # logger.info(stats)
+                    
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
