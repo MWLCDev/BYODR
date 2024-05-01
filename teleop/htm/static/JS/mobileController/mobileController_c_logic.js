@@ -105,7 +105,7 @@ function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
   else
     CTRL_STAT.throttleSteeringJson = {
       throttle: -(y).toFixed(3),
-      steering: Number(-((user_touch_X / (shapeHeight / Math.sqrt(3)))).toFixed(3)),
+      steering: Number((user_touch_X / (shapeHeight / Math.sqrt(3))).toFixed(3)),
       mobileInferenceState: getInferenceState,
     };
 }
