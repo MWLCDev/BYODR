@@ -15,7 +15,7 @@ START_HEIGHT = 450
 UNSAFE_HEIGHT = 475
 MAX_HUMAN_ABSENCE_FRAMES = 3
 MIN_CLEAR_PATH_FRAMES = 3
-SMOOTH_CONTROL_STEP = 0.15
+SMOOTH_CONTROL_STEP = 0.1
 
 
 class FollowingController:
@@ -84,11 +84,11 @@ class FollowingController:
             self.current_throttle += SMOOTH_CONTROL_STEP
         else:
             self.current_throttle = target_throttle                                         # Passing without smoothing if the difference is too small
-        if abs(self.current_steering) <= abs(target_steering) - SMOOTH_CONTROL_STEP:        # Steering can be negative or positive
-            self.current_steering += math.copysign(SMOOTH_CONTROL_STEP, target_steering)    # Making sure steering has the correct sign
-        else:
-            self.current_steering = target_steering
-        # self.current_steering = target_steering # steering is not being smoothed
+        # if abs(self.current_steering) <= abs(target_steering) - SMOOTH_CONTROL_STEP:        # Steering can be negative or positive
+        #     self.current_steering += math.copysign(SMOOTH_CONTROL_STEP, target_steering)    # Making sure steering has the correct sign
+        # else:
+        #     self.current_steering = target_steering
+        self.current_steering = target_steering # steering is not being smoothed
 
 
     def decide_control(self, boxes):
