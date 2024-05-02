@@ -3,6 +3,7 @@ import glob
 import configparser
 import logging
 import multiprocessing
+import math
 from ultralytics import YOLO
 from byodr.utils import timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
@@ -15,7 +16,7 @@ BOTTOM_EDGE = 450
 SAFE_EDGE = 475
 MAX_HUMAN_ABSENCE_FRAMES = 3
 MIN_CLEAR_PATH_FRAMES = 3
-SMOOTH_CONTROL_STEP = 0.1 # 10%
+SMOOTH_CONTROL_STEP = 0.15
 
 
 class FollowingController:
@@ -87,12 +88,12 @@ class FollowingController:
             self.publish_command(throttle, steering)
 
     def smooth_controls(self, target_throttle, target_steering):
-        if self.current_throttle <= target_throttle*(1-SMOOTH_CONTROL_STEP):
-            self.current_throttle += (SMOOTH_CONTROL_STEP * target_throttle)
+        if self.current_throttle <= (target_throttle - SMOOTH_CONTROL_STEP):                # Smoothing only if the difference is greater than the control step
+            self.current_throttle += SMOOTH_CONTROL_STEP
         else:
             self.current_throttle = target_throttle
-        if self.current_steering <= target_steering*(1-SMOOTH_CONTROL_STEP):
-            self.current_steering += (SMOOTH_CONTROL_STEP * target_steering)
+        if abs(self.current_steering) <= abs(target_steering) - SMOOTH_CONTROL_STEP:        # Steering can be negative or positive
+            self.current_steering += math.copysign(SMOOTH_CONTROL_STEP, target_steering)    # Making sure steering has the correct sign
         else:
             self.current_steering = target_steering
 
