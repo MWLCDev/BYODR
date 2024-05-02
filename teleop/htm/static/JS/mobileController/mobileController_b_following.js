@@ -3,11 +3,11 @@ class ToggleButtonHandler {
     this.toggleButton = document.getElementById(buttonId);
     this.checkSavedState();
     this.toggleButton.addEventListener('click', () => {
-      this.handleButtonClick();
-    });
-  }
+    this._followingState = "inactive";
 
-  checkSavedState(){
+  }
+  get getFollowingState() {
+    return this._followingState;
     console.log("Checking button state");
     if (sessionStorage.getItem("innerText") !== null){
       console.log("Button state restored")
