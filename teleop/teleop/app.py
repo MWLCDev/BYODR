@@ -518,6 +518,7 @@ def main():
                     MobileControllerCommands,
                     dict(fn_control=throttle_control),
                 ),
+                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
                 (
                     r"/switch_following",
                     FollowingHandler,
