@@ -146,9 +146,6 @@ class ToggleButtonHandler {
   }
 }
 
-// Usage
-const followingButtonHandler = new ToggleButtonHandler('toggleButton');
-
-// If needed to export
+const followingButtonHandler = new ToggleButtonHandler('following_toggle_button');
 
 export { followingButtonHandler };
