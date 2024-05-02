@@ -9,7 +9,7 @@ from byodr.utils.ipc import JSONPublisher, json_collector
 from byodr.utils.option import parse_option
 
 # Constants
-LEFT_EDGE = 310
+SCREEN_CENTER = 320
 RIGHT_EDGE = 330
 BOTTOM_EDGE = 450
 SAFE_EDGE = 475
@@ -126,6 +126,10 @@ class FollowingController:
             elif box_center >= RIGHT_EDGE:
                 steering = max(-1, min(1, (0.00238095 * box_center - 0.785714)))
                 steering = steering*(1.15-0.75*throttle)    #max steering 0.2-0.5 depending on throttle value
+            if box_center < SCREEN_CENTER:      # left = negative steering
+                steering = min(0, max(-0.55, (0.0025 * box_center - 0.8)))  # 0 at 320p; 0.55 (max) at 100p
+            elif box_center > SCREEN_CENTER:    # right = positive steering
+                steering = max(0, min(0.55, (0.0025 * box_center - 0.8)))   # 0 at 320p; 0.55 (max) at 540p
                 if throttle == 0:
                     throttle = steering/1.15
                     steering = 1
