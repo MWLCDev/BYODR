@@ -1,12 +1,10 @@
 //Shared State variables that goes between the files/modules used
 
-import { Dot } from "./mobileController_b_shape_dot.js"
 import { topTriangle} from "./mobileController_b_shape_triangle.js"
 
 class MobileControllerState {
   //The starting y coord when the triangles are relocated ()
   #initialYOffset = 0;
-  #cursorFollowingDot = new Dot();
   #selectedTriangle = null;
   // Hold the current value for steering and throttle to be sent through the websocket
   // At first we send a default value
