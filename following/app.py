@@ -11,8 +11,8 @@ from byodr.utils.option import parse_option
 
 # Constants
 SCREEN_CENTER = 320
-START_HEIGHT = 300
-UNSAFE_HEIGHT = 320
+START_HEIGHT = 470
+UNSAFE_HEIGHT = 475
 MAX_HUMAN_ABSENCE_FRAMES = 3
 MIN_CLEAR_PATH_FRAMES = 3
 SMOOTH_CONTROL_STEP = 0.1
@@ -66,7 +66,7 @@ class FollowingController:
 
     def control_logic(self, results):
         for r in results:                                     # Running the loop for each frame of the stream
-            boxes = r.boxes.cpu().numpy()                     # List of bounding boxes in the frame
+            boxes = r.boxes.cpu().numpy()                    # List of bounding boxes in the frame
             self.clear_path = self.safety_feature(boxes)      # Checking for obstructions
             throttle, steering = self.decide_control(boxes)   # Calculating control commands based on the results of image detection
             request = self.teleop.get()                       # Checking for request to stop following
@@ -84,11 +84,11 @@ class FollowingController:
             self.current_throttle += SMOOTH_CONTROL_STEP
         else:
             self.current_throttle = target_throttle                                         # Passing without smoothing if the difference is too small
-        # if abs(self.current_steering) <= abs(target_steering) - SMOOTH_CONTROL_STEP:        # Steering can be negative or positive
-        #     self.current_steering += math.copysign(SMOOTH_CONTROL_STEP, target_steering)    # Making sure steering has the correct sign
-        # else:
-        #     self.current_steering = target_steering
-        self.current_steering = target_steering # steering is not being smoothed
+        if abs(self.current_steering) <= abs(target_steering) - SMOOTH_CONTROL_STEP:        # Steering can be negative or positive
+            self.current_steering += math.copysign(SMOOTH_CONTROL_STEP, target_steering)    # Making sure steering has the correct sign
+        else:
+            self.current_steering = target_steering
+        # self.current_steering = target_steering # steering is not being smoothed
 
 
     def decide_control(self, boxes):
@@ -109,21 +109,21 @@ class FollowingController:
                     box_center = (x1 + x2) / 2
                     box_height = y2 - y1
                     box_width = x2 - x1
-                    self.logger.info(f"Box center: {int(box_center)}, Box height: {int(box_height)}")
+                    self.logger.info(f"Box center: {int(box_center)}, Box height: {int(box_height)}, Height/Width: {(box_height/box_width)}")
             except:
                 if (box.xyxy == boxes.xyxy[0]).all: # Get the first result on the list if ID was not assigned (first result has most confidence)
                     x1, y1, x2, y2 = box.xyxy[0,:]
                     box_center = (x1 + x2) / 2
                     box_height = y2 - y1
                     box_width = x2 - x1
-                    self.logger.info(f"Box center: {int(box_center)}, Box height: {int(box_height)}")
+                    self.logger.info(f"Box center: {int(box_center)}, Box height: {int(box_height)}, Height/Width: {(box_height/box_width)}")
             
             # if (box_height / box_width) >= 12:   # Person might be behind an obstruction if the bbox is too thin
             #     self.clear_path = 0             # Resetting the amount of frames with clear path
             
             # Smaller bbox height means the detected person is further away from the camera
             if box_height <= START_HEIGHT:                                  # Starting movement if person is far enough
-                throttle = max(0, min(1, ((-(0.02) * box_height) + 6.2))) # 0.2 at 450p; 1 at 350p height
+                throttle = max(0, min(1, ((-(0.008) * box_height) + 3.96))) # 0.2 at 450p; 1 at 350p height
 
             # Keeping the user in the center of the camera view
             if box_center < SCREEN_CENTER:      # left = negative steering
@@ -151,7 +151,7 @@ class FollowingController:
         errors = []
         _config = self.config
         stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
-        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103" # Setting dynamic URI of the stream
+        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream
         while True:
             request = self.teleop.get()                         # Checking for requests to start following
             try:
