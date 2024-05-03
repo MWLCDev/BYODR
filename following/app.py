@@ -11,8 +11,8 @@ from byodr.utils.option import parse_option
 
 # Constants
 SCREEN_CENTER = 320
-START_HEIGHT = 450
-UNSAFE_HEIGHT = 475
+START_HEIGHT = 300
+UNSAFE_HEIGHT = 320
 MAX_HUMAN_ABSENCE_FRAMES = 3
 MIN_CLEAR_PATH_FRAMES = 3
 SMOOTH_CONTROL_STEP = 0.1
@@ -123,7 +123,7 @@ class FollowingController:
             
             # Smaller bbox height means the detected person is further away from the camera
             if box_height <= START_HEIGHT:                                  # Starting movement if person is far enough
-                throttle = max(0, min(1, ((-(0.008) * box_height) + 3.88))) # 0.2 at 450p; 1 at 350p height
+                throttle = max(0, min(1, ((-(0.02) * box_height) + 6.2))) # 0.2 at 450p; 1 at 350p height
 
             # Keeping the user in the center of the camera view
             if box_center < SCREEN_CENTER:      # left = negative steering
@@ -151,7 +151,7 @@ class FollowingController:
         errors = []
         _config = self.config
         stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config)
-        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream
+        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103" # Setting dynamic URI of the stream
         while True:
             request = self.teleop.get()                         # Checking for requests to start following
             try:
