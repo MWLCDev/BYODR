@@ -1,6 +1,6 @@
-import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
-import { bottomRectangle, topRectangle } from "./mobileController_b_shape_red_rectangle.js";
-import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js";
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { topRectangle, bottomRectangle } from "./mobileController_b_shape_red_rectangle.js"
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 import CTRL_STAT from './mobileController_z_state.js';
 
 const app = new PIXI.Application({
@@ -37,35 +37,53 @@ function changeTrianglesColor(color = "0x000000") {
   bottomTriangle.drawTriangle(undefined, color);
 }
 
-// Redraw function with added parameters to control display of triangles and reset their text.
-function redraw(yOffset = 0, showTopTriangle = true, showBottomTriangle = true, resetText = false) {
+function redraw(drawOption = "both", yOffset = 0, resetText = false) {
   app.stage.removeChildren();
 
+  // Define a function to conditionally draw triangles based on the drawOption
+  const drawTriangles = (option) => {
+    if (option === "top" || option === "both") {
+      topTriangle.drawTriangle(yOffset);
+      app.stage.addChild(topTriangle.graphics);
+    }
+
+    if (option === "bottom" || option === "both") {
+      bottomTriangle.drawTriangle(yOffset);
+      app.stage.addChild(bottomTriangle.graphics);
+    }
+  };
+
+  // Initially draw triangles based on the drawOption
+  drawTriangles(drawOption);
+
   if (resetText) {
-    topTriangle.changeText(topTriangle.currentSSID);
-    bottomTriangle.changeText("Backwards");
+    // Only change text for the topTriangle or both if CTRL_STAT.stateErrors is empty
+    if ((drawOption === "top" || drawOption === "both") && !CTRL_STAT.stateErrors) {
+      topTriangle.changeText(topTriangle.currentSSID);
+    }
+
+    // Always allow text change for the bottomTriangle when resetText is true
+    if (drawOption === "bottom" || drawOption === "both") {
+      bottomTriangle.changeText("Backwards");
+    }
+
+    // Recursive call to redraw with resetText set to false to avoid infinite loop
+    redraw(drawOption, yOffset, false);
   }
 
-  if (showTopTriangle) {
-    topTriangle.drawTriangle(yOffset);
-    app.stage.addChild(topTriangle.graphics);
-  }
-
-  if (showBottomTriangle) {
-    bottomTriangle.drawTriangle(yOffset);
-    app.stage.addChild(bottomTriangle.graphics);
-  }
-
-  // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
+  // Always add cursorFollowingDot to the stage if the WebSocket is open
   if (CTRL_STAT.isWebSocketOpen) {
-    app.stage.addChild(cursorFollowingDot.graphics);
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
   }
 }
 
 
-
 function drawTopTriangle_BottomRectangle(yOffset = 0) {
   app.stage.removeChildren();
+
+  // Hide the input boxes and all related objects when the triangles are pressed
+  MotorDataInput.hideInputElements();
+
   topTriangle.drawTriangle(yOffset);
   app.stage.addChild(topTriangle.graphics);
 
@@ -74,11 +92,15 @@ function drawTopTriangle_BottomRectangle(yOffset = 0) {
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
-    app.stage.addChild(cursorFollowingDot.graphics);
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
 function drawBottomTriangle_TopRectangle(yOffset = 0) {
   app.stage.removeChildren();
+  
+  // Hide the input boxes and all related objects when the triangles are pressed
+  MotorDataInput.hideInputElements();
+
   bottomTriangle.drawTriangle(yOffset);
   app.stage.addChild(bottomTriangle.graphics);
 
@@ -87,8 +109,8 @@ function drawBottomTriangle_TopRectangle(yOffset = 0) {
 
   // Always add cursorFollowingDot to the stage since it's instantiated at the beginning
   if (CTRL_STAT.isWebSocketOpen)
-    app.stage.addChild(cursorFollowingDot.graphics);
+    app.stage.addChild(CTRL_STAT.cursorFollowingDot.graphics);
 }
 
 
-export { app, changeTrianglesColor, drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw, removeTriangles };
+export { app, changeTrianglesColor, redraw, removeTriangles, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle }

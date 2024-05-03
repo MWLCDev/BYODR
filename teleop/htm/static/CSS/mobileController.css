@@ -28,7 +28,7 @@ canvas {
 
 input[type=range] {
   -webkit-appearance: none;
-  width: 50%;
+  width: 70%;
   margin: 10px 0;
 }
 
@@ -130,19 +130,14 @@ input[type=range]::-webkit-slider-thumb {
   align-items: center;
 }
 
-.scale-offset-input-box {
-  width: 50px;
-}
-
-.scale-offset-input-box-text {
-  margin-left: 10px;
-}
-
-.scale-offset-confirm-button-containers {
-  margin-top: 10px;
-  margin-left: 10px;
-  text-align: left;
-  position: relative;
+.scale-input-text,
+.offset-input-text {
+    width: 60px;
+    margin-left: 15px;
+    display: inline-block;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
 }
 
 .scale-offset-confirm-text {

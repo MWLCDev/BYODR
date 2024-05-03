@@ -1,22 +1,26 @@
+import { topTriangle, bottomTriangle } from "./mobileController_b_shape_triangle.js"
+import { Dot } from "./mobileController_b_shape_dot.js"
+import { handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand, getSavedDeadZoneWidth, saveDeadZoneWidth }
+  from "./mobileController_c_logic.js"
 import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
-import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js"
-import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, saveDeadZoneWidth, sendJSONCommand } from "./mobileController_c_logic.js"
-import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
-import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
+import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
+import { followingButtonHandler } from "./mobileController_b_following.js"
 
-import { app, changeTrianglesColor, redraw } from "./mobileController_d_pixi.js"
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
+import { redraw, app, changeTrianglesColor } from "./mobileController_d_pixi.js";
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 sendJSONCommand();
+MotorDataInput.showInputElements();
 let intervalId;
 let inferenceToggleButton
 
 window.addEventListener('load', () => {
   initializeWS()
   inferenceToggleButton = new InferenceToggleButton("inference_toggle_button")
-  changeTrianglesColor(0x000000)
+  changeTrianglesColor()
   new ToggleButtonHandler('confidenceToggleButton')
   let deadZoneSlider = document.getElementById('deadZoneWidth');
   deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
@@ -62,7 +66,16 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-  cursorFollowingDot.show()
+
+  // Hide the button when triangles are pressed
+  followingButtonHandler.setStyle('display', 'none');
+
+  if (app.stage.children.includes(CTRL_STAT.cursorFollowingDot)) {
+    CTRL_STAT.cursorFollowingDot.show()
+  }
+  else {
+    CTRL_STAT.cursorFollowingDot = new Dot();
+  }
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
   if (inferenceToggleButton.getInferenceState == "train") {
@@ -76,7 +89,9 @@ function onTouchMove(event) {
     document.getElementById('inference_options_container').style.display = 'none';
   }
   // Update the dot's position
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  if (CTRL_STAT.cursorFollowingDot) {
+    handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+  }
 }
 
 
@@ -89,6 +104,11 @@ app.view.addEventListener('touchend', () => {
 
       redraw(); // Reset triangles to their original position
 
+      // Remove the dot
+      if (CTRL_STAT.cursorFollowingDot) {
+        CTRL_STAT.cursorFollowingDot.remove();
+        CTRL_STAT.cursorFollowingDot = null;
+      }
       CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
       app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
       CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
@@ -98,10 +118,16 @@ app.view.addEventListener('touchend', () => {
       }
       if (inferenceToggleButton.getInferenceState == "train") {
         document.getElementById('inference_options_container').style.display = 'flex';
-        redraw(undefined, true, false, true)
+        redraw("top", undefined, true)
       }
-      cursorFollowingDot.hide()
+
       clearTimeout(intervalId);
     }
+
+    // Show the button again when touch ends
+    followingButtonHandler.setStyle('display', 'block');
+
+    // Making the text boxes show the current data that exist on the robot
+    MotorDataInput.showInputElements();
   }
 });
