@@ -118,8 +118,8 @@ class FollowingController:
                     box_width = x2 - x1
                     self.logger.info(f"Box center: {int(box_center)}, Box height: {int(box_height)}")
             
-            if (box_height / box_width) >= 5:   # Person might be behind an obstruction if the bbox is too thin
-                self.clear_path = 0             # Resetting the amount of frames with clear path
+            # if (box_height / box_width) >= 12:   # Person might be behind an obstruction if the bbox is too thin
+            #     self.clear_path = 0             # Resetting the amount of frames with clear path
             
             # Smaller bbox height means the detected person is further away from the camera
             if box_height <= START_HEIGHT:                                  # Starting movement if person is far enough
