@@ -128,15 +128,15 @@ class FollowingController:
             # Keeping the user in the center of the camera view
             if box_center < SCREEN_CENTER:      # left = negative steering
                 steering = min(0, max(-0.55, (0.0025 * box_center - 0.8)))  # 0 at 320p; 0.55 (max) at 100p
-                steering = steering*(1.15-0.75*throttle)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.22 at throttle = 1
+                steering = steering*(1.2-throttle)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.11 at throttle = 1
                 if throttle == 0:                                           # Turning in place
-                    throttle = abs(steering)/1.15                           # Scaling back
+                    throttle = abs(steering)/1.2                            # Scaling back
                     steering = -1                                           # Max steering, turning speed determined by throttle
             elif box_center > SCREEN_CENTER:    # right = positive steering
                 steering = max(0, min(0.55, (0.0025 * box_center - 0.8)))   # 0 at 320p; 0.55 (max) at 540p
-                steering = steering*(1.15-0.75*throttle)
+                steering = steering*(1.2-throttle)
                 if throttle == 0:
-                    throttle = steering/1.15
+                    throttle = steering/1.2
                     steering = 1
 
         if self.clear_path <= MIN_CLEAR_PATH_FRAMES or self.no_human_counter >= MAX_HUMAN_ABSENCE_FRAMES:
