@@ -6,7 +6,6 @@ import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
 import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 
 import { ToggleButtonHandler } from "./mobileController_b_confidence_button.js"
-import { followingButtonHandler } from "./mobileController_b_following.js"
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 import { redraw, app, changeTrianglesColor } from "./mobileController_d_pixi.js";
@@ -66,9 +65,6 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-
-  // Hide the button when triangles are pressed
-  followingButtonHandler.setStyle('display', 'none');
 
   if (app.stage.children.includes(CTRL_STAT.cursorFollowingDot)) {
     CTRL_STAT.cursorFollowingDot.show()

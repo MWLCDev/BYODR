@@ -58,29 +58,6 @@ class ToggleButtonHandler {
   }
 
   /**
-   * Sends a command to the server via WebSocket.
-   * @param {string} command The command to be sent to the server.
-   */
-  sendSwitchFollowingRequest(command) {
-    if (this.confidenceWS.websocket && this.confidenceWS.websocket.readyState === WebSocket.OPEN) {
-      this.confidenceWS.websocket.send(command);
-      this.toggleButtonAppearance(command)
-    } else {
-      console.error("Confidence websocket is not open. Command not sent. Attempting to reconnect...");
-      this.checkAndReconnectWebSocket();
-    }
-  }
-
-  /**
-   * Handles button click events by sending appropriate commands based on the button's current state.
-   */
-  handleButtonClick() {
-    // Determine the command based on the opposite of the current button text
-    let currentText = this.toggleButton.innerText;
-    this.sendSwitchFollowingRequest(currentText);
-  }
-
-  /**
    * Updates the button's appearance based on the received WebSocket message.
    * @param {string} message The message received from the WebSocket.
    */
