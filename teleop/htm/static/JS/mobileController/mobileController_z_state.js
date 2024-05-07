@@ -1,5 +1,6 @@
 //Shared State variables that goes between the files/modules used
-import { topTriangle } from "./mobileController_b_shape_triangle.js";
+
+import { topTriangle} from "./mobileController_b_shape_triangle.js"
 
 class MobileControllerState {
   //The starting y coord when the triangles are relocated ()
