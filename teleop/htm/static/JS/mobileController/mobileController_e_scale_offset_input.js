@@ -1,4 +1,4 @@
-class MotorDataInput{
+class MotorDataInput {
   static SCALEINPUT = document.getElementById('scale_input_box_ID');
   static OFFSETINPUT = document.getElementById('offset_input_box_ID');
   static SCALEINPUT_TEXT = document.querySelector('.scale-input-text');
@@ -19,7 +19,7 @@ class MotorDataInput{
         // Get the current values from the backend and place them in the sliders
         this.SCALEINPUT.value = data.vehicle["ras.driver.motor.scale"];
         this.OFFSETINPUT.value = data.vehicle["ras.driver.steering.offset"];
-        
+
         // Update the text next to the slider to show the current value
         this.SCALEINPUT_TEXT.textContent = `${this.SCALEINPUT.value}`;
         this.OFFSETINPUT_TEXT.textContent = `${this.OFFSETINPUT.value}`;
@@ -45,7 +45,7 @@ class MotorDataInput{
     // Create the data object that will be sent to the backend via POST
     let data = { "vehicle": scaleOffsetData };
 
-    console.log('Data to send:', data);
+    // console.log('Data to send:', data);
 
     // Make POST request to the backend endpoint
     fetch('/teleop/user/options', {
@@ -56,9 +56,7 @@ class MotorDataInput{
       body: JSON.stringify(data)
     })
       .then(response => {
-        if (response.ok) 
-          console.log('Data sent successfully.');
-        else
+        if (!response.ok)
           console.error('Failed to send data.');
       })
       .catch(error => {
