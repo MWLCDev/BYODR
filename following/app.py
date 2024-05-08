@@ -165,5 +165,5 @@ class FollowingController:
 
 
 if __name__ == "__main__":
-    controller = FollowingController("customDefNano.pt")
+    controller = FollowingController("320_20k.pt")
     controller.run()
