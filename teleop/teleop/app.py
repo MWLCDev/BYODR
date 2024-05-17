@@ -327,6 +327,12 @@ def main():
 
     def send_command():
         global stats
+        config = SafeConfigParser()
+        config.read(application.get_user_config_file())  # Load configuration using the path provided
+        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
+
+        camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
+
 
         while True:
             while stats == "Start Following":
@@ -335,6 +341,9 @@ def main():
 
                 if ctrl is not None:
                     ctrl["time"] = timestamp()
+                    if ctrl["camera_pan"]:
+                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0)
+                        status = camera_control.get_ptz_status()
                     # logger.info(f"Message from Following: {ctrl}")
                     teleop_publish(ctrl)
                 #     prev_command = ctrl
