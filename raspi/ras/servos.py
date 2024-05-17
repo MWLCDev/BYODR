@@ -366,7 +366,7 @@ class DualVescDriver(AbstractDriver):
 
 
 class MainApplication(Application):
-    def __init__(self, event, config_file, relay, hz=50, test_mode=False):
+    def __init__(self, event, config_file, relay, hz, test_mode=False):
         super(MainApplication, self).__init__(run_hz=hz, quit_event=event)
         self.test_mode = test_mode
         self.config_file_dir = config_file
@@ -374,7 +374,9 @@ class MainApplication(Application):
         self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
-        self._drive_queue = collections.deque(maxlen=1)
+        self._drive_queue = collections.deque(maxlen=4)
+        self._last_drive_command = None  # Store the last drive command
+
         self._chassis = None
         self.platform = None
         self.publisher = None
@@ -446,7 +448,19 @@ class MainApplication(Application):
         return self._config_queue.popleft() if bool(self._config_queue) else None
 
     def _pop_drive(self):
-        return self._drive_queue.popleft() if bool(self._drive_queue) else None
+        """Get one command from one end of the drive queue"""
+        # This case happens when booting for the first time and PIL didn't send anything yet
+        if not self._drive_queue:
+            if self._last_drive_command:
+                # If the queue is empty and there's a last known command, return it instead of None
+                return self._last_drive_command
+            else:
+                # A default command if no commands have ever been received
+                return {"steering": 0.0, "throttle": 0.0, "reverse": 0, "wakeup": 0}
+        else:
+            # Pop the command from the queue and update the last known command
+            self._last_drive_command = self._drive_queue.popleft()
+            return self._last_drive_command
 
     def _on_message(self, message):
         self._integrity.on_message(message.get("time"))
@@ -467,11 +481,12 @@ class MainApplication(Application):
             return
 
         c_config, c_drive = self._pop_config(), self._pop_drive()
+        # print(c_drive)
         self._chassis.set_configuration(c_config)
 
-        v_steering = 0 if c_drive is None else c_drive.get('steering', 0)
-        v_throttle = 0 if c_drive is None else c_drive.get('throttle', 0)
-        v_wakeup = False if c_drive is None else bool(c_drive.get('wakeup'))
+        v_steering = 0 if c_drive is None else c_drive.get("steering", 0)
+        v_throttle = 0 if c_drive is None else c_drive.get("throttle", 0)
+        v_wakeup = False if c_drive is None else bool(c_drive.get("wakeup"))
 
         self._cmd_history.touch(steering=v_steering, throttle=v_throttle, wakeup=v_wakeup)
         if self._cmd_history.is_missing():

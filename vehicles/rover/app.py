@@ -13,7 +13,7 @@ from byodr.utils.ipc import (ImagePublisher, JSONPublisher, LocalIPCServer,
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import hash_dict, parse_option
 from configparser import ConfigParser as SafeConfigParser
-from core import ConfigurableImageGstSource, GpsPollerThread, PTZCamera
+from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 
 logger = logging.getLogger(__name__)
 log_format = (
@@ -129,8 +129,7 @@ class Platform(Configurable):
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
         _gps_host = parse_option("gps.provider.host", str, "192.168.1.1", errors, **kwargs)
-        _gps_port = parse_option("gps.provider.port", str, "502", errors, **kwargs)
-        self._gps = GpsPollerThread(_gps_host, _gps_port)
+        self._gps = GpsPollerThreadSNMP(_gps_host)
         self._gps.start()
         return errors
 
@@ -359,14 +358,6 @@ class RoverApplication(Application):
 
     def finish(self):
         self._handler.quit()
-
-    # def run(self):
-    #     from byodr.utils import Profiler
-    #     profiler = Profiler()
-    #     with profiler():
-    #         super(RoverApplication, self).run()
-    #     profiler.dump_stats('/config/rover.stats')
-
 
     # Function that is called continuously
     # Receives commands from pilot and teleop
