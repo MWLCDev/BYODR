@@ -77,10 +77,12 @@ class FollowingController:
     def setup_publisher(self):
         return JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
 
-    def publish_command(self, throttle, steering, button_b=1):
+    def publish_command(self, throttle, steering, button_b=1, camera_pan=None):
         cmd = {"throttle": throttle, "steering": steering, "button_b": button_b, "time": timestamp(), "navigator": {"route": None}}
+        if camera_pan is not None:
+            cmd["camera_pan"] = camera_pan
         self.publisher.publish(cmd)
-        self.logger.info(f"Sending command to teleop: Throttle {cmd['throttle']}, Steering {cmd['steering']}")
+        self.logger.info(f"Sending command to teleop: Throttle {cmd['throttle']}, Steering {cmd['steering']}, Camera Pan {cmd.get('camera_pan', 'N/A')}")
 
     def stop_robot(self):
         self.current_throttle = 0
