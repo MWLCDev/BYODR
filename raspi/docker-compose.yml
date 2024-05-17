@@ -68,16 +68,3 @@ services:
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
-  #Middle camera
-  stream2:
-    build:
-      context: .
-      dockerfile: pi_gstreamer.dockerfile
-    privileged: true
-    user: root
-    restart: always
-    network_mode: 'host'
-    command: ['python3', '-m', 'stream.camera', '--port', '9103', '--config', '/config/camera2.ini', '--ip-ending', '63']
-    stop_signal: SIGKILL
-    volumes:
-      - volume_local_config:/config:rw
