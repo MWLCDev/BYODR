@@ -108,6 +108,9 @@ class FollowingController:
             request = self.teleop.get()
             self.track_and_save_image(r)
             try:
+                #use case for how to get the current azimuth for the bottom camera
+                if request["camera_azimuth"]:
+                    self.logger.info(request["camera_azimuth"])
                 if request["following"] == "Stop Following":
                     self.logger.info("Stopping Following")
                     self.stop_robot()
