@@ -80,7 +80,6 @@ class TeleopApplication(Application):
             file_name = os.path.basename(file_path)
             if file_name == "config.ini":
                 self._user_config_file = file_path
-            
 
     def _config(self):
         parser = SafeConfigParser()
@@ -225,8 +224,6 @@ class MobileControllerUI(tornado.web.RequestHandler):
         self.render("../htm/templates/mobile_controller_ui.html")
 
 
-
-
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -328,28 +325,29 @@ def main():
     def send_command():
         global stats
         config = SafeConfigParser()
-        config.read(application.get_user_config_file())  # Load configuration using the path provided
-        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
+        config.read(application.get_user_config_file())
+        front_camera_ip = config.get(
+            "camera", "front.camera.ip", fallback="192.168.1.64"
+        )
 
-        camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
-
+        camera_control = CameraControl(
+            f"http://{front_camera_ip}:80", "user1", "HaikuPlot876"
+        )
 
         while True:
             while stats == "Start Following":
-                # logger.info (stats)
                 ctrl = following.get()
 
                 if ctrl is not None:
                     ctrl["time"] = timestamp()
-                    if ctrl["camera_pan"]:
+                    if ctrl["camera_pan"] is not None:
                         camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0)
-                        status = camera_control.get_ptz_status()
-                    # logger.info(f"Message from Following: {ctrl}")
+                        ctrl["camera_pan"] = 0
+                    # will always send the current azimuth for the bottom camera while following is working
+                    camera_azimuth, camera_elevation = camera_control.get_ptz_status()
+                    chatter.publish({"camera_azimuth": camera_azimuth})
+
                     teleop_publish(ctrl)
-                #     prev_command = ctrl
-                # else:
-                #     teleop_publisher.publish(prev_command)}
-            # logger.info(stats)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
@@ -357,23 +355,15 @@ def main():
     gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
 
     threads = [
-        
         camera_front,
-       
         camera_rear,
-       
         pilot,
         following,
-       
         vehicle,
-       
         inference,
-       
         logbox_thread,
-       
         package_thread,
         follow_thread,
-       
         gps_poller_snmp,
     ]
 
