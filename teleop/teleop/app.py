@@ -257,7 +257,6 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     follow_thread = threading.Thread(target=send_command)
-    gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
 
     threads = [
         
@@ -277,7 +276,6 @@ def main():
         package_thread,
         follow_thread,
        
-        gps_poller_snmp,
     ]
 
     if quit_event.is_set():
