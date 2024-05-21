@@ -186,5 +186,5 @@ class FollowingController:
  
  
 if __name__ == "__main__": 
-    controller = FollowingController("480_20k.pt") 
+    controller = FollowingController("yolov8n.engine") 
     controller.run()
