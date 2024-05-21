@@ -12,7 +12,7 @@ from byodr.utils.option import parse_option
 # Constants 
 SCREEN_CENTER = 320 
 CENTER_OFFSET = 0 
-SECOND_OFFSET = 100 
+SECOND_OFFSET = 80 
 THIRD_OFFSET = 70 
 START_HEIGHT = 340 
 UNSAFE_HEIGHT = 360 
