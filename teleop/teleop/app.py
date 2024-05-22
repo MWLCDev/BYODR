@@ -79,7 +79,6 @@ class TeleopApplication(Application):
             file_name = os.path.basename(file_path)
             if file_name == "config.ini":
                 self._user_config_file = file_path
-            
 
     def _config(self):
         parser = SafeConfigParser()
@@ -243,39 +242,46 @@ def main():
 
     def send_command():
         global stats
+        config = SafeConfigParser()
+        config.read(application.get_user_config_file())
+        front_camera_ip = config.get(
+            "camera", "front.camera.ip", fallback="192.168.1.64"
+        )
+
+        camera_control = CameraControl(
+            f"http://{front_camera_ip}:80", "user1", "HaikuPlot876"
+        )
 
         while True:
             while stats == "Start Following":
-                # logger.info (stats)
                 ctrl = following.get()
                 if ctrl is not None:
+                    print(ctrl)
                     ctrl["time"] = timestamp()
-                    # logger.info(f"Message from Following: {ctrl}")
+                    if ctrl["camera_pan"] is not None:
+                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0)
+                        ctrl["camera_pan"] = 0
+                    # will always send the current azimuth for the bottom camera while following is working
+                    camera_azimuth, camera_elevation = camera_control.get_ptz_status()
+                    chatter.publish({"camera_azimuth": camera_azimuth})
+                    print(camera_azimuth)
+
                     teleop_publish(ctrl)
-                    
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     follow_thread = threading.Thread(target=send_command)
 
     threads = [
-        
         camera_front,
-       
         camera_rear,
-       
         pilot,
         following,
-       
         vehicle,
-       
         inference,
-       
         logbox_thread,
-       
         package_thread,
-        follow_thread,
-       
+        follow_thread
     ]
 
     if quit_event.is_set():
@@ -394,6 +400,7 @@ def main():
                     MobileControllerCommands,
                     dict(fn_control=throttle_control),
                 ),
+                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
                 (
                     r"/switch_following",
                     FollowingHandler,

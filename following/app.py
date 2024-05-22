@@ -5,6 +5,7 @@ import logging
 import multiprocessing 
 import math 
 from ultralytics import YOLO 
+import cv2 
 from byodr.utils import timestamp 
 from byodr.utils.ipc import JSONPublisher, json_collector 
 from byodr.utils.option import parse_option 
@@ -33,12 +34,38 @@ class FollowingController:
         self.publisher = self.setup_publisher() 
         self.current_throttle = 0 
         self.current_steering = 0 
+        self.image_counter = 0 
+        self.image_save_path = "/byodr/yolo_person" 
+        os.makedirs(self.image_save_path, exist_ok=True) 
+ 
+    def reset_tracking_session(self): 
+        """Reset the image counter and clear all images in the directory.""" 
+        self.image_counter = 0 
+        for existing_file in os.listdir(self.image_save_path): 
+            os.remove(os.path.join(self.image_save_path, existing_file)) 
+        self.logger.info("Tracking session reset: Image counter zeroed and folder cleared.") 
  
     def setup_logger(self): 
         logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z") 
         logger = logging.getLogger(__name__) 
         logger.setLevel(logging.INFO) 
         return logger 
+ 
+    def track_and_save_image(self, result): 
+        """Tracks objects in video stream and saves the latest image with annotations.""" 
+        # https://github.com/ultralytics/ultralytics/issues/1696#issuecomment-1948021841 
+        full_annotated_image = result.plot(show=False, pil=False)  # Ensuring it returns a numpy array 
+        full_annotated_image = cv2.cvtColor(full_annotated_image, cv2.COLOR_RGB2BGR)  # Convert RGB to BGR for OpenCV 
+        filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg") 
+        cv2.imwrite(filename, full_annotated_image) 
+        self.image_counter += 1 
+ 
+        # Check the number of images in the directory and delete the oldest if more than 10 
+        all_images = sorted(os.listdir(self.image_save_path), key=lambda x: os.path.getctime(os.path.join(self.image_save_path, x))) 
+ 
+        if len(all_images) > 10: 
+            oldest_image = all_images[0] 
+            os.remove(os.path.join(self.image_save_path, oldest_image)) 
  
     def load_config(self, path): 
         parser = configparser.ConfigParser() 
@@ -53,10 +80,13 @@ class FollowingController:
     def setup_publisher(self): 
         return JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls") 
  
-    def publish_command(self, throttle, steering, button_b=1): 
+    def publish_command(self, throttle, steering, button_b=1, camera_pan=None): 
         cmd = {"throttle": throttle, "steering": steering, "button_b": button_b, "time": timestamp(), "navigator": {"route": None}} 
+        camera_pan = 0
+        if camera_pan is not None: 
+            cmd["camera_pan"] = camera_pan 
         self.publisher.publish(cmd) 
-        self.logger.info(f"Sending command to teleop: {cmd}") 
+        # self.logger.info(f"Sending command to teleop: {cmd}") 
  
     def safety_feature(self, boxes): 
         clear_path = self.clear_path 
@@ -73,6 +103,7 @@ class FollowingController:
             self.clear_path = self.safety_feature(boxes)      # Checking for obstructions 
             throttle, steering = self.decide_control(boxes)   # Calculating control commands based on the results of image detection 
             request = self.teleop.get()                       # Checking for request to stop following 
+            self.track_and_save_image(r) 
             try: 
                 if request['following'] == "Stop Following":  # Sending no movement if following stopped 
                     self.logger.info("Stopping Following") 
@@ -177,13 +208,13 @@ class FollowingController:
             request = self.teleop.get()                         # Checking for requests to start following 
             try: 
                 if request['following'] == "Start Following":
+                    self.reset_tracking_session() 
                     self.logger.info("Loading Yolov8 model") 
-                    results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
+                    results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=True) # Image recognition with assigning IDs to objects 
                     self.control_logic(results)                 # Calculating the control commands based on the model results 
             except: 
                 pass 
                  
- 
  
 if __name__ == "__main__": 
     controller = FollowingController("yolov8n.engine") 

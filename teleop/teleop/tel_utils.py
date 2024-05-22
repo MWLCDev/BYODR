@@ -3,11 +3,17 @@ import logging
 import os
 import threading
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import folium
 import numpy as np
 import pandas as pd
+import requests
+
+# needs to be installed on the router
+from pysnmp.hlapi import *
+from requests.auth import HTTPDigestAuth
 
 logger = logging.getLogger(__name__)
 
@@ -125,7 +131,8 @@ class OverviewConfidence:
         m.save(file_path)
         with open(file_path, "r") as file:
             content = file.read()
-        offline_dep = self.use_local_files(content)  # Ensure this method is defined to handle local file dependencies
+            # Ensure this method is defined to handle local file dependencies
+        offline_dep = self.use_local_files(content)  
 
         with open(file_path, "w") as file:
             file.write(offline_dep)
@@ -174,3 +181,168 @@ class OverviewConfidence:
             self.running = False
             self.record_data_thread.join()
 
+
+class GpsPollerThreadSNMP(threading.Thread):
+    """
+    A thread class that continuously polls GPS coordinates using SNMP and stores
+    the latest value in a queue. It can be used to retrieve the most recent GPS
+    coordinates that the SNMP-enabled device has reported.
+    https://wiki.teltonika-networks.com/view/RUT955_SNMP
+
+    Attributes:
+        _host (str): IP address of the SNMP-enabled device (e.g., router).
+        _community (str): SNMP community string for authentication.
+        _port (int): Port number where SNMP requests will be sent.
+        _quit_event (threading.Event): Event signal to stop the thread.
+        _queue (collections.deque): Thread-safe queue storing the latest GPS data.
+    Methods:
+        quit: Signals the thread to stop running.
+        get_latitude: Retrieves the latest latitude from the queue.
+        get_longitude: Retrieves the latest longitude from the queue.
+        fetch_gps_coordinates: Fetches GPS coordinates from the SNMP device.
+        run: Continuously polls for GPS coordinates until the thread is stopped.
+    """
+
+    # There was alternative solution with making a post request and fetch a new token https://wiki.teltonika-networks.com/view/Monitoring_via_JSON-RPC_windows_RutOS#GPS_Data
+    def __init__(self, host, community="public", port=161):
+        super(GpsPollerThreadSNMP, self).__init__()
+        self._host = host
+        self._community = community
+        self._port = port
+        self._quit_event = threading.Event()
+        self._queue = collections.deque(maxlen=1)
+
+    def quit(self):
+        self._quit_event.set()
+
+    def get_latitude(self, default=0.0):
+        """
+        Args:
+            default (float): The default value to return if the queue is empty. Defaults to 0.0.
+
+        Returns:
+            float: The latest latitude value, or the default value if no data is available.
+        """
+        return self._queue[0][0] if len(self._queue) > 0 else default
+
+    def get_longitude(self, default=0.0):
+        return self._queue[0][1] if len(self._queue) > 0 else default
+
+    def fetch_gps_coordinates(self):
+        """
+        Sends an SNMP request to the device to retrieve the current
+        latitude and longitude values. If successful, the values are returned.
+
+        Returns:
+            tuple: A tuple containing the latitude and longitude as floats, or `None` if the request fails.
+        """
+        iterator = getCmd(
+            SnmpEngine(),
+            CommunityData(self._community, mpModel=1),
+            UdpTransportTarget((self._host, self._port)),
+            ContextData(),
+            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.1.0")),  # GPS Latitude
+            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.2.0")),  # GPS Longitude
+        )
+
+        errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+        if errorIndication:
+            logger.error(f"Error: {errorIndication}")
+            return None
+        elif errorStatus:
+            logger.error(f"Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}")
+            return None
+        else:
+            latitude, longitude = [float(varBind[1]) for varBind in varBinds]
+            return latitude, longitude
+
+    def run(self):
+        """
+        The main method of the thread that runs continuously until the quit event is set.
+        """
+        while not self._quit_event.is_set():
+            try:
+                coordinates = self.fetch_gps_coordinates()
+                if coordinates:
+                    self._queue.appendleft(coordinates)
+                    # logger.info(f"Latitude: {coordinates[0]}, Longitude: {coordinates[1]}")
+                    time.sleep(0.100)  # Interval for polling
+            except Exception as e:
+                logger.error(f"An error occurred: {e}")
+                time.sleep(10)
+
+
+class CameraControl:
+    def __init__(self, base_url, user, password):
+        self.base_url = base_url
+        self.user = user
+        self.password = password
+
+    def adjust_ptz(self, pan=None, tilt=None, method="Momentary", duration=500):
+        if method == "Momentary":
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+            payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+        else:  # Absolute
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+            payload = f"<PTZData><AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><absoluteZoom>10</absoluteZoom></AbsoluteHigh></PTZData>"
+
+        response = requests.put(
+            url,
+            auth=HTTPDigestAuth(self.user, self.password),
+            data=payload,
+            headers={"Content-Type": "application/xml"},
+        )
+        try:
+            response.raise_for_status()
+            return "Success: PTZ adjusted."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def get_ptz_status(self):
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/status"
+        try:
+            response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
+            response.raise_for_status()
+
+            # Parse the response XML
+            xml_root = ET.fromstring(response.content)
+            # Fix namespace issue
+            ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
+            azimuth = xml_root.find(".//hik:azimuth", ns).text
+            elevation = xml_root.find(".//hik:elevation", ns).text
+            return (azimuth, elevation)
+        except requests.exceptions.RequestException as e:
+            return f"Failed to get PTZ status: {e}"
+        except ET.ParseError as e:
+            return f"XML parsing error: {e}"
+
+    def set_home_position(base_url, user, password):
+        """
+        Sets the current position of the PTZ camera as the home position.
+
+        Returns:
+            str: Response from the camera.
+        """
+        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
+        response = requests.put(url, auth=HTTPDigestAuth(user, password))
+        try:
+            response.raise_for_status()
+            return "Success: Home position set."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def goto_home_position(base_url, user, password):
+        """
+        Moves the PTZ camera to its home position.
+
+        Returns:
+            str: Response from the camera.
+        """
+        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
+        response = requests.put(url, auth=HTTPDigestAuth(user, password))
+        try:
+            response.raise_for_status()
+            return "Success: Camera moved to home position."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"

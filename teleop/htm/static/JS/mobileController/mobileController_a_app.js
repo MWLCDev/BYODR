@@ -32,10 +32,13 @@ document.getElementById('deadZoneWidth').addEventListener('input', function () {
 });
 
 window.addEventListener('resize', () => {
-  app.renderer.resize(window.innerWidth, window.innerHeight);
-  topTriangle.updateDimensions();
-  bottomTriangle.updateDimensions();
-  redraw();
+  // To not show the triangles if the stream canvas is shown
+  if (followingButtonHandler.getFollowingState != "active") {
+    app.renderer.resize(window.innerWidth, window.innerHeight);
+    topTriangle.updateDimensions();
+    bottomTriangle.updateDimensions();
+    redraw();
+  }
 });
 
 app.view.addEventListener('touchstart', (event) => {

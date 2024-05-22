@@ -64,48 +64,32 @@ gst_commands = {
 }
 
 
-def change_segment_config(config_dir):
+def change_segment_config(config_file, ip_ending):
     """Change the ips in all the config files the segment is using them.
     It will count on the ip of the pi"""
     # Get the local IP address's third octet
+
     ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
-    third_octet_new = ip_address.split(".")[2]
+    base_ip = ip_address.rsplit(".", 1)[0]  # Get the base IP without the last octet
+    new_ip = f"{base_ip}.{ip_ending}"  # Form the new IP with the custom ending
 
-    # Regular expression to match IP addresses
-    ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
-
-    with open(config_dir, "r") as f:
-        content = f.readlines()
+    with open(config_file, "r") as file:
+        content = file.readlines()
 
     updated_content = []
-    changes_made = []
-    changes_made_in_file = False  # Flag to track changes in the current file
+    ip_regex = re.compile(r"camera.ip = 192\.168\.\d+\.\d+")
 
     for line in content:
-        match = ip_regex.search(line)
-        if match:
-            third_octet_old = match.group(2)
-            if third_octet_old != third_octet_new:
-                # Replace the third octet
-                new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
-                updated_content.append(new_line)
-                changes_made.append((third_octet_old, third_octet_new))
-                changes_made_in_file = True
+        new_line = ip_regex.sub(f"camera.ip = {new_ip}", line)
+        updated_content.append(new_line)
 
-                continue
-        updated_content.append(line)
+    with open(config_file, "w") as file:
+        file.writelines(updated_content)
 
-    # Write changes back to the file
-    with open(config_dir, "w") as f:
-        f.writelines(updated_content)
-
-    # Print changes made
-    if changes_made_in_file:
-        logger.info("Updated {} with a new ip address of {}".format(config_dir, third_octet_new))
+    logger.info(f"Updated {config_file} to new IP address {new_ip}")
 
 
 def create_stream(config_file):
-    change_segment_config(config_file)
     parser = SafeConfigParser()
     parser.read(config_file)
     kwargs = dict(parser.items("camera"))
@@ -150,40 +134,44 @@ def create_stream(config_file):
 
 def main():
     parser = argparse.ArgumentParser(description="Camera web-socket server.")
-    parser.add_argument("--config", type=str, default="/config/stream.ini", help="Configuration file.")
-    parser.add_argument("--port", type=int, default=9101, help="Socket port.")
+    parser.add_argument("--config", type=str, required=True, help="Configuration file.")
+    parser.add_argument("--port", type=int, default=9101, help="Port for the web server.")
+    parser.add_argument("--ip-ending", type=str, required=True, help="Last octet of the IP address.")
     args = parser.parse_args()
 
     config_file = args.config
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        video_stream, socket_type = create_stream(config_file)
-        application = CameraApplication(stream=video_stream, event=quit_event)
-
-        threads = [threading.Thread(target=application.run)]
-        if quit_event.is_set():
-            return 0
-
-        [t.start() for t in threads]
-
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-        io_loop = ioloop.IOLoop.instance()
-        class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
-        web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
-        rear_server = web.HTTPServer(web_app, xheaders=True)
-        rear_server.bind(args.port)
-        rear_server.start()
-        logger.info("Web service started on port {}.".format(args.port))
-        io_loop.start()
-
-        logger.info("Waiting on threads to stop.")
-        [t.join() for t in threads]
-    else:
+    if not os.path.exists(config_file):
         shutil.copyfile("/app/stream/camera.template", config_file)
-        logger.info("Created a new camera configuration file from template.")
-        while not quit_event.is_set():
-            time.sleep(1)
+        logger.info(f"Created a new camera configuration file from template at {config_file}")
+
+    change_segment_config(config_file, args.ip_ending)
+
+    video_stream, socket_type = create_stream(config_file)
+    application = CameraApplication(stream=video_stream, event=quit_event)
+
+    threads = [threading.Thread(target=application.run)]
+    if quit_event.is_set():
+        return 0
+
+    [t.start() for t in threads]
+
+    asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
+    asyncio.set_event_loop(asyncio.new_event_loop())
+
+    io_loop = ioloop.IOLoop.instance()
+    class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
+    web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
+    rear_server = web.HTTPServer(web_app, xheaders=True)
+    rear_server.bind(args.port)
+    rear_server.start()
+    logger.info("Web service started on port {}.".format(args.port))
+    io_loop.start()
+
+    logger.info("Waiting on threads to stop.")
+    [t.join() for t in threads]
+
+    while not quit_event.is_set():
+        time.sleep(1)
 
 
 if __name__ == "__main__":
