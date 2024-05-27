@@ -23,7 +23,7 @@
 					<!-- FOR OT and MC: add your buttons here with the same class name -->
 					<button id="inference_toggle_button" class="mobile_option_button">Autopilot options</button>
 					<button id="confidenceToggleButton" class="mobile_option_button">Start overview confidence</button>
-					<button id="toggleButton" class="mobile_option_button">Start Following</button>
+					<button id="following_toggle_button" class="mobile_option_button">Start Following</button>
 				</div>
 				<div id="inference_auto_speed">0.0 Km/h</div>
 				<div id="inference_options_container">
@@ -33,6 +33,7 @@
 				</div>
 			</div>
 		</div>
+    <canvas id="following_imageCanvas" width="640" height="480"></canvas>
 
 		<script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
 		<script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>

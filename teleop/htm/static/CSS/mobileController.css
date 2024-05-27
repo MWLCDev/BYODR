@@ -155,3 +155,16 @@ input[type=range]::-webkit-slider-thumb {
 .hidden {
   display: none;
 }
+
+
+canvas#following_imageCanvas {
+  display: none; /* Initially hidden */
+  position: fixed; /* Fixed position to keep the canvas in the center of the viewport */
+  top: 50%; /* Align center vertically */
+  left: 50%; /* Align center horizontally */
+  transform: translate(-50%, -50%); /* Adjust position to the exact center */
+  border: 1px solid black; /* Optional: Adds a border around the canvas */
+  max-width: 640px; /* Maximum width of the canvas */
+  max-height: 480px; /* Maximum height of the canvas */
+  aspect-ratio: 4 / 3; /* Maintain 4:3 aspect ratio */
+}
