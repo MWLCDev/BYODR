@@ -40,16 +40,30 @@ class FollowingController:
 
         os.makedirs(self.image_save_path, exist_ok=True) 
  
-        self.request_thread = threading.Thread(target=self.get_request)
+        self.request_thread = threading.Thread(target=self.request_check)
         self.request_thread.start()
     
-    def get_request(self):
+    def request_check(self):
         while True:
             try:
-                self.request = self.teleop.get()
-                # self.logger.info(self.request)
+                request = self.teleop.get()
+                follow_request = request['following']
             except Exception as e:
-                self.logger.warning("Exception fetching request: " + str(e) + "\n")
+                # self.logger.warning("Exception fetching request: " + str(e) + "\n")
+                follow_request = 0
+                self.current_steering = 0
+                self.current_throttle = 0
+                pass 
+                 
+            if follow_request == "Start Following":
+                self.start_yolo_model()
+                
+    def start_yolo_model(self):
+        self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
+        self.reset_tracking_session() 
+        self.logger.info("Loading Yolov8 model") 
+        results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
+        self.control_logic(results)                 # Calculating the control commands based on the model results 
 
     def reset_tracking_session(self): 
         """Reset the image counter and clear all images in the directory.""" 
@@ -243,28 +257,10 @@ class FollowingController:
         self.logger.info("Following ready to start") 
         errors = [] 
         _config = self.config 
-        stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
-        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}64:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
-        while True: 
-            request = self.teleop.get()                         # Checking for requests to start following 
-            try:
-                follow_request = request['following']
-            except:
-                follow_request = 0
-                self.current_steering = 0
-                self.current_throttle = 0
-                pass 
-                 
-            if follow_request == "Start Following":
-                self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
-                self.reset_tracking_session() 
-                self.logger.info("Loading Yolov8 model") 
-                results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
-                self.control_logic(results)                 # Calculating the control commands based on the model results 
-                
-                self.logger.info("Waiting for threads to stop.")
-                self.request_thread.join()
- 
+        self.stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
+        self.stream_uri = f"rtsp://user1:HaikuPlot876@{self.stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
+
+        
  
 if __name__ == "__main__": 
     controller = FollowingController("480_20k.pt") 
