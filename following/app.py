@@ -3,6 +3,7 @@ import glob
 import configparser 
 import logging 
 import multiprocessing 
+import threading
 import math 
 from ultralytics import YOLO 
 import cv2 
@@ -39,6 +40,17 @@ class FollowingController:
 
         os.makedirs(self.image_save_path, exist_ok=True) 
  
+        self.request_thread = threading.Thread(target=self.get_request)
+        self.request_thread.start()
+    
+    def get_request(self):
+        while True:
+            try:
+                self.request = self.teleop.get()
+                # self.logger.info(self.request)
+            except Exception as e:
+                self.logger.warning("Exception fetching request: " + str(e) + "\n")
+
     def reset_tracking_session(self): 
         """Reset the image counter and clear all images in the directory.""" 
         self.image_counter = 0 
@@ -249,7 +261,9 @@ class FollowingController:
                 self.logger.info("Loading Yolov8 model") 
                 results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
                 self.control_logic(results)                 # Calculating the control commands based on the model results 
-                 
+                
+                self.logger.info("Waiting for threads to stop.")
+                self.request_thread.join()
  
  
 if __name__ == "__main__": 
