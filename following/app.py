@@ -65,8 +65,7 @@ class FollowingController:
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
         self.reset_tracking_session() 
         self.logger.info("Loading Yolov8 model") 
-        results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
-        self.control_logic(results)                 # Calculating the control commands based on the model results 
+        self.control_logic(self.results)                 # Calculating the control commands based on the model results 
 
     def reset_tracking_session(self): 
         """Reset the image counter and clear all images in the directory.""" 
@@ -114,10 +113,10 @@ class FollowingController:
         # cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         cmd = {"throttle": 0.2, "steering": 0, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         if camera_pan is not None: 
-            cmd["camera_pan"] = camera_pan 
-            cmd["method"] = method
-            # cmd["camera_pan"] = 0
-            # cmd["method"] = "Absolute"
+            # cmd["camera_pan"] = camera_pan 
+            # cmd["method"] = method
+            cmd["camera_pan"] = 0
+            cmd["method"] = "Absolute"
         self.publisher.publish(cmd) 
         self.logger.info(f"Sending command to teleop: {cmd}") 
  
@@ -132,11 +131,7 @@ class FollowingController:
  
     def control_logic(self, results): 
         for r in results:                                     # Running the loop for each frame of the stream 
-            boxes = r.boxes.cpu().numpy()                    # List of bounding boxes in the frame 
             request = self.teleop.get()                       # Checking for request to stop following 
-            self.clear_path = self.safety_feature(boxes)      # Checking for obstructions 
-            throttle, steering, camera_pan, method = self.decide_control(boxes, request)   # Calculating control commands based on the results of image detection 
-            self.track_and_save_image(r) 
             try: 
                 if request['following'] == "Stop Following":  # Sending no movement if following stopped 
                     self.logger.info("Stopping Following") 
@@ -146,6 +141,10 @@ class FollowingController:
                     return 
             except: 
                 pass 
+            boxes = r.boxes.cpu().numpy()                    # List of bounding boxes in the frame 
+            self.clear_path = self.safety_feature(boxes)      # Checking for obstructions 
+            throttle, steering, camera_pan, method = self.decide_control(boxes, request)   # Calculating control commands based on the results of image detection 
+            self.track_and_save_image(r) 
             self.publish_command(throttle, steering, camera_pan, method)          # Sending calculated control commands 
  
     def smooth_controls(self, target_throttle, target_steering): 
@@ -262,6 +261,7 @@ class FollowingController:
         _config = self.config 
         self.stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
         self.stream_uri = f"rtsp://user1:HaikuPlot876@{self.stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
+        self.results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
 
         
  
