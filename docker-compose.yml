@@ -22,20 +22,6 @@ services:
   #     - CAP_SYS_RAWIO
   #   volumes:
   #     - volume_zerotier_config:/var/lib/zerotier-one:rw
-  # wireguard:
-  #   cpuset: '0'
-  #   image: masipcat/wireguard-go
-  #   container_name: wireguard
-  #   restart: always
-  #   network_mode: host
-  #   devices:
-  #     - '/dev/net/tun'
-  #   cap_add:
-  #     - SYS_ADMIN
-  #     - NET_ADMIN
-  #     - CAP_SYS_RAWIO
-  #   volumes:
-  #     - volume_wireguard_config:/etc/wireguard:rw
   httpd:
     cpuset: '0'
     build:
@@ -61,18 +47,6 @@ services:
   #   volumes:
   #     - volume_ftpd_config:/etc/pureftpd:rw
   #     - volume_byodr_sessions:/home/ftpuser:rw
-  # rosnode:
-  #   cpuset: '0'
-  #   build:
-  #     context: .
-  #     dockerfile: rosnode/Dockerfile
-  #   restart: always
-  #   command: ['python3', 'app.py', '--name', 'rosnode']
-  #   network_mode: host
-  #   stop_signal: SIGKILL
-  #   volumes:
-  #     - volume_byodr_sockets:/byodr:rw
-  #     - volume_byodr_config:/config:ro
   mongodb:
     cpuset: '0'
     build:

@@ -41,8 +41,7 @@ class FollowingController:
 
         os.makedirs(self.image_save_path, exist_ok=True) 
  
-        self.request_thread = threading.Thread(target=self.request_check)
-        self.request_thread.start()
+        threading.Thread(target=self.request_check).start()
     
     def request_check(self):
         while True:
@@ -60,12 +59,17 @@ class FollowingController:
             if follow_request == "Start Following":
                 self.start_yolo_model()
             time.sleep(0.05)
-                
+
     def start_yolo_model(self):
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
         self.reset_tracking_session() 
-        self.logger.info("Loading Yolov8 model") 
-        self.control_logic(self.results)                 # Calculating the control commands based on the model results 
+        try:
+            # threading.Thread(target=self.control_logic, args=(self.results,)).start
+            self.control_logic(self.results)                 # Calculating the control commands based on the model results 
+        except:
+            time.sleep(10)                                   # Waiting 10 sec in case the user pressed the follow button before model was loaded (temporary)
+            # threading.Thread(target=self.control_logic, args=(self.results,)).start
+            self.control_logic(self.results)                 
 
     def reset_tracking_session(self): 
         """Reset the image counter and clear all images in the directory.""" 
@@ -113,10 +117,10 @@ class FollowingController:
         # cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         cmd = {"throttle": 0.2, "steering": 0, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         if camera_pan is not None: 
-            # cmd["camera_pan"] = camera_pan 
-            # cmd["method"] = method
-            cmd["camera_pan"] = 0
-            cmd["method"] = "Absolute"
+            cmd["camera_pan"] = camera_pan 
+            cmd["method"] = method
+            # cmd["camera_pan"] = 5
+            # cmd["method"] = "Momentary"
         self.publisher.publish(cmd) 
         self.logger.info(f"Sending command to teleop: {cmd}") 
  
@@ -256,14 +260,13 @@ class FollowingController:
  
     def run(self): 
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
-        self.logger.info("Following ready to start") 
         errors = [] 
         _config = self.config 
         self.stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
         self.stream_uri = f"rtsp://user1:HaikuPlot876@{self.stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
-        self.results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.4, persist=True, verbose=False) # Image recognition with assigning IDs to objects 
-
-        
+        self.logger.info("Loading Yolov8 model") 
+        self.results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.5, persist=True, verbose=True) # Image recognition with assigning IDs to objects         
+        self.logger.info("Yolov8 model loaded") 
  
 if __name__ == "__main__": 
     controller = FollowingController("480_20k.pt") 
