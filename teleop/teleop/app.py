@@ -334,7 +334,7 @@ def main():
         )
         global stats
         while True:
-            while stats == "Start Following":
+            if stats == "Start Following":
                 ctrl = following.get()
                 if ctrl is not None:
                     if ctrl["camera_pan"] is not None:
