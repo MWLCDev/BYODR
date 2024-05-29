@@ -338,17 +338,18 @@ def main():
             while stats == "Start Following":
                 ctrl = following.get()
                 if ctrl is not None:
+                    # if ctrl["camera_pan"] is not None:
+                    #     camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
+                    # else:
+                    #     ctrl["camera_pan"] = 0
+                    # # will always send the current azimuth for the bottom camera while following is working
+                    # camera_azimuth, camera_elevation = camera_control.get_ptz_status()
+                    # # print(camera_azimuth)
+                    # chatter.publish({"camera_azimuth": camera_azimuth})
                     ctrl["time"] = timestamp()
-                    if ctrl["camera_pan"] is not None:
-                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
-                    else:
-                        ctrl["camera_pan"] = 0
-                    # will always send the current azimuth for the bottom camera while following is working
-                    camera_azimuth, camera_elevation = camera_control.get_ptz_status()
-                    # print(camera_azimuth)
-                    chatter.publish({"camera_azimuth": camera_azimuth})
-
                     teleop_publish(ctrl)
+                    time.sleep(0.001)
+
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)

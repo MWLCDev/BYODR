@@ -4,7 +4,8 @@ import configparser
 import logging 
 import multiprocessing 
 import threading
-import math 
+import math
+import time 
 from ultralytics import YOLO 
 import cv2 
 from byodr.utils import timestamp 
@@ -47,6 +48,7 @@ class FollowingController:
         while True:
             try:
                 request = self.teleop.get()
+                # print(request)
                 follow_request = request['following']
             except Exception as e:
                 # self.logger.warning("Exception fetching request: " + str(e) + "\n")
@@ -54,9 +56,10 @@ class FollowingController:
                 self.current_steering = 0
                 self.current_throttle = 0
                 pass 
-                 
+                    
             if follow_request == "Start Following":
                 self.start_yolo_model()
+            time.sleep(0.05)
                 
     def start_yolo_model(self):
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
@@ -108,8 +111,8 @@ class FollowingController:
         return JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls") 
  
     def publish_command(self, throttle=0, steering=0, camera_pan=None, method=None): 
-        cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
-        # cmd = {"throttle": 0, "steering": 0, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
+        # cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
+        cmd = {"throttle": 0.2, "steering": 0, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         if camera_pan is not None: 
             cmd["camera_pan"] = camera_pan 
             cmd["method"] = method
