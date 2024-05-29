@@ -1,8 +1,9 @@
-class MotorDataInput{
+class MotorDataInput {
   static SCALEINPUT = document.getElementById('scale_input_box_ID');
   static OFFSETINPUT = document.getElementById('offset_input_box_ID');
-  static CONFIRMBUTTON = document.getElementById('scale_offset_confirm_button_ID');
-  static CONFIRM_CHANGE_TEXT = document.querySelector('.scale-offset-confirm-text');
+  static SCALEINPUT_TEXT = document.querySelector('.scale-input-text');
+  static OFFSETINPUT_TEXT = document.querySelector('.offset-input-text');
+
 
   static hideInputElements() {
     document.querySelector('.mobile-controller-motor-settings-container').classList.add('hidden');
@@ -14,37 +15,78 @@ class MotorDataInput{
     fetch('/teleop/user/options')
       .then(response => response.json())
       .then(data => {
+
+        // Get the current values from the backend and place them in the sliders
         this.SCALEINPUT.value = data.vehicle["ras.driver.motor.scale"];
         this.OFFSETINPUT.value = data.vehicle["ras.driver.steering.offset"];
-        this.updateConfirmButton();
+
+        // Update the text next to the slider to show the current value
+        this.SCALEINPUT_TEXT.textContent = `${this.SCALEINPUT.value}`;
+        this.OFFSETINPUT_TEXT.textContent = `${this.OFFSETINPUT.value}`;
       })
       .catch(error => {
         console.error('Error fetching data:', error);
       });
   }
 
-  static isValidScaleInput(value) {
-    const min = 0.0;
-    const max = 10.0;
-    const scale_regex = /^([1-9]\d?(\.\d\d?)?)?$/;
 
-    return (scale_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
-  }
+  static sendDataToBackend() {
+    // Create an array to store non-empty key-value pairs
+    let scaleOffsetData = [];
 
-  static isValidOffsetInput(value) {
-    const min = -2.0;
-    const max = 2.0;
-    const offset_regex = /^(\-?\d(\.\d\d?)?)?$/;
+    // Check and add non-empty scaleValue
+    if (this.SCALEINPUT.value !== "")
+      scaleOffsetData.push(["ras.driver.motor.scale", this.SCALEINPUT.value]);
 
-    return (offset_regex.test(value) && parseFloat(value) >= min && parseFloat(value) <= max);
-  }
+    // Check and add non-empty offsetValue
+    if (this.OFFSETINPUT.value !== "")
+      scaleOffsetData.push(["ras.driver.steering.offset", this.OFFSETINPUT.value]);
 
-  static updateConfirmButton() {
-    if (this.isValidScaleInput(this.SCALEINPUT.value) && this.isValidOffsetInput(this.OFFSETINPUT.value))
-      this.CONFIRMBUTTON.removeAttribute('disabled');
-    else
-      this.CONFIRMBUTTON.setAttribute('disabled', true);
+    // Create the data object that will be sent to the backend via POST
+    let data = { "vehicle": scaleOffsetData };
+
+    // console.log('Data to send:', data);
+
+    // Make POST request to the backend endpoint
+    fetch('/teleop/user/options', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(data)
+    })
+      .then(response => {
+        if (!response.ok)
+          console.error('Failed to send data.');
+      })
+      .catch(error => {
+        console.error('Error:', error);
+      });
   }
 }
+
+// When the user drags the slider around, update the text next to the slider
+MotorDataInput.SCALEINPUT.addEventListener('input', function () {
+  // Update the text next to the slider to show the current value
+  MotorDataInput.SCALEINPUT_TEXT.textContent = `${MotorDataInput.SCALEINPUT.value}`;
+});
+
+MotorDataInput.OFFSETINPUT.addEventListener('input', function () {
+  // Update the text next to the slider to show the current value
+  MotorDataInput.OFFSETINPUT_TEXT.textContent = `${MotorDataInput.OFFSETINPUT.value}`;
+});
+
+// When the user removes his finger from the slider, send the current value to the backend
+MotorDataInput.SCALEINPUT.addEventListener('change', function () {
+  // Send data to the backend
+  MotorDataInput.sendDataToBackend();
+});
+
+MotorDataInput.OFFSETINPUT.addEventListener('change', function () {
+  // Send data to the backend
+  MotorDataInput.sendDataToBackend();
+});
+
+
 
 export { MotorDataInput };

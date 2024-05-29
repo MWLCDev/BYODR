@@ -2,7 +2,7 @@ import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
 import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js"
 import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, saveDeadZoneWidth, sendJSONCommand } from "./mobileController_c_logic.js"
 import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
-
+import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
 import { followingButtonHandler } from "./mobileController_b_following.js"
 
@@ -11,6 +11,7 @@ import CTRL_STAT from './mobileController_z_state.js'; // Stands for control sta
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
 sendJSONCommand();
+MotorDataInput.showInputElements();
 let intervalId;
 let inferenceToggleButton
 
@@ -116,5 +117,8 @@ app.view.addEventListener('touchend', () => {
     }
     // Show the button again when touch ends
     followingButtonHandler.setStyle('display', 'block');
+
+    // Making the text boxes show the current data that exist on the robot
+    MotorDataInput.showInputElements();
   }
 });
