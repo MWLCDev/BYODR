@@ -129,16 +129,19 @@ class FollowingHandler(web.RequestHandler):
     def post(self):
         # Extract command as a string
         command_text = self.get_body_argument("command", default=None)
+        end_time = timestamp() + 1e5
 
-        # Prepare the command as a dictionary
-        command_dict = {
-            "following": command_text,
-            "time": timestamp(),  # Timestamp in microseconds
-        }
+        while timestamp() < end_time:
+            # Prepare the command as a dictionary
+            command_dict = {
+                "following": command_text,
+                "time": timestamp(),  # Timestamp in microseconds
+            }
 
-        # Pass the dictionary to the control function
-        logger.info(command_dict)
-        self._fn_control(command_dict)
+            # Pass the dictionary to the control function
+            self._fn_control(command_dict)
+
+            logger.info(command_dict)
         # logger.info(command_dict)
         self.write({"status": "success", "received_command": command_dict})
 
