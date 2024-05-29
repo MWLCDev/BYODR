@@ -141,7 +141,6 @@ class FollowingHandler(web.RequestHandler):
             # Pass the dictionary to the control function
             self._fn_control(command_dict)
 
-            logger.info(command_dict)
         # logger.info(command_dict)
         self.write({"status": "success", "received_command": command_dict})
 

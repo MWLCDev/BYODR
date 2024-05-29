@@ -322,8 +322,7 @@ def main():
         _mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions
     )
 
-    def send_command():
-        global stats
+    def send_camera():
         config = SafeConfigParser()
         config.read(application.get_user_config_file())
         front_camera_ip = config.get(
@@ -333,20 +332,28 @@ def main():
         camera_control = CameraControl(
             f"http://{front_camera_ip}:80", "user1", "HaikuPlot876"
         )
-
+        global stats
         while True:
             while stats == "Start Following":
                 ctrl = following.get()
                 if ctrl is not None:
-                    # if ctrl["camera_pan"] is not None:
-                    #     camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=1, method=ctrl["method"])
-                    # else:
-                    #     ctrl["camera_pan"] = 0
-                    # # will always send the current azimuth for the bottom camera while following is working
-                    # camera_azimuth, camera_elevation = camera_control.get_ptz_status()
-                    # # print(camera_azimuth)
-                    # chatter.publish({"camera_azimuth": camera_azimuth})
-                    ctrl["time"] = timestamp()
+                    if ctrl["camera_pan"] is not None:
+                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
+                    else:
+                        camera_control.adjust_ptz(pan=0, tilt=0, duration=1, method=ctrl["method"])
+                    # will always send the current azimuth for the bottom camera while following is working
+                    camera_azimuth, camera_elevation = camera_control.get_ptz_status()
+                    # print(camera_azimuth)
+                    chatter.publish({"camera_azimuth": camera_azimuth})
+            time.sleep(0.001)
+
+    def send_command():
+        global stats
+        while True:
+            while stats == "Start Following":
+                ctrl = following.get()
+                if ctrl is not None:
+                    ctrl["time"] = int(timestamp())
                     teleop_publish(ctrl)
             time.sleep(0.001)
 
@@ -354,6 +361,7 @@ def main():
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     follow_thread = threading.Thread(target=send_command)
+    camera_thread = threading.Thread(target=send_camera)
     gps_poller_snmp = GpsPollerThreadSNMP(application.rut_ip)
 
     threads = [
@@ -366,6 +374,7 @@ def main():
         logbox_thread,
         package_thread,
         follow_thread,
+        camera_thread,
         gps_poller_snmp,
     ]
 
