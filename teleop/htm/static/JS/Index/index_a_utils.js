@@ -135,7 +135,7 @@ var page_utils = {
       if (dev_tools.is_develop()) {
         _instance._capabilities = {
           'platform': {
-            'vehicle': dev_tools._random_choice(['rover1', 'carla1']),
+            'vehicle': 'rover1',
             'video': { 'front': { 'ptz': 0 }, 'rear': { 'ptz': 0 } }
           }
         };

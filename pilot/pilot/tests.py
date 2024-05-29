@@ -18,7 +18,6 @@ def test_create_and_setup(tmpdir):
     publisher = CollectPublisher()
     ipc_server = CollectServer()
     teleop = QueueReceiver()
-    ros = QueueReceiver()
     vehicle = QueueReceiver()
     ipc_chatter = QueueReceiver()
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=directory, load_instructions=True))
@@ -26,7 +25,6 @@ def test_create_and_setup(tmpdir):
     app.publisher = publisher
     app.ipc_server = ipc_server
     app.teleop = lambda: teleop.get_latest()
-    app.ros = lambda: ros.get_latest()
     app.vehicle = lambda: vehicle.get_latest()
     app.inference = lambda: None
     app.ipc_chatter = lambda: ipc_chatter.get_latest()

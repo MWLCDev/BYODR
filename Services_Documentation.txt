@@ -146,12 +146,7 @@ It also hosts the site design files necessary to draw the Web App.
 6) Vehicle
 -Input 1: Receives data in a JSON format from the Pilot service
 -Input 2: Receives data in a JSON format from the Teleop service
--Function: This process sets up a server that connects to a CARLA simulator and communicates with it to control a self-driving car. Carla is an open-source simulator for autonomous driving research. It is used to simulate the robot’s behavior in a virtual environment.
--Output 1: Sends the data to a server running an instance of CARLA. The data sent will properly represent a segment inside the simulation.
--Output 2: Sends the data to a server running an instance of CARLA. The data sent will properly represent a segment inside the simulation.
--Q1: Is this process exclusively used to send data to the CARLA simulator, and nothing else regarding the driving of the robot?
--Q2: Where is the CARLA simulation hosted?
--Q3: What do the video streams created in the server do exactly?
+-Q1: What do the video streams created in the server do exactly?
 
 7) ROS Node
 -Input 1: Receives data in a JSON format from the Pilot service
