@@ -218,9 +218,7 @@ class ConfigFiles:
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         # print(_candidates)
         required_files = ["config.ini"]
-        template_files = {
-            "config.ini": "config.template",
-        }
+        template_files = {"config.ini": "config.template"}
         # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/
         for file in required_files:
             file_path = os.path.join(self._config_dir, file)
@@ -293,8 +291,6 @@ class ConfigFiles:
             # Print changes made
             if changes_made_in_file:
                 logger.info("Updated {file} with new ip address")
-            else:
-                logger.info(f"No changes needed for {file}.")
 
 
 class RoverApplication(Application):
@@ -315,7 +311,6 @@ class RoverApplication(Application):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
         cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
-        self.logger.info(cfg)
         return cfg
 
     def _capabilities(self):
