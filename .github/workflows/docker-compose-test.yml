@@ -7,7 +7,7 @@ on:
       - '*'
 
 jobs:
-  Test_Docker:
+  Nano_Docker:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out repository
@@ -15,17 +15,17 @@ jobs:
 
       - name: Docker compose build
         run: |
-          services="zerotier wireguard httpd teleop pilot inference ftpd rosnode vehicle"
+          services="zerotier wireguard httpd teleop pilot ftpd rosnode vehicle"
           docker-compose -f docker-compose.yml -f docker-compose.override.yml build $services
 
       - name: Docker compose up
         run: |
-          services="zerotier wireguard httpd teleop pilot inference ftpd rosnode vehicle"
+          services="zerotier wireguard httpd teleop pilot ftpd rosnode vehicle"
           docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $services
           sleep 30
           docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
-  Test_Pi_Docker:
+  Pi_Docker:
     runs-on: ubuntu-20.04
 
     steps:
