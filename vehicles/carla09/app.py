@@ -63,7 +63,7 @@ class CarlaRunner(Configurable):
     def __init__(self, image_publisher):
         super(CarlaRunner, self).__init__()
         self._process_frequency = 10
-        self._patience_micro = 1000.
+        self._patience_micro = 1000.0
         self._publisher = image_publisher
         self._vehicle = CarlaHandler((lambda img, route: image_publisher.publish(img, route=route)))
 
@@ -84,8 +84,8 @@ class CarlaRunner(Configurable):
         self._vehicle.restart(**kwargs)
         _errors = self._vehicle.get_errors()
         _errors += self._publisher.restart(**kwargs)
-        self._process_frequency = parse_option('clock.hz', int, 80, _errors, **kwargs)
-        self._patience_micro = parse_option('patience.ms', int, 100, _errors, **kwargs) * 1000.
+        self._process_frequency = parse_option("clock.hz", int, 80, _errors, **kwargs)
+        self._patience_micro = parse_option("patience.ms", int, 100, _errors, **kwargs) * 1000.0
         return _errors
 
     def reset_agent(self):
@@ -114,27 +114,24 @@ class CarlaApplication(Application):
 
     def _check_user_file(self):
         # One user configuration file is optional and can be used to persist settings.
-        _candidates = glob.glob(os.path.join(self._config_dir, '*.ini'))
+        _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         if len(_candidates) == 0:
-            shutil.copyfile('config.template', os.path.join(self._config_dir, 'config.ini'))
+            shutil.copyfile("config.template", os.path.join(self._config_dir, "config.ini"))
             logger.info("Created a new user configuration file from template.")
 
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        cfg = dict(parser.items('platform')) if parser.has_section('platform') else {}
-        cfg.update(dict(parser.items('vehicle')) if parser.has_section('vehicle') else {})
-        cfg.update(dict(parser.items('camera')) if parser.has_section('camera') else {})
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+        cfg = dict(parser.items("platform")) if parser.has_section("platform") else {}
+        cfg.update(dict(parser.items("vehicle")) if parser.has_section("vehicle") else {})
+        cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
         self.logger.info(cfg)
         return cfg
 
     @staticmethod
     def _capabilities():
         # The video dimensions are determined by the websocket services.
-        return {
-            'vehicle': 'carla1',
-            'video': {'front': {'ptz': 0}, 'rear': {'ptz': 0}}
-        }
+        return {"vehicle": "carla1", "video": {"front": {"ptz": 0}, "rear": {"ptz": 0}}}
 
     def setup(self):
         if self.active():
@@ -161,7 +158,7 @@ class CarlaApplication(Application):
         runner, pilot, teleop, ipc_chatter, ipc_server = self._runner, self.pilot, self.teleop, self.ipc_chatter, self.ipc_server
         c_pilot = self._latest_or_none(pilot, patience=(runner.get_patience_micro()))
         c_teleop = self._latest_or_none(teleop, patience=(runner.get_patience_micro()))
-        if c_teleop is not None and c_teleop.get('button_a', 0):
+        if c_teleop is not None and c_teleop.get("button_a", 0):
             runner.reset_agent()
         if c_pilot is not None:
             runner.drive(c_pilot)
@@ -169,31 +166,31 @@ class CarlaApplication(Application):
             runner.noop()
         self.publisher.publish(runner.state())
         chat = self.ipc_chatter()
-        if chat and chat.get('command') == 'restart':
+        if chat and chat.get("command") == "restart":
             self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Carla vehicle client.')
-    parser.add_argument('--name', type=str, default='none', help='Process name.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
+    parser = argparse.ArgumentParser(description="Carla vehicle client.")
+    parser.add_argument("--name", type=str, default="none", help="Process name.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     args = parser.parse_args()
 
-    front_camera = ImagePublisher(url='ipc:///byodr/camera_0.sock', topic='aav/camera/0')
-    rear_camera = ImagePublisher(url='ipc:///byodr/camera_1.sock', topic='aav/camera/1')
+    front_camera = ImagePublisher(url="ipc:///byodr/camera_0.sock", topic="aav/camera/0")
+    rear_camera = ImagePublisher(url="ipc:///byodr/camera_1.sock", topic="aav/camera/1")
 
-    front_stream = NumpyImageVideoSource(name='front')
-    rear_stream = NumpyImageVideoSource(name='rear')
+    front_stream = NumpyImageVideoSource(name="front")
+    rear_stream = NumpyImageVideoSource(name="rear")
 
     image_router = RoutingImagePublisher(cameras=(front_camera, rear_camera), streams=(front_stream, rear_stream))
     application = CarlaApplication(image_router=image_router, config_dir=args.config)
 
-    pilot = json_collector(url='ipc:///byodr/pilot.sock', topic=b'aav/pilot/output', event=quit_event)
-    teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
-    ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
+    pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
+    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
-    application.publisher = JSONPublisher(url='ipc:///byodr/vehicle.sock', topic='aav/vehicle/state')
-    application.ipc_server = LocalIPCServer(url='ipc:///byodr/vehicle_c.sock', name='platform', event=quit_event)
+    application.publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
+    application.ipc_server = LocalIPCServer(url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event)
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
@@ -225,6 +222,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()

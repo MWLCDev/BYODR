@@ -53,13 +53,13 @@ def test_create_and_setup(tmpdir):
         previous_process_frequency = app.get_process_frequency()
         new_process_frequency = previous_process_frequency + 10
         _parser = SafeConfigParser()
-        _parser.add_section('inference')
-        _parser.set('inference', 'clock.hz', str(new_process_frequency))
-        with open(os.path.join(directory, 'test_config.ini'), 'w') as f:
+        _parser.add_section("inference")
+        _parser.set("inference", "clock.hz", str(new_process_frequency))
+        with open(os.path.join(directory, "test_config.ini"), "w") as f:
             _parser.write(f)
         #
         # Issue the restart request.
-        ipc_chatter.add(dict(command='restart'))
+        ipc_chatter.add(dict(command="restart"))
         app.step()
         assert len(ipc_server.collect()) == 2
         assert not bool(ipc_server.get_latest())

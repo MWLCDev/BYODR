@@ -20,8 +20,8 @@ def test_create_and_setup(tmpdir):
         # Write a new config file.
         app.setup()
         _parser = SafeConfigParser()
-        _parser.read(['config.ini'])
-        with open(app.get_user_config_file(), 'w') as f:
+        _parser.read(["config.ini"])
+        with open(app.get_user_config_file(), "w") as f:
             _parser.write(f)
         app.setup()
     finally:

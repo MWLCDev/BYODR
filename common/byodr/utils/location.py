@@ -54,9 +54,7 @@ class GeoTracker(object):
             current = self._positions[-1]
             return current[0], current[1], None
         else:
-            distance, bearing = _distance_bearing(
-                self._positions[0], (current[0], current[1])
-            )
+            distance, bearing = _distance_bearing(self._positions[0], (current[0], current[1]))
             if distance >= self._min_distance:
                 self._positions.append(current)
             return current[0], current[1], None
