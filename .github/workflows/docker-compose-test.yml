@@ -8,35 +8,25 @@ on:
 
 jobs:
   Test_Docker:
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-18.04, ubuntu-20.04]
-        #New services needs to be added here
-        include:
-          - os: ubuntu-18.04
-            services: zerotier, wireguard, httpd, teleop, pilot, inference, mongodb
-          - os: ubuntu-20.04
-            services: ftpd, rosnode, vehicle
-
+    runs-on: ubuntu-20.04
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
 
       - name: Docker compose build
         run: |
-          services="${{ matrix.services }}"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml build $(echo ${services} | tr ',' ' ')
+          services="zerotier wireguard httpd teleop pilot inference ftpd rosnode vehicle"
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml build $services
 
       - name: Docker compose up
         run: |
-          services="${{ matrix.services }}"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $(echo ${services} | tr ',' ' ')
+          services="zerotier wireguard httpd teleop pilot inference ftpd rosnode vehicle"
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $services
           sleep 30
           docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
   Test_Pi_Docker:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
 
     steps:
       - name: Check out repository
