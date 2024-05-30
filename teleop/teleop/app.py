@@ -114,71 +114,6 @@ class TeleopApplication(Application):
                 self._config_hash = _hash
 
 
-class RunGetSSIDPython(tornado.web.RequestHandler):
-    """Run a python script to get the SSID of current robot"""
-
-    async def get(self):
-        try:
-            # Use the IOLoop to run fetch_ssid in a thread
-            loop = tornado.ioloop.IOLoop.current()
-
-            config = configparser.ConfigParser()
-            config.read("/config/config.ini")
-            front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split(".")
-            network_prefix = ".".join(parts[:3])
-            router_IP = f"{network_prefix}.1"
-            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(
-                None,
-                fetch_ssid,
-                router_IP,
-                22,
-                "root",
-                "Modem001",
-                "uci get wireless.@wifi-iface[0].ssid",
-            )
-
-            logger.info(f"SSID of current robot: {ssid}")
-            self.write(ssid)
-        except Exception as e:
-            logger.error(f"Error fetching SSID of current robot: {e}")
-            self.set_status(500)
-            self.write("Error fetching SSID of current robot.")
-        self.finish()
-
-
-class Index(tornado.web.RequestHandler):
-    """The Main landing page"""
-
-    def get(self):
-        user_agent_str = self.request.headers.get("User-Agent")
-        user_agent = user_agents.parse(user_agent_str)
-
-        if user_agent.is_mobile:
-            # if user is on mobile, redirect to the mobile page
-            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
-            self.redirect("/mobile_controller_ui")
-        else:
-            # else render the index page
-            self.render("../htm/templates/index.html")
-
-
-class UserMenu(tornado.web.RequestHandler):
-    """The user menu setting page"""
-
-    def get(self):
-        print("navigating to the user menu page")
-        self.render("../htm/templates/user_menu.html")
-
-
-class MobileControllerUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
-
-    def get(self):
-        self.render("../htm/templates/mobile_controller_ui.html")
-
-
 def main():
     """
     It parses command-line arguments for configuration details and sets up various components:
@@ -238,81 +173,9 @@ def main():
     # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
-
-    def on_options_save():
-        chatter.publish(dict(time=timestamp(), command="restart"))
-        application.setup()
-
-    def list_process_start_messages():
-        return zm_client.call(dict(request="system/startup/list"))
-
-    def list_service_capabilities():
-        return zm_client.call(dict(request="system/service/capabilities"))
-
-    def get_navigation_image(image_id):
-        return route_store.get_image(image_id)
-
-    def throttle_control(cmd):
-        global current_throttle  # The throttle value that we will send in this iteration of the function. Starts as 0.0
-        throttle_change_step = 0.1  # Always 0.1
-
-        # Is it ugly, i know
-        if cmd.get("mobileInferenceState") == "true" or cmd.get("mobileInferenceState") == "auto" or cmd.get("mobileInferenceState") == "train":
-            # cmd.pop("mobileInferenceState")
-            teleop_publish(cmd)
-        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        else:
-            if "throttle" in cmd:
-                # First key of the dict, checking if its throttle or steering
-                first_key = next(iter(cmd))
-                # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
-                target_throttle = float(cmd.get("throttle"))
-
-                # If steering is the 1st key of the dict, then it means the user gives no throttle input
-                if first_key == "steering":
-                    # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
-                    braking_sign = -1 if current_throttle < 0 else 1
-
-                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                    # Dec or Inc depends on if we were going forwards or backwards
-                    current_throttle = current_throttle - (braking_sign * throttle_change_step)
-
-                    # Capping the value at 0 so that the robot does not move while idle
-                    if braking_sign > 0 and current_throttle < 0:
-                        current_throttle = 0.0
-
-                # If throttle is the 1st key of the dict, then it means the user gives throttle input
-                else:
-                    # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
-                    accelerate_sign = 0
-                    if target_throttle < current_throttle:
-                        accelerate_sign = -1
-                    elif target_throttle > current_throttle:
-                        accelerate_sign = 1
-
-                    # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                    # Dec or Inc depends on if we want to go forwards or backwards
-                    current_throttle = current_throttle + (accelerate_sign * throttle_change_step)
-
-                    # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                    if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
-                        current_throttle = target_throttle
-
-                # Sending commands to Coms/Pilot
-                cmd["throttle"] = current_throttle
-                teleop_publish(cmd)
-
-            # When we receive commands without throttle in them, we reset the current throttle value to 0
-            else:
-                current_throttle = 0
-                teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
-
-    def teleop_publish(cmd):
-        # We are the authority on route state.
-        cmd["navigator"] = dict(route=route_store.get_selected_route())
-        # print(cmd)
-        # print(vehicle.get())
-        teleop_publisher.publish(cmd)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
+    # Initialize ThrottleController
+    throttle_controller = ThrottleController(teleop_publisher, route_store)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
