@@ -194,7 +194,6 @@ class ThrottleController:
         Args:
             cmd JSON: The json sent from the front-end. Example `{"steering": 0.0, "throttle": 0.5, "time": 1717055030186955, "navigator": {"route": None}, "button_b": 1}`
         """
-        print(cmd)
         # Check if there is no smoothing required for mobile inference states
         if cmd.get("mobileInferenceState") in ["true", "auto", "train"]:
             self.teleop_publish(cmd)
@@ -226,8 +225,6 @@ class ThrottleController:
     def teleop_publish(self, cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        # print(cmd)
-        # print(vehicle.get())
         self.teleop_publisher.publish(cmd)
 
 

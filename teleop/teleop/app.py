@@ -96,14 +96,13 @@ class TeleopApplication(Application):
         config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
 
         errors = []
-        # print(config_dict)
         # Use the flattened config dictionary as **kwargs to parse_option
         # A close implementation for how the parse_option is called in the internal_start function for each service.
         self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
 
         if errors:
             for error in errors:
-                print(f"Configuration error: {error}")
+                logger.info(f"Configuration error: {error}")
 
     def setup(self):
         if self.active():
