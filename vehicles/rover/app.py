@@ -8,17 +8,14 @@ import shutil
 import subprocess
 
 from byodr.utils import Application, Configurable, PeriodicCallTrace, timestamp
-from byodr.utils.ipc import (ImagePublisher, JSONPublisher, LocalIPCServer,
-                             ReceiverThread, json_collector)
+from byodr.utils.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
 from byodr.utils.location import GeoTracker
 from byodr.utils.option import hash_dict, parse_option
 from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 
 logger = logging.getLogger(__name__)
-log_format = (
-    "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
-)
+log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
 
 
 class RasRemoteError(IOError):
@@ -39,13 +36,13 @@ class RasSpeedOdometer(object):
     def _on_receive(self, msg):
         # Some robots do not have a sensor for speed.
         # If velocity is not part of the ras message try to come up with a proxy for speed.
-        if 'velocity' in msg.keys():
-            value = float(msg.get('velocity'))
+        if "velocity" in msg.keys():
+            value = float(msg.get("velocity"))
         else:
             # The motor effort is calculated as the motor scale * the actual throttle.
             # In case the robot's maximum speed is hardware limited to 10km/h and the motor scale is 4
             # the speed factor is set to 10 / 4 / 3.6.
-            value = float(msg.get('motor_effort')) * self._motor_effort_speed_factor
+            value = float(msg.get("motor_effort")) * self._motor_effort_speed_factor
         self._values.append((value, timestamp()))
 
     def get(self):
@@ -58,7 +55,7 @@ class RasSpeedOdometer(object):
 
     def start(self):
         # The receiver thread is not restartable.
-        self._receiver = ReceiverThread(url=('{}:5555'.format(self._ras_uri)), topic=b'ras/drive/status')
+        self._receiver = ReceiverThread(url=("{}:5555".format(self._ras_uri)), topic=b"ras/drive/status")
         self._receiver.add_listener(self._on_receive)
         self._receiver.start()
 
@@ -104,17 +101,10 @@ class Platform(Configurable):
                 except RasRemoteError as rre:
                     # After 5 seconds do a hard reboot of the remote connection.
                     if rre.timeout > 5000:
-                        logger.info(
-                            f"Hard odometer reboot at {rre.timeout} ms timeout."
-                        )
+                        logger.info(f"Hard odometer reboot at {rre.timeout} ms timeout.")
                         self._quit_odometer()
                         self._start_odometer()
-            return dict(latitude_geo=latitude,
-                        longitude_geo=longitude,
-                        heading=bearing,
-                        velocity=y_vel,
-                        trust_velocity=trust_velocity,
-                        time=timestamp())
+            return dict(latitude_geo=latitude, longitude_geo=longitude, heading=bearing, velocity=y_vel, trust_velocity=trust_velocity, time=timestamp())
 
     def internal_quit(self, restarting=False):
         self._quit_odometer()
@@ -139,7 +129,7 @@ class RoverHandler(Configurable):
         super(RoverHandler, self).__init__()
         self._platform = Platform()
         self._process_frequency = 10
-        self._patience_micro = 100.
+        self._patience_micro = 100.0
         self._gst_calltrace = PeriodicCallTrace(seconds=10.0)
         self._gst_sources = []
         self._ptz_cameras = []
@@ -161,18 +151,18 @@ class RoverHandler(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        self._process_frequency = parse_option('clock.hz', int, 80, errors, **kwargs)
-        self._patience_micro = parse_option('patience.ms', int, 100, errors, **kwargs) * 1000.
+        self._process_frequency = parse_option("clock.hz", int, 80, errors, **kwargs)
+        self._patience_micro = parse_option("patience.ms", int, 100, errors, **kwargs) * 1000.0
         self._platform.restart(**kwargs)
         errors.extend(self._platform.get_errors())
         if not self._gst_sources:
-            front_camera = ImagePublisher(url='ipc:///byodr/camera_0.sock', topic='aav/camera/0')
-            rear_camera = ImagePublisher(url='ipc:///byodr/camera_1.sock', topic='aav/camera/1')
-            self._gst_sources.append(ConfigurableImageGstSource('front', image_publisher=front_camera))
-            self._gst_sources.append(ConfigurableImageGstSource('rear', image_publisher=rear_camera))
+            front_camera = ImagePublisher(url="ipc:///byodr/camera_0.sock", topic="aav/camera/0")
+            rear_camera = ImagePublisher(url="ipc:///byodr/camera_1.sock", topic="aav/camera/1")
+            self._gst_sources.append(ConfigurableImageGstSource("front", image_publisher=front_camera))
+            self._gst_sources.append(ConfigurableImageGstSource("rear", image_publisher=rear_camera))
         if not self._ptz_cameras:
-            self._ptz_cameras.append(PTZCamera('front'))
-            self._ptz_cameras.append(PTZCamera('rear'))
+            self._ptz_cameras.append(PTZCamera("front"))
+            self._ptz_cameras.append(PTZCamera("rear"))
         for item in self._gst_sources + self._ptz_cameras:
             item.restart(**kwargs)
             errors.extend(item.get_errors())
@@ -181,10 +171,7 @@ class RoverHandler(Configurable):
     def get_video_capabilities(self):
         # The video dimensions are determined by the websocket services.
         front, rear = self._gst_sources
-        return {
-            'front': {'ptz': front.get_ptz()},
-            'rear': {'ptz': rear.get_ptz()}
-        }
+        return {"front": {"ptz": front.get_ptz()}, "rear": {"ptz": rear.get_ptz()}}
 
     def _check_gst_sources(self):
         self._gst_calltrace(lambda: list(map(lambda x: x.check(), self._gst_sources)))
@@ -193,24 +180,20 @@ class RoverHandler(Configurable):
         # The front camera ptz function is enabled for teleop direct driving only.
         # Set the front camera to the home position anytime the autopilot is switched on.
         if self._ptz_cameras and c_teleop is not None:
-            c_camera = c_teleop.get('camera_id', -1)
-            _north_pressed = bool(c_teleop.get('button_y', 0))
-            _is_teleop = (c_pilot is not None and c_pilot.get('driver') == 'driver_mode.teleop.direct')
+            c_camera = c_teleop.get("camera_id", -1)
+            _north_pressed = bool(c_teleop.get("button_y", 0))
+            _is_teleop = c_pilot is not None and c_pilot.get("driver") == "driver_mode.teleop.direct"
             if _north_pressed:
-                self._ptz_cameras[0].add({'goto_home': 1})
+                self._ptz_cameras[0].add({"goto_home": 1})
             elif c_camera in (0, 1) and (c_camera == 1 or _is_teleop):
                 # Ignore the pan value on the front camera unless explicitly specified with a button press.
-                _south_pressed = bool(c_teleop.get('button_a', 0))
-                _west_pressed = bool(c_teleop.get('button_x', 0))
+                _south_pressed = bool(c_teleop.get("button_a", 0))
+                _west_pressed = bool(c_teleop.get("button_x", 0))
                 _read_pan = _west_pressed or c_camera > 0
-                tilt_value = c_teleop.get('tilt', 0)
-                pan_value = c_teleop.get('pan', 0) if _read_pan else 0
+                tilt_value = c_teleop.get("tilt", 0)
+                pan_value = c_teleop.get("pan", 0) if _read_pan else 0
                 _set_home = _west_pressed and abs(tilt_value) < 1e-2 and abs(pan_value) < 1e-2
-                command = {'pan': pan_value,
-                           'tilt': tilt_value,
-                           'set_home': 1 if _set_home else 0,
-                           'goto_home': 1 if _south_pressed else 0
-                           }
+                command = {"pan": pan_value, "tilt": tilt_value, "set_home": 1 if _set_home else 0, "goto_home": 1 if _south_pressed else 0}
                 self._ptz_cameras[c_camera].add(command)
 
     def step(self, c_pilot, c_teleop):
@@ -263,9 +246,7 @@ class ConfigFiles:
             for key, value in template_config.items(section):
                 if not config.has_option(section, key):
                     config.set(section, key, value)
-                    logger.info(
-                        f"Added missing key '{key}' in section '[{section}]' to {ini_file}"
-                    )
+                    logger.info(f"Added missing key '{key}' in section '[{section}]' to {ini_file}")
 
         # Write changes to the ini file
         with open(ini_file, "w") as configfile:
@@ -329,17 +310,16 @@ class RoverApplication(Application):
         self.ipc_chatter = None
         self._config_files_class = ConfigFiles(self._config_dir)
 
-
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        cfg = dict(parser.items('vehicle')) if parser.has_section('vehicle') else {}
-        cfg.update(dict(parser.items('camera')) if parser.has_section('camera') else {})
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+        cfg = dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
+        cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
         self.logger.info(cfg)
         return cfg
 
     def _capabilities(self):
-        return {'vehicle': 'rover1', 'video': self._handler.get_video_capabilities()}
+        return {"vehicle": "rover1", "video": self._handler.get_video_capabilities()}
 
     def setup(self):
         if self.active():
@@ -368,28 +348,28 @@ class RoverApplication(Application):
         _state = rover.step(c_pilot, c_teleop)
         publisher.publish(_state)
         chat = self.ipc_chatter()
-        if chat and chat.get('command') == 'restart':
+        if chat and chat.get("command") == "restart":
             self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Rover main.')
-    parser.add_argument('--name', type=str, default='none', help='Process name.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
+    parser = argparse.ArgumentParser(description="Rover main.")
+    parser.add_argument("--name", type=str, default="none", help="Process name.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     args = parser.parse_args()
 
     application = RoverApplication(config_dir=args.config)
     quit_event = application.quit_event
 
     # Sockets used to receive data from pilot and teleop.
-    pilot = json_collector(url='ipc:///byodr/pilot.sock', topic=b'aav/pilot/output', event=quit_event)
-    teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
-    ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
+    pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
+    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
     # Sockets used to send data to other services
-    application.state_publisher = JSONPublisher(url='ipc:///byodr/vehicle.sock', topic='aav/vehicle/state')
-    application.ipc_server = LocalIPCServer(url='ipc:///byodr/vehicle_c.sock', name='platform', event=quit_event)
-    
+    application.state_publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
+    application.ipc_server = LocalIPCServer(url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event)
+
     # Getting data from the received sockets declared above
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
@@ -408,6 +388,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format=log_format, datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()
