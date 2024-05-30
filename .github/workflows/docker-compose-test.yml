@@ -14,9 +14,9 @@ jobs:
         os: [ubuntu-18.04, ubuntu-20.04]
         include:
           - os: ubuntu-18.04
-            services: [zerotier, wireguard, httpd, teleop, pilot, inference]
+            services: zerotier, wireguard, httpd, teleop, pilot, inference
           - os: ubuntu-20.04
-            services: [mongodb, ftpd, rosnode, vehicle]
+            services: mongodb, ftpd, rosnode, vehicle
 
     steps:
       - name: Check out repository
@@ -24,13 +24,13 @@ jobs:
 
       - name: Docker compose build
         run: |
-          services="${{ matrix.services[*] }}"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml build ${services// / }
+          services="${{ matrix.services }}"
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml build $(echo ${services} | tr ',' ' ')
 
       - name: Docker compose up
         run: |
-          services="${{ matrix.services[*] }}"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d ${services// / }
+          services="${{ matrix.services }}"
+          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $(echo ${services} | tr ',' ' ')
           sleep 30
           docker-compose -f docker-compose.yml -f docker-compose.override.yml down
 
@@ -40,11 +40,10 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v2
-        # Build the Docker services: This validates the build process and catches issues related to the Dockerfile and dependencies.
+
       - name: Docker compose build (raspi)
         run: docker-compose -f raspi/docker-compose.yml build
 
-        # Run (up): Ensures that the application behaves correctly in a containerized environment.
       - name: Docker compose up (raspi)
         run: |
           docker-compose -f raspi/docker-compose.yml up -d
