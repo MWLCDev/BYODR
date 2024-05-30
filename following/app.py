@@ -41,8 +41,6 @@ class FollowingController:
         self.prev_time = int(timestamp())
 
         os.makedirs(self.image_save_path, exist_ok=True) 
- 
-        threading.Thread(target=self.request_check).start()
     
     def request_check(self):
         while True:
@@ -262,11 +260,12 @@ class FollowingController:
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
         errors = [] 
         _config = self.config 
-        self.stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
-        self.stream_uri = f"rtsp://user1:HaikuPlot876@{self.stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
+        stream_uri = parse_option('ras.master.uri', str, '192.168.1.32', errors, **_config) 
+        stream_uri = f"rtsp://user1:HaikuPlot876@{stream_uri[:-2]}65:554/Streaming/Channels/103" # Setting dynamic URI of the stream 
         self.logger.info("Loading Yolov8 model") 
-        self.results = self.model.track(source=self.stream_uri, classes=0, stream=True, conf=0.5, persist=True, verbose=True) # Image recognition with assigning IDs to objects         
-        self.logger.info("Yolov8 model loaded") 
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.5, persist=True, verbose=True) # Image recognition with assigning IDs to objects         
+        self.logger.info("Yolov8 model loaded")
+        threading.Thread(target=self.request_check).start()
  
 if __name__ == "__main__": 
     controller = FollowingController("480_20k.pt") 
