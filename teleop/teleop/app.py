@@ -256,9 +256,9 @@ def main():
                 ctrl = following.get()
                 if ctrl is not None:
                     if ctrl["camera_pan"] is not None:
-                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
+                        camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=200, method=ctrl["method"])
                     else:
-                        camera_control.adjust_ptz(pan=0, tilt=0, duration=1, method=ctrl["method"])
+                        camera_control.adjust_ptz(pan=0, tilt=0, duration=200, method=ctrl["method"])
                     # will always send the current azimuth for the bottom camera while following is working
                     camera_azimuth, camera_elevation = camera_control.get_ptz_status()
                     # print(camera_azimuth)
@@ -268,7 +268,7 @@ def main():
     def send_command():
         global stats
         while True:
-            while stats == "Start Following":
+            if stats == "Start Following":
                 ctrl = following.get()
                 if ctrl is not None:
                     ctrl["time"] = int(timestamp())

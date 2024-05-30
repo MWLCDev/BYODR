@@ -15,7 +15,7 @@ from byodr.utils.option import parse_option
 # Constants 
 SCREEN_CENTER = 320 
 CENTER_OFFSET = 0 
-SECOND_OFFSET = 20 
+SECOND_OFFSET = 80 
 THIRD_OFFSET = 70 
 START_HEIGHT = 340 
 UNSAFE_HEIGHT = 360 
@@ -38,6 +38,7 @@ class FollowingController:
         self.current_steering = 0 
         self.image_counter = 0 
         self.image_save_path = "/byodr/yolo_person" 
+        self.prev_time = int(timestamp())
 
         os.makedirs(self.image_save_path, exist_ok=True) 
  
@@ -110,7 +111,7 @@ class FollowingController:
     def setup_publisher(self): 
         return JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls") 
  
-    def publish_command(self, throttle=0, steering=0, camera_pan=None, method=None): 
+    def publish_command(self, throttle=0, steering=0, camera_pan=None, method="Momentary"): 
         cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         # cmd = {"throttle": 0.2, "steering": 0, "button_b": 1, "time": timestamp(), "navigator": {"route": None}} 
         if camera_pan is not None: 
@@ -120,6 +121,8 @@ class FollowingController:
             # cmd["method"] = "Momentary"
         self.publisher.publish(cmd) 
         self.logger.info(f"Sending command to teleop: {cmd}") 
+        print((int(timestamp())-self.prev_time)/1000, "ms between messages")
+        self.prev_time = timestamp()
  
     def safety_feature(self, boxes): 
         clear_path = self.clear_path 
@@ -145,9 +148,9 @@ class FollowingController:
             boxes = r.boxes.cpu().numpy()                    # List of bounding boxes in the frame 
             self.clear_path = self.safety_feature(boxes)      # Checking for obstructions 
             throttle, steering, camera_pan, method = self.decide_control(boxes, request)   # Calculating control commands based on the results of image detection 
-            self.track_and_save_image(r) 
+            self.track_and_save_image(r)
             self.publish_command(throttle, steering, camera_pan, method)          # Sending calculated control commands 
- 
+    
     def smooth_controls(self, target_throttle, target_steering): 
         if self.current_throttle <= (target_throttle - SMOOTH_CONTROL_STEP):                # Smoothing only if the difference is greater than the control step 
             self.current_throttle += SMOOTH_CONTROL_STEP 
@@ -161,11 +164,11 @@ class FollowingController:
  
  
     def decide_control(self, boxes, request): 
-        try:
-            azimuth = int(request['camera_azimuth'])
-            print(azimuth)
-        except:
-            azimuth = 0
+        # try:
+        #     azimuth = int(request['camera_azimuth'])
+        #     print(azimuth)
+        # except:
+        #     azimuth = 0
         if not boxes.xyxy.size:                                                             # No people detected in the frame 
             self.no_human_counter += 1 
             self.logger.info(f"No person detected for: {self.no_human_counter} frames") 
@@ -203,57 +206,57 @@ class FollowingController:
  
             # Keeping the user in the center of the camera view 
             if box_center < (SCREEN_CENTER - CENTER_OFFSET):      # left = negative steering 
-                # steering = min(0, max(-0.1, (0.00125 * box_center - 0.4)))  # 0 at 320p; 0.1 at 240p 
-                camera_pan = 0
-                method = "Momentary"
+                steering = min(0, max(-0.1, (0.00125 * box_center - 0.4)))  # 0 at 320p; 0.1 at 240p 
+                # camera_pan = 0
+                # method = "Momentary"
                 if box_center < (SCREEN_CENTER - CENTER_OFFSET - SECOND_OFFSET): 
-                    # steering = min(-0.1, max(-0.5, (0.004375 * box_center - 1.15))) # 0.1 at 400p; 0.8 at 560 (forcing max 0.5)
-                    camera_pan = int(min(-10, max(-100, (0.3 * box_center - 100)))) # -10 at 300p, -100 at 0p
-                    method = "Momentary"
-                # steering = steering*(1.2-throttle)                        # Max steering is scaled down proportionally to the throttle value, max steering = 0.16 at throttle = 1 
-                # steering = steering*(1.15-throttle*0.75)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
-                # if throttle == 0:                                           # Turning in place 
-                #     throttle = (abs(steering)/1.15)                     # Scaling back 
-                #     steering = -1                                           # Max steering, turning speed determined by throttle 
-           
-            elif box_center > (SCREEN_CENTER + CENTER_OFFSET):    # right = positive steering                 
-                # steering = max(0, min(0.1, (0.00125 * box_center - 0.4)))   # 0 at 320p; 0.1 at 400p 
-                camera_pan = 0
-                method = "Momentary"
-                if box_center > (SCREEN_CENTER + CENTER_OFFSET + SECOND_OFFSET): 
-                    # steering = max(0.1, min(0.50, (0.004375 * box_center - 1.65)))  # 0.1 at 400p; 0.8 at 560 (forcing max 0.5)
-                    camera_pan = int(max(10, min(100, (0.3 * box_center - 92))))    # 20 at 360p, 100 at 560p
-                    method = "Momentary"
-                # steering = steering*(1.2-throttle)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.16 at throttle = 1 
-                # steering = steering*(1.15-throttle*0.75)                # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
-                # if throttle == 0: 
-                #     throttle = (steering/1.15) 
-                #     steering = 1 
-             
-            if 3050 < azimuth < 3540:
-                steering = min(0, max(-0.5, (0.002 * azimuth - 7.08))) # 0 at 3050; 0.8 at 3540 (forcing max 0.5)
+                    steering = min(-0.1, max(-0.5, (0.004375 * box_center - 1.15))) # 0.1 at 400p; 0.8 at 560 (forcing max 0.5)
+                    # camera_pan = int(min(-10, max(-100, (0.3 * box_center - 100)))) # -10 at 300p, -100 at 0p
+                    # method = "Momentary"
+                steering = steering*(1.2-throttle)                        # Max steering is scaled down proportionally to the throttle value, max steering = 0.16 at throttle = 1 
                 steering = steering*(1.15-throttle*0.75)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
                 if throttle == 0:                                           # Turning in place 
                     throttle = (abs(steering)/1.15)                     # Scaling back 
-                    steering = -1 
-            elif 10 < azimuth < 500:
-                steering = max(0, min(0.5, (0.002 * azimuth - 0.02)))  # 0 at 10; 0.8 at 500 (forcing max 0.5)
+                    steering = -1                                           # Max steering, turning speed determined by throttle 
+           
+            elif box_center > (SCREEN_CENTER + CENTER_OFFSET):    # right = positive steering                 
+                steering = max(0, min(0.1, (0.00125 * box_center - 0.4)))   # 0 at 320p; 0.1 at 400p 
+                # camera_pan = 0
+                # method = "Momentary"
+                if box_center > (SCREEN_CENTER + CENTER_OFFSET + SECOND_OFFSET): 
+                    steering = max(0.1, min(0.50, (0.004375 * box_center - 1.65)))  # 0.1 at 400p; 0.8 at 560 (forcing max 0.5)
+                    # camera_pan = int(max(10, min(100, (0.3 * box_center - 92))))    # 20 at 360p, 100 at 560p
+                    # method = "Momentary"
+                steering = steering*(1.2-throttle)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.16 at throttle = 1 
                 steering = steering*(1.15-throttle*0.75)                # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
                 if throttle == 0: 
                     throttle = (steering/1.15) 
                     steering = 1 
-            # if abs(box_center - SCREEN_CENTER) >= (SCREEN_CENTER - THIRD_OFFSET) and box_height <= START_HEIGHT: 
-            #     self.logger.info("Operator on the far side") 
-            #     steering = steering/(1.15-throttle*0.75) 
-        if 500 < azimuth < 3050:
-            camera_pan = 0
-            method = "Momentary"
-            self.logger.info("Maximum camera pan reached")
+             
+            # if 3050 < azimuth < 3540:
+            #     steering = min(0, max(-0.5, (0.002 * azimuth - 7.08))) # 0 at 3050; 0.8 at 3540 (forcing max 0.5)
+            #     steering = steering*(1.15-throttle*0.75)                    # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
+            #     if throttle == 0:                                           # Turning in place 
+            #         throttle = (abs(steering)/1.15)                     # Scaling back 
+            #         steering = -1 
+            # elif 10 < azimuth < 500:
+            #     steering = max(0, min(0.5, (0.002 * azimuth - 0.02)))  # 0 at 10; 0.8 at 500 (forcing max 0.5)
+            #     steering = steering*(1.15-throttle*0.75)                # Max steering is scaled down proportionally to the throttle value, max steering = 0.32 at throttle = 1 
+            #     if throttle == 0: 
+            #         throttle = (steering/1.15) 
+            #         steering = 1 
+            if abs(box_center - SCREEN_CENTER) >= (SCREEN_CENTER - THIRD_OFFSET) and box_height <= START_HEIGHT: 
+                self.logger.info("Operator on the far side") 
+                steering = steering/(1.15-throttle*0.75) 
+        # if 500 < azimuth < 3050:
+        #     camera_pan = 0
+        #     method = "Momentary"
+        #     self.logger.info("Maximum camera pan reached")
         if self.clear_path <= MIN_CLEAR_PATH_FRAMES: 
             self.logger.info(f"Path obstructed") # No movement if too few frames with clear path passed or too many frames without any detection 
             throttle = 0 
         self.smooth_controls(throttle, steering)                        # Smoothing the movement if the commands are immediately large 
-        return self.current_throttle, self.current_steering, camera_pan, method 
+        return self.current_throttle, self.current_steering, 0, "Absolute" 
  
     def run(self): 
         self.publish_command(self.current_throttle, self.current_steering, 0, "Absolute")  # Initializing with safe values 
