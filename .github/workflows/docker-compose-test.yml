@@ -14,9 +14,9 @@ jobs:
         os: [ubuntu-18.04, ubuntu-20.04]
         include:
           - os: ubuntu-18.04
-            services: zerotier, wireguard, httpd, teleop, pilot, inference
+            services: zerotier, wireguard, httpd, teleop, pilot, inference, mongodb
           - os: ubuntu-20.04
-            services: mongodb, ftpd, rosnode, vehicle
+            services: ftpd, rosnode, vehicle
 
     steps:
       - name: Check out repository
