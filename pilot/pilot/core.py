@@ -826,8 +826,8 @@ class CommandProcessor(Configurable):
     def internal_start(self, **kwargs):
         _errors = []
         self._driver.restart(**kwargs)
-        self._process_frequency = parse_option("clock.hz", int, 50, _errors, **kwargs)
-        self._patience_micro = parse_option("patience.ms", int, 100, _errors, **kwargs) * 1000.0
+        self._process_frequency = parse_option('clock.hz', int, 80, _errors, **kwargs)
+        self._patience_micro = parse_option('patience.ms', int, 200, _errors, **kwargs) * 1000.
         self._button_north_ctl = parse_option("controller.button.north.mode", str, "driver_mode.inference.dnn", _errors, **kwargs)
         self._button_west_ctl = parse_option("controller.button.west.mode", str, "ignore", _errors, **kwargs)
         # Avoid processing the same command more than once.
@@ -890,11 +890,11 @@ class CommandProcessor(Configurable):
             self._cache_safe("decrease cruise speed", lambda: self._driver.decrease_cruise_speed())
 
     def _unpack_commands(self, teleop, ros, vehicle, inference):
-        _ts = timestamp()
+        _patience, _ts = self._patience_micro, timestamp()
         # Check if the incoming data is within the patience time limit.
-        # print("Received teleop data:", teleop)
-
-        teleop = teleop if teleop is not None else None
+        teleop = teleop if teleop is not None and (_ts - teleop.get('time') < _patience) else None
+        vehicle = vehicle if vehicle is not None and (_ts - vehicle.get('time') < _patience) else None
+        inference = inference if inference is not None and (_ts - inference.get('time') < _patience) else None
         vehicle = vehicle if vehicle is not None and (_ts - vehicle.get("time", 0) < self._patience_micro) else None
         inference = inference if inference is not None and (_ts - inference.get("time", 0) < self._patience_micro) else None
         # ROS commands are processed each time as specified in your existing logic.
