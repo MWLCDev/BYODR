@@ -30,14 +30,14 @@ def _interrupt():
 
 
 def _str(c, attr):
-    return "null" if (c is None or c.get(attr) is None) else str(c.get(attr))
+    return 'null' if (c is None or c.get(attr) is None) else str(c.get(attr))
 
 
 def _bool(c, attr):
     return 1 if (c is not None and bool(c.get(attr))) else 0
 
 
-def _float(c, attr, default=0.0):
+def _float(c, attr, default=0.):
     try:
         return default if (c is None or c.get(attr) is None) else float(c.get(attr))
     except ValueError:
@@ -45,10 +45,10 @@ def _float(c, attr, default=0.0):
 
 
 def _driver_mode_as_int(pil):
-    dr = None if pil is None else pil.get("driver")
-    if dr == "driver_mode.teleop.direct":
+    dr = None if pil is None else pil.get('driver')
+    if dr == 'driver_mode.teleop.direct':
         return 1
-    elif dr == "driver_mode.inference.dnn":
+    elif dr == 'driver_mode.inference.dnn':
         return 2
     else:
         return 0
@@ -56,11 +56,11 @@ def _driver_mode_as_int(pil):
 
 def _driver_type_as_int(pil, attr):
     x = _str(pil, attr)
-    if x == "src.console":
+    if x == 'src.console':
         return 1
-    elif x == "src.dnn.pre-intervention":
+    elif x == 'src.dnn.pre-intervention':
         return 2
-    elif x == "src.dnn":
+    elif x == 'src.dnn':
         return 4
     else:
         return 0
@@ -68,13 +68,13 @@ def _driver_type_as_int(pil, attr):
 
 def _driver_type_as_str(x):
     if x == 1:
-        return "src.console"
+        return 'src.console'
     elif x == 2:
-        return "src.dnn.pre-intervention"
+        return 'src.dnn.pre-intervention'
     elif x == 4:
-        return "src.dnn"
+        return 'src.dnn'
     else:
-        return "null"
+        return 'null'
 
 
 class PackageApplication(Application):
@@ -82,11 +82,11 @@ class PackageApplication(Application):
         super(PackageApplication, self).__init__(quit_event=event, run_hz=hz)
         self._mongo = mongo
         self._user = user
-        self._recorder_dir = get_or_create_directory(os.path.join(sessions_dir, "autopilot"))
-        self._photo_dir = get_or_create_directory(os.path.join(sessions_dir, "photos", "cam0"))
+        self._recorder_dir = get_or_create_directory(os.path.join(sessions_dir, 'autopilot'))
+        self._photo_dir = get_or_create_directory(os.path.join(sessions_dir, 'photos', 'cam0'))
         # The vehicle config fields cannot be determined here but the fields should not be empty.
-        self._vehicle = "na"
-        self._config = "na"
+        self._vehicle = 'na'
+        self._config = 'na'
 
     def setup(self):
         pass
@@ -95,51 +95,51 @@ class PackageApplication(Application):
         pass
 
     def _mark(self, item):
-        self._mongo.update_event({"_id": item.get("_id")}, {"$set": {"lb_is_packaged": 1}})
+        self._mongo.update_event({'_id': item.get('_id')}, {'$set': {"lb_is_packaged": 1}})
 
     def _write_out_photos(self):
         if not self._user.is_busy(wait_sec=10):
             items = self._mongo.list_all_non_packaged_photo_events()
             if len(items) > 0 and not self._user.is_busy(wait_sec=10):
-                _directory = os.path.join(self._photo_dir, datetime.fromtimestamp(items[0].get("time") * 1e-6).strftime("%Y%B"))
+                _directory = os.path.join(self._photo_dir, datetime.fromtimestamp(items[0].get('time') * 1e-6).strftime('%Y%B'))
                 _directory = get_or_create_directory(_directory)
-                with open(os.path.join(_directory, "photo.log"), "a+") as f:
+                with open(os.path.join(_directory, 'photo.log'), 'a+') as f:
                     for item in items:
                         self._mark(item)
-                        _timestamp = item.get("time")
-                        _dts = datetime.fromtimestamp(_timestamp * 1e-6).strftime("%Y%b%dT%H%M%S")
-                        latitude = str(item.get("veh_gps_latitude"))[:8].replace(".", "_")
-                        longitude = str(item.get("veh_gps_longitude"))[:8].replace(".", "_")
+                        _timestamp = item.get('time')
+                        _dts = datetime.fromtimestamp(_timestamp * 1e-6).strftime('%Y%b%dT%H%M%S')
+                        latitude = str(item.get('veh_gps_latitude'))[:8].replace('.', '_')
+                        longitude = str(item.get('veh_gps_longitude'))[:8].replace('.', '_')
                         fname = "{}_lat{}_long{}.jpg".format(_dts, latitude, longitude)
-                        cv2.imwrite(os.path.join(_directory, fname), cv2_image_from_bytes(item.get("img_buffer")))
+                        cv2.imwrite(os.path.join(_directory, fname), cv2_image_from_bytes(item.get('img_buffer')))
                         f.write("{} {} latitude {} longitude {}\r\n".format(_timestamp, fname, latitude, longitude))
 
     def _event(self, row, lenience_ms=30):
-        _timestamp = row.get("time")
-        _steer_src = _driver_type_as_str(row.get("pil_steering_driver"))
-        _speed_src = _driver_type_as_str(row.get("pil_speed_driver"))
+        _timestamp = row.get('time')
+        _steer_src = _driver_type_as_str(row.get('pil_steering_driver'))
+        _speed_src = _driver_type_as_str(row.get('pil_speed_driver'))
         event = Event(
             timestamp=_timestamp,
-            image_shape=row.get("img_shape"),
-            jpeg_buffer=row.get("img_buffer"),
+            image_shape=row.get('img_shape'),
+            jpeg_buffer=row.get('img_buffer'),
             steer_src=_steer_src,
             speed_src=_speed_src,
             command_src=_steer_src,
-            steering=row.get("pil_steering"),
-            desired_speed=row.get("pil_desired_speed"),
-            actual_speed=row.get("veh_velocity"),
-            heading=row.get("veh_heading"),
-            throttle=row.get("pil_throttle"),
+            steering=row.get('pil_steering'),
+            desired_speed=row.get('pil_desired_speed'),
+            actual_speed=row.get('veh_velocity'),
+            heading=row.get('veh_heading'),
+            throttle=row.get('pil_throttle'),
             command=None,
-            x_coordinate=row.get("veh_gps_latitude"),
-            y_coordinate=row.get("veh_gps_longitude"),
-            inference_brake=row.get("inf_obstruction"),
+            x_coordinate=row.get('veh_gps_latitude'),
+            y_coordinate=row.get('veh_gps_longitude'),
+            inference_brake=row.get('inf_obstruction')
         )
         event.vehicle = self._vehicle
         event.vehicle_config = self._config
         lenience = lenience_ms * 1e3
-        pil_valid = abs(_timestamp - row.get("pil_time")) < lenience
-        veh_valid = abs(_timestamp - row.get("veh_time")) < lenience
+        pil_valid = abs(_timestamp - row.get('pil_time')) < lenience
+        veh_valid = abs(_timestamp - row.get('veh_time')) < lenience
         event.valid = pil_valid and veh_valid
         return event
 
@@ -216,42 +216,40 @@ class LogApplication(Application):
     def _insert(self, trigger, content, save_image=False):
         _time, pil, veh, inf, image_md, image = content
         _img_fields = prepare_image_persist(image, persist=save_image)
-        _pil_steering_scale = _float(pil, "steering_scale", default=1.0)
-        self._mongo.insert_event(
-            {
-                "time": _time,
-                "trigger": trigger,
-                "pil_time": get_timestamp(pil),
-                "pil_cruise_speed": _str(pil, "cruise_speed"),
-                "pil_desired_speed": _str(pil, "desired_speed"),
-                "pil_driver_mode": _driver_mode_as_int(pil),
-                "pil_steering_driver": _driver_type_as_int(pil, "steering_driver"),
-                "pil_speed_driver": _driver_type_as_int(pil, "speed_driver"),
-                "pil_is_steering_intervention": _bool(pil, "forced_steering"),
-                "pil_is_throttle_intervention": _bool(pil, "forced_throttle"),
-                "pil_is_save_event": _bool(pil, "save_event"),
-                "pil_steering_scale": _pil_steering_scale,
-                "pil_steering": _str(pil, "steering"),
-                "pil_throttle": _str(pil, "throttle"),
-                "veh_time": get_timestamp(veh),
-                "veh_heading": _str(veh, "heading"),
-                "veh_gps_latitude": _str(veh, "latitude_geo"),
-                "veh_gps_longitude": _str(veh, "longitude_geo"),
-                "veh_velocity": _str(veh, "velocity"),
-                "veh_is_velocity_trusted": _bool(veh, "trust_velocity"),
-                "inf_time": get_timestamp(inf),
-                "inf_steer_action": _str(inf, "action"),
-                "inf_obstruction": _str(inf, "obstacle"),
-                "inf_steer_confidence": _str(inf, "steer_confidence"),
-                "inf_obstruction_confidence": _str(inf, "brake_confidence"),
-                "inf_total_penalty": _str(inf, "total_penalty"),
-                "img_time": get_timestamp(image_md),
-                "img_shape": _img_fields[0],
-                "img_num_bytes": _img_fields[1],
-                "img_buffer": _img_fields[2],
-                "lb_is_packaged": 0,
-            }
-        )
+        _pil_steering_scale = _float(pil, 'steering_scale', default=1.)
+        self._mongo.insert_event({
+            'time': _time,
+            'trigger': trigger,
+            'pil_time': get_timestamp(pil),
+            'pil_cruise_speed': _str(pil, 'cruise_speed'),
+            'pil_desired_speed': _str(pil, 'desired_speed'),
+            'pil_driver_mode': _driver_mode_as_int(pil),
+            'pil_steering_driver': _driver_type_as_int(pil, 'steering_driver'),
+            'pil_speed_driver': _driver_type_as_int(pil, 'speed_driver'),
+            'pil_is_steering_intervention': _bool(pil, 'forced_steering'),
+            'pil_is_throttle_intervention': _bool(pil, 'forced_throttle'),
+            'pil_is_save_event': _bool(pil, 'save_event'),
+            'pil_steering_scale': _pil_steering_scale,
+            'pil_steering': _str(pil, 'steering'),
+            'pil_throttle': _str(pil, 'throttle'),
+            'veh_time': get_timestamp(veh),
+            'veh_heading': _str(veh, 'heading'),
+            'veh_gps_latitude': _str(veh, 'latitude_geo'),
+            'veh_gps_longitude': _str(veh, 'longitude_geo'),
+            'veh_velocity': _str(veh, 'velocity'),
+            'veh_is_velocity_trusted': _bool(veh, 'trust_velocity'),
+            'inf_time': get_timestamp(inf),
+            'inf_steer_action': _str(inf, 'action'),
+            'inf_obstruction': _str(inf, 'obstacle'),
+            'inf_steer_confidence': _str(inf, 'steer_confidence'),
+            'inf_obstruction_confidence': _str(inf, 'brake_confidence'),
+            'inf_total_penalty': _str(inf, 'total_penalty'),
+            'img_time': get_timestamp(image_md),
+            'img_shape': _img_fields[0],
+            'img_num_bytes': _img_fields[1],
+            'img_buffer': _img_fields[2],
+            'lb_is_packaged': 0
+        })
 
     def setup(self):
         self._insert(TRIGGER_SERVICE_START, content=self._state.pull()[:-1])
@@ -264,9 +262,9 @@ class LogApplication(Application):
         _time, pil, veh, inf, image_md, image, pilot_all = self._state.pull()
         _contents = (_time, pil, veh, inf, image_md, image)
         # The pilot message save_event attribute is set to true by the autopilot driver to indicate the image needs recording.
-        _operator = pil is not None and pil.get("driver") is not None
-        _operator = _operator and (bool(pil.get("forced_steering", 0)) or bool(pil.get("forced_throttle", 0)))
-        _train = pil is not None and bool(pil.get("save_event", 0))
+        _operator = pil is not None and pil.get('driver') is not None
+        _operator = _operator and (bool(pil.get('forced_steering', 0)) or bool(pil.get('forced_throttle', 0)))
+        _train = pil is not None and bool(pil.get('save_event', 0))
         # Keep tabs on whether there is a user in operational command.
         if _operator or _train:
             self._user.touch()
@@ -277,6 +275,6 @@ class LogApplication(Application):
             self._queue_operator.append(_time)
             self._insert(TRIGGER_DRIVE_OPERATOR, content=_contents, save_image=False)
         # Scan the pilot commands for photo requests and process them.
-        if any([cmd.get("button_right", 0) == 1 for cmd in ([] if pilot_all is None else pilot_all)]):
+        if any([cmd.get('button_right', 0) == 1 for cmd in ([] if pilot_all is None else pilot_all)]):
             self._photos.append(_contents)
         list(map(lambda x: self._insert(TRIGGER_PHOTO_SNAPSHOT, content=x, save_image=True), self._photos.pop_all()))

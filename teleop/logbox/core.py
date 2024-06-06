@@ -9,20 +9,20 @@ from bson.objectid import ObjectId
 
 from byodr.utils import timestamp
 
-TRIGGER_SERVICE_START = 2**0
-TRIGGER_SERVICE_END = 2**1
-TRIGGER_PHOTO_SNAPSHOT = 2**2
-TRIGGER_DRIVE_OPERATOR = 2**3
-TRIGGER_DRIVE_TRAINER = 2**4
+TRIGGER_SERVICE_START = 2 ** 0
+TRIGGER_SERVICE_END = 2 ** 1
+TRIGGER_PHOTO_SNAPSHOT = 2 ** 2
+TRIGGER_DRIVE_OPERATOR = 2 ** 3
+TRIGGER_DRIVE_TRAINER = 2 ** 4
 
 
 def get_timestamp(c, default=-1):
-    return default if c is None else c.get("time")
+    return default if c is None else c.get('time')
 
 
 def jpeg_encode(image, quality=95):
-    """Higher quality leads to slightly more cpu load. Default cv jpeg quality is 95."""
-    return cv2.imencode(".jpg", image, [int(cv2.IMWRITE_JPEG_QUALITY), quality])[1]
+    """Higher quality leads to slightly more cpu load. Default cv jpeg quality is 95. """
+    return cv2.imencode('.jpg', image, [int(cv2.IMWRITE_JPEG_QUALITY), quality])[1]
 
 
 def cv2_image_from_bytes(b):
@@ -66,7 +66,7 @@ class SharedUser(object):
 def _nearest(items, ts, default=None):
     r = default
     dt = abs(ts - get_timestamp(r))
-    for item in [] if items is None else items:
+    for item in ([] if items is None else items):
         delta = abs(ts - get_timestamp(item))
         if delta < dt:
             dt = delta
@@ -77,7 +77,7 @@ def _nearest(items, ts, default=None):
 class SharedState(object):
     def __init__(self, channels, hz=20):
         self._hz = hz
-        self._patience = 1e6 / hz
+        self._patience = (1e6 / hz)
         self._camera, self._pilot, self._vehicle, self._inference = channels
         self._cached = (None, None, None)
 
@@ -121,24 +121,34 @@ class MongoLogBox(object):
 
     def ensure_indexes(self):
         _coll = self._database.events
-        _create_index_if_not_exists(_coll, [("time", pymongo.DESCENDING)], name="idx_time_descending", unique=True)
-        _create_index_if_not_exists(
-            _coll, [("time", pymongo.DESCENDING), ("pil_is_save_event", pymongo.ASCENDING), ("lb_is_packaged", pymongo.ASCENDING), ("img_num_bytes", pymongo.ASCENDING)], name="idx_non_packaged_save_events"
-        )
-        _create_index_if_not_exists(_coll, [("trigger", pymongo.ASCENDING), ("lb_is_packaged", pymongo.ASCENDING), ("img_num_bytes", pymongo.ASCENDING)], name="idx_non_packaged_save_events")
+        _create_index_if_not_exists(_coll, [('time', pymongo.DESCENDING)], name='idx_time_descending', unique=True)
+        _create_index_if_not_exists(_coll, [('time', pymongo.DESCENDING),
+                                            ('pil_is_save_event', pymongo.ASCENDING),
+                                            ('lb_is_packaged', pymongo.ASCENDING),
+                                            ('img_num_bytes', pymongo.ASCENDING)], name='idx_non_packaged_save_events')
+        _create_index_if_not_exists(_coll, [('trigger', pymongo.ASCENDING),
+                                            ('lb_is_packaged', pymongo.ASCENDING),
+                                            ('img_num_bytes', pymongo.ASCENDING)], name='idx_non_packaged_save_events')
 
     def load_event_image_fields(self, object_id):
         # Images are stored as jpeg encoded bytes.
-        event = self._database.events.find_one({"_id": ObjectId(object_id)})
-        return None if event is None else event.get("img_shape"), event.get("img_num_bytes"), event.get("img_buffer")
+        event = self._database.events.find_one({'_id': ObjectId(object_id)})
+        return None if event is None else event.get('img_shape'), event.get('img_num_bytes'), event.get('img_buffer')
 
     def paginate_events(self, load_image=False, **kwargs):
         _filter = {}
-        _projection = {} if load_image else {"img_buffer": False}
-        start = kwargs.get("start", 0)
-        length = kwargs.get("length", 10)
-        time_order = kwargs.get("order", -1)
-        cursor = self._database.events.find(filter=_filter, projection=_projection, sort=[("time", time_order)], batch_size=length, limit=length, skip=start)
+        _projection = {} if load_image else {'img_buffer': False}
+        start = kwargs.get('start', 0)
+        length = kwargs.get('length', 10)
+        time_order = kwargs.get('order', -1)
+        cursor = self._database.events.find(
+            filter=_filter,
+            projection=_projection,
+            sort=[('time', time_order)],
+            batch_size=length,
+            limit=length,
+            skip=start
+        )
         return cursor.collection.count_documents(_filter), cursor
 
     # noinspection PyUnresolvedReferences
@@ -154,11 +164,11 @@ class MongoLogBox(object):
 
     def list_next_batch_of_non_packaged_save_events(self, batch_size=1000):
         # The event must have an associated image.
-        _filter = {"pil_is_save_event": 1, "lb_is_packaged": 0, "img_num_bytes": {"$gt": 0}}
-        cursor = self._database.events.find(filter=_filter, sort=[("time", -1)], batch_size=batch_size, limit=batch_size)
+        _filter = {'pil_is_save_event': 1, 'lb_is_packaged': 0, 'img_num_bytes': {'$gt': 0}}
+        cursor = self._database.events.find(filter=_filter, sort=[('time', -1)], batch_size=batch_size, limit=batch_size)
         return list(cursor)
 
     def list_all_non_packaged_photo_events(self):
-        _filter = {"trigger": TRIGGER_PHOTO_SNAPSHOT, "lb_is_packaged": 0, "img_num_bytes": {"$gt": 0}}
+        _filter = {'trigger': TRIGGER_PHOTO_SNAPSHOT, 'lb_is_packaged': 0, 'img_num_bytes': {'$gt': 0}}
         cursor = self._database.events.find(filter=_filter)
         return list(cursor)

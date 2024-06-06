@@ -16,13 +16,13 @@ logger = logging.getLogger(__name__)
 def _translate_navigation_direction(value):
     if value is not None:
         value = value.lower()
-        if value == "left":
+        if value == 'left':
             return NavigationCommand.LEFT
-        elif value == "right":
+        elif value == 'right':
             return NavigationCommand.RIGHT
-        elif value == "ahead":
+        elif value == 'ahead':
             return NavigationCommand.AHEAD
-        elif value == "default":
+        elif value == 'default':
             return NavigationCommand.DEFAULT
     # No change in direction.
     return None
@@ -79,19 +79,17 @@ def _parse_navigation_instructions(m):
     }
     """
 
-    version = m.get("version", 1)
+    version = m.get('version', 1)
     commands = []
-    pilot = m.get("pilot")
+    pilot = m.get('pilot')
     if pilot is not None:
         nodes = pilot if isinstance(pilot, list) else [pilot]
         for node in nodes:
-            commands.append(
-                NavigationCommand(
-                    sleep=None if node.get("sleep") is None else float(node.get("sleep")),
-                    direction=_translate_navigation_direction(node.get("direction")),
-                    speed=None if node.get("speed") is None else float(node.get("speed")),
-                )
-            )
+            commands.append(NavigationCommand(
+                sleep=None if node.get('sleep') is None else float(node.get('sleep')),
+                direction=_translate_navigation_direction(node.get('direction')),
+                speed=None if node.get('speed') is None else float(node.get('speed'))
+            ))
     return NavigationInstructions(version, commands)
 
 
@@ -198,7 +196,7 @@ class FileSystemRouteDataSource(AbstractRouteDataSource):
             _now = timestamp()  # In micro seconds.
             if _now - self._load_timestamp > 1e6:
                 # Each route is a sub-directory of the base folder.
-                self.routes = [d for d in os.listdir(self.directory) if not d.startswith(".")]
+                self.routes = [d for d in os.listdir(self.directory) if not d.startswith('.')]
                 self._load_timestamp = _now
                 logger.info("Directory '{}' contains the following routes {}.".format(self.directory, self.routes))
 
@@ -228,7 +226,7 @@ class FileSystemRouteDataSource(AbstractRouteDataSource):
                 # Load the route navigation points.
                 _route_directory = os.path.join(self.directory, route_name)
                 if os.path.exists(_route_directory) and os.path.isdir(_route_directory):
-                    np_dirs = sorted([d for d in os.listdir(_route_directory) if not d.startswith(".")])
+                    np_dirs = sorted([d for d in os.listdir(_route_directory) if not d.startswith('.')])
                     logger.info("{} -> {}".format(route_name, np_dirs))
                     # Take the existing sort-order.
                     image_id = 0
@@ -238,13 +236,13 @@ class FileSystemRouteDataSource(AbstractRouteDataSource):
                             break
                         np_dir = os.path.join(self.directory, route_name, point_name)
                         _pattern = np_dir + os.path.sep
-                        im_files = sorted([f for f_ in [glob.glob(_pattern + e) for e in ("*.jpg", "*.jpeg")] for f in f_])
+                        im_files = sorted([f for f_ in [glob.glob(_pattern + e) for e in ('*.jpg', '*.jpeg')] for f in f_])
                         if len(im_files) < 1:
                             logger.info("Skipping point '{}' as there are no images for it.".format(point_name))
                             continue
                         if self.load_instructions:
-                            contents = self._get_command(os.path.join(np_dir, "command.json"))
-                            contents = contents if contents else self._get_command(os.path.join(np_dir, point_name + ".json"))
+                            contents = self._get_command(os.path.join(np_dir, 'command.json'))
+                            contents = contents if contents else self._get_command(os.path.join(np_dir, point_name + '.json'))
                             self.point_to_instructions[point_name] = _parse_navigation_instructions(contents)
                         # Collect images by navigation point.
                         for im_file in im_files:

@@ -1,5 +1,3 @@
-import concurrent.futures
-import configparser
 import glob
 import logging
 import os
@@ -7,15 +5,9 @@ import threading
 import time
 from datetime import datetime
 
-import cv2
 import folium
 import numpy as np
 import pandas as pd
-import tornado.ioloop
-import user_agents  # Check in the request header if it is a phone or not
-from byodr.utils import timestamp
-
-from .getSSID import fetch_ssid
 
 logger = logging.getLogger(__name__)
 
@@ -47,6 +39,8 @@ class OverviewConfidence:
                         time.sleep(self.sleep_time)
         except Exception as e:
             logger.error(f"Error collecting data: {e}")
+
+
 
     def process_data(self):
         self.cleaned_list = self.clean_list(self.merged_list)
@@ -180,132 +174,3 @@ class OverviewConfidence:
             self.running = False
             self.record_data_thread.join()
 
-
-class ThrottleController:
-    def __init__(self, teleop_publisher, route_store):
-        self.current_throttle = 0.0
-        self.throttle_change_step = 0.05
-        self.teleop_publisher = teleop_publisher
-        self.route_store = route_store
-
-    def throttle_control(self, cmd):
-        """Function used to smooth out the received throttle from front-end. Instead of going from a full throttle of 1 to 0, it will decrease gradually by 0.05.
-
-        Args:
-            cmd JSON: The json sent from the front-end. Example `{"steering": 0.0, "throttle": 0.5, "time": 1717055030186955, "navigator": {"route": None}, "button_b": 1}`
-        """
-        # Check if there is no smoothing required for mobile inference states
-        if cmd.get("mobileInferenceState") in ["true", "auto", "train"]:
-            self.teleop_publish(cmd)
-            return
-
-        # If no throttle or steering key present in the command, reset throttle to 0
-        if "throttle" not in cmd and "steering" not in cmd:
-            self.current_throttle = 0
-            self.teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
-            return
-
-        target_throttle = float(cmd.get("throttle", 0))
-
-        if "throttle" in cmd:
-            # Smooth the throttle change
-            if abs(target_throttle - self.current_throttle) > self.throttle_change_step:
-                # Determine the direction of change
-                throttle_direction = (target_throttle - self.current_throttle) / abs(target_throttle - self.current_throttle)
-                self.current_throttle += throttle_direction * self.throttle_change_step
-                # Ensure we don't overshoot the target throttle
-                if (throttle_direction > 0 and self.current_throttle > target_throttle) or (throttle_direction < 0 and self.current_throttle < target_throttle):
-                    self.current_throttle = target_throttle
-            else:
-                self.current_throttle = target_throttle
-
-        cmd["throttle"] = self.current_throttle
-        self.teleop_publish(cmd)
-
-    def teleop_publish(self, cmd):
-        # We are the authority on route state.
-        cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        self.teleop_publisher.publish(cmd)
-
-
-class RunGetSSIDPython(tornado.web.RequestHandler):
-    """Run a python script to get the SSID of current robot"""
-
-    async def get(self):
-        try:
-            # Use the IOLoop to run fetch_ssid in a thread
-            loop = tornado.ioloop.IOLoop.current()
-
-            config = configparser.ConfigParser()
-            config.read("/config/config.ini")
-            front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split(".")
-            network_prefix = ".".join(parts[:3])
-            router_IP = f"{network_prefix}.1"
-            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(None, fetch_ssid, router_IP, 22, "root", "Modem001", "uci get wireless.@wifi-iface[0].ssid")
-
-            logger.info(f"SSID of current robot: {ssid}")
-            self.write(ssid)
-        except Exception as e:
-            logger.error(f"Error fetching SSID of current robot: {e}")
-            self.set_status(500)
-            self.write("Error fetching SSID of current robot.")
-        self.finish()
-
-
-class DirectingUser(tornado.web.RequestHandler):
-    """Directing the user based on their used device"""
-
-    def get(self):
-        user_agent_str = self.request.headers.get("User-Agent")
-        user_agent = user_agents.parse(user_agent_str)
-
-        if user_agent.is_mobile:
-            # if user is on mobile, redirect to the mobile page
-            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
-            self.redirect("/mc")
-        else:
-            # else redirect to normal control page
-            self.redirect("/nc")
-
-
-class TemplateRenderer(tornado.web.RequestHandler):
-    # Any static routes should be added here
-    _TEMPLATES = {"nc": "index.html", "user_menu": "user_menu.html", "mc": "mobile_controller_ui.html"}
-
-    def initialize(self, page_name="nc"):
-        self.page_name = page_name
-
-    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
-        if page_name is None:
-            page_name = self.page_name
-        template_name = self._TEMPLATES.get(page_name)
-        if template_name:
-            self.render(f"../htm/templates/{template_name}")
-        else:
-            self.set_status(404)
-            self.write("Page not found.")
-
-
-class EndpointHandlers:
-    """Functions that are used as parameters for the endpoint handlers in tornado."""
-
-    def __init__(self, tel_application, tel_chatter, zm_client, route_store):
-        self.tel_application = tel_application
-        self.tel_chatter = tel_chatter
-        self.zm_client = zm_client
-        self.route_store = route_store
-
-    def on_options_save(self):
-        self.tel_chatter.publish(dict(time=timestamp(), command="restart"))
-        self.tel_application.setup()
-
-    def list_process_start_messages(self):
-        return self.zm_client.call(dict(request="system/startup/list"))
-
-    def list_service_capabilities(self):
-        return self.zm_client.call(dict(request="system/service/capabilities"))
-
-    def get_navigation_image(self, image_id):
-        return self.route_store.get_image(image_id)

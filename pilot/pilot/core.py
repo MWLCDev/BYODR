@@ -894,7 +894,7 @@ class CommandProcessor(Configurable):
         # Check if the incoming data is within the patience time limit.
         # print("Received teleop data:", teleop)
 
-        teleop = teleop if teleop is not None else None
+        teleop = teleop if teleop is not None  else None
         vehicle = vehicle if vehicle is not None and (_ts - vehicle.get("time", 0) < self._patience_micro) else None
         inference = inference if inference is not None and (_ts - inference.get("time", 0) < self._patience_micro) else None
         # ROS commands are processed each time as specified in your existing logic.

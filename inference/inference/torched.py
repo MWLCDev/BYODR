@@ -41,21 +41,6 @@ def _newest_file(paths, pattern):
     return match
 
 
-# def _maneuver_index(turn='general.fallback'):
-#     _options = {'general.fallback': 0, 'intersection.left': 1, 'intersection.ahead': 2, 'intersection.right': 3}
-#     return _options[turn]
-#
-#
-# def _index_maneuver(index=0):
-#     _options = {0: 'general.fallback', 1: 'intersection.left', 2: 'intersection.ahead', 3: 'intersection.right'}
-#     return _options[index]
-#
-#
-# def maneuver_intention(turn='general.fallback', dtype=np.float32):
-#     command = np.zeros(4, dtype=dtype)
-#     command[_maneuver_index(turn=turn)] = 1
-#     return command
-
 
 class TRTDriver(object):
     def __init__(self, user_directory, internal_directory, gpu_id=0, runtime_compilation=1):

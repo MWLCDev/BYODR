@@ -16,7 +16,7 @@ class SingleChannelUsbRelay(object):
     HALJIA USB-relaismodule USB Smart Control Switch Intelligent Switch Control USB Relais module
     """
 
-    def __init__(self, vendor=0x1A86, product=0x7523):
+    def __init__(self, vendor=0x1a86, product=0x7523):
         self._vendor = vendor
         self._product = product
         self._device = None
@@ -38,8 +38,7 @@ class SingleChannelUsbRelay(object):
             self._endpoint = usb.util.find_descriptor(
                 _intf,
                 # match the first OUT endpoint
-                custom_match=(lambda _e: usb.util.endpoint_direction(_e.bEndpointAddress) == usb.util.ENDPOINT_OUT),
-            )
+                custom_match=(lambda _e: usb.util.endpoint_direction(_e.bEndpointAddress) == usb.util.ENDPOINT_OUT))
 
             if self._endpoint is None:
                 logger.error("Endpoint not found.")
@@ -60,11 +59,17 @@ class DoubleChannelUsbRelay(object):
     ICQUANZX SRD-05VDC-SL-C 2-way
     """
 
-    def __init__(self, vendor=0x16C0, product=0x05DF):
+    def __init__(self, vendor=0x16c0, product=0x05df):
         self._vendor = vendor
         self._product = product
-        self._device_on = [[0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], [0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]]
-        self._device_off = [[0xFC, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00], [0xFC, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]]
+        self._device_on = [
+            [0xFF, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            [0xFF, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ]
+        self._device_off = [
+            [0xFC, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00],
+            [0xFC, 0x02, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        ]
         self._device = None
 
     def find(self):
@@ -124,8 +129,8 @@ class FourChannelUsbRelay(object):
 
     MAX_GPIO_INDEX = 4
 
-    CP210X_VENDOR_ID = 0x10C4
-    CP210X_PRODUCT_ID = 0xEA60
+    CP210X_VENDOR_ID = 0x10c4
+    CP210X_PRODUCT_ID = 0xea60
 
     CP210X_REQUEST_TYPE_READ = CTRL_IN | CTRL_TYPE_VENDOR
     CP210X_REQUEST_TYPE_WRITE = CTRL_OUT | CTRL_TYPE_VENDOR

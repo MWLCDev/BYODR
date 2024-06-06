@@ -67,7 +67,7 @@ class QueueCamera(object):
 
 
 class CollectPublisher(object):
-    def __init__(self, topic=""):
+    def __init__(self, topic=''):
         """
         A drop-in replacement for ipc JSONPublisher.
         :param topic: The default topic.
