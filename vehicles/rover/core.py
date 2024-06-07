@@ -93,7 +93,8 @@ class ConfigurableImageGstSource(Configurable):
         _command = gst_commands.get(_type).format(**config)
         self._sink = create_image_source(self._name, shape=self._shape, command=_command)
         self._sink.add_listener(self._publish)
-        logger.info(f"Gst '{self._name}' command={ _command}")
+        rtsp_url = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:{config['port']}{config['path']}"
+        logger.info(f"Gst '{self._name}' command={rtsp_url}")
         return _errors
 
 
@@ -232,7 +233,6 @@ class PTZCamera(Configurable):
                 _flipcode[1] = -1 if _flip in ("tilt", "both") else 1
             _port = 80 if _protocol == "http" else 443
             _url = "{protocol}://{server}:{port}{path}".format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
-            logger.info("PTZ camera url={}.".format(_url))
             logger.info(f"PTZ camera url={_url}.")
             if self._worker is None:
                 self._worker = CameraPtzThread(_url, _user, _password, speed=_speed, flip=_flipcode)

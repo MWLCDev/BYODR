@@ -85,20 +85,20 @@ class CarlaHandler(Configurable):
 
     def internal_start(self, **kwargs):
         _errors = []
-        _remote = parse_option('host.location', str, '127.0.0.1:2000', _errors, **kwargs)
-        _img_wh = parse_option('camera.image.input.shape', str, '640x480', errors=_errors, **kwargs)
+        _remote = parse_option("host.location", str, "127.0.0.1:2000", _errors, **kwargs)
+        _img_wh = parse_option("camera.image.input.shape", str, "640x480", errors=_errors, **kwargs)
         carla_host, carla_port = _remote, 2000
-        if ':' in carla_host:
-            host, port = carla_host.split(':')
+        if ":" in carla_host:
+            host, port = carla_host.split(":")
             carla_host, carla_port = host, int(port)
         carla_client = carla.Client(carla_host, carla_port)
-        carla_client.set_timeout(5.)
-        _shape = [int(x) for x in _img_wh.split('x')]
+        carla_client.set_timeout(5.0)
+        _shape = [int(x) for x in _img_wh.split("x")]
         _shape = (_shape[1], _shape[0], 3)
         self._image_shape = _shape
-        self._rand_weather_seconds = parse_option('weather.random.each.seconds', int, 180, _errors, **kwargs)
-        self._spawn_preferred_id = parse_option('world.spawn.preferred.id', int, -1, _errors, **kwargs)
-        self._spawn_preferred_weather = parse_option('world.spawn.preferred.weather', str, 'ClearNoon', _errors, **kwargs)
+        self._rand_weather_seconds = parse_option("weather.random.each.seconds", int, 180, _errors, **kwargs)
+        self._spawn_preferred_id = parse_option("world.spawn.preferred.id", int, -1, _errors, **kwargs)
+        self._spawn_preferred_weather = parse_option("world.spawn.preferred.weather", str, "ClearNoon", _errors, **kwargs)
         self._world = carla_client.get_world()
         self._traffic_manager = carla_client.get_trafficmanager(self._tm_port)
         self._traffic_manager.global_percentage_speed_difference(65)
@@ -114,25 +114,25 @@ class CarlaHandler(Configurable):
             if sensor.is_alive:
                 sensor.destroy()
 
-    def _create_camera(self, sensor_type='sensor.camera.rgb'):
+    def _create_camera(self, sensor_type="sensor.camera.rgb"):
         camera_bp = self._world.get_blueprint_library().find(sensor_type)
         # Modify the attributes of the blueprint to set image resolution and field of view.
         im_height, im_width = self._image_shape[:2]
-        camera_bp.set_attribute('image_size_x', '{}'.format(im_width))
-        camera_bp.set_attribute('image_size_y', '{}'.format(im_height))
+        camera_bp.set_attribute("image_size_x", "{}".format(im_width))
+        camera_bp.set_attribute("image_size_y", "{}".format(im_height))
         # camera_bp.set_attribute('fov', '150')
         # Set the time in seconds between sensor captures
-        camera_bp.set_attribute('sensor_tick', "{:2.2f}".format(1. / 50))
+        camera_bp.set_attribute("sensor_tick", "{:2.2f}".format(1.0 / 50))
         return camera_bp
 
     def reset(self, attempt=0):
-        logger.info('Resetting ...')
+        logger.info("Resetting ...")
         self._in_carla_autopilot = False
         self._in_reverse = False
         self._destroy()
         #
         blueprint_library = self._world.get_blueprint_library()
-        vehicle_bp = blueprint_library.find('vehicle.tesla.model3')
+        vehicle_bp = blueprint_library.find("vehicle.tesla.model3")
         spawn_points = self._world.get_map().get_spawn_points()
         spawn_id = self._spawn_preferred_id if attempt == 0 and self._spawn_preferred_id >= 0 else np.random.randint(len(spawn_points))
         spawn_point = spawn_points[spawn_id]
@@ -147,19 +147,15 @@ class CarlaHandler(Configurable):
         # Attach the camera's - defaults at https://carla.readthedocs.io/en/latest/cameras_and_sensors/.
         # Provide the position of the sensor relative to the vehicle.
         # Tell the world to spawn the sensor, don't forget to attach it to your vehicle actor.
-        camera_front = self._world.spawn_actor(self._create_camera(),
-                                               Transform(Location(x=1.25, z=1.4)),
-                                               attach_to=self._actor)
-        camera_rear = self._world.spawn_actor(self._create_camera(),
-                                              Transform(Location(x=-1.0, z=2.0), Rotation(pitch=180, roll=180)),
-                                              attach_to=self._actor)
+        camera_front = self._world.spawn_actor(self._create_camera(), Transform(Location(x=1.25, z=1.4)), attach_to=self._actor)
+        camera_rear = self._world.spawn_actor(self._create_camera(), Transform(Location(x=-1.0, z=2.0), Rotation(pitch=180, roll=180)), attach_to=self._actor)
         self._sensors.append(camera_front)
         self._sensors.append(camera_rear)
         # Subscribe to the sensor stream by providing a callback function,
         # this function is called each time a new image is generated by the sensor.
         camera_front.listen(lambda data: self._on_camera(data, camera=0))
         camera_rear.listen(lambda data: self._on_camera(data, camera=1))
-        self._traffic_manager.ignore_lights_percentage(self._actor, 100.)
+        self._traffic_manager.ignore_lights_percentage(self._actor, 100.0)
         self._set_weather(use_preset=True)
         # The tracker need recreation through the actor dependency.
         if self._geo_tracker is not None:
@@ -177,7 +173,7 @@ class CarlaHandler(Configurable):
     def _carla_vel(self):
         # Carla measures in meters and seconds.
         velocity = self._actor.get_velocity()
-        return math.sqrt(velocity.x ** 2 + velocity.y ** 2 + velocity.z ** 2)
+        return math.sqrt(velocity.x**2 + velocity.y**2 + velocity.z**2)
 
     # def _heading(self):
     #     return 0 if self._actor is None else self._actor.get_transform().rotation.yaw
@@ -202,23 +198,23 @@ class CarlaHandler(Configurable):
             logger.error("{}".format(e))
 
     def _track_autopilot(self, driver_mode):
-        if driver_mode in ('driver_mode.inference.dnn', 'driver_mode.automatic.backend'):
+        if driver_mode in ("driver_mode.inference.dnn", "driver_mode.automatic.backend"):
             self._in_reverse = False
-        _autopilot = driver_mode == 'driver_mode.automatic.backend'
+        _autopilot = driver_mode == "driver_mode.automatic.backend"
         if self._in_carla_autopilot != _autopilot:
             self._in_carla_autopilot = _autopilot
             self._actor.set_autopilot(_autopilot, self._tm_port)
 
     def _track_reverse(self, command):
         if self._in_reverse:
-            self._in_reverse = command.get('throttle') <= 0
+            self._in_reverse = command.get("throttle") <= 0
         else:
-            self._in_reverse = self._velocity() < 1e-2 and command.get('throttle') < -.99  # and command.get('arrow_down', 0) == 1
+            self._in_reverse = self._velocity() < 1e-2 and command.get("throttle") < -0.99  # and command.get('arrow_down', 0) == 1
 
     def _set_weather(self, use_preset=False):
         preset = self._spawn_preferred_weather if use_preset else None
         if use_preset or (self._rand_weather_seconds > 0 and time.time() > self._change_weather_time):
-            presets = [x for x in dir(carla.WeatherParameters) if re.match('[A-Z].+', x)]
+            presets = [x for x in dir(carla.WeatherParameters) if re.match("[A-Z].+", x)]
             preset = preset if preset in presets else np.random.choice(presets)
             logger.info("Setting the weather to '{}'.".format(preset))
             self._world.set_weather(getattr(carla.WeatherParameters, preset))
@@ -231,15 +227,9 @@ class CarlaHandler(Configurable):
             ap_steering = self._actor.get_control().steer
             ap_throttle = self._actor.get_control().throttle
         latitude, longitude, bearing = self._geo_tracker.get()
-        return dict(latitude_geo=latitude,
-                    longitude_geo=longitude,
-                    heading=bearing,
-                    velocity=self._velocity(),
-                    trust_velocity=1,
-                    auto_active=ap_active,
-                    auto_steering=ap_steering,
-                    auto_throttle=ap_throttle,
-                    time=timestamp())
+        return dict(
+            latitude_geo=latitude, longitude_geo=longitude, heading=bearing, velocity=self._velocity(), trust_velocity=1, auto_active=ap_active, auto_steering=ap_steering, auto_throttle=ap_throttle, time=timestamp()
+        )
 
     def tick(self, _):
         if self._actor is not None and self._actor.is_alive:
@@ -251,7 +241,7 @@ class CarlaHandler(Configurable):
 
     def drive(self, cmd):
         if cmd is not None and self._actor is not None:
-            self._track_autopilot(cmd.get('driver'))
+            self._track_autopilot(cmd.get("driver"))
             self._track_reverse(cmd)
             if not self._in_carla_autopilot:
-                self._drive(steering=cmd.get('steering'), throttle=cmd.get('throttle'))
+                self._drive(steering=cmd.get("steering"), throttle=cmd.get("throttle"))

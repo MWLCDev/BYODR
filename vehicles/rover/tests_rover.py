@@ -23,9 +23,9 @@ def test_rover_create_and_setup(tmpdir):
 
     try:
         # The application writes a new user configuration file if none exists at the configuration location.
-        assert len(glob.glob(os.path.join(directory, 'config.ini'))) == 0
+        assert len(glob.glob(os.path.join(directory, "config.ini"))) == 0
         app.setup()
-        assert len(glob.glob(os.path.join(directory, 'config.ini'))) == 1
+        assert len(glob.glob(os.path.join(directory, "config.ini"))) == 1
 
         # The settings must result in a workable instance.
         assert len(ipc_server.collect()) == 1
@@ -38,13 +38,13 @@ def test_rover_create_and_setup(tmpdir):
         previous_process_frequency = app.get_hz()
         new_process_frequency = previous_process_frequency + 10
         _parser = SafeConfigParser()
-        _parser.add_section('vehicle')
-        _parser.set('vehicle', 'clock.hz', str(new_process_frequency))
-        with open(os.path.join(directory, 'test_config.ini'), 'w') as f:
+        _parser.add_section("vehicle")
+        _parser.set("vehicle", "clock.hz", str(new_process_frequency))
+        with open(os.path.join(directory, "test_config.ini"), "w") as f:
             _parser.write(f)
         #
         # Issue the restart request.
-        ipc_chatter.add(dict(command='restart'))
+        ipc_chatter.add(dict(command="restart"))
         app.step()
         assert len(ipc_server.collect()) == 2
         assert not bool(ipc_server.get_latest())

@@ -3,21 +3,20 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
-import concurrent.futures
 import configparser
 import glob
+import logging
 import multiprocessing
+import os
 import signal
+import threading
 from concurrent.futures import ThreadPoolExecutor
 
-import tornado.ioloop
 import tornado.web
-import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import Application, ApplicationExit, hash_dict
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
-from htm.plot_training_sessions_map.draw_training_sessions import draw_training_sessions
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -26,8 +25,8 @@ from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from .getSSID import fetch_ssid
 from .server import *
+from .tel_utils import DirectingUser, EndpointHandlers, RunGetSSIDPython, TemplateRenderer, ThrottleController
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +38,6 @@ signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
-current_throttle = 0
 
 # Variable in use for the following
 stats = None
@@ -101,14 +99,13 @@ class TeleopApplication(Application):
         config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
 
         errors = []
-        # print(config_dict)
         # Use the flattened config dictionary as **kwargs to parse_option
         # A close implementation for how the parse_option is called in the internal_start function for each service.
         self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
 
         if errors:
             for error in errors:
-                print(f"Configuration error: {error}")
+                logger.info(f"Configuration error: {error}")
 
     def setup(self):
         if self.active():
@@ -118,71 +115,6 @@ class TeleopApplication(Application):
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
-
-
-class RunGetSSIDPython(tornado.web.RequestHandler):
-    """Run a python script to get the SSID of current robot"""
-
-    async def get(self):
-        try:
-            # Use the IOLoop to run fetch_ssid in a thread
-            loop = tornado.ioloop.IOLoop.current()
-
-            config = configparser.ConfigParser()
-            config.read("/config/config.ini")
-            front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split(".")
-            network_prefix = ".".join(parts[:3])
-            router_IP = f"{network_prefix}.1"
-            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(
-                None,
-                fetch_ssid,
-                router_IP,
-                22,
-                "root",
-                "Modem001",
-                "uci get wireless.@wifi-iface[0].ssid",
-            )
-
-            logger.info(f"SSID of current robot: {ssid}")
-            self.write(ssid)
-        except Exception as e:
-            logger.error(f"Error fetching SSID of current robot: {e}")
-            self.set_status(500)
-            self.write("Error fetching SSID of current robot.")
-        self.finish()
-
-
-class Index(tornado.web.RequestHandler):
-    """The Main landing page"""
-
-    def get(self):
-        user_agent_str = self.request.headers.get("User-Agent")
-        user_agent = user_agents.parse(user_agent_str)
-
-        if user_agent.is_mobile:
-            # if user is on mobile, redirect to the mobile page
-            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
-            self.redirect("/mobile_controller_ui")
-        else:
-            # else render the index page
-            self.render("../htm/templates/index.html")
-
-
-class UserMenu(tornado.web.RequestHandler):
-    """The user menu setting page"""
-
-    def get(self):
-        print("navigating to the user menu page")
-        self.render("../htm/templates/user_menu.html")
-
-
-class MobileControllerUI(tornado.web.RequestHandler):
-    """Load the user interface for mobile controller"""
-
-    def get(self):
-        self.render("../htm/templates/mobile_controller_ui.html")
 
 
 def main():
@@ -233,23 +165,16 @@ def main():
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
 
     logbox_user = SharedUser()
-    logbox_state = SharedState(
-        channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())),
-        hz=16,
-    )
+    logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
 
     def send_camera():
         config = SafeConfigParser()
         config.read(application.get_user_config_file())
-        front_camera_ip = config.get(
-            "camera", "front.camera.ip", fallback="192.168.1.64"
-        )
+        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
 
-        camera_control = CameraControl(
-            f"http://{front_camera_ip}:80", "user1", "HaikuPlot876"
-        )
+        camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
         global stats
         while True:
             if stats == "Start Following":
@@ -278,7 +203,6 @@ def main():
                     teleop_publish(ctrl)
             time.sleep(0.001)
 
-
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     follow_thread = threading.Thread(target=send_command)
@@ -303,10 +227,11 @@ def main():
     [t.start() for t in threads]
 
     teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
-
-    # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
+    # Initialize ThrottleController
+    throttle_controller = ThrottleController(teleop_publisher, route_store)
 
     def on_options_save():
         chatter.publish(dict(time=timestamp(), command="restart"))
@@ -401,97 +326,37 @@ def main():
         main_app = web.Application(
             [
                 # Landing page
-                (r"/", Index),
-                (r"/user_menu", UserMenu),  # Navigate to user menu settings page
-                (
-                    r"/mobile_controller_ui",
-                    MobileControllerUI,
-                ),  # Navigate to Mobile controller UI
-                (
-                    # Getting the commands from the mobile controller (commands are sent in JSON)
-                    r"/ws/send_mobile_controller_commands",
-                    MobileControllerCommands,
-                    dict(fn_control=throttle_control),
-                ),
+                (r"/", DirectingUser),
+                # Navigate to normal controller page
+                (r"/(nc)", TemplateRenderer),
+                # Navigate to user menu settings page
+                (r"/(user_menu)", TemplateRenderer),
+                # Navigate to Mobile controller UI
+                (r"/(mc)", TemplateRenderer),
+                # Getting the commands from the mobile controller (commands are sent in JSON)
+                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
                 (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
-                (
-                    r"/switch_following",
-                    FollowingHandler,
-                    dict(fn_control=teleop_publish_to_following),
-                ),
+                (r"/switch_following", FollowingHandler, dict(fn_control=teleop_publish_to_following)),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
-                (
-                    r"/ws/switch_confidence",
-                    ConfidenceHandler,
-                    dict(
-                        inference_s=inference,
-                        vehicle_s=vehicle,
-                    ),
-                ),
-                (
-                    r"/api/datalog/event/v10/table",
-                    DataTableRequestHandler,
-                    dict(mongo_box=_mongo),
-                ),
-                (
-                    r"/api/datalog/event/v10/image",
-                    JPEGImageRequestHandler,
-                    dict(mongo_box=_mongo),
-                ),  # Get the commands from the controller in normal UI
-                (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_control)),
-                (
-                    r"/ws/log",
-                    MessageServerSocket,
-                    dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek()))),
-                ),
-                (
-                    r"/ws/cam/front",
-                    CameraMJPegSocket,
-                    dict(image_capture=(lambda: camera_front.capture())),
-                ),
-                (
-                    r"/ws/cam/rear",
-                    CameraMJPegSocket,
-                    dict(image_capture=(lambda: camera_rear.capture())),
-                ),
-                (
-                    r"/ws/nav",
-                    NavImageHandler,
-                    dict(fn_get_image=(lambda image_id: get_navigation_image(image_id))),
-                ),
-                (
-                    # Get or save the options for the user
-                    r"/teleop/user/options",
-                    ApiUserOptionsHandler,
-                    dict(
-                        user_options=(UserOptions(application.get_user_config_file())),
-                        fn_on_save=on_options_save,
-                    ),
-                ),
-                (
-                    r"/teleop/system/state",
-                    JSONMethodDumpRequestHandler,
-                    dict(fn_method=list_process_start_messages),
-                ),
-                (
-                    r"/teleop/system/capabilities",
-                    JSONMethodDumpRequestHandler,
-                    dict(fn_method=list_service_capabilities),
-                ),
-                (
-                    r"/teleop/navigation/routes",
-                    JSONNavigationHandler,
-                    dict(route_store=route_store),
-                ),
-                (
-                    # Path to where the static files are stored (JS,CSS, images)
-                    r"/(.*)",
-                    web.StaticFileHandler,
-                    {"path": os.path.join(os.path.sep, "app", "htm")},
-                ),
+                (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
+                (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),
+                (r"/api/datalog/event/v10/image", JPEGImageRequestHandler, dict(mongo_box=_mongo)),
+                # Get the commands from the controller in normal UI
+                (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_controller.throttle_control)),
+                (r"/ws/log", MessageServerSocket, dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek())))),
+                (r"/ws/cam/front", CameraMJPegSocket, dict(image_capture=(lambda: camera_front.capture()))),
+                (r"/ws/cam/rear", CameraMJPegSocket, dict(image_capture=(lambda: camera_rear.capture()))),
+                (r"/ws/nav", NavImageHandler, dict(fn_get_image=(lambda image_id: endpoint_handlers.get_navigation_image(image_id)))),
+                # Get or save the options for the user
+                (r"/teleop/user/options", ApiUserOptionsHandler, dict(user_options=(UserOptions(application.get_user_config_file())), fn_on_save=endpoint_handlers.on_options_save)),
+                (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_process_start_messages)),
+                (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
+                (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
+                # Path to where the static files are stored (JS,CSS, images)
+                (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
             ],  # Disable request logging with an empty lambda expression
-            # Always restart after you change path of folder/file
+            # un/comment if you want to see the requests from tornado
             log_function=lambda *args, **kwargs: None,
         )
         http_server = HTTPServer(main_app, xheaders=True)

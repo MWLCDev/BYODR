@@ -40,7 +40,6 @@ class LatestImageHandler(tornado.web.RequestHandler):
         try:
             # Fetch all jpg files directly, assuming the folder contains only images
             image_files = [f for f in os.listdir(self.image_save_path) if f.endswith('.jpg')]
-
             # Get full paths
             full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
 

@@ -7,7 +7,7 @@ import gi
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 
-gi.require_version('Gst', '1.0')
+gi.require_version("Gst", "1.0")
 
 from gi.repository import GObject, Gst
 
@@ -38,11 +38,11 @@ def bus_message(bus, message, loop):
 
 
 def parse_width_height(key, default_value, errors, **kwargs):
-    return [int(x) for x in parse_option(key, str, default_value, errors=errors, **kwargs).split('x')]
+    return [int(x) for x in parse_option(key, str, default_value, errors=errors, **kwargs).split("x")]
 
 
 class NumpyImageVideoSource(Configurable):
-    def __init__(self, name='front'):
+    def __init__(self, name="front"):
         super(NumpyImageVideoSource, self).__init__()
         self._stream_width, self._stream_height = 640, 480
         self._name = name
@@ -70,7 +70,7 @@ class NumpyImageVideoSource(Configurable):
         self._listeners.remove(listener)
 
     def _publish(self, sink):
-        buffer = sink.emit('pull-sample').get_buffer()
+        buffer = sink.emit("pull-sample").get_buffer()
         array = buffer.extract_dup(0, buffer.get_size())
         for listen in self._listeners:
             listen(array)
@@ -81,7 +81,7 @@ class NumpyImageVideoSource(Configurable):
             if self._source is not None:
                 buffer = Gst.Buffer.new_wrapped(image.tobytes())
                 sample = Gst.Sample.new(buffer, self._caps, None, None)
-                self._source.emit('push-sample', sample)
+                self._source.emit("push-sample", sample)
 
     def _close(self):
         if self._source is not None:
@@ -100,37 +100,33 @@ class NumpyImageVideoSource(Configurable):
         # This method runs under lock.
         self._close()
         _errors = []
-        input_width, input_height = parse_width_height('camera.image.input.shape', '640x480', _errors, **kwargs)
-        bitrate = parse_option(self._name + '.video.encoding.bitrate', int, 1024, errors=_errors, **kwargs)
-        self._stream_width, self._stream_height = parse_width_height(self._name + '.video.output.shape', '640x480', _errors, **kwargs)
+        input_width, input_height = parse_width_height("camera.image.input.shape", "640x480", _errors, **kwargs)
+        bitrate = parse_option(self._name + ".video.encoding.bitrate", int, 1024, errors=_errors, **kwargs)
+        self._stream_width, self._stream_height = parse_width_height(self._name + ".video.output.shape", "640x480", _errors, **kwargs)
         if len(_errors) == 0:
-            _args = dict(input_width=input_width,
-                         input_height=input_height,
-                         bitrate=bitrate,
-                         stream_width=self._stream_width,
-                         stream_height=self._stream_height)
-            command = "appsrc name=source emit-signals=True is-live=True " \
-                      "caps=video/x-raw,format=BGR,width={input_width},height={input_height} ! " \
-                      "videoconvert ! queue ! " \
-                      "videoscale ! video/x-raw,width={stream_width},height={stream_height} ! " \
-                      "queue ! x264enc bframes=0 bitrate={bitrate} b-adapt=0 tune=zerolatency key-int-max=60 ! " \
-                      "video/x-h264,profile=baseline,stream-format=\"byte-stream\" ! queue ! " \
-                      "appsink name=sink emit-signals=true sync=false async=false max-buffers=1 drop=true".format(**_args)
+            _args = dict(input_width=input_width, input_height=input_height, bitrate=bitrate, stream_width=self._stream_width, stream_height=self._stream_height)
+            command = (
+                "appsrc name=source emit-signals=True is-live=True "
+                "caps=video/x-raw,format=BGR,width={input_width},height={input_height} ! "
+                "videoconvert ! queue ! "
+                "videoscale ! video/x-raw,width={stream_width},height={stream_height} ! "
+                "queue ! x264enc bframes=0 bitrate={bitrate} b-adapt=0 tune=zerolatency key-int-max=60 ! "
+                'video/x-h264,profile=baseline,stream-format="byte-stream" ! queue ! '
+                "appsink name=sink emit-signals=true sync=false async=false max-buffers=1 drop=true".format(**_args)
+            )
             pipeline = Gst.parse_launch(command)
             loop = GObject.MainLoop()
             bus = pipeline.get_bus()
             bus.add_signal_watch()
             bus.connect("message", bus_message, loop)
-            src = pipeline.get_by_name('source')
+            src = pipeline.get_by_name("source")
             # src.set_property("format", Gst.Format.TIME)
             # src.set_property("block", True)
-            src.set_property('format', 'time')
-            src.set_property('do-timestamp', True)
-            _caps = "video/x-raw,format=BGR,width={input_width},height={input_height},framerate={fps}/1".format(
-                **dict(input_width=input_width, input_height=input_height, fps=20)
-            )
-            video_sink = pipeline.get_by_name('sink')
-            video_sink.connect('new-sample', self._publish)
+            src.set_property("format", "time")
+            src.set_property("do-timestamp", True)
+            _caps = "video/x-raw,format=BGR,width={input_width},height={input_height},framerate={fps}/1".format(**dict(input_width=input_width, input_height=input_height, fps=20))
+            video_sink = pipeline.get_by_name("sink")
+            video_sink.connect("new-sample", self._publish)
             pipeline.set_state(Gst.State.PLAYING)
             self._caps = Gst.Caps.from_string(_caps)
             self._pipeline = pipeline
