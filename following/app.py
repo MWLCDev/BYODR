@@ -300,7 +300,7 @@ class FollowingController:
 
             # Smaller bbox height means the detected person is further away from the camera
             if box_height <= START_HEIGHT:  # Starting movement if person is far enough
-                throttle = max(0.2, min(1, ((-(0.01) * box_height) + 3.6)))  # 0.2 at 340p height; 1 at 240p height
+                throttle = max(0.2, min(1, ((-(0.01) * box_height) + 3.6)))  # 0.2 at 340p height; 1 at 260p height
 
             if self.clear_path <= MIN_CLEAR_PATH_FRAMES:
                 # self.logger.info(f"Path obstructed, only spinning allowed") # No movement if too few frames with clear path passed or too many frames without any detection
