@@ -224,11 +224,6 @@ class Navigator(object):
             self._network.deactivate()
 
 
-def _norm_scale(v, min_=0.0, max_=1.0):
-    """Zero values below the minimum but let values larger than the maximum be scaled up."""
-    return abs(max(0.0, v - min_) / (max_ - min_))
-
-
 def _null_expression(*args):
     logger.warning("Null expression used on args '{}'".format(args))
     return 100
@@ -271,6 +266,7 @@ class TFRunner(Configurable):
     def internal_start(self, **kwargs):
         _errors = []
         self._gpu_id = parse_option("gpu.id", int, 0, _errors, **kwargs)
+        # Maximum speed it can go to, is 26 fps
         self._process_frequency = parse_option("clock.hz", int, 20, _errors, **kwargs)
         self._steering_scale_left = parse_option("driver.dnn.steering.scale.left", lambda x: abs(float(x)), -1, _errors, **kwargs)
         self._steering_scale_right = parse_option("driver.dnn.steering.scale.right", float, 1, _errors, **kwargs)
@@ -354,7 +350,6 @@ class InferenceApplication(Application):
         _override = os.path.join(self._config_dir, "inference")
         [parser.read(_f) for _f in self._glob(self._internal_models, "*.ini") + self._glob(_override, "*.ini")]
         cfg = dict(parser.items("inference")) if parser.has_section("inference") else {}
-        logger.info(cfg)
         return cfg
 
     def get_process_frequency(self):
@@ -372,13 +367,6 @@ class InferenceApplication(Application):
     def finish(self):
         self._runner.quit()
 
-    # def run(self):
-    #     from byodr.utils import Profiler
-    #     profiler = Profiler()
-    #     with profiler():
-    #         super(InferenceApplication, self).run()
-    #     profiler.dump_stats('/config/inference.stats')
-
     def step(self):
         # Leave the state as is on empty teleop state.
         c_teleop = self.teleop()
@@ -388,6 +376,7 @@ class InferenceApplication(Application):
             c_route = None if c_teleop is None else c_teleop.get("navigator").get("route")
             state = self._runner.forward(image=image, route=c_route)
             state["_fps"] = self.get_actual_hz()
+            # print(state)
             self.publisher.publish(state)
         chat = self.ipc_chatter()
         if chat is not None:
