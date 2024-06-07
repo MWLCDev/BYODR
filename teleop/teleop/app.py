@@ -154,12 +154,7 @@ def main():
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
-    following = json_collector(
-        url="ipc:///byodr/following.sock",
-        topic=b"aav/following/controls",
-        event=quit_event,
-        hwm=1,
-    )
+    following = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
 
@@ -207,18 +202,7 @@ def main():
     follow_thread = threading.Thread(target=send_command)
     camera_thread = threading.Thread(target=send_camera)
 
-    threads = [
-        camera_front,
-        camera_rear,
-        pilot,
-        following,
-        vehicle,
-        inference,
-        logbox_thread,
-        package_thread,
-        follow_thread,
-        camera_thread,
-    ]
+    threads = [camera_front, camera_rear, pilot, following, vehicle, inference, logbox_thread, package_thread, follow_thread, camera_thread]
 
     if quit_event.is_set():
         return 0
@@ -231,7 +215,6 @@ def main():
     endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     # Initialize ThrottleController
     throttle_controller = ThrottleController(teleop_publisher, route_store)
-
 
     def teleop_publish(cmd):
         # We are the authority on route state.
