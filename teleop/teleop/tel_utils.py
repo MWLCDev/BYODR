@@ -5,15 +5,21 @@ import logging
 import os
 import threading
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import cv2
 import folium
 import numpy as np
 import pandas as pd
+import requests
 import tornado.ioloop
 import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
+
+# needs to be installed on the router
+from pysnmp.hlapi import *
+from requests.auth import HTTPDigestAuth
 
 from .getSSID import fetch_ssid
 
@@ -131,7 +137,8 @@ class OverviewConfidence:
         m.save(file_path)
         with open(file_path, "r") as file:
             content = file.read()
-        offline_dep = self.use_local_files(content)  # Ensure this method is defined to handle local file dependencies
+            # Ensure this method is defined to handle local file dependencies
+        offline_dep = self.use_local_files(content)  
 
         with open(file_path, "w") as file:
             file.write(offline_dep)
@@ -309,3 +316,78 @@ class EndpointHandlers:
 
     def get_navigation_image(self, image_id):
         return self.route_store.get_image(image_id)
+
+
+class CameraControl:
+    def __init__(self, base_url, user, password):
+        self.base_url = base_url
+        self.user = user
+        self.password = password
+
+    def adjust_ptz(self, pan=None, tilt=None, method="Momentary", duration=500):
+        if method == "Momentary":
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+            payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+        else:  # Absolute
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+            payload = f"<PTZData><AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><absoluteZoom>10</absoluteZoom></AbsoluteHigh></PTZData>"
+
+        response = requests.put(
+            url,
+            auth=HTTPDigestAuth(self.user, self.password),
+            data=payload,
+            headers={"Content-Type": "application/xml"},
+        )
+        try:
+            response.raise_for_status()
+            return "Success: PTZ adjusted."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def get_ptz_status(self):
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/status"
+        try:
+            response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
+            response.raise_for_status()
+
+            # Parse the response XML
+            xml_root = ET.fromstring(response.content)
+            # Fix namespace issue
+            ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
+            azimuth = xml_root.find(".//hik:azimuth", ns).text
+            elevation = xml_root.find(".//hik:elevation", ns).text
+            return (azimuth, elevation)
+        except requests.exceptions.RequestException as e:
+            return f"Failed to get PTZ status: {e}"
+        except ET.ParseError as e:
+            return f"XML parsing error: {e}"
+
+    def set_home_position(base_url, user, password):
+        """
+        Sets the current position of the PTZ camera as the home position.
+
+        Returns:
+            str: Response from the camera.
+        """
+        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
+        response = requests.put(url, auth=HTTPDigestAuth(user, password))
+        try:
+            response.raise_for_status()
+            return "Success: Home position set."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def goto_home_position(base_url, user, password):
+        """
+        Moves the PTZ camera to its home position.
+
+        Returns:
+            str: Response from the camera.
+        """
+        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
+        response = requests.put(url, auth=HTTPDigestAuth(user, password))
+        try:
+            response.raise_for_status()
+            return "Success: Camera moved to home position."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"

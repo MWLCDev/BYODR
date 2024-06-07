@@ -18,7 +18,7 @@ from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 from tornado.gen import coroutine
-
+from byodr.utils import timestamp
 from .tel_utils import *
 
 logger = logging.getLogger(__name__)
@@ -27,6 +27,38 @@ logger = logging.getLogger(__name__)
 import tornado.websocket
 
 latest_message = {}
+
+class LatestImageHandler(tornado.web.RequestHandler):
+    def initialize(self, path):
+        self.image_save_path = path
+
+    def get(self):
+        self.set_header("Content-Type", "image/jpeg")
+        self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.set_header("Pragma", "no-cache")
+        self.set_header("Expires", "0")
+        try:
+            # Fetch all jpg files directly, assuming the folder contains only images
+            image_files = [f for f in os.listdir(self.image_save_path) if f.endswith('.jpg')]
+            # Get full paths
+            full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
+
+            # Sort files by creation time
+            full_paths.sort(key=os.path.getctime, reverse=True)
+
+            if full_paths:
+                # Open the most recent file
+                with open(full_paths[0], "rb") as img:
+                    self.write(img.read())
+            else:
+                self.write("No images available.")
+
+        except Exception as e:
+            self.write(f"Error fetching the latest image: {str(e)}")
+            self.set_status(500)  # Internal Server Error
+
+        finally:
+            self.finish()
 
 
 class MobileControllerCommands(tornado.websocket.WebSocketHandler):
@@ -81,6 +113,29 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
             return
         except Exception as e:
             logger.error("Error in on_message: {}".format(str(e)))
+
+
+class FollowingHandler(web.RequestHandler):
+    def initialize(self, **kwargs):
+        self._fn_control = kwargs.get("fn_control")
+
+    def post(self):
+        # Extract command as a string
+        command_text = self.get_body_argument("command", default=None)
+        end_time = timestamp() + 1e5
+
+        while timestamp() < end_time:
+            # Prepare the command as a dictionary
+            command_dict = {
+                "following": command_text,
+                "time": timestamp(),  # Timestamp in microseconds
+            }
+
+            # Pass the dictionary to the control function
+            self._fn_control(command_dict)
+
+        # logger.info(command_dict)
+        self.write({"status": "success", "received_command": command_dict})
 
 
 class ControlServerSocket(websocket.WebSocketHandler):

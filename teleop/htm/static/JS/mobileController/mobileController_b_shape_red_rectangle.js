@@ -10,7 +10,6 @@ class Rectangle
 
     // Initiator methods of the class
     this.container.addChild(this.graphics);
-    this.drawRectangle();
     this.drawText();
   }
   

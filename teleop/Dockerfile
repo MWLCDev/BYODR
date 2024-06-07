@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install -y \
 # /\ unzip utility
 RUN python3 -m pip install -U pip
 
-RUN pip3 install pymongo tornado folium Flask flask_socketio paramiko user-agents pysnmp pyasn1 pyasn1-modules
+RUN pip3 install pymongo tornado folium Flask flask_socketio paramiko user-agents pysnmp pyasn1 pyasn1-modules py-spy
 
 # Ignore deprecation problem from cryptography 
 #/usr/local/lib/python3.6/dist-packages/pymongo/pyopenssl_context.py:26: CryptographyDeprecationWarning: Python 3.6 is no longer supported by the Python core team. Therefore, support for it is deprecated in cryptography. The next release of cryptography will remove support for Python 3.6.

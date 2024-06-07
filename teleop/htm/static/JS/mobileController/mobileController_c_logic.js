@@ -235,7 +235,7 @@ function handleTriangleMove(y, inferenceToggleButton) {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
   }
-  else if (CTRL_STAT.detectedTriangle === 'bottom') {
+  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawBottomTriangle_TopRectangle(yOffset);
   }

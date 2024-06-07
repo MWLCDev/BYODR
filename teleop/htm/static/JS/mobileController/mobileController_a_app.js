@@ -4,6 +4,7 @@ import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMov
 import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
 import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
 import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
+import { followingButtonHandler } from "./mobileController_b_following.js"
 
 import { app, changeTrianglesColor, redraw } from "./mobileController_d_pixi.js"
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
@@ -31,10 +32,13 @@ document.getElementById('deadZoneWidth').addEventListener('input', function () {
 });
 
 window.addEventListener('resize', () => {
-  app.renderer.resize(window.innerWidth, window.innerHeight);
-  topTriangle.updateDimensions();
-  bottomTriangle.updateDimensions();
-  redraw();
+  // To not show the triangles if the stream canvas is shown
+  if (followingButtonHandler.getFollowingState != "active") {
+    app.renderer.resize(window.innerWidth, window.innerHeight);
+    topTriangle.updateDimensions();
+    bottomTriangle.updateDimensions();
+    redraw();
+  }
 });
 
 app.view.addEventListener('touchstart', (event) => {
@@ -50,6 +54,9 @@ app.view.addEventListener('touchstart', (event) => {
         console.error("Connection lost with the robot. Please reconnect");
         break;
       default:
+        if (followingButtonHandler.toggleButton.innerText === "Stop Following") {
+          followingButtonHandler.sendSwitchFollowingRequest("Stop Following")
+        }
         document.getElementById("mobile-controller-top-input-container").style.display = "none";
         document.getElementById("mobile-controller-bottom-input-container").style.display = "none";
         startOperating(event)
@@ -63,6 +70,10 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
+
+  // Hide the button when triangles are pressed
+  followingButtonHandler.setStyle('display', 'none');
+
   cursorFollowingDot.show()
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
@@ -104,6 +115,8 @@ app.view.addEventListener('touchend', () => {
       cursorFollowingDot.hide()
       clearTimeout(intervalId);
     }
+    // Show the button again when touch ends
+    followingButtonHandler.setStyle('display', 'block');
 
     // Making the text boxes show the current data that exist on the robot
     MotorDataInput.showInputElements();
