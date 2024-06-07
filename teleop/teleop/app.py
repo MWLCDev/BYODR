@@ -257,9 +257,9 @@ def main():
                 if ctrl is not None:
                     try:
                         if ctrl["camera_pan"] is not None:
-                            camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=200, method=ctrl["method"])
+                            camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
                         else:
-                            camera_control.adjust_ptz(pan=0, tilt=0, duration=200, method=ctrl["method"])
+                            camera_control.adjust_ptz(pan=0, tilt=0, duration=100, method=ctrl["method"])
                     except Exception as e:
                         pass
                     # will always send the current azimuth for the bottom camera while following is working
