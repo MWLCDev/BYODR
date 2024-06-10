@@ -20,7 +20,7 @@ from fol_utils import FollowingController
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(threadName)s %(message)s"
 
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
