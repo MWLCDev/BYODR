@@ -22,6 +22,20 @@ services:
       - CAP_SYS_RAWIO
     volumes:
       - volume_zerotier_config:/var/lib/zerotier-one:rw
+  wireguard:
+    cpuset: '0'
+    image: masipcat/wireguard-go
+    container_name: wireguard
+    restart: always
+    network_mode: host
+    devices:
+      - '/dev/net/tun'
+    cap_add:
+      - SYS_ADMIN
+      - NET_ADMIN
+      - CAP_SYS_RAWIO
+    volumes:
+      - volume_wireguard_config:/etc/wireguard:rw
   httpd:
     cpuset: '0'
     build:
