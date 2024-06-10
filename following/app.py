@@ -80,7 +80,7 @@ def main():
     args = parser.parse_args()
 
     # Communication sockets.
-    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    teleop_cha = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event, hwm=1)
 
     application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
     controller = FollowingController(model_path="480_20k.pt", user_config_args=application.get_user_config_file_contents())
@@ -89,10 +89,11 @@ def main():
     controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
 
     # Getting data from the received sockets declared above
-    controller.teleop = lambda: teleop.get()
-    threads = [teleop]
+    controller.teleop_chatter = lambda: teleop_cha.get()
     controller.run()
     application.setup()
+    threads = [teleop_cha, controller.request_check_thread]
+
     if quit_event.is_set():
         return 0
 
@@ -104,6 +105,7 @@ def main():
         quit_event.set()
 
     logger.info("Waiting on threads to stop.")
+    [t.join() for t in threads]
 
 
 if __name__ == "__main__":
