@@ -1,5 +1,3 @@
-import concurrent.futures
-import configparser
 import glob
 import logging
 import os
@@ -7,21 +5,18 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
+import configparser
 
-import cv2
+
 import folium
-import numpy as np
 import pandas as pd
 import requests
-import tornado.ioloop
-import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 
 # needs to be installed on the router
 from pysnmp.hlapi import *
 from requests.auth import HTTPDigestAuth
 
-from .getSSID import fetch_ssid
 
 logger = logging.getLogger(__name__)
 
@@ -235,66 +230,6 @@ class ThrottleController:
         self.teleop_publisher.publish(cmd)
 
 
-class RunGetSSIDPython(tornado.web.RequestHandler):
-    """Run a python script to get the SSID of current robot"""
-
-    async def get(self):
-        try:
-            # Use the IOLoop to run fetch_ssid in a thread
-            loop = tornado.ioloop.IOLoop.current()
-
-            config = configparser.ConfigParser()
-            config.read("/config/config.ini")
-            front_camera_ip = config["camera"]["front.camera.ip"]
-            parts = front_camera_ip.split(".")
-            network_prefix = ".".join(parts[:3])
-            router_IP = f"{network_prefix}.1"
-            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(None, fetch_ssid, router_IP, 22, "root", "Modem001", "uci get wireless.@wifi-iface[0].ssid")
-
-            logger.info(f"SSID of current robot: {ssid}")
-            self.write(ssid)
-        except Exception as e:
-            logger.error(f"Error fetching SSID of current robot: {e}")
-            self.set_status(500)
-            self.write("Error fetching SSID of current robot.")
-        self.finish()
-
-
-class DirectingUser(tornado.web.RequestHandler):
-    """Directing the user based on their used device"""
-
-    def get(self):
-        user_agent_str = self.request.headers.get("User-Agent")
-        user_agent = user_agents.parse(user_agent_str)
-
-        if user_agent.is_mobile:
-            # if user is on mobile, redirect to the mobile page
-            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
-            self.redirect("/mc")
-        else:
-            # else redirect to normal control page
-            self.redirect("/nc")
-
-
-class TemplateRenderer(tornado.web.RequestHandler):
-    # Any static routes should be added here
-    _TEMPLATES = {"nc": "index.html", "user_menu": "user_menu.html", "mc": "mobile_controller_ui.html"}
-
-    def initialize(self, page_name="nc"):
-        self.page_name = page_name
-
-    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
-        if page_name is None:
-            page_name = self.page_name
-        template_name = self._TEMPLATES.get(page_name)
-        if template_name:
-            self.render(f"../htm/templates/{template_name}")
-        else:
-            self.set_status(404)
-            self.write("Page not found.")
-
-
 class EndpointHandlers:
     """Functions that are used as parameters for the endpoint handlers in tornado."""
 
@@ -332,12 +267,7 @@ class CameraControl:
             url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
             payload = f"<PTZData><AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><absoluteZoom>10</absoluteZoom></AbsoluteHigh></PTZData>"
 
-        response = requests.put(
-            url,
-            auth=HTTPDigestAuth(self.user, self.password),
-            data=payload,
-            headers={"Content-Type": "application/xml"},
-        )
+        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
         try:
             response.raise_for_status()
             return "Success: PTZ adjusted."
@@ -363,12 +293,7 @@ class CameraControl:
             return f"XML parsing error: {e}"
 
     def set_home_position(base_url, user, password):
-        """
-        Sets the current position of the PTZ camera as the home position.
-
-        Returns:
-            str: Response from the camera.
-        """
+        """Sets the current position of the PTZ camera as the home position."""
         url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
         response = requests.put(url, auth=HTTPDigestAuth(user, password))
         try:
@@ -378,12 +303,7 @@ class CameraControl:
             return f"Error: {err}"
 
     def goto_home_position(base_url, user, password):
-        """
-        Moves the PTZ camera to its home position.
-
-        Returns:
-            str: Response from the camera.
-        """
+        """Moves the PTZ camera to its home position."""
         url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
         response = requests.put(url, auth=HTTPDigestAuth(user, password))
         try:
@@ -398,6 +318,15 @@ class FollowingUtils:
         self.tel_chatter = tel_chatter
         self.tel_publisher = tel_publisher
 
+    def configs(self, user_config_file_dir):
+        config = configparser.SafeConfigParser()
+        config.read(user_config_file_dir)
+        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
+        self.camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
+
+    def get_following_state(self):
+        return self.following_stats
+
     def send_camera(self):
         if self.stats == "Start Following":
             ctrl = self.following.get()
@@ -411,7 +340,7 @@ class FollowingUtils:
                     logger.error(f"Exception in camera control: {e}")
                 # will always send the current azimuth for the bottom camera while following is working
                 camera_azimuth, camera_elevation = self.camera_control.get_ptz_status()
-                # logger.info(camera_azimuth)
+                logger.info(camera_azimuth)
                 self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
 
     def send_command(self):
@@ -423,3 +352,4 @@ class FollowingUtils:
 
     def teleop_publish_to_following(self, cmd):
         self.tel_chatter.publish(cmd)
+        self.following_stats = cmd["following"]

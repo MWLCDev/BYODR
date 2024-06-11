@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import collections
+import configparser
 import json
 import logging
 import os
@@ -13,12 +14,14 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+import tornado.ioloop
+import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
-from tornado.gen import coroutine
-from byodr.utils import timestamp
+
+from .getSSID import fetch_ssid
 from .tel_utils import *
 
 logger = logging.getLogger(__name__)
@@ -27,6 +30,7 @@ logger = logging.getLogger(__name__)
 import tornado.websocket
 
 latest_message = {}
+
 
 class LatestImageHandler(tornado.web.RequestHandler):
     def initialize(self, path):
@@ -39,7 +43,7 @@ class LatestImageHandler(tornado.web.RequestHandler):
         self.set_header("Expires", "0")
         try:
             # Fetch all jpg files directly, assuming the folder contains only images
-            image_files = [f for f in os.listdir(self.image_save_path) if f.endswith('.jpg')]
+            image_files = [f for f in os.listdir(self.image_save_path) if f.endswith(".jpg")]
             # Get full paths
             full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
 
@@ -129,7 +133,7 @@ class FollowingHandler(web.RequestHandler):
             command_dict = {
                 "following": command_text,
                 # Timestamp in microseconds
-                "time": timestamp(),  
+                "time": timestamp(),
             }
 
             # Pass the dictionary to the control function
@@ -531,3 +535,63 @@ class JSONNavigationHandler(JSONRequestHandler):
         elif action in ("close", "toggle"):
             self._store.close()
         self.write(json.dumps(dict(message="ok")))
+
+
+class RunGetSSIDPython(tornado.web.RequestHandler):
+    """Run a python script to get the SSID of current robot"""
+
+    async def get(self):
+        try:
+            # Use the IOLoop to run fetch_ssid in a thread
+            loop = tornado.ioloop.IOLoop.current()
+
+            config = configparser.ConfigParser()
+            config.read("/config/config.ini")
+            front_camera_ip = config["camera"]["front.camera.ip"]
+            parts = front_camera_ip.split(".")
+            network_prefix = ".".join(parts[:3])
+            router_IP = f"{network_prefix}.1"
+            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
+            ssid = await loop.run_in_executor(None, fetch_ssid, router_IP, 22, "root", "Modem001", "uci get wireless.@wifi-iface[0].ssid")
+
+            logger.info(f"SSID of current robot: {ssid}")
+            self.write(ssid)
+        except Exception as e:
+            logger.error(f"Error fetching SSID of current robot: {e}")
+            self.set_status(500)
+            self.write("Error fetching SSID of current robot.")
+        self.finish()
+
+
+class DirectingUser(tornado.web.RequestHandler):
+    """Directing the user based on their used device"""
+
+    def get(self):
+        user_agent_str = self.request.headers.get("User-Agent")
+        user_agent = user_agents.parse(user_agent_str)
+
+        if user_agent.is_mobile:
+            # if user is on mobile, redirect to the mobile page
+            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
+            self.redirect("/mc")
+        else:
+            # else redirect to normal control page
+            self.redirect("/nc")
+
+
+class TemplateRenderer(tornado.web.RequestHandler):
+    # Any static routes should be added here
+    _TEMPLATES = {"nc": "index.html", "user_menu": "user_menu.html", "mc": "mobile_controller_ui.html"}
+
+    def initialize(self, page_name="nc"):
+        self.page_name = page_name
+
+    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
+        if page_name is None:
+            page_name = self.page_name
+        template_name = self._TEMPLATES.get(page_name)
+        if template_name:
+            self.render(f"../htm/templates/{template_name}")
+        else:
+            self.set_status(404)
+            self.write("Page not found.")

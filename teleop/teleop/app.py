@@ -15,7 +15,6 @@ from concurrent.futures import ThreadPoolExecutor
 from byodr.utils import Application, ApplicationExit, hash_dict
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.option import parse_option
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -25,7 +24,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import DirectingUser, EndpointHandlers, RunGetSSIDPython, TemplateRenderer, ThrottleController, FollowingUtils
+from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
 
 logger = logging.getLogger(__name__)
 
@@ -55,18 +54,17 @@ def _load_nav_image(fname):
 
 
 class TeleopApplication(Application):
+    """set up configuration directory and a configuration file path
+
+    Args:
+        event: allow for thread-safe signaling between processes or threads.
+    """
+
     def __init__(self, tel_chatter, tel_publisher, event, config_dir=os.getcwd()):
-        """set up configuration directory and a configuration file path
-
-        Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
-
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its .ini configuration files.
-        """
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
-        self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._user_config_file = None
         self.rut_ip = None
         self.stats = None
         self.following_utils = FollowingUtils(tel_chatter, tel_publisher)
@@ -91,6 +89,7 @@ class TeleopApplication(Application):
     def setup(self):
         if self.active():
             self._check_user_config()
+            self.following_utils.configs(self._user_config_file)
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
@@ -200,7 +199,7 @@ def main():
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
-                # Path to where the static files are stored (JS,CSS, images)
+                # Path to where the static files are stored (JS, CSS, images)
                 (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
             ],  # Disable request logging with an empty lambda expression
             # un/comment if you want to see the requests from tornado
