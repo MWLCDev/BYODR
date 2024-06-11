@@ -20,7 +20,7 @@ from fol_utils import FollowingController
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(threadName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
 
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
@@ -83,7 +83,7 @@ def main():
     teleop_cha = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event, hwm=1)
 
     application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
-    controller = FollowingController(model_path="480_20k.pt", user_config_args=application.get_user_config_file_contents())
+    controller = FollowingController(model_path="yolov8n.engine", user_config_args=application.get_user_config_file_contents())
 
     # Sockets used to send data to other services
     controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
@@ -92,7 +92,7 @@ def main():
     controller.teleop_chatter = lambda: teleop_cha.get()
     controller.run()
     application.setup()
-    threads = [teleop_cha, controller.request_check_thread]
+    threads = [teleop_cha]
 
     if quit_event.is_set():
         return 0
