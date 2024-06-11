@@ -1,5 +1,4 @@
-FROM mwlvdev/jetson-nano-ubuntu:bionic-torch1.11-cp38-cuda10.2
-#FROM ultralytics/ultralytics:latest-arm64
+FROM  mwlvdev/jetson-nano-ubuntu:bionic-torch1.10-cp38-cuda10.2-TRT
 
 
 RUN apt-get update && apt-get install -y \
@@ -8,9 +7,9 @@ RUN apt-get update && apt-get install -y \
   python3-pip
 
 # Install necessary Python libraries
-RUN python3 -m pip install --upgrade pip
+RUN /bin/bash -c "source /venv/bin/activate && pip install --no-cache --upgrade pip"
 # libraries from utils libraries
-RUN python3 -m pip install numpy pyzmq lap simple-pid
+RUN /bin/bash -c "source /venv/bin/activate && pip install --no-cache pip install numpy pyzmq lap simple-pid"
 
 # Copy your application files
 COPY ./common/ /common/
@@ -21,4 +20,4 @@ WORKDIR /app
 ENV PYTHONPATH "${PYTHONPATH}:/common"
 
 # Command to run your application
-CMD ["python3", "app.py"]
+CMD ["/bin/bash", "-c", "source /venv/bin/activate && python3 app.py"]
