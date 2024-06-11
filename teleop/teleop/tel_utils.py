@@ -316,6 +316,28 @@ class CameraControl:
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
+    def set_preset_position(self, preset_id):
+        """Sets the current position of the PTZ camera as a preset position."""
+        with self.lock:
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/preset/{preset_id}"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            try:
+                response.raise_for_status()
+                return f"Success: Preset position {preset_id} set."
+            except requests.exceptions.HTTPError as err:
+                return f"Error: {err}"
+
+    def goto_preset_position(self, preset_id):
+        """Moves the PTZ camera to a specific preset position."""
+        with self.lock:
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/preset/{preset_id}/goto"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            try:
+                response.raise_for_status()
+                return f"Success: Camera moved to preset position {preset_id}."
+            except requests.exceptions.HTTPError as err:
+                return f"Error: {err}"
+
 
 class FollowingUtils:
     def __init__(self, tel_chatter, tel_publisher):
