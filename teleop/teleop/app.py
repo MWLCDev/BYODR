@@ -25,7 +25,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import DirectingUser, EndpointHandlers, RunGetSSIDPython, TemplateRenderer, ThrottleController
+from .tel_utils import DirectingUser, EndpointHandlers, RunGetSSIDPython, TemplateRenderer, ThrottleController, FollowingUtils
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def _load_nav_image(fname):
 
 
 class TeleopApplication(Application):
-    def __init__(self, event, config_dir=os.getcwd()):
+    def __init__(self, tel_chatter, tel_publisher, event, config_dir=os.getcwd()):
         """set up configuration directory and a configuration file path
 
         Args:
@@ -68,6 +68,8 @@ class TeleopApplication(Application):
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
         self.rut_ip = None
+        self.stats = None
+        self.following_utils = FollowingUtils(tel_chatter, tel_publisher)
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -86,34 +88,17 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
-    def read_user_config(self):
-        """
-        Reads the configuration file, flattens the configuration sections and keys,
-        and initializes components with specific configuration values.
-        """
-        config = configparser.ConfigParser()
-        config.read(self.get_user_config_file())
-
-        # Flatten the configuration sections and keys into a single dictionary
-        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
-
-        errors = []
-        # Use the flattened config dictionary as **kwargs to parse_option
-        # A close implementation for how the parse_option is called in the internal_start function for each service.
-        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
-
-        if errors:
-            for error in errors:
-                logger.info(f"Configuration error: {error}")
-
     def setup(self):
         if self.active():
             self._check_user_config()
-            self.read_user_config()
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
+
+    def step(self):
+        self.following_utils.send_camera()
+        self.following_utils.send_command()
 
 
 def main():
@@ -148,88 +133,36 @@ def main():
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
-    application = TeleopApplication(event=quit_event, config_dir=args.config)
-    application.setup()
-
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
     following = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
+    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
+    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
-
-    def send_camera():
-        config = SafeConfigParser()
-        config.read(application.get_user_config_file())
-        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
-
-        camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
-        global stats
-        while True:
-            if stats == "Start Following":
-                ctrl = following.get()
-                if ctrl is not None:
-                    try:
-                        if ctrl["camera_pan"] is not None:
-                            camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
-                        else:
-                            camera_control.adjust_ptz(pan=0, tilt=0, duration=100, method=ctrl["method"])
-                    except Exception as e:
-                        pass
-                    # will always send the current azimuth for the bottom camera while following is working
-                    camera_azimuth, camera_elevation = camera_control.get_ptz_status()
-                    # print(camera_azimuth)
-                    chatter.publish({"camera_azimuth": camera_azimuth})
-            time.sleep(0.001)
-
-    def send_command():
-        global stats
-        while True:
-            if stats == "Start Following":
-                ctrl = following.get()
-                if ctrl is not None:
-                    ctrl["time"] = int(timestamp())
-                    teleop_publish(ctrl)
-            time.sleep(0.001)
+    application = TeleopApplication(tel_chatter=chatter, tel_publisher=teleop_publisher, event=quit_event, config_dir=args.config)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
+    throttle_controller = ThrottleController(teleop_publisher, route_store)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-    follow_thread = threading.Thread(target=send_command)
-    camera_thread = threading.Thread(target=send_camera)
 
-    threads = [camera_front, camera_rear, pilot, following, vehicle, inference, logbox_thread, package_thread, follow_thread, camera_thread]
-
+    threads = [camera_front, camera_rear, pilot, following, vehicle, inference, logbox_thread, package_thread]
+    application.setup()
     if quit_event.is_set():
         return 0
 
     [t.start() for t in threads]
 
-    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
-    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
-    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
-    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
-    # Initialize ThrottleController
-    throttle_controller = ThrottleController(teleop_publisher, route_store)
-
-    def teleop_publish(cmd):
-        # We are the authority on route state.
-        cmd["navigator"] = dict(route=route_store.get_selected_route())
-        # print(f"Sending command: {cmd}")
-        teleop_publisher.publish(cmd)
-
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
-
-    def teleop_publish_to_following(cmd):
-        global stats
-
-        chatter.publish(cmd)
-        stats = cmd["following"]
 
     io_loop = ioloop.IOLoop.instance()
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
@@ -250,7 +183,7 @@ def main():
                 # Getting the commands from the mobile controller (commands are sent in JSON)
                 (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
                 (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
-                (r"/switch_following", FollowingHandler, dict(fn_control=teleop_publish_to_following)),
+                (r"/switch_following", FollowingHandler, dict(fn_control=application.following_utils.teleop_publish_to_following)),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),

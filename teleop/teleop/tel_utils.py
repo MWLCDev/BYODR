@@ -138,7 +138,7 @@ class OverviewConfidence:
         with open(file_path, "r") as file:
             content = file.read()
             # Ensure this method is defined to handle local file dependencies
-        offline_dep = self.use_local_files(content)  
+        offline_dep = self.use_local_files(content)
 
         with open(file_path, "w") as file:
             file.write(offline_dep)
@@ -391,3 +391,35 @@ class CameraControl:
             return "Success: Camera moved to home position."
         except requests.exceptions.HTTPError as err:
             return f"Error: {err}"
+
+
+class FollowingUtils:
+    def __init__(self, tel_chatter, tel_publisher):
+        self.tel_chatter = tel_chatter
+        self.tel_publisher = tel_publisher
+
+    def send_camera(self):
+        if self.stats == "Start Following":
+            ctrl = self.following.get()
+            if ctrl is not None:
+                try:
+                    if ctrl["camera_pan"] is not None:
+                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
+                    else:
+                        self.camera_control.adjust_ptz(pan=0, tilt=0, duration=100, method=ctrl["method"])
+                except Exception as e:
+                    logger.error(f"Exception in camera control: {e}")
+                # will always send the current azimuth for the bottom camera while following is working
+                camera_azimuth, camera_elevation = self.camera_control.get_ptz_status()
+                # logger.info(camera_azimuth)
+                self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
+
+    def send_command(self):
+        if self.stats == "Start Following":
+            ctrl = self.following.get()
+            if ctrl is not None:
+                ctrl["time"] = int(timestamp())
+                self.tel_publisher(ctrl)
+
+    def teleop_publish_to_following(self, cmd):
+        self.tel_chatter.publish(cmd)

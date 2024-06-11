@@ -99,6 +99,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
                 _response = json.dumps(dict(control="operator"))
                 msg["time"] = timestamp()  # add timestamp to the sent command
                 self._fn_control(msg)
+                # print(msg)
             else:  # This block might not be needed if every user is always an operator
                 if msg.get("_operator") == "force":
                     self.operators.clear()
@@ -123,12 +124,12 @@ class FollowingHandler(web.RequestHandler):
         # Extract command as a string
         command_text = self.get_body_argument("command", default=None)
         end_time = timestamp() + 1e5
-
         while timestamp() < end_time:
             # Prepare the command as a dictionary
             command_dict = {
                 "following": command_text,
-                "time": timestamp(),  # Timestamp in microseconds
+                # Timestamp in microseconds
+                "time": timestamp(),  
             }
 
             # Pass the dictionary to the control function
