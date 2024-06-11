@@ -5,18 +5,10 @@ import logging
 import multiprocessing
 import os
 import signal
-import threading
-import time
 
-import cv2
-import numpy as np
 from byodr.utils import Application, hash_dict
 from byodr.utils.ipc import JSONPublisher, json_collector
-from byodr.utils.option import parse_option
-from ultralytics import YOLO
-
 from fol_utils import FollowingController
-
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +78,7 @@ def main():
     controller = FollowingController(model_path="yolov8n.engine", user_config_args=application.get_user_config_file_contents())
 
     # Sockets used to send data to other services
-    controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
+    controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
 
     # Getting data from the received sockets declared above
     controller.teleop_chatter = lambda: teleop_cha.get()
