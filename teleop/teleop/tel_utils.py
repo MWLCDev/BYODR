@@ -258,31 +258,34 @@ class CameraControl:
         self.base_url = base_url
         self.user = user
         self.password = password
+        self.lock = threading.Lock()  # Initialize a lock for camera control
 
-    def adjust_ptz(self, pan=None, tilt=None, method="Momentary", duration=500):
-        if method == "Momentary":
-            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
-            payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
-        else:  # Absolute
-            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
-            payload = f"<PTZData><AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><absoluteZoom>10</absoluteZoom></AbsoluteHigh></PTZData>"
+    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, method="Momentary", duration=100):
+        with self.lock:
+            if method == "Momentary":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+            else:  # Absolute
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+                payload = (
+                    "<PTZData>"
+                    f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
+                    "</PTZData>"
+                )
 
-        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
-        try:
-            response.raise_for_status()
-            return "Success: PTZ adjusted."
-        except requests.exceptions.HTTPError as err:
-            return f"Error: {err}"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
+            try:
+                response.raise_for_status()
+                return "Success: PTZ adjusted."
+            except requests.exceptions.HTTPError as err:
+                return f"Error: {err}"
 
     def get_ptz_status(self):
         url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/status"
         try:
             response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
             response.raise_for_status()
-
-            # Parse the response XML
             xml_root = ET.fromstring(response.content)
-            # Fix namespace issue
             ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
             azimuth = xml_root.find(".//hik:azimuth", ns).text
             elevation = xml_root.find(".//hik:elevation", ns).text
@@ -292,25 +295,26 @@ class CameraControl:
         except ET.ParseError as e:
             return f"XML parsing error: {e}"
 
-    def set_home_position(base_url, user, password):
-        """Sets the current position of the PTZ camera as the home position."""
-        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
-        response = requests.put(url, auth=HTTPDigestAuth(user, password))
-        try:
-            response.raise_for_status()
-            return "Success: Home position set."
-        except requests.exceptions.HTTPError as err:
-            return f"Error: {err}"
+    def set_home_position(self):
+        with self.lock:
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            try:
+                response.raise_for_status()
+                return "Success: Home position set."
+            except requests.exceptions.HTTPError as err:
+                return f"Error: {err}"
 
-    def goto_home_position(base_url, user, password):
+    def goto_home_position(self):
         """Moves the PTZ camera to its home position."""
-        url = f"{base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
-        response = requests.put(url, auth=HTTPDigestAuth(user, password))
-        try:
-            response.raise_for_status()
-            return "Success: Camera moved to home position."
-        except requests.exceptions.HTTPError as err:
-            return f"Error: {err}"
+        with self.lock:
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            try:
+                response.raise_for_status()
+                return "Success: Camera moved to home position."
+            except requests.exceptions.HTTPError as err:
+                return f"Error: {err}"
 
 
 class FollowingUtils:
@@ -334,8 +338,6 @@ class FollowingUtils:
                 try:
                     if ctrl["camera_pan"] is not None:
                         self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
-                    else:
-                        self.camera_control.adjust_ptz(pan=0, tilt=0, duration=100, method=ctrl["method"])
                 except Exception as e:
                     logger.error(f"Exception in camera control: {e}")
                 # will always send the current azimuth for the bottom camera while following is working
