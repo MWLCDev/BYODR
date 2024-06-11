@@ -33,6 +33,8 @@ class FollowingApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self.controller = FollowingController(model_path="yolov8n.engine", user_config_args=self.get_user_config_file_contents())
+        self.controller.command_controller.publisher = None
 
     def _check_user_config(self):
         """See if there is an available user config file, and assign it to the self var"""
@@ -51,7 +53,6 @@ class FollowingApplication(Application):
         config = configparser.ConfigParser()
         config.read(self.get_user_config_file())
 
-        # Flatten the configuration sections and keys into a single dictionary
         config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
         return config_dict
 
@@ -63,6 +64,9 @@ class FollowingApplication(Application):
             if _hash != self._config_hash:
                 self._config_hash = _hash
 
+    def step(self):
+        self.controller.request_check()
+
 
 def main():
     parser = argparse.ArgumentParser(description="Following sockets server.")
@@ -73,16 +77,13 @@ def main():
 
     # Communication sockets.
     teleop_cha = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event, hwm=1)
-
     application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
-    controller = FollowingController(model_path="yolov8n.engine", user_config_args=application.get_user_config_file_contents())
 
     # Sockets used to send data to other services
-    controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
-
+    application.controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
     # Getting data from the received sockets declared above
-    controller.teleop_chatter = lambda: teleop_cha.get()
-    controller.run()
+    application.controller.teleop_chatter = lambda: teleop_cha.get()
+    application.controller.run()
     application.setup()
     threads = [teleop_cha]
 
