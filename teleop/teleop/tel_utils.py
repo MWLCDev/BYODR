@@ -5,7 +5,7 @@ import threading
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import configparser
+import configparser, queue
 
 
 import folium
@@ -189,43 +189,52 @@ class ThrottleController:
         self.throttle_change_step = 0.05
         self.teleop_publisher = teleop_publisher
         self.route_store = route_store
+        self.command_queue = queue.Queue()
+
+        # Start the thread to consume from the queue
+        # The main thread can be used to run this function, but I would leave the main thread free
+        threading.Thread(target=self.consume_queue, daemon=True).start()
 
     def throttle_control(self, cmd):
-        """Function used to smooth out the received throttle from front-end. Instead of going from a full throttle of 1 to 0, it will decrease gradually by 0.05.
+        """Enqueue moving commands instead of processing directly"""
+        self.command_queue.put(cmd)
 
-        Args:
-            cmd JSON: The json sent from the front-end. Example `{"steering": 0.0, "throttle": 0.5, "time": 1717055030186955, "navigator": {"route": None}, "button_b": 1}`
-        """
-        # Check if there is no smoothing required for mobile inference states
+    def consume_queue(self):
+        """Continuously consumes commands from the queue and processes them."""
+        while True:
+            try:
+                cmd = self.command_queue.get(block=True)
+                self._process_command(cmd)
+            except Exception as e:
+                logger.error(f"Error processing command from queue: {e}")
+
+    def _process_command(self, cmd):
+        """Processes a command from the queue, smoothing the throttle changes if necessary."""
         if cmd.get("mobileInferenceState") in ["true", "auto", "train"]:
-            self.teleop_publish(cmd)
+            self._teleop_publish(cmd)
             return
 
-        # If no throttle or steering key present in the command, reset throttle to 0
         if "throttle" not in cmd and "steering" not in cmd:
             self.current_throttle = 0
-            self.teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
+            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
             return
 
         target_throttle = float(cmd.get("throttle", 0))
 
         if "throttle" in cmd:
-            # Smooth the throttle change
             if abs(target_throttle - self.current_throttle) > self.throttle_change_step:
-                # Determine the direction of change
                 throttle_direction = (target_throttle - self.current_throttle) / abs(target_throttle - self.current_throttle)
                 self.current_throttle += throttle_direction * self.throttle_change_step
-                # Ensure we don't overshoot the target throttle
                 if (throttle_direction > 0 and self.current_throttle > target_throttle) or (throttle_direction < 0 and self.current_throttle < target_throttle):
                     self.current_throttle = target_throttle
             else:
                 self.current_throttle = target_throttle
 
         cmd["throttle"] = self.current_throttle
-        self.teleop_publish(cmd)
+        self._teleop_publish(cmd)
 
-    def teleop_publish(self, cmd):
-        # We are the authority on route state.
+    def _teleop_publish(self, cmd):
+        """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
         self.teleop_publisher.publish(cmd)
 
@@ -260,7 +269,7 @@ class CameraControl:
         self.password = password
         self.lock = threading.Lock()  # Initialize a lock for camera control
 
-    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, method="Momentary", duration=100):
+    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=100, method="Momentary"):
         with self.lock:
             if method == "Momentary":
                 url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
@@ -340,9 +349,11 @@ class CameraControl:
 
 
 class FollowingUtils:
-    def __init__(self, tel_chatter, tel_publisher):
+    def __init__(self, tel_chatter, throttle_controller, fol_comm_socket):
         self.tel_chatter = tel_chatter
-        self.tel_publisher = tel_publisher
+        self.throttle_controller = throttle_controller
+        self.following_socket = fol_comm_socket
+        self.following_stats = None
 
     def configs(self, user_config_file_dir):
         config = configparser.SafeConfigParser()
@@ -353,26 +364,23 @@ class FollowingUtils:
     def get_following_state(self):
         return self.following_stats
 
-    def send_camera(self):
-        if self.stats == "Start Following":
-            ctrl = self.following.get()
+    def process_socket_commands(self):
+        if self.following_stats == "Start Following":
+            ctrl = self.following_socket.get()
             if ctrl is not None:
+                ctrl["time"] = int(timestamp())
+                # It should forward the commands from FOL socket to teleop_publish that is running in the main-thread
+                self.throttle_controller.throttle_control(ctrl)
+
                 try:
                     if ctrl["camera_pan"] is not None:
-                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, duration=100, method=ctrl["method"])
+                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"])
                 except Exception as e:
                     logger.error(f"Exception in camera control: {e}")
                 # will always send the current azimuth for the bottom camera while following is working
                 camera_azimuth, camera_elevation = self.camera_control.get_ptz_status()
-                logger.info(camera_azimuth)
+                # logger.info(camera_azimuth)
                 self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
-
-    def send_command(self):
-        if self.stats == "Start Following":
-            ctrl = self.following.get()
-            if ctrl is not None:
-                ctrl["time"] = int(timestamp())
-                self.tel_publisher(ctrl)
 
     def teleop_publish_to_following(self, cmd):
         self.tel_chatter.publish(cmd)

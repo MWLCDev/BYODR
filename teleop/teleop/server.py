@@ -75,7 +75,8 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
 
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):  # Initializes the WebSocket handler
-        self._fn_control = kwargs.get("fn_control")
+        self.throttle_controller = kwargs.get("throttle_controller")
+
 
     def check_origin(self, origin):
         return True
@@ -102,7 +103,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
             if self._is_operator():
                 _response = json.dumps(dict(control="operator"))
                 msg["time"] = timestamp()  # add timestamp to the sent command
-                self._fn_control(msg)
+                self.throttle_controller(msg)
                 # print(msg)
             else:  # This block might not be needed if every user is always an operator
                 if msg.get("_operator") == "force":

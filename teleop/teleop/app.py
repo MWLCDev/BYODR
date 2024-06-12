@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
-import configparser
 import glob
 import logging
 import multiprocessing
@@ -24,11 +23,11 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
+from .tel_utils import EndpointHandlers, FollowingUtils, ThrottleController
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
@@ -36,9 +35,6 @@ signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
-
-# Variable in use for the following
-stats = None
 
 
 def _interrupt():
@@ -60,14 +56,13 @@ class TeleopApplication(Application):
         event: allow for thread-safe signaling between processes or threads.
     """
 
-    def __init__(self, tel_chatter, tel_publisher, event, config_dir=os.getcwd()):
-        super(TeleopApplication, self).__init__(quit_event=event)
+    def __init__(self, tel_chatter, throttle_controller, fol_comm_socket, event, hz, config_dir=os.getcwd()):
+        super(TeleopApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._config_hash = -1
         self._user_config_file = None
         self.rut_ip = None
-        self.stats = None
-        self.following_utils = FollowingUtils(tel_chatter, tel_publisher)
+        self.following_utils = FollowingUtils(tel_chatter, throttle_controller, fol_comm_socket)
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
@@ -96,8 +91,7 @@ class TeleopApplication(Application):
                 self._config_hash = _hash
 
     def step(self):
-        self.following_utils.send_camera()
-        self.following_utils.send_command()
+        self.following_utils.process_socket_commands()
 
 
 def main():
@@ -106,18 +100,9 @@ def main():
       - MongoDB connection and indexing.
       - Route data source for navigation.
       - Camera threads for front and rear cameras.
-      - JSON collectors for the pilot, vehicle, and inference data.
-      - LogBox setup for logging.
       - Threaded applications for logging and packaging data.
 
-    It initializes multiple threads for various components, including cameras, pilot, vehicle, inference, and logging.
-
-    JSON publishers are set up for teleop data and chatter data.
-
-    """
-
-    global stats
-
+    It initializes multiple threads for various components, including cameras, pilot, vehicle, inference, and logging."""
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
@@ -135,7 +120,7 @@ def main():
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
-    following = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
+    following_comm_socket = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
     teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
@@ -146,14 +131,13 @@ def main():
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
-    application = TeleopApplication(tel_chatter=chatter, tel_publisher=teleop_publisher, event=quit_event, config_dir=args.config)
-    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     throttle_controller = ThrottleController(teleop_publisher, route_store)
-
+    application = TeleopApplication(tel_chatter=chatter, throttle_controller=throttle_controller, fol_comm_socket=following_comm_socket, event=quit_event, config_dir=args.config, hz=20)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
 
-    threads = [camera_front, camera_rear, pilot, following, vehicle, inference, logbox_thread, package_thread]
+    threads = [camera_front, camera_rear, pilot, following_comm_socket, vehicle, inference, logbox_thread, package_thread, threading.Thread(target=application.run)]
     application.setup()
     if quit_event.is_set():
         return 0
@@ -180,7 +164,7 @@ def main():
                 # Navigate to Mobile controller UI
                 (r"/(mc)", TemplateRenderer),
                 # Getting the commands from the mobile controller (commands are sent in JSON)
-                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
+                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(throttle_controller=throttle_controller.throttle_control)),
                 (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
                 (r"/switch_following", FollowingHandler, dict(fn_control=application.following_utils.teleop_publish_to_following)),
                 # Run python script to get the SSID for the current segment

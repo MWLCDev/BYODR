@@ -77,7 +77,7 @@ def main():
 
     # Communication sockets.
     teleop_cha = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event, hwm=1)
-    application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
+    application = FollowingApplication(event=quit_event, config_dir=args.config, hz=50)
 
     # Sockets used to send data to other services
     application.controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")

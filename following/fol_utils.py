@@ -1,10 +1,8 @@
 import logging
 import os
 import threading
-import time
 
 import cv2
-from byodr.utils.ipc import JSONPublisher
 from byodr.utils.option import parse_option
 from ultralytics import YOLO
 
@@ -140,7 +138,7 @@ class CommandController:
         else:
             return 0
 
-    def publish_command(self, throttle=0, steering=0, camera_pan=0, spin=None, method="Momentary"):
+    def publish_command(self, throttle=0, steering=0, camera_pan=0, spin=None):
         """Publishes the control commands to Teleop."""
         # Limiting throttle and steering to 3 decimal places
         throttle = round(throttle, 3)
@@ -149,8 +147,6 @@ class CommandController:
         cmd = {"throttle": throttle, "steering": steering, "spin": spin, "button_b": 1}
         if camera_pan is not None:
             cmd["camera_pan"] = camera_pan
-            cmd["method"] = method
-
         self.publisher.publish(cmd)
         logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
 
