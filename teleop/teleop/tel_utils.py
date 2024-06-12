@@ -271,22 +271,24 @@ class CameraControl:
 
     def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=100, method="Momentary"):
         with self.lock:
-            if method == "Momentary":
-                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
-                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
-            else:  # Absolute
-                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
-                payload = (
-                    "<PTZData>"
-                    f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
-                    "</PTZData>"
-                )
-
-            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
             try:
-                response.raise_for_status()
-                return "Success: PTZ adjusted."
-            except requests.exceptions.HTTPError as err:
+                if method == "Momentary":
+                    url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+                    payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+                else:  # Absolute
+                    url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+                    payload = (
+                        "<PTZData>"
+                        f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
+                        "</PTZData>"
+                    )
+
+                response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
+                if response.status_code == 200:
+                    return "Success: PTZ adjusted."
+                else:
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
+            except requests.exceptions.RequestException as err:
                 return f"Error: {err}"
 
     def get_ptz_status(self):
@@ -321,7 +323,10 @@ class CameraControl:
             response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
             try:
                 response.raise_for_status()
-                return "Success: Camera moved to home position."
+                if response.status_code == 200:
+                    return "Success: Home position set."
+                else:
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -332,7 +337,11 @@ class CameraControl:
             response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
             try:
                 response.raise_for_status()
-                return f"Success: Preset position {preset_id} set."
+                if response.status_code == 200:
+                    return f"Success: Preset position {preset_id} set."
+                else:
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
+
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -343,7 +352,10 @@ class CameraControl:
             response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
             try:
                 response.raise_for_status()
-                return f"Success: Camera moved to preset position {preset_id}."
+                if response.status_code == 200:
+                    return f"Success: Camera moved to preset position {preset_id}."
+                else:
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -374,7 +386,7 @@ class FollowingUtils:
 
                 try:
                     if ctrl["camera_pan"] is not None:
-                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"])
+                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
                 except Exception as e:
                     logger.error(f"Exception in camera control: {e}")
                 # will always send the current azimuth for the bottom camera while following is working
