@@ -67,7 +67,7 @@ class CommandController:
         self.get_fol_configs()
 
     def get_fol_configs(self):
-        self.pan_movement_speed = parse_option("camera.pan_movement_speed", int, 6, [], **self.user_config_args)
+        self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
         # This is when the camera should start moving to follow the user. it is between 0 and 35% of the frame
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.35, [], **self.user_config_args)
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.65, [], **self.user_config_args)
@@ -81,10 +81,9 @@ class CommandController:
                 # The horizontal position of the detected person's bounding box center within the frame
                 x_center_percentage = person.xywhn[0][0]
 
-                self.current_camera_pan = self.calculate_camera_pan(x_center_percentage)
+                self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
-
                 if not (0 <= self.current_azimuth <= 500 or 3050 <= self.current_azimuth <= 3550):
                     azimuth_steering_adjustment = self.calculate_azimuth_steering_adjustment()
                     self.current_steering += azimuth_steering_adjustment
@@ -107,20 +106,17 @@ class CommandController:
         else:
             if self.current_camera_pan != 0:
                 if self.current_camera_pan > 0:
-                    return -2
+                    return self.pan_movement_offset // 4
                 else:
-                    return 2
+                    return self.pan_movement_offset // 4
         return 0
 
     def calculate_pan_adjustment(self, x_center_percentage):
-        # Extreme edges
-        if x_center_percentage < 0.125 or x_center_percentage > 0.875:
-            return self.pan_movement_speed + 4
-        # Near edges
-        elif x_center_percentage < 0.2 or x_center_percentage > 0.8:
-            return self.pan_movement_speed + 2
-        else:
-            return self.pan_movement_speed
+        if x_center_percentage < self.left_red_zone:
+            return self.pan_movement_offset * ((self.left_red_zone - x_center_percentage) / self.left_red_zone)
+        elif x_center_percentage > self.right_red_zone:
+            return self.pan_movement_offset * ((x_center_percentage - self.right_red_zone) / (1 - self.right_red_zone))
+        return 0
 
     def calculate_steering(self, x_center_percentage):
         if x_center_percentage < self.left_red_zone:
@@ -205,6 +201,12 @@ class FollowingController:
             self.yolo_inference.track_and_save_image(r)
             boxes = r.boxes.cpu().numpy()  # List of bounding boxes in the frame
 
-            self.command_controller.update_control_commands(boxes)
-
-            self.command_controller.publish_command(throttle=self.command_controller.current_throttle, steering=self.command_controller.current_steering, camera_pan=self.command_controller.current_camera_pan)
+            if len(boxes) == 0:
+                # No users detected, opt for zeroes values
+                self.command_controller.current_throttle = 0
+                self.command_controller.current_steering = 0
+                self.command_controller.publish_command(throttle=self.command_controller.current_throttle, steering=self.command_controller.current_steering, camera_pan=0)
+            else:
+                # Users detected, update control commands
+                self.command_controller.update_control_commands(boxes)
+                self.command_controller.publish_command(throttle=self.command_controller.current_throttle, steering=self.command_controller.current_steering, camera_pan=self.command_controller.current_camera_pan)
