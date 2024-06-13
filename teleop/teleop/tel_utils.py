@@ -337,38 +337,38 @@ class CameraControl:
             try:
                 response.raise_for_status()
                 if response.status_code == 200:
-                    return "Success: Home position set."
+                    return "Success: Camera moved to Home position."
                 else:
-                    return f"Error: Unexpected response {response.status_code} - {response.text}"
+                    logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
     def set_preset_position(self, preset_id):
         """Sets the current position of the PTZ camera as a preset position."""
         with self.lock:
-            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/preset/{preset_id}"
-            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}"
+            payload = f"<PTZPreset><id>{preset_id}</id><presetName>Preset{preset_id}</presetName></PTZPreset>"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
             try:
                 response.raise_for_status()
                 if response.status_code == 200:
                     return f"Success: Preset position {preset_id} set."
                 else:
-                    return f"Error: Unexpected response {response.status_code} - {response.text}"
-
+                    logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
     def goto_preset_position(self, preset_id):
         """Moves the PTZ camera to a specific preset position."""
         with self.lock:
-            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/preset/{preset_id}/goto"
-            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+            url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}/goto"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), headers={"Content-Type": "application/xml"})
             try:
                 response.raise_for_status()
                 if response.status_code == 200:
                     return f"Success: Camera moved to preset position {preset_id}."
                 else:
-                    return f"Error: Unexpected response {response.status_code} - {response.text}"
+                    logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
