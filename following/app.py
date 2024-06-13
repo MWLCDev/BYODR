@@ -58,6 +58,7 @@ class FollowingApplication(Application):
 
     def setup(self):
         if self.active():
+            
             self._check_user_config()
             _config = self.get_user_config_file_contents()
             _hash = hash_dict(**_config)
@@ -72,7 +73,6 @@ def main():
     parser = argparse.ArgumentParser(description="Following sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
-
     args = parser.parse_args()
 
     # Communication sockets.
@@ -82,7 +82,7 @@ def main():
     # Sockets used to send data to other services
     application.controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
     # Getting data from the received sockets declared above
-    application.controller.teleop_chatter = lambda: teleop_cha.get()
+    application.controller.teleop_chatter = lambda: teleop_cha.get()    
     application.controller.run()
     application.setup()
     threads = [teleop_cha]

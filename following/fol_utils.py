@@ -23,9 +23,8 @@ class YoloInference:
 
     def run(self):
         stream_uri = self.get_stream_uri()
-        logger.info("Loading Yolov8 model")
         self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False)
-        logger.info("Yolov8 model loaded")
+        logger.info("Yolo model is loaded")
 
     def get_stream_uri(self):
         bottom_camera_uri = parse_option("camera.front.camera.ip", str, "192.168.1.64", [], **self.user_config_args)
@@ -88,6 +87,7 @@ class CommandController:
                     azimuth_steering_adjustment = self.calculate_azimuth_steering_adjustment()
                     self.current_steering += azimuth_steering_adjustment
                     self.current_camera_pan -= azimuth_steering_adjustment
+                    print(f"adjusting with{self.current_steering, self.current_camera_pan}")
 
                 break  # Only process the first detected person
             except Exception as e:
@@ -142,9 +142,10 @@ class CommandController:
 
         cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": "Following"}
         if camera_pan is not None:
-            cmd["camera_pan"] = camera_pan
+            cmd["camera_pan"] = int(camera_pan)
         self.publisher.publish(cmd)
         logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+
 
     def reset_control_commands(self):
         self.current_throttle = 0
@@ -189,6 +190,7 @@ class FollowingController:
                     self.run_yolo_inf.join()  # Wait for the YOLO thread to stop
             if follow_request.get("camera_azimuth") is not None:
                 self.command_controller.current_azimuth = int(follow_request.get("camera_azimuth"))
+                # print(self.command_controller.current_azimuth)
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
 
@@ -199,7 +201,7 @@ class FollowingController:
                 logger.info("YOLO model stopped")
                 break
             self.yolo_inference.track_and_save_image(r)
-            boxes = r.boxes.cpu().numpy()  
+            boxes = r.boxes.cpu().numpy()
 
             if len(boxes) == 0:
                 # No users detected, opt for zeroes values

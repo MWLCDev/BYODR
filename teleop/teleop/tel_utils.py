@@ -219,7 +219,7 @@ class ThrottleController:
 
     def _process_command(self, cmd):
         """Processes a command from the queue, smoothing the throttle changes if necessary."""
-        if cmd.get("mobileInferenceState") in ["true", "auto", "train"]:
+        if cmd.get("mobileInferenceState") in ["true", "auto", "train"] or cmd.get("source") in ["Following"]:
             self._teleop_publish(cmd)
             return
 
@@ -245,7 +245,7 @@ class ThrottleController:
     def _teleop_publish(self, cmd):
         """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        logger.info(cmd)
+        # logger.info(cmd)
         self.teleop_publisher.publish(cmd)
 
     def update_following_state(self, state):
@@ -300,7 +300,7 @@ class CameraControl:
                 if response.status_code == 200:
                     return "Success: PTZ adjusted."
                 else:
-                    return f"Error: Unexpected response {response.status_code} - {response.text}"
+                    logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
             except requests.exceptions.RequestException as err:
                 return f"Error: {err}"
 
