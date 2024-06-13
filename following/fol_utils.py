@@ -140,7 +140,7 @@ class CommandController:
         throttle = round(throttle, 3)
         steering = round(steering, 3)
 
-        cmd = {"throttle": throttle, "steering": steering, "spin": spin, "button_b": 1}
+        cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": "Following"}
         if camera_pan is not None:
             cmd["camera_pan"] = camera_pan
         self.publisher.publish(cmd)
