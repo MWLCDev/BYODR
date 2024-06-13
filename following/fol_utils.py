@@ -134,7 +134,7 @@ class CommandController:
         else:
             return 0
 
-    def publish_command(self, throttle=0, steering=0, camera_pan=0, spin=None):
+    def publish_command(self, throttle=0, steering=0, camera_pan=0):
         """Publishes the control commands to Teleop."""
         # Limiting throttle and steering to 3 decimal places
         throttle = round(throttle, 3)
