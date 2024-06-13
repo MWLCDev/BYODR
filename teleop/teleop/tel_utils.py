@@ -190,6 +190,7 @@ class ThrottleController:
         self.teleop_publisher = teleop_publisher
         self.route_store = route_store
         self.command_queue = queue.Queue()
+        self.following_state = "Stop Following"
 
         # Start the thread to consume from the queue
         # The main thread can be used to run this function, but I would leave the main thread free
@@ -204,7 +205,15 @@ class ThrottleController:
         while True:
             try:
                 cmd = self.command_queue.get(block=True)
-                self._process_command(cmd)
+                if self.following_state == "Start Following":
+                    if cmd.get("source") == "Following":
+                        self._process_command(cmd)
+                    else:
+                        pass
+                        # Can be used to save the commands from other sources then process them later
+                        # self.command_queue.put(cmd)
+                else:
+                    self._process_command(cmd)
             except Exception as e:
                 logger.error(f"Error processing command from queue: {e}")
 
@@ -236,7 +245,11 @@ class ThrottleController:
     def _teleop_publish(self, cmd):
         """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
+        logger.info(cmd)
         self.teleop_publisher.publish(cmd)
+
+    def update_following_state(self, state):
+        self.following_state = state
 
 
 class EndpointHandlers:
@@ -365,6 +378,7 @@ class FollowingUtils:
         self.tel_chatter = tel_chatter
         self.throttle_controller = throttle_controller
         self.following_socket = fol_comm_socket
+        # Values are ["Start Following", "Stop Following"]
         self.following_stats = None
 
     def configs(self, user_config_file_dir):
@@ -381,7 +395,6 @@ class FollowingUtils:
             ctrl = self.following_socket.get()
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
-                # It should forward the commands from FOL socket to teleop_publish that is running in the main-thread
                 self.throttle_controller.throttle_control(ctrl)
 
                 try:
@@ -397,3 +410,4 @@ class FollowingUtils:
     def teleop_publish_to_following(self, cmd):
         self.tel_chatter.publish(cmd)
         self.following_stats = cmd["following"]
+        self.throttle_controller.update_following_state(self.following_stats)
