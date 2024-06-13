@@ -78,13 +78,13 @@ class CommandController:
         for person in persons:
             try:
                 self.person_height = person.xywh[0][3]
-                # The horizontal position of the detected person's bounding box center within the frame
+                # The horizontal position of the (detected person's bounding box center) within the frame
                 x_center_percentage = person.xywhn[0][0]
 
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
-                if not (0 <= self.current_azimuth <= 500 or 3050 <= self.current_azimuth <= 3550):
+                if not (0 <= self.current_azimuth <= 250 or 3200 <= self.current_azimuth <= 3550):
                     azimuth_steering_adjustment = self.calculate_azimuth_steering_adjustment()
                     self.current_steering += azimuth_steering_adjustment
                     self.current_camera_pan -= azimuth_steering_adjustment
@@ -199,7 +199,7 @@ class FollowingController:
                 logger.info("YOLO model stopped")
                 break
             self.yolo_inference.track_and_save_image(r)
-            boxes = r.boxes.cpu().numpy()  # List of bounding boxes in the frame
+            boxes = r.boxes.cpu().numpy()  
 
             if len(boxes) == 0:
                 # No users detected, opt for zeroes values
