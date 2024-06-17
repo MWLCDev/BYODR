@@ -153,7 +153,7 @@ class CommandController:
                 else:
                     cmd["camera_pan"] = int(camera_pan)
                 self.publisher.publish(cmd)
-            if source not in ["followingReady", "followingLoading"]:
+            if source not in ["followingInactive", "followingLoading"]:
                 logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")
@@ -183,34 +183,42 @@ class FollowingController:
 
         self.command_controller.publish_command(source="followingLoading")
         self.yolo_inference.run()
-        self.fol_state = "ready"
+        self.fol_state = "inactive"
 
     def request_check(self):
         """Fetches the request from Teleop"""
         try:
             follow_request = self.teleop_chatter()
-            if self.fol_state == "ready":
-                self.command_controller.publish_command(source="followingReady")
-            if follow_request is None:
-                return
-            if follow_request.get("following") == "Start Following":
-                if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
-                    self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
-                    self.yolo_inference.reset_tracking_session()
-                    self.stop_threads = False
-                    self.fol_state = "active"
-                    self.run_yolo_inf = threading.Thread(target=self.control_logic, args=(lambda: self.stop_threads,))
-                    self.run_yolo_inf.start()
-            elif follow_request.get("following") == "Stop Following":
-                logger.info("Stopping Following")
-                self.command_controller.reset_control_commands()
-                if self.run_yolo_inf is not None and self.run_yolo_inf.is_alive():
-                    self.fol_state = "ready"
-                    self.stop_threads = True
-                    self.run_yolo_inf.join()  # Wait for the YOLO thread to stop
-            if follow_request.get("camera_azimuth") is not None:
-                self.command_controller.current_azimuth = int(follow_request.get("camera_azimuth"))
-                # print(self.command_controller.current_azimuth)
+            if follow_request is not None:
+                if follow_request.get("following") == "start_following":
+                    if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
+                        self.fol_state = "active"
+                        self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
+                        self.yolo_inference.reset_tracking_session()
+                        self.stop_threads = False
+                        self.run_yolo_inf = threading.Thread(target=self.control_logic, args=(lambda: self.stop_threads,))
+                        self.run_yolo_inf.start()
+                elif follow_request.get("following") == "stop_following":
+                    logger.info("Stopping Following")
+                    self.command_controller.reset_control_commands()
+                    if self.run_yolo_inf is not None and self.run_yolo_inf.is_alive():
+                        self.fol_state = "loading"
+                        self.command_controller.publish_command(source="followingLoading")
+                        self.stop_threads = True
+                        self.run_yolo_inf.join()  # Wait for the YOLO thread to stop
+                elif follow_request.get("camera_azimuth") is not None:
+                    self.command_controller.current_azimuth = int(follow_request.get("camera_azimuth"))
+                    # print(self.command_controller.current_azimuth)
+            # In case there isn't a command received from teleop_chatter. It should be sending the current state of following
+            if self.fol_state == "inactive":
+                self.command_controller.publish_command(source="followingInactive")
+            elif self.fol_state == "active":
+                self.command_controller.publish_command(
+                    throttle=self.command_controller.current_throttle,
+                    steering=self.command_controller.current_steering,
+                    camera_pan=self.command_controller.current_camera_pan,
+                    source="followingActive",
+                )
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
 
@@ -219,6 +227,8 @@ class FollowingController:
         for r in self.yolo_inference.results:  # Running the loop for each frame of the stream
             if stop():
                 logger.info("YOLO model stopped")
+                self.fol_state = "inactive"
+                self.command_controller.publish_command(source="followingReady")
                 break
             self.yolo_inference.track_and_save_image(r)
             boxes = r.boxes.cpu().numpy()
@@ -231,4 +241,9 @@ class FollowingController:
             else:
                 # Users detected, update control commands
                 self.command_controller.update_control_commands(boxes)
-                self.command_controller.publish_command(throttle=self.command_controller.current_throttle, steering=self.command_controller.current_steering, camera_pan=self.command_controller.current_camera_pan)
+                self.command_controller.publish_command(
+                    throttle=self.command_controller.current_throttle,
+                    steering=self.command_controller.current_steering,
+                    camera_pan=self.command_controller.current_camera_pan,
+                    source="followingActive",
+                )

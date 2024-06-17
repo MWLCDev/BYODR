@@ -57,7 +57,6 @@ class FollowingApplication(Application):
 
     def setup(self):
         if self.active():
-            
             self._check_user_config()
             _config = self.get_user_config_file_contents()
             _hash = hash_dict(**_config)

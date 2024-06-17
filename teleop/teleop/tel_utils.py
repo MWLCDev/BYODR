@@ -382,7 +382,7 @@ class FollowingUtils:
         self.tel_chatter = tel_chatter
         self.throttle_controller = throttle_controller
         self.following_socket = fol_comm_socket
-        self.following_stats = "loading"
+        self.following_state = "loading"
         self.camera_control = None
 
     def configs(self, user_config_file_dir):
@@ -392,7 +392,11 @@ class FollowingUtils:
         self.camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
 
     def get_following_state(self):
-        return self.following_stats
+        return self.following_state
+
+    def set_following_state(self, new_state):
+        self.following_state = new_state
+        self.throttle_controller.update_following_state(new_state)
 
     def process_socket_commands(self):
         try:
@@ -408,11 +412,13 @@ class FollowingUtils:
             logger.error(f"Error handling control command: {e}")
 
     def _update_following_status(self, ctrl):
+        # There can be more than one source for the commands to TEL. That is why the sent value, is different from the ones stored as following_state
         if ctrl["source"] == "followingLoading":
-            self.following_stats = "loading"
-        elif ctrl["source"] == "followingReady":
-            self.following_stats = "ready"
-
+            self.set_following_state("loading")
+        elif ctrl["source"] == "followingInactive":
+            self.set_following_state("inactive")
+        elif ctrl["source"] == "followingActive":
+            self.set_following_state("active")
 
     def _handle_camera_commands(self, ctrl):
         if "camera_pan" in ctrl:
@@ -434,7 +440,5 @@ class FollowingUtils:
     def teleop_publish_to_following(self, cmd):
         try:
             self.tel_chatter.publish(cmd)
-            self.following_stats = cmd["following"]
-            self.throttle_controller.update_following_state(self.following_stats)
         except Exception as e:
             logger.error(f"Exception in teleop_publish_to_following: {e}")

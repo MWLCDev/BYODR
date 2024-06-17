@@ -124,8 +124,8 @@ class FollowingHandler(web.RequestHandler):
     def initialize(self, **kwargs):
         self._fn_control = kwargs.get("fn_control")
 
-    def send_state(self, command_dict):
-        self.write({"status": "success", "received_command": command_dict,"time": timestamp()})
+    def send_state(self):
+        self.write({"status": "success", "time": timestamp()})
 
     def post(self):
         # Extract command as a string
@@ -137,7 +137,7 @@ class FollowingHandler(web.RequestHandler):
             # Pass the dictionary to the control function
             self._fn_control(command_dict)
 
-        self.send_state(command_dict)
+        self.send_state()
 
 class FollowingStatusHandler(web.RequestHandler):
     def initialize(self, **kwargs):

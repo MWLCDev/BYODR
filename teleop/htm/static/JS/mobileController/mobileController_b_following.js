@@ -5,9 +5,8 @@ class ToggleButtonHandler {
     this.toggleButton = document.getElementById(buttonId);
     this.canvas = document.getElementById("following_imageCanvas");
     this.ctx = this.canvas.getContext('2d');
-    this.checkSavedState();
-    this.initialSetup(); // New method to setup canvas dimensions
-    this._followingState = "inactive";
+    this._followingState = "loading";
+    this.initialSetup();
     this.startPolling();
   }
 
@@ -17,47 +16,58 @@ class ToggleButtonHandler {
   }
 
   initialSetup() {
-    //related to canvas
     this.resizeCanvas();
     window.addEventListener('resize', () => this.resizeCanvas());
-    //related to the toggle button
     this.toggleButton.addEventListener('click', () => this.handleButtonClick());
   }
 
   handleButtonClick() {
-    // Determine the command based on the opposite of the current button text
-    let currentText = this.toggleButton.innerText;
-    this.sendSwitchFollowingRequest(currentText);
+    if (this._followingState == "inactive") {
+      this.sendSwitchFollowingRequest("start_following");
+    } else if (this._followingState == "active") {
+      this.sendSwitchFollowingRequest("stop_following");
+    }
   }
 
   sendSwitchFollowingRequest(command) {
     fetch('/switch_following', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-      },
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       body: `command=${encodeURIComponent(command)}`,
     })
       .then(response => response.json())
-      .then(data => {
-        this.assignFollowingState(data.received_command.following)
-        // console.log(data)
-        this.toggleButtonAppearance();
-      })
+      .then(data => { console.log(data) })
       .catch(error => console.error("Error sending command:", error));
   }
 
+
+  startPolling() {
+    setInterval(() => {
+      fetch('/switch_following_status', {
+        method: 'GET',
+        headers: { 'Content-Type': 'application/json' },
+      })
+        .then(response => response.json())
+        .then(data => {
+          this.assignFollowingState(data.following_status);
+          this.toggleButtonAppearance();
+        })
+        .catch(error => console.error("Error polling backend:", error));
+    }, 500);
+  }
+
+
   assignFollowingState(backendCommand) {
+    console.log(backendCommand, this._followingState)
     switch (backendCommand) {
-      case "Start Following":
+      case "active":
         this._followingState = "active";  // The system is actively following
         break;
-      case "Stop Following":
-      case "ready":
+      case "inactive":
         this._followingState = "inactive";  // The system is ready and not following
         break;
       case "loading":
-        this._followingState = "loading";  // The system is initializing or loading
+        this._followingState = "loading";  // The system is loading
         break;
       default:
         console.log("Following: Unknown command received from the backend:", backendCommand)
@@ -80,8 +90,6 @@ class ToggleButtonHandler {
       this.toggleButton.innerText = "Loading...";
       this.toggleButton.style.backgroundColor = "#ffa500";
     }
-    sessionStorage.setItem("innerText", this.toggleButton.innerText);
-    sessionStorage.setItem("backgroundColor", this.toggleButton.style.backgroundColor);
   }
 
   showCanvas() {
@@ -116,7 +124,6 @@ class ToggleButtonHandler {
   resizeCanvas() {
     if (this._followingState == "active") {
       removeTriangles()
-      console.log("removing")
     }
     let maxWidth = window.innerWidth * 0.8; // 80% of the viewport width
     if (maxWidth > 640) maxWidth = 640; // Ensuring the width does not exceed 640 pixels
@@ -126,33 +133,6 @@ class ToggleButtonHandler {
     this.canvas.height = maxHeight;
     this.canvas.style.width = `${maxWidth}px`;
     this.canvas.style.height = `${maxHeight}px`;
-  }
-
-  checkSavedState() {
-    if (sessionStorage.getItem("innerText") !== null) {
-      this.toggleButton.innerText = sessionStorage.getItem("innerText");
-      this.toggleButton.style.backgroundColor = sessionStorage.getItem("backgroundColor");
-    }
-    else {
-    }
-  }
-
-
-  startPolling() {
-    setInterval(() => {
-      fetch('/switch_following_status', {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      })
-        .then(response => response.json())
-        .then(data => {
-          this.assignFollowingState(data.following_status);
-          this.toggleButtonAppearance();
-        })
-        .catch(error => console.error("Error polling backend:", error));
-    }, 1000);
   }
 
 
