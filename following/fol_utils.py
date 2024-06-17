@@ -176,74 +176,91 @@ class FollowingController:
         self.stop_yolo = threading.Event()
         self.fol_state = "loading"
 
-    def run(self):
+    def initialize_following(self):
+        """Initial delay and command to indicate loading state."""
         # As the connection is PUB(FOL)-SUB(TEL), there's no built-in mechanism to ensure that subscriber is ready to receive messages before the publisher starts sending them
         time.sleep(2)
-        # self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan=self.command_controller.current_camera_pan)
-
         self.command_controller.publish_command(source="followingLoading")
         self.yolo_inference.run()
         self.fol_state = "inactive"
 
     def request_check(self):
-        """Fetches the request from Teleop"""
+        """Fetches and processes the request from Teleop."""
         try:
-            follow_request = self.teleop_chatter()
-            if follow_request is not None:
-                if follow_request.get("following") == "start_following":
-                    if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
-                        self.fol_state = "active"
-                        self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
-                        self.yolo_inference.reset_tracking_session()
-                        self.stop_threads = False
-                        self.run_yolo_inf = threading.Thread(target=self.control_logic, args=(lambda: self.stop_threads,))
-                        self.run_yolo_inf.start()
-                elif follow_request.get("following") == "stop_following":
-                    logger.info("Stopping Following")
-                    self.command_controller.reset_control_commands()
-                    if self.run_yolo_inf is not None and self.run_yolo_inf.is_alive():
-                        self.fol_state = "loading"
-                        self.command_controller.publish_command(source="followingLoading")
-                        self.stop_threads = True
-                        self.run_yolo_inf.join()  # Wait for the YOLO thread to stop
-                elif follow_request.get("camera_azimuth") is not None:
-                    self.command_controller.current_azimuth = int(follow_request.get("camera_azimuth"))
-                    # print(self.command_controller.current_azimuth)
-            # In case there isn't a command received from teleop_chatter. It should be sending the current state of following
-            if self.fol_state == "inactive":
-                self.command_controller.publish_command(source="followingInactive")
-            elif self.fol_state == "active":
-                self.command_controller.publish_command(
-                    throttle=self.command_controller.current_throttle,
-                    steering=self.command_controller.current_steering,
-                    camera_pan=self.command_controller.current_camera_pan,
-                    source="followingActive",
-                )
+            teleop_request = self.teleop_chatter()
+            if teleop_request is not None:
+                if teleop_request.get("following") == "start_following":
+                    self._start_following()
+                elif teleop_request.get("following") == "stop_following":
+                    self._stop_following()
+                elif teleop_request.get("camera_azimuth") is not None:
+                    self.command_controller.current_azimuth = int(teleop_request.get("camera_azimuth"))
+            self._publish_current_state()
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
 
-    def control_logic(self, stop):
+    def _start_following(self):
+        """Start the following process."""
+        if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
+            self.fol_state = "active"
+            self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
+            self.yolo_inference.reset_tracking_session()
+            self.stop_threads = False
+            self.run_yolo_inf = threading.Thread(target=self._control_logic, args=(lambda: self.stop_threads,))
+            self.run_yolo_inf.start()
+
+    def _stop_following(self):
+        """Stop the following process."""
+        logger.info("Stopping Following")
+        self.command_controller.reset_control_commands()
+        if self.run_yolo_inf is not None and self.run_yolo_inf.is_alive():
+            self.fol_state = "loading"
+            self.command_controller.publish_command(source="followingLoading")
+            self.stop_threads = True
+            self.run_yolo_inf.join()
+
+    def _publish_current_state(self):
+        """Publish the current state of following."""
+        # In case there isn't a command received from teleop_chatter and it isn't active or loading, it should send followingInactive
+        if self.fol_state == "inactive":
+            self.command_controller.publish_command(source="followingInactive")
+        # As the model sends when it has new data, there sin't a way for the ui to keep showing the stream box. This condition here is to cover for these gaps
+        elif self.fol_state == "active":
+            self.command_controller.publish_command(
+                throttle=self.command_controller.current_throttle,
+                steering=self.command_controller.current_steering,
+                camera_pan=self.command_controller.current_camera_pan,
+                source="followingActive",
+            )
+
+    def _control_logic(self, stop):
         """Processes each frame of YOLO output."""
-        for r in self.yolo_inference.results:  # Running the loop for each frame of the stream
+        for r in self.yolo_inference.results:
             if stop():
                 logger.info("YOLO model stopped")
                 self.fol_state = "inactive"
                 self.command_controller.publish_command(source="followingReady")
                 break
             self.yolo_inference.track_and_save_image(r)
-            boxes = r.boxes.cpu().numpy()
+            self._update_control_commands(r.boxes.cpu().numpy())
 
-            if len(boxes) == 0:
-                # No users detected, opt for zeroes values
-                self.command_controller.current_throttle = 0
-                self.command_controller.current_steering = 0
-                self.command_controller.publish_command(throttle=self.command_controller.current_throttle, steering=self.command_controller.current_steering, camera_pan=0)
-            else:
-                # Users detected, update control commands
-                self.command_controller.update_control_commands(boxes)
-                self.command_controller.publish_command(
-                    throttle=self.command_controller.current_throttle,
-                    steering=self.command_controller.current_steering,
-                    camera_pan=self.command_controller.current_camera_pan,
-                    source="followingActive",
-                )
+    def _update_control_commands(self, boxes):
+        """Update control commands based on detected boxes."""
+        if len(boxes) == 0:
+            self.command_controller.current_throttle = 0
+            self.command_controller.current_steering = 0
+            self.command_controller.current_camera_pan = 0
+            self.command_controller.publish_command(
+                throttle=self.command_controller.current_throttle,
+                steering=self.command_controller.current_steering,
+                camera_pan=self.command_controller.current_camera_pan,
+                source="followingActive",
+            )
+        else:
+            self.command_controller.update_control_commands(boxes)
+            self.command_controller.publish_command(
+                throttle=self.command_controller.current_throttle,
+                steering=self.command_controller.current_steering,
+                camera_pan=self.command_controller.current_camera_pan,
+                source="followingActive",
+            )

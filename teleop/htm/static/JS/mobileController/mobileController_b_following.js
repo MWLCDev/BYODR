@@ -36,7 +36,6 @@ class ToggleButtonHandler {
       body: `command=${encodeURIComponent(command)}`,
     })
       .then(response => response.json())
-      .then(data => { console.log(data) })
       .catch(error => console.error("Error sending command:", error));
   }
 
@@ -58,7 +57,7 @@ class ToggleButtonHandler {
 
 
   assignFollowingState(backendCommand) {
-    console.log(backendCommand, this._followingState)
+    // console.log(backendCommand, this._followingState)
     switch (backendCommand) {
       case "active":
         this._followingState = "active";  // The system is actively following

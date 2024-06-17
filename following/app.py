@@ -79,7 +79,7 @@ def main():
 
     # Getting data from the received sockets declared above
     application.controller.teleop_chatter = lambda: teleop_cha.get()    
-    application.controller.run()
+    application.controller.initialize_following()
     application.setup()
     threads = [teleop_cha]
 
