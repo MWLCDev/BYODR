@@ -77,7 +77,6 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
     def initialize(self, **kwargs):  # Initializes the WebSocket handler
         self.throttle_controller = kwargs.get("throttle_controller")
 
-
     def check_origin(self, origin):
         return True
 
@@ -125,24 +124,28 @@ class FollowingHandler(web.RequestHandler):
     def initialize(self, **kwargs):
         self._fn_control = kwargs.get("fn_control")
 
+    def send_state(self, command_dict):
+        self.write({"status": "success", "received_command": command_dict,"time": timestamp()})
+
     def post(self):
         # Extract command as a string
         command_text = self.get_body_argument("command", default=None)
+        
         end_time = timestamp() + 1e5
         while timestamp() < end_time:
-            # Prepare the command as a dictionary
-            command_dict = {
-                "following": command_text,
-                # Timestamp in microseconds
-                "time": timestamp(),
-            }
-
+            command_dict = {"following": command_text}
             # Pass the dictionary to the control function
             self._fn_control(command_dict)
 
-        # logger.info(command_dict)
-        self.write({"status": "success", "received_command": command_dict})
+        self.send_state(command_dict)
 
+class FollowingStatusHandler(web.RequestHandler):
+    def initialize(self, **kwargs):
+        self._fn_control = kwargs.get("fn_control")
+
+    def get(self):
+        following_status = self._fn_control.get_following_state()
+        self.write({"status": "success", "following_status": following_status})
 
 class ControlServerSocket(websocket.WebSocketHandler):
     # There can be only one operator in control at any time.

@@ -137,14 +137,14 @@ class CommandController:
         else:
             return 0
 
-    def publish_command(self, throttle=0, steering=0, camera_pan=0):
+    def publish_command(self, throttle=0, steering=0, camera_pan=0, source="Following"):
         """Publishes the control commands to Teleop."""
         try:
             # Limiting throttle and steering to 3 decimal places
             throttle = round(throttle, 3)
             steering = round(steering, 3)
 
-            cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": "Following"}
+            cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": source}
 
             if camera_pan is not None:
                 # Make sure to define the preset for the camera
@@ -153,6 +153,7 @@ class CommandController:
                 else:
                     cmd["camera_pan"] = int(camera_pan)
                 self.publisher.publish(cmd)
+            if source not in ["followingReady", "followingLoading"]:
                 logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")
@@ -173,17 +174,23 @@ class FollowingController:
         self.run_yolo_inf = None
         self.stop_threads = False
         self.stop_yolo = threading.Event()
+        self.fol_state = "loading"
 
     def run(self):
-        time.sleep(1)
-        self.command_controller.publisher.publish({"FollowingState": "FollowingLoading"})
+        # As the connection is PUB(FOL)-SUB(TEL), there's no built-in mechanism to ensure that subscriber is ready to receive messages before the publisher starts sending them
+        time.sleep(2)
+        # self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan=self.command_controller.current_camera_pan)
+
+        self.command_controller.publish_command(source="followingLoading")
         self.yolo_inference.run()
-        self.command_controller.publisher.publish({"FollowingState": "FollowingReady"})
+        self.fol_state = "ready"
 
     def request_check(self):
         """Fetches the request from Teleop"""
         try:
             follow_request = self.teleop_chatter()
+            if self.fol_state == "ready":
+                self.command_controller.publish_command(source="followingReady")
             if follow_request is None:
                 return
             if follow_request.get("following") == "Start Following":
@@ -191,12 +198,14 @@ class FollowingController:
                     self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
                     self.yolo_inference.reset_tracking_session()
                     self.stop_threads = False
+                    self.fol_state = "active"
                     self.run_yolo_inf = threading.Thread(target=self.control_logic, args=(lambda: self.stop_threads,))
                     self.run_yolo_inf.start()
             elif follow_request.get("following") == "Stop Following":
                 logger.info("Stopping Following")
                 self.command_controller.reset_control_commands()
                 if self.run_yolo_inf is not None and self.run_yolo_inf.is_alive():
+                    self.fol_state = "ready"
                     self.stop_threads = True
                     self.run_yolo_inf.join()  # Wait for the YOLO thread to stop
             if follow_request.get("camera_azimuth") is not None:

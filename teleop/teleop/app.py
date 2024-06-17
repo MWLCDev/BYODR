@@ -167,6 +167,7 @@ def main():
                 (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(throttle_controller=throttle_controller.throttle_control)),
                 (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
                 (r"/switch_following", FollowingHandler, dict(fn_control=application.following_utils.teleop_publish_to_following)),
+                (r"/switch_following_status", FollowingStatusHandler, dict(fn_control=application.following_utils)),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),

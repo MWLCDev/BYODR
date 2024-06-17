@@ -281,10 +281,8 @@ class CameraControl:
         self.user = user
         self.password = password
         self.lock = threading.Lock()  # Initialize a lock for camera control
-        self.preset_event = threading.Event()  # Initialize an event for preset completion
 
     def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Momentary"):
-        self.preset_event.wait()  # Wait until the preset command is completed
         with self.lock:
             try:
                 if method == "Momentary":
@@ -333,7 +331,6 @@ class CameraControl:
                 return f"Error: {err}"
 
     def goto_home_position(self):
-        """Moves the PTZ camera to its home position."""
         with self.lock:
             url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
             response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
@@ -371,7 +368,7 @@ class CameraControl:
             try:
                 response.raise_for_status()
                 if response.status_code == 200:
-                    self.preset_event.set()  # Signal that preset command is completed
+                    logger.info(f"went to preset {preset_id}")
                     return f"Success: Camera moved to preset position {preset_id}."
                 else:
                     logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
@@ -385,8 +382,8 @@ class FollowingUtils:
         self.tel_chatter = tel_chatter
         self.throttle_controller = throttle_controller
         self.following_socket = fol_comm_socket
-        # Values are ["Start Following", "Stop Following"]
-        self.following_stats = None
+        self.following_stats = "loading"
+        self.camera_control = None
 
     def configs(self, user_config_file_dir):
         config = configparser.SafeConfigParser()
@@ -398,26 +395,46 @@ class FollowingUtils:
         return self.following_stats
 
     def process_socket_commands(self):
-        if self.following_stats == "Start Following":
+        try:
             ctrl = self.following_socket.get()
+            # logger.info(ctrl)
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
                 self.throttle_controller.throttle_control(ctrl)
+                self._update_following_status(ctrl)
+                self._handle_camera_commands(ctrl)
+                self._publish_camera_azimuth()
+        except Exception as e:
+            logger.error(f"Error handling control command: {e}")
 
-                try:
-                    if isinstance(ctrl["camera_pan"], int):
-                        self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
-                    elif ctrl["camera_pan"] == "go_preset_1":
-                        self.camera_control.goto_preset_position(preset_id=1)
+    def _update_following_status(self, ctrl):
+        if ctrl["source"] == "followingLoading":
+            self.following_stats = "loading"
+        elif ctrl["source"] == "followingReady":
+            self.following_stats = "ready"
 
-                except Exception as e:
-                    logger.error(f"Exception in camera control: {e}")
-                # will always send the current azimuth for the bottom camera while following is working
-                camera_azimuth, camera_elevation = self.camera_control.get_ptz_status()
-                # logger.info(camera_azimuth)
-                self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
+
+    def _handle_camera_commands(self, ctrl):
+        if "camera_pan" in ctrl:
+            try:
+                if isinstance(ctrl["camera_pan"], int):
+                    self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
+                elif ctrl["camera_pan"] == "go_preset_1":
+                    self.camera_control.goto_preset_position(preset_id=1)
+            except Exception as cam_err:
+                logger.error(f"Error in camera control: {cam_err}")
+
+    def _publish_camera_azimuth(self):
+        try:
+            camera_azimuth, _ = self.camera_control.get_ptz_status()
+            self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
+        except Exception as e:
+            logger.error(f"Error publishing camera azimuth: {e}")
 
     def teleop_publish_to_following(self, cmd):
-        self.tel_chatter.publish(cmd)
-        self.following_stats = cmd["following"]
-        self.throttle_controller.update_following_state(self.following_stats)
+        try:
+            self.tel_chatter.publish(cmd)
+            self.following_stats = cmd["following"]
+            self.throttle_controller.update_following_state(self.following_stats)
+        except Exception as e:
+            logger.error(f"Exception in teleop_publish_to_following: {e}")
