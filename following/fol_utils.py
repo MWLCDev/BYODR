@@ -1,8 +1,10 @@
 import logging
 import os
 import threading
+import time
 
 import cv2
+from byodr.utils.ipc import JSONPublisher
 from byodr.utils.option import parse_option
 from ultralytics import YOLO
 
@@ -61,7 +63,7 @@ class CommandController:
         self.current_camera_pan = 0
         self.current_azimuth = 0
         self.person_height = 0
-        self.publisher = None
+        self.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
 
         self.get_fol_configs()
 
@@ -168,14 +170,15 @@ class FollowingController:
     def __init__(self, model_path, user_config_args):
         self.yolo_inference = YoloInference(model_path, user_config_args)
         self.command_controller = CommandController(user_config_args)
-        self.command_controller.publisher = None
         self.run_yolo_inf = None
         self.stop_threads = False
         self.stop_yolo = threading.Event()
 
     def run(self):
-        self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, self.command_controller.current_camera_pan)
+        time.sleep(1)
+        self.command_controller.publisher.publish({"FollowingState": "FollowingLoading"})
         self.yolo_inference.run()
+        self.command_controller.publisher.publish({"FollowingState": "FollowingReady"})
 
     def request_check(self):
         """Fetches the request from Teleop"""
@@ -185,7 +188,7 @@ class FollowingController:
                 return
             if follow_request.get("following") == "Start Following":
                 if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
-                    self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, self.command_controller.current_camera_pan)
+                    self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
                     self.yolo_inference.reset_tracking_session()
                     self.stop_threads = False
                     self.run_yolo_inf = threading.Thread(target=self.control_logic, args=(lambda: self.stop_threads,))

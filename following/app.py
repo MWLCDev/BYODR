@@ -7,7 +7,7 @@ import os
 import signal
 
 from byodr.utils import Application, hash_dict
-from byodr.utils.ipc import JSONPublisher, json_collector
+from byodr.utils.ipc import json_collector
 from fol_utils import FollowingController
 
 logger = logging.getLogger(__name__)
@@ -34,7 +34,6 @@ class FollowingApplication(Application):
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
         self.controller = FollowingController(model_path="yolov8n.engine", user_config_args=self.get_user_config_file_contents())
-        self.controller.command_controller.publisher = None
 
     def _check_user_config(self):
         """See if there is an available user config file, and assign it to the self var"""
@@ -79,8 +78,6 @@ def main():
     teleop_cha = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event, hwm=1)
     application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
 
-    # Sockets used to send data to other services
-    application.controller.command_controller.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
     # Getting data from the received sockets declared above
     application.controller.teleop_chatter = lambda: teleop_cha.get()    
     application.controller.run()
