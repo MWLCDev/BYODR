@@ -68,9 +68,11 @@ class CommandController:
     def get_fol_configs(self):
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
         # This is when the camera should start moving to follow the user. it is between 0 and 35% of the frame
-        self.left_red_zone = parse_option("following.left_red_zone", float, 0.35, [], **self.user_config_args)
-        self.right_red_zone = parse_option("following.right_red_zone", float, 0.65, [], **self.user_config_args)
-        self.start_height = parse_option("following.center.offset", int, 340, [], **self.user_config_args)
+        self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
+        self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
+        self.left_camera_pan_limit = parse_option("following.left_camera_pan_limit", float, 3200, [], **self.user_config_args)
+        self.right_camera_pan_limit = parse_option("following.right_camera_pan_limit", float, 250, [], **self.user_config_args)
+        self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
 
     def update_control_commands(self, persons):
         """Updates camera pan, steering, and throttle based on the operator's position on the screen."""
@@ -83,12 +85,11 @@ class CommandController:
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
-                if not (0 <= self.current_azimuth <= 250 or 3200 <= self.current_azimuth <= 3550):
+                if not (0 <= self.current_azimuth <= self.right_camera_pan_limit or self.left_camera_pan_limit <= self.current_azimuth <= 3550):
                     azimuth_steering_adjustment = self.calculate_azimuth_steering_adjustment()
                     self.current_steering += azimuth_steering_adjustment
                     self.current_camera_pan -= azimuth_steering_adjustment
-                    print(f"adjusting with{self.current_steering, self.current_camera_pan}")
-
+                    print(f"adjusting with {self.current_steering, self.current_camera_pan}")
                 break  # Only process the first detected person
             except Exception as e:
                 logger.warning(f"Exception updating control commands: {e}")
@@ -127,10 +128,10 @@ class CommandController:
             return 0
 
     def calculate_azimuth_steering_adjustment(self):
-        if self.current_azimuth < 500:
-            return (500 - self.current_azimuth) / 500
-        elif self.current_azimuth > 3050:
-            return (3050 - self.current_azimuth) / 500
+        if self.current_azimuth < self.right_camera_pan_limit:
+            return (self.right_camera_pan_limit - self.current_azimuth) / self.right_camera_pan_limit
+        elif self.current_azimuth > self.left_camera_pan_limit:
+            return (self.left_camera_pan_limit - self.current_azimuth) / self.right_camera_pan_limit
         else:
             return 0
 
