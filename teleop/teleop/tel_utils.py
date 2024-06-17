@@ -281,8 +281,10 @@ class CameraControl:
         self.user = user
         self.password = password
         self.lock = threading.Lock()  # Initialize a lock for camera control
+        self.preset_event = threading.Event()  # Initialize an event for preset completion
 
-    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=100, method="Momentary"):
+    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Momentary"):
+        self.preset_event.wait()  # Wait until the preset command is completed
         with self.lock:
             try:
                 if method == "Momentary":
@@ -301,6 +303,7 @@ class CameraControl:
                     return "Success: PTZ adjusted."
                 else:
                     logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.RequestException as err:
                 return f"Error: {err}"
 
@@ -340,6 +343,7 @@ class CameraControl:
                     return "Success: Camera moved to Home position."
                 else:
                     logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -355,6 +359,7 @@ class CameraControl:
                     return f"Success: Preset position {preset_id} set."
                 else:
                     logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -366,9 +371,11 @@ class CameraControl:
             try:
                 response.raise_for_status()
                 if response.status_code == 200:
+                    self.preset_event.set()  # Signal that preset command is completed
                     return f"Success: Camera moved to preset position {preset_id}."
                 else:
                     logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                    return f"Error: Unexpected response {response.status_code} - {response.text}"
             except requests.exceptions.HTTPError as err:
                 return f"Error: {err}"
 
@@ -398,8 +405,11 @@ class FollowingUtils:
                 self.throttle_controller.throttle_control(ctrl)
 
                 try:
-                    if ctrl["camera_pan"] is not None:
+                    if isinstance(ctrl["camera_pan"], int):
                         self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
+                    elif ctrl["camera_pan"] == "go_preset_1":
+                        self.camera_control.goto_preset_position(preset_id=1)
+
                 except Exception as e:
                     logger.error(f"Exception in camera control: {e}")
                 # will always send the current azimuth for the bottom camera while following is working
