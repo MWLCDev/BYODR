@@ -137,16 +137,23 @@ class CommandController:
 
     def publish_command(self, throttle=0, steering=0, camera_pan=0):
         """Publishes the control commands to Teleop."""
-        # Limiting throttle and steering to 3 decimal places
-        throttle = round(throttle, 3)
-        steering = round(steering, 3)
+        try:
+            # Limiting throttle and steering to 3 decimal places
+            throttle = round(throttle, 3)
+            steering = round(steering, 3)
 
-        cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": "Following"}
-        if camera_pan is not None:
-            cmd["camera_pan"] = int(camera_pan)
-        self.publisher.publish(cmd)
-        logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+            cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": "Following"}
 
+            if camera_pan is not None:
+                # Make sure to define the preset for the camera
+                if camera_pan == "go_preset_1":
+                    cmd["camera_pan"] = camera_pan
+                else:
+                    cmd["camera_pan"] = int(camera_pan)
+                self.publisher.publish(cmd)
+                logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+        except Exception as e:
+            logger.warning(f"Error while sending teleop command {e}")
 
     def reset_control_commands(self):
         self.current_throttle = 0
