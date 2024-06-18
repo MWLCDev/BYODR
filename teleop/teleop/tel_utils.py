@@ -283,27 +283,29 @@ class CameraControl:
         self.lock = threading.Lock()  # Initialize a lock for camera control
 
     def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Momentary"):
-        with self.lock:
-            try:
-                if method == "Momentary":
-                    url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
-                    payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
-                else:  # Absolute
-                    url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
-                    payload = (
-                        "<PTZData>"
-                        f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
-                        "</PTZData>"
-                    )
+        try:
+            if method == "Momentary":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+            elif method == "Continuous":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Continuous"
+                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Continuous><duration>{duration}</duration></Continuous></PTZData>"
+            elif method == "Absolute":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+                payload = (
+                    "<PTZData>"
+                    f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
+                    "</PTZData>"
+                )
 
-                response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
-                if response.status_code == 200:
-                    return "Success: PTZ adjusted."
-                else:
-                    logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
-                    return f"Error: Unexpected response {response.status_code} - {response.text}"
-            except requests.exceptions.RequestException as err:
-                return f"Error: {err}"
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
+            if response.status_code == 200:
+                return "Success: PTZ adjusted."
+            else:
+                logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                return f"Error: Unexpected response {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as err:
+            return f"Error: {err}"
 
     def get_ptz_status(self):
         url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/status"
