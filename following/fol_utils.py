@@ -72,8 +72,8 @@ class CommandController:
         # This is when the camera should start moving to follow the user. it is between 0 and 35% of the frame
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
-        self.left_camera_pan_limit = parse_option("following.left_camera_pan_limit", float, 3200, [], **self.user_config_args)
-        self.right_camera_pan_limit = parse_option("following.right_camera_pan_limit", float, 250, [], **self.user_config_args)
+        self.left_camera_pan_limit = parse_option("following.left_camera_pan_limit", float, 3400, [], **self.user_config_args)  # max is 3550
+        self.right_camera_pan_limit = parse_option("following.right_camera_pan_limit", float, 150, [], **self.user_config_args)
         self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
 
     def update_control_commands(self, persons):

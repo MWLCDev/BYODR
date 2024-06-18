@@ -190,7 +190,7 @@ class ThrottleController:
         self.teleop_publisher = teleop_publisher
         self.route_store = route_store
         self.command_queue = queue.Queue()
-        self.following_state = "Stop Following"
+        self.following_state = "inactive"
 
         # Start the thread to consume from the queue
         # The main thread can be used to run this function, but I would leave the main thread free
@@ -205,8 +205,8 @@ class ThrottleController:
         while True:
             try:
                 cmd = self.command_queue.get(block=True)
-                if self.following_state == "Start Following":
-                    if cmd.get("source") == "Following":
+                if self.following_state == "active":
+                    if cmd.get("source") == "followingActive":
                         self._process_command(cmd)
                     else:
                         pass
@@ -219,7 +219,7 @@ class ThrottleController:
 
     def _process_command(self, cmd):
         """Processes a command from the queue, smoothing the throttle changes if necessary."""
-        if cmd.get("mobileInferenceState") in ["true", "auto", "train"] or cmd.get("source") in ["Following"]:
+        if cmd.get("mobileInferenceState") in ["true", "auto", "train"] or cmd.get("source") in ["followingActive"]:
             self._teleop_publish(cmd)
             return
 
