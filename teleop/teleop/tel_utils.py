@@ -282,7 +282,7 @@ class CameraControl:
         self.password = password
         self.lock = threading.Lock()  # Initialize a lock for camera control
 
-    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Momentary"):
+    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Continuous"):
         try:
             if method == "Momentary":
                 url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
