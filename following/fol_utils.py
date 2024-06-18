@@ -69,11 +69,11 @@ class CommandController:
 
     def get_fol_configs(self):
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
-        # This is when the camera should start moving to follow the user. it is between 0 and 35% of the frame
+        # This is when the camera should start moving to follow the user. it is a percentage to the video stream
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
-        self.left_camera_pan_limit = parse_option("following.left_camera_pan_limit", float, 3400, [], **self.user_config_args)  # max is 3550
-        self.right_camera_pan_limit = parse_option("following.right_camera_pan_limit", float, 150, [], **self.user_config_args)
+        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3450, [], **self.user_config_args)  # max is 3600
+        self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 150, [], **self.user_config_args)
         self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
 
     def update_control_commands(self, persons):
@@ -82,19 +82,35 @@ class CommandController:
             try:
                 self.person_height = person.xywh[0][3]
                 # The horizontal position of the (detected person's bounding box center) within the frame
+
                 x_center_percentage = person.xywhn[0][0]
 
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
-                if not (0 <= self.current_azimuth <= self.right_camera_pan_limit or self.left_camera_pan_limit <= self.current_azimuth <= 3550):
-                    azimuth_steering_adjustment = self.calculate_azimuth_steering_adjustment()
-                    self.current_steering += azimuth_steering_adjustment
-                    self.current_camera_pan -= azimuth_steering_adjustment
-                    print(f"adjusting with {self.current_steering, self.current_camera_pan}")
+
+                # Adjust steering based on azimuth if not in the safe zone
+                self.current_steering = self.adjust_steering_for_azimuth(self.current_steering)
+
                 break  # Only process the first detected person
             except Exception as e:
                 logger.warning(f"Exception updating control commands: {e}")
+
+    def adjust_steering_for_azimuth(self, current_steering):
+        """Adjusts the steering based on the current azimuth to ensure the vehicle is pointing forward."""
+        adjustment_factor = 2  # Multiply the adjustment by a factor to steer harder
+        if self.current_azimuth > self.min_camera_pan_safe_zone or self.current_azimuth < self.max_camera_pan_safe_zone:
+            # Calculate the steering adjustment needed to bring the azimuth back to the safe zone
+            if self.current_azimuth > self.min_camera_pan_safe_zone:
+                adjustment = (self.current_azimuth - 1800) / 1800  # Proportional adjustment for left turn
+                current_steering -= adjustment
+            elif self.current_azimuth < self.max_camera_pan_safe_zone:
+                adjustment = (1800 - self.current_azimuth) / 1800  # Proportional adjustment for right turn
+                current_steering += adjustment
+
+        current_steering = max(-1, min(1, current_steering))
+        print(f"Got{current_steering}")
+        return current_steering
 
     def calculate_throttle(self):
         if self.person_height <= self.start_height:
@@ -115,6 +131,7 @@ class CommandController:
         return 0
 
     def calculate_pan_adjustment(self, x_center_percentage):
+        """Sends a normalized value for camera pan, based on how deep is OP in the red zone"""
         if x_center_percentage < self.left_red_zone:
             return self.pan_movement_offset * ((self.left_red_zone - x_center_percentage) / self.left_red_zone)
         elif x_center_percentage > self.right_red_zone:
@@ -129,18 +146,9 @@ class CommandController:
         else:
             return 0
 
-    def calculate_azimuth_steering_adjustment(self):
-        if self.current_azimuth < self.right_camera_pan_limit:
-            return (self.right_camera_pan_limit - self.current_azimuth) / self.right_camera_pan_limit
-        elif self.current_azimuth > self.left_camera_pan_limit:
-            return (self.left_camera_pan_limit - self.current_azimuth) / self.right_camera_pan_limit
-        else:
-            return 0
-
     def publish_command(self, throttle=0, steering=0, camera_pan=0, source="Following"):
         """Publishes the control commands to Teleop."""
         try:
-            # Limiting throttle and steering to 3 decimal places
             throttle = round(throttle, 3)
             steering = round(steering, 3)
 
@@ -148,6 +156,7 @@ class CommandController:
 
             if camera_pan is not None:
                 # Make sure to define the preset for the camera
+
                 if camera_pan == "go_preset_1":
                     cmd["camera_pan"] = camera_pan
                 else:
@@ -195,6 +204,7 @@ class FollowingController:
                     self._stop_following()
                 elif teleop_request.get("camera_azimuth") is not None:
                     self.command_controller.current_azimuth = int(teleop_request.get("camera_azimuth"))
+                    # print(self.command_controller.current_azimuth)
             self._publish_current_state()
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
