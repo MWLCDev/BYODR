@@ -8,7 +8,7 @@ import traceback
 import gi
 from tornado import websocket
 
-gi.require_version('Gst', '1.0')
+gi.require_version("Gst", "1.0")
 from gi.repository import Gst
 
 Gst.init(None)
@@ -24,8 +24,8 @@ class HttpLivePlayerVideoSocket(websocket.WebSocketHandler):
 
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
-        self._video = kwargs.get('video_source')
-        self._io_loop = kwargs.get('io_loop')
+        self._video = kwargs.get("video_source")
+        self._io_loop = kwargs.get("io_loop")
 
     def _push(self, _bytes):
         with self._lock:
@@ -49,7 +49,7 @@ class HttpLivePlayerVideoSocket(websocket.WebSocketHandler):
     # noinspection PyUnusedLocal
     def open(self, *args, **kwargs):
         self._video.add_listener(self._client)
-        self.write_message(json.dumps(dict(action='init', width=self._video.get_width(), height=self._video.get_height())))
+        self.write_message(json.dumps(dict(action="init", width=self._video.get_width(), height=self._video.get_height())))
 
     def on_close(self):
         self._video.remove_listener(self._client)
@@ -57,7 +57,7 @@ class HttpLivePlayerVideoSocket(websocket.WebSocketHandler):
     def on_message(self, message):
         try:
             with self._lock:
-                self._streaming = 'REQUESTSTREAM' in message
+                self._streaming = "REQUESTSTREAM" in message
                 logger.info("On message - streaming = {}.".format(self._streaming))
         except Exception as e:
             logger.error("Stream socket@on_message: {} {}".format(e, traceback.format_exc()))
@@ -67,8 +67,8 @@ class HttpLivePlayerVideoSocket(websocket.WebSocketHandler):
 class JMuxerVideoStreamSocket(websocket.WebSocketHandler):
     # noinspection PyAttributeOutsideInit
     def initialize(self, **kwargs):
-        self._video = kwargs.get('video_source')
-        self._io_loop = kwargs.get('io_loop')
+        self._video = kwargs.get("video_source")
+        self._io_loop = kwargs.get("io_loop")
 
     def _push(self, _bytes):
         try:

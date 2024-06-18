@@ -1,16 +1,18 @@
 
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
-import CTRL_STAT from '/JS/mobileController/mobileController_z_state.js';
-import { drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle } from '/JS/mobileController/mobileController_d_pixi.js';
+import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
+import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js";
+
+import { drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw } from './mobileController_d_pixi.js';
+import CTRL_STAT from './mobileController_z_state.js';
 
 function initializeWS() {
   let WSprotocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
-  // let WSurl = `${WSprotocol}192.168.2.100:${document.location.port}/ws/send_mobile_controller_commands`;
   let WSurl = `${WSprotocol}${document.location.hostname}:${document.location.port}/ws/send_mobile_controller_commands`;
   CTRL_STAT.websocket = new WebSocket(WSurl);
 
   CTRL_STAT.websocket.onopen = function (event) {
     console.log('Mobile controller (WS) connection opened');
+    addKeyToSentCommand("button_b", 1)
     CTRL_STAT.stateErrors = ""
     CTRL_STAT.isWebSocketOpen = true;
   };
@@ -23,6 +25,7 @@ function initializeWS() {
       //Place holder until implementation with multi segment is over
     } else if (parsedData["control"] == "viewer") {
       CTRL_STAT.stateErrors = "controlError"
+      redraw(undefined, true, true, false);
     }
   };
 
@@ -33,9 +36,9 @@ function initializeWS() {
   CTRL_STAT.websocket.onclose = function (event) {
     console.log('Mobile controller (WS) connection closed');
     CTRL_STAT.stateErrors = "connectionError"
+    redraw(undefined, true, true, false);
     CTRL_STAT.isWebSocketOpen = false; // Reset the flag when WebSocket is closed
   };
-  console.log('Created Mobile controller (WS)');
 }
 
 /**
@@ -73,73 +76,108 @@ function pointInsideTriangle(px, py, ax, ay, bx, by, cx, cy) {
 }
 
 /**
- * Prints x,y and distance from the tip of the triangle to the current place of the ball.
- * @param {number} x current position of the ball (same as touch)
- * @param {*} y current position for the ball (same as touch)
+ * Calculate and set differences in y coordinate relative to the screen's center,
+ * effectively determining the position and movement of the control dot relative to the triangle tip.
+ * @param {number} user_touch_X - X position of the user's touch input.
  */
-function deltaCoordinatesFromTip(x, y, triangle_in_use, user_touch_Y) {
-  // Calculate the differences in x and y coordinates to get coordinates relative to the tip
-  const relativeX = x - window.innerWidth / 2;
-  const relativeY = y - window.innerHeight / 2;
-  SetStatistics(relativeX, relativeY, triangle_in_use, user_touch_Y);
+function deltaCoordinatesFromTip(user_touch_X) {
+  let relativeX = user_touch_X - window.innerWidth / 2;
+  return relativeX
 }
 
-function SetStatistics(x, y, triangle_in_use, user_touch_Y) {
+
+function SetStatistics(user_touch_X, user_touch_Y, y, getInferenceState) {
   let shapeHeight = window.innerHeight / 4; //It is the same value as in updateDimensions()=> this.height
-  const isTopTriangle = triangle_in_use === 'top'; // Checking if the top triangle is in use
+  const isTopTriangle = CTRL_STAT.selectedTriangle === 'top'; // Checking if the top triangle is in use
   const isTouchBelowCenter = user_touch_Y >= window.innerHeight / 2; // Checking if the finger of the user is below the center line of the screen
-  
+
+
   // Stopping the robot urgently depending on where the finger of the user is. We stop in these cases:
   // top triangle in use AND finger below the center
   // OR
   // bottom triangle in use AND finger above the center
-  // This is the definition of an XNOR gate, and the equivalent in JS is the '===' operator
-  // In this case, the robot will not decelerate slowly, it will immediately stop
+  // In this case will immediately stop
   if (isTopTriangle === isTouchBelowCenter)
-    // Removing the throttle key in the JSON, since the robot will forward 0 commands if they have the 'throttle' key inside
+    // Removing the throttle key in the JSON, since the robot will only forward commands if they have the 'throttle' key inside
     CTRL_STAT.throttleSteeringJson = {};
 
   // In any other case, we produce commands normally
   else
     CTRL_STAT.throttleSteeringJson = {
-      throttle: -((y - CTRL_STAT.initialYOffset) / (window.innerHeight / 4)).toFixed(3),
-      steering: Number((x / (shapeHeight / Math.sqrt(3))).toFixed(3)),
-      button_b: 1,
+      throttle: -(y).toFixed(3),
+      steering: Number((user_touch_X / (shapeHeight / Math.sqrt(3))).toFixed(3)),
+      mobileInferenceState: getInferenceState,
     };
 }
 
+// Save dead zone width to local storage
+function saveDeadZoneWidth(value) {
+  localStorage.setItem('deadZoneWidth', value);
+}
+
+// Retrieve dead zone width from local storage
+function getSavedDeadZoneWidth() {
+  // If there's a saved value in local storage, use it; otherwise default to 0.1
+  return localStorage.getItem('deadZoneWidth') || '0.1';
+}
+
 /**
- * Set the value for the dot on the screen, and limit the movement to be inside the triangle the user touched first
- * @param {number} x position of the touch
- * @param {number} y position of the touch
+ * Handles the movement of the dot within specified triangle boundaries.
+ * @param {number} touchX - X position of the touch.
+ * @param {number} touchY - Y position of the touch.
+ * @param {*} getInferenceState - Function to get the current inference state.
  */
-function handleDotMove(touchX, touchY) {
-  // the triangles are divided by a mid-point. It can be referred to as the tip (the 10 px gap)
-  let minY, maxY, triangle;
-  if (CTRL_STAT.selectedTriangle === 'top') {
-    minY = CTRL_STAT.midScreen - topTriangle.height;
-    maxY = CTRL_STAT.midScreen;
-    triangle = topTriangle;
-  } else if (CTRL_STAT.selectedTriangle === 'bottom') {
-    minY = CTRL_STAT.midScreen;
-    maxY = CTRL_STAT.midScreen + bottomTriangle.height;
-    triangle = bottomTriangle;
+function handleDotMove(touchX, touchY, getInferenceState) {
+  // Determine the triangle and its vertical boundaries based on the selection.
+  const isTopTriangle = CTRL_STAT.selectedTriangle === 'top';
+  const triangle = isTopTriangle ? topTriangle : bottomTriangle;
+  const midScreen = window.innerHeight / 2;
+
+  // Calculate minY and maxY based on the mode.
+  let minY, maxY;
+  if (getInferenceState === "auto") {
+    minY = isTopTriangle ? midScreen - triangle.height : midScreen;
+    maxY = isTopTriangle ? midScreen : midScreen + triangle.height;
+  } else {
+    minY = isTopTriangle ? CTRL_STAT.midScreen - triangle.height : CTRL_STAT.midScreen;
+    maxY = isTopTriangle ? CTRL_STAT.midScreen : CTRL_STAT.midScreen + triangle.height;
   }
-  let triangleMidX = triangle.baseWidth / 2
+
+  // Constrain the Y position within the triangle's boundaries.
   let y = Math.max(minY, Math.min(touchY, maxY));
-  //represents the fraction of the distance the dot is from the tip of the triangle it is inside
-  const relativeY = (y - CTRL_STAT.midScreen) / triangle.height;
-  //limit the movement of the ball
-  const maxXDeviation = Math.abs(relativeY) * (triangleMidX);
 
-  //The sent variable to the motors(hemisphere shape)
-  let x = Math.max(Math.min(touchX, (window.innerWidth / 2) + triangleMidX), (window.innerWidth / 2) - triangleMidX);
+  // Calculate the relative Y position within the triangle.
+  // This is initialized here to ensure it has a value in all code paths.
+  let relativeY = (y - (getInferenceState === "auto" ? midScreen : CTRL_STAT.midScreen)) / triangle.height;
 
-  //X value to visually limit the movement of the ball
-  let xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
-  CTRL_STAT.cursorFollowingDot.setPosition(xOfDot, y);
+  let deadZoneSlider = document.getElementById('deadZoneWidth');
+  let savedDeadZoneWidth = getSavedDeadZoneWidth();
+  deadZoneSlider.value = savedDeadZoneWidth; // Set the slider to the saved value
+  let deadZoneWidth = window.innerWidth * parseFloat(savedDeadZoneWidth);
 
-  deltaCoordinatesFromTip(x, y, CTRL_STAT.selectedTriangle, touchY);
+  let deadZoneMinX = (window.innerWidth / 2) - (deadZoneWidth / 2);
+  let deadZoneMaxX = (window.innerWidth / 2) + (deadZoneWidth / 2);
+  let inDeadZone = touchX >= deadZoneMinX && touchX <= deadZoneMaxX;
+
+  // Modify the logic to handle the X position considering the dead zone
+  let xOfDot;
+
+  if (inDeadZone) {
+    xOfDot = window.innerWidth / 2;
+    relativeY = (y - CTRL_STAT.midScreen) / triangle.height; // Default value when in dead zone, adjust as necessary
+  } else {
+    let maxXDeviation = Math.abs(relativeY) * (triangle.baseWidth / 2);
+    xOfDot = Math.max(Math.min(touchX, window.innerWidth / 2 + maxXDeviation), window.innerWidth / 2 - maxXDeviation);
+  }
+
+  // Update the dot's position.
+  cursorFollowingDot.setPosition(xOfDot, y);
+  if (inDeadZone) {
+    SetStatistics(0, y, relativeY, getInferenceState);
+  } else if (getInferenceState !== "auto") {
+    let relative_x = deltaCoordinatesFromTip(touchX);
+    SetStatistics(relative_x, touchY, relativeY, getInferenceState);
+  }
 }
 
 /**
@@ -157,13 +195,14 @@ function detectTriangle(x, y) {
   } else {
     CTRL_STAT.detectedTriangle = 'none';
   }
+  CTRL_STAT.selectedTriangle = CTRL_STAT.detectedTriangle;
 }
 
 /**
  * limit the triangles not to go outside the borders of the screen
  * @param {number} y Y-coord where the user's input is 
  */
-function handleTriangleMove(y) {
+function handleTriangleMove(y, inferenceToggleButton) {
   const midScreen = window.innerHeight / 2;
   let yOffset = y - midScreen;
 
@@ -177,27 +216,72 @@ function handleTriangleMove(y) {
     yOffset = Math.max(yOffset, -(maxOffset - midScreen));
   }
 
-  if(CTRL_STAT.detectedTriangle === 'top')
+  let INFState = inferenceToggleButton.getInferenceState
+  if (INFState == "auto") {
+    inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle)
+  } else if (INFState == "train") {
+    redraw(yOffset, true, false, true);
+  } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
-  else
+  }
+  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
+    document.getElementById('toggle_button_container').style.display = 'none';
     drawBottomTriangle_TopRectangle(yOffset);
+  }
+
+
+  else if (CTRL_STAT.detectedTriangle === 'top') {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawTopTriangle_BottomRectangle(yOffset);
+  }
+  else if (CTRL_STAT.detectedTriangle === 'bottom') {
+    document.getElementById('toggle_button_container').style.display = 'none';
+    drawBottomTriangle_TopRectangle(yOffset);
+  }
 }
 
+/**
+ * Function to add a temporary key-value pair to the sent command through mobile controller socket
+ * @param {string} key 
+ * @param {string} value 
+ */
+function addKeyToSentCommand(key, value) {
+  CTRL_STAT.throttleSteeringJson[key + "_temp"] = value;
 
+}
 
 function sendJSONCommand() {
   if (CTRL_STAT.websocket && CTRL_STAT.websocket.readyState === WebSocket.OPEN) {
-    CTRL_STAT.websocket.send(JSON.stringify(CTRL_STAT.throttleSteeringJson));
-    CTRL_STAT.isWebSocketOpen = true; // Set the flag to true when WebSocket is open
+    // Create a copy of the data to send, removing '_temp' from temporary keys
+    const dataToSend = {};
+    for (const key in CTRL_STAT.throttleSteeringJson) {
+      if (key.endsWith('_temp')) {
+        const originalKey = key.slice(0, -5); // Remove last 5 characters ('_temp')
+        dataToSend[originalKey] = CTRL_STAT.throttleSteeringJson[key];
+      } else {
+        dataToSend[key] = CTRL_STAT.throttleSteeringJson[key];
+      }
+    }
+
+    CTRL_STAT.websocket.send(JSON.stringify(dataToSend));
+    CTRL_STAT.isWebSocketOpen = true;
+
+    Object.keys(CTRL_STAT.throttleSteeringJson).forEach(key => {
+      if (key.endsWith('_temp')) {
+        delete CTRL_STAT.throttleSteeringJson[key];
+      }
+    });
+
   } else {
     if (CTRL_STAT.isWebSocketOpen) {
-      // Log the error only once when the WebSocket is first closed
       console.error('WebSocket is not open. Unable to send data.');
-      CTRL_STAT.isWebSocketOpen = false; // Reset the flag
+      CTRL_STAT.isWebSocketOpen = false;
     }
   }
 
   setTimeout(sendJSONCommand, 100);
 }
 
-export { pointInsideTriangle, deltaCoordinatesFromTip, handleDotMove, detectTriangle, handleTriangleMove, initializeWS, sendJSONCommand };
+export { addKeyToSentCommand, deltaCoordinatesFromTip, detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, pointInsideTriangle, saveDeadZoneWidth, sendJSONCommand };
+

@@ -3,27 +3,22 @@ import collections
 import glob
 import logging
 import os
+import re
 import shutil
 import subprocess
 import re
 
 from ConfigParser import SafeConfigParser
 
-from byodr.utils import Application, PeriodicCallTrace
-from byodr.utils import timestamp, Configurable
-from byodr.utils.ipc import (
-    JSONPublisher,
-    ImagePublisher,
-    LocalIPCServer,
-    json_collector,
-    ReceiverThread,
-)
+from byodr.utils import Application, Configurable, PeriodicCallTrace, timestamp
+from byodr.utils.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
 from byodr.utils.location import GeoTracker
-from byodr.utils.option import parse_option, hash_dict
-from core import GpsPollerThread, PTZCamera, ConfigurableImageGstSource
+from byodr.utils.option import hash_dict, parse_option
+from configparser import ConfigParser as SafeConfigParser
+from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 
 logger = logging.getLogger(__name__)
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"
 
 
 class RasRemoteError(IOError):
@@ -47,7 +42,6 @@ class RasSpeedOdometer(object):
         # If velocity is not part of the ras message try to come up with a proxy for speed.
         if "velocity" in msg.keys():
             value = float(msg.get("velocity"))
-            # logger.info("Have velocity from msg: {}".format(value))
         else:
             # The motor effort is calculated as the motor scale * the actual throttle.
             # In case the robot's maximum speed is hardware limited to 10km/h and the motor scale is 4
@@ -110,17 +104,10 @@ class Platform(Configurable):
                 except RasRemoteError as rre:
                     # After 5 seconds do a hard reboot of the remote connection.
                     if rre.timeout > 5000:
-                        logger.info("Hard odometer reboot at {} ms timeout.".format(rre.timeout))
+                        logger.info(f"Hard odometer reboot at {rre.timeout} ms timeout.")
                         self._quit_odometer()
                         self._start_odometer()
-            return dict(
-                latitude_geo=latitude,
-                longitude_geo=longitude,
-                heading=bearing,
-                velocity=y_vel,
-                trust_velocity=trust_velocity,
-                time=timestamp(),
-            )
+            return dict(latitude_geo=latitude, longitude_geo=longitude, heading=bearing, velocity=y_vel, trust_velocity=trust_velocity, time=timestamp())
 
     def internal_quit(self, restarting=False):
         self._quit_odometer()
@@ -135,8 +122,7 @@ class Platform(Configurable):
         self._odometer_config = (_master_uri, _speed_factor)
         self._start_odometer()
         _gps_host = parse_option("gps.provider.host", str, "192.168.1.1", errors, **kwargs)
-        _gps_port = parse_option("gps.provider.port", str, "502", errors, **kwargs)
-        self._gps = GpsPollerThread(_gps_host, _gps_port)
+        self._gps = GpsPollerThreadSNMP(_gps_host)
         self._gps.start()
         return errors
 
@@ -205,27 +191,19 @@ class RoverHandler(Configurable):
         # Set the front camera to the home position anytime the autopilot is switched on.
         if self._ptz_cameras and c_teleop is not None:
             c_camera = c_teleop.get("camera_id", -1)
-            # Lower camera is 0 and upper is 1
             _north_pressed = bool(c_teleop.get("button_y", 0))
             _is_teleop = c_pilot is not None and c_pilot.get("driver") == "driver_mode.teleop.direct"
             if _north_pressed:
-                # North =  Triangle in PS4 controller
                 self._ptz_cameras[0].add({"goto_home": 1})
             elif c_camera in (0, 1) and (c_camera == 1 or _is_teleop):
                 # Ignore the pan value on the front camera unless explicitly specified with a button press.
-                # Hold Square then press X to set the current position for PT to be home position
-                _south_pressed = bool(c_teleop.get("button_a", 0))  # X
-                _west_pressed = bool(c_teleop.get("button_x", 0))  # Square
+                _south_pressed = bool(c_teleop.get("button_a", 0))
+                _west_pressed = bool(c_teleop.get("button_x", 0))
                 _read_pan = _west_pressed or c_camera > 0
                 tilt_value = c_teleop.get("tilt", 0)
                 pan_value = c_teleop.get("pan", 0) if _read_pan else 0
                 _set_home = _west_pressed and abs(tilt_value) < 1e-2 and abs(pan_value) < 1e-2
-                command = {
-                    "pan": pan_value,
-                    "tilt": tilt_value,
-                    "set_home": 1 if _set_home else 0,
-                    "goto_home": 1 if _south_pressed else 0,
-                }
+                command = {"pan": pan_value, "tilt": tilt_value, "set_home": 1 if _set_home else 0, "goto_home": 1 if _south_pressed else 0}
                 self._ptz_cameras[c_camera].add(command)
 
     def step(self, c_pilot, c_teleop):
@@ -240,30 +218,24 @@ class ConfigFiles:
         self.__set_parsers()
 
     def __set_parsers(self):
-        self.robot_config_dir = os.path.join(self._config_dir, "robot_config.ini")
         self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
-        self.robot_config_parser = SafeConfigParser()
         self.segment_config_parser = SafeConfigParser()
-        self.robot_config_parser.read(self.robot_config_dir)
         self.segment_config_parser.read(self.segment_config_dir)
 
     def check_configuration_files(self):
-        """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
+        """Checks if configuration file for segment exist, if not, then create it from the template"""
         # FOR DEBUGGING
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         # print(_candidates)
-        required_files = ["config.ini", "robot_config.ini"]
-        template_files = {
-            "config.ini": "config.template",
-            "robot_config.ini": "robot_config.template",
-        }
-        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/robot_config.ini
+        required_files = ["config.ini"]
+        template_files = {"config.ini": "config.template"}
+        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/
         for file in required_files:
             file_path = os.path.join(self._config_dir, file)
             if not os.path.exists(file_path):
                 template_file = template_files[file]
                 shutil.copyfile(template_file, file_path)
-                logger.info("Created {} from template.".format(file))
+                logger.info(f"Created {file} from template.")
 
             # Verify and add missing keys
             self._verify_and_add_missing_keys(file_path, template_files[file])
@@ -282,7 +254,7 @@ class ConfigFiles:
             for key, value in template_config.items(section):
                 if not config.has_option(section, key):
                     config.set(section, key, value)
-                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+                    logger.info(f"Added missing key '{key}' in section '[{section}]' to {ini_file}")
 
         # Write changes to the ini file
         with open(ini_file, "w") as configfile:
@@ -328,9 +300,7 @@ class ConfigFiles:
 
             # Print changes made
             if changes_made_in_file:
-                logger.info("Updated {} with new ip address".format(file))
-            else:
-                logger.info("No changes needed for {}.".format(file))
+                logger.info("Updated {file} with new ip address")
 
 
 class RoverApplication(Application):
@@ -364,17 +334,18 @@ class RoverApplication(Application):
                 self._config_hash = _hash
                 self._config_files_class.check_configuration_files()
                 self._config_files_class.change_segment_config()
-                _config = self._config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
                     self.ipc_server.register_start(self._handler.get_errors(), self._capabilities())
                     _frequency = self._handler.get_process_frequency()
                     self.set_hz(_frequency)
-                    self.logger.info("Processing at {} Hz.".format(_frequency))
+                    self.logger.info(f"Processing at {_frequency} Hz.")
 
     def finish(self):
         self._handler.quit()
 
+    # Function that is called continuously
+    # Receives commands from pilot and teleop
     def step(self):
         rover, pilot, teleop, publisher = (
             self._handler,
@@ -400,12 +371,16 @@ def main():
     application = RoverApplication(config_dir=args.config)
     quit_event = application.quit_event
 
+    # Sockets used to receive data from pilot and teleop.
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
     teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
     ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
+    # Sockets used to send data to other services
     application.state_publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
     application.ipc_server = LocalIPCServer(url="ipc:///byodr/vehicle_c.sock", name="platform", event=quit_event)
+
+    # Getting data from the received sockets declared above
     application.pilot = lambda: pilot.get()
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()

@@ -69,10 +69,7 @@ def test_monitor_relay(tmpdir):
     pilot = QueueReceiver()
     teleop = QueueReceiver()
     ipc_chatter = QueueReceiver()
-    application = MonitorApplication(relay=relay,
-                                     client_factory=client_factory,
-                                     status_factory=status_factory,
-                                     config_dir=config_directory)
+    application = MonitorApplication(relay=relay, client_factory=client_factory, status_factory=status_factory, config_dir=config_directory)
     application.ipc_server = CollectServer()
     application.pilot = lambda: pilot.get_latest()
     application.teleop = lambda: teleop.get_latest()
@@ -90,9 +87,9 @@ def test_monitor_relay(tmpdir):
 
     # Change a relevant setting.
     _parser = SafeConfigParser()
-    _parser.add_section('vehicle')
-    _parser.set('vehicle', 'ras.master.uri', 'localhost-' + str(random.random()))
-    with open(os.path.join(config_directory, 'test_config.ini'), 'w') as f:
+    _parser.add_section("vehicle")
+    _parser.set("vehicle", "ras.master.uri", "localhost-" + str(random.random()))
+    with open(os.path.join(config_directory, "test_config.ini"), "w") as f:
         _parser.write(f)
     application.setup()
     assert receiver.is_started()

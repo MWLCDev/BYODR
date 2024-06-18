@@ -88,10 +88,9 @@ class RealMonitoringRelay(AbstractRelay):
         super(RealMonitoringRelay, self).__init__()
         self._relay = relay
         self._config_dir = config_dir
-        self._integrity = MessageStreamProtocol() # The variable that returns the communication errors with the Pi
+        self._integrity = MessageStreamProtocol(max_age_ms=200, max_delay_ms=250)
         self._status_factory = StatusReceiverThreadFactory() if status_factory is None else status_factory
         self._client_factory = PiClientFactory() if client_factory is None else client_factory
-        self.watchdog_to_coms = JSONPublisher(url="ipc:///byodr/pilot_to_coms.sock", topic="aav/pilot/watchdog")
         self._relay_closed_calltrace = collections.deque(maxlen=1)
         self._patience_micro = 100.
         self._config_hash = -1
@@ -99,28 +98,19 @@ class RealMonitoringRelay(AbstractRelay):
         self._pi_client = None
         self._pi_status = None
         self._servo_config = None
+        self.n_violations = 0
 
-        
-    # Sends the config to the Pi
     def _send_config(self, data):
         if self._pi_client is not None and data is not None:
-            self._pi_client.call(dict(time=timestamp(),
-                                      method='ras/driver/config',
-                                      data=data))
+            self._pi_client.call(dict(time=timestamp(), method="ras/driver/config", data=data))
 
-    # Sends the movement commands to the Pi
-    def _send_drive(self, throttle=0., steering=0., reverse_gear=False, wakeup=False):
+    def _send_drive(self, throttle=0.0, steering=0.0, reverse_gear=False, wakeup=False):
         if self._pi_client is not None:
             throttle = max(-1., min(1., throttle))
             steering = max(-1., min(1., steering))
             _reverse = 1 if reverse_gear else 0
             _wakeup = 1 if wakeup else 0
-            
-            # Sending data to the Pi
-            self._pi_client.call(dict(time=timestamp(),
-                                      method='ras/servo/drive',
-                                      data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup)))
-
+            self._pi_client.call(dict(time=timestamp(), method="ras/servo/drive", data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup)))
 
     def _drive(self, pilot, coms):
         pi_status = None if self._pi_status is None else self._pi_status.pop_latest()
@@ -158,8 +148,8 @@ class RealMonitoringRelay(AbstractRelay):
     def _reboot(self):
         errors = []
         _config = self._config()
-        self._patience_micro = parse_option('patience.ms', int, 100, errors, **_config) * 1000.
-        _pi_uri = parse_option('ras.master.uri', str, 'tcp://192.168.1.32', errors, **_config)
+        self._patience_micro = parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
+        _pi_uri = parse_option("ras.master.uri", str, "tcp://192.168.1.32", errors, **_config)
         _pi_uri = f"tcp://{_pi_uri}"
         # Stopping the sockets that handle communication with the Pi
         if self._pi_client is not None:
@@ -174,11 +164,10 @@ class RealMonitoringRelay(AbstractRelay):
         self._pi_status = self._status_factory.create(_pi_uri)
         self._pi_status.add_listener(self._on_receive)
         self._pi_status.start()
-
-        # Resending the config to the Pi
-        _steering_offset = parse_option('ras.driver.steering.offset', float, 0.0, errors, **_config)
-        _motor_scale = parse_option('ras.driver.motor.scale', float, 1.0, errors, **_config)
-        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale)
+        _steering_offset = parse_option("ras.driver.steering.offset", float, 0.0, errors, **_config)
+        _motor_scale = parse_option("ras.driver.motor.scale", float, 1.0, errors, **_config)
+        _motor_alternate = parse_option("ras.driver.motor.alternate", bool, False, errors, **_config)
+        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, motor_alternate=_motor_alternate)
         self._integrity.reset()
         self._send_config(self._servo_config)
         return errors
@@ -210,23 +199,17 @@ class RealMonitoringRelay(AbstractRelay):
         # Always consume the latest commands.
         c_pilot = self._latest_or_none(pilot, patience=self._patience_micro)
         c_coms = self._latest_or_none(coms, patience=self._patience_micro)
-        # logger.info(f"Processing with : {c_pilot}, {c_coms}.")
-        # logger.info(f"Processing with : {c_pilot}")
 
-        n_violations = self._integrity.check()
+        self.n_violations = self._integrity.check()
 
-        # If the Pi is responding normally
-        if n_violations < -5:
+        if self.n_violations < -5:
             self._close_relay()
             self._drive(c_pilot, c_coms)
-            self.watchdog_to_coms.publish(dict(status = '1')) # Status 1 = ok
-        # If the Pi is not responding
-        elif n_violations > 200:
+
+        elif self.n_violations > 200:
             # ZeroMQ ipc over tcp does not allow connection timeouts to be set - while the timeout is too high.
             self._reboot()  # Resets the protocol.
-            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
-        # If there are errors and delayes in the communication with the Pi, we open the relays
-        elif n_violations > 5:
+        elif self.n_violations > 5:
             self._open_relay()
             self._drive(None, None)
             self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
@@ -242,8 +225,8 @@ def main():
     parser = argparse.ArgumentParser(description='Spdt usb relay.')
     subparsers = parser.add_subparsers(help='Methods.')
 
-    parser_a = subparsers.add_parser('exec', help='Open or close the relay.')
-    parser_a.add_argument('--cmd', type=str, required=True, help='Open or close the relay.')
+    parser_a = subparsers.add_parser("exec", help="Open or close the relay.")
+    parser_a.add_argument("--cmd", type=str, required=True, help="Open or close the relay.")
     parser_a.set_defaults(func=execute)
 
     args = parser.parse_args()

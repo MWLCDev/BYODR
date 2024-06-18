@@ -38,8 +38,8 @@ def _interrupt():
 
 
 class PilotApplication(Application):
-    def __init__(self, event, processor, relay, config_dir=os.getcwd()):
-        super(PilotApplication, self).__init__(quit_event=event)
+    def __init__(self, event, processor, relay, config_dir=os.getcwd(), hz=100):
+        super(PilotApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._processor = processor
         self._monitor = None
@@ -64,18 +64,17 @@ class PilotApplication(Application):
 
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        cfg = dict(parser.items('pilot')) if parser.has_section('pilot') else {}
-        cfg.update(dict(parser.items('relay')) if parser.has_section('relay') else {})
-        self.logger.info(cfg)
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+        cfg = dict(parser.items("pilot")) if parser.has_section("pilot") else {}
+        cfg.update(dict(parser.items("relay")) if parser.has_section("relay") else {})
         return cfg
 
     def _set_pulse_channels(self, **kwargs):
         _pulse_channels = []
         # The channel index is zero based in the code and 1-based in the configuration.
-        if parse_option('primary.channel.3.operation', str, '', [], **kwargs) == 'pulse':
+        if parse_option("primary.channel.3.operation", str, "", [], **kwargs) == "pulse":
             _pulse_channels.append(2)
-        if parse_option('primary.channel.4.operation', str, '', [], **kwargs) == 'pulse':
+        if parse_option("primary.channel.4.operation", str, "", [], **kwargs) == "pulse":
             _pulse_channels.append(3)
         self._holder.set_pulse_channels(_pulse_channels)
 
@@ -101,13 +100,6 @@ class PilotApplication(Application):
         self._monitor.quit()
         self._processor.quit()
 
-    # def run(self):
-    #     from byodr.utils import Profiler
-    #     profiler = Profiler()
-    #     with profiler():
-    #         super(PilotApplication, self).run()
-    #     profiler.dump_stats('/config/pilot.stats')
-
     def step(self):
         coms = self.coms_receiver()
         commands = (coms, self.vehicle(), self.inference())
@@ -119,19 +111,19 @@ class PilotApplication(Application):
             self.publisher.publish(pilot)
         chat = self.ipc_chatter()
         if chat is not None:
-            if chat.get('command') == 'restart':
+            if chat.get("command") == "restart":
                 self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Pilot.')
-    parser.add_argument('--name', type=str, default='none', help='Process name.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
-    parser.add_argument('--routes', type=str, default='/routes', help='Directory with the navigation routes.')
+    parser = argparse.ArgumentParser(description="Pilot.")
+    parser.add_argument("--name", type=str, default="none", help="Process name.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
+    parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
     args = parser.parse_args()
 
     _relay = SearchUsbRelayFactory().get_relay()
-    logger.info("The USB Relay is {} attached.".format('well' if _relay.is_attached() else 'not'))
+    logger.info("The USB Relay is {} attached.".format("well" if _relay.is_attached() else "not"))
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)
@@ -166,10 +158,9 @@ def main():
     try:
         # The api has partial control of the relay.
         _holder = application.get_relay_holder()
-        main_app = web.Application([
-            (r"/teleop/pilot/controls/relay/state", RelayControlRequestHandler, dict(relay_holder=_holder)),
-            (r"/teleop/pilot/controls/relay/conf", RelayConfigRequestHandler, dict(relay_holder=_holder))
-        ])
+        main_app = web.Application(
+            [(r"/teleop/pilot/controls/relay/state", RelayControlRequestHandler, dict(relay_holder=_holder)), (r"/teleop/pilot/controls/relay/conf", RelayConfigRequestHandler, dict(relay_holder=_holder))]
+        )
         http_server = HTTPServer(main_app, xheaders=True)
         http_server.bind(8082)
         http_server.start()
@@ -186,6 +177,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()

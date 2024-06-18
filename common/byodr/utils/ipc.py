@@ -19,28 +19,28 @@ if sys.version_info > (3,):
     # noinspection PyShadowingBuiltins
     buffer = memoryview
 
-
     def receive_string(subscriber):
         return subscriber.recv_string()
 
-
     def send_string(sender, val, flags=0):
         return sender.send_string(val, flags)
+
 else:
+
     def receive_string(subscriber):
         return subscriber.recv()
 
-
     def send_string(sender, val, flags=0):
         return sender.send(val, flags)
+
 
 logger = logging.getLogger(__name__)
 
 
 # Class that publishes data for potential receivers to get it
 class JSONPublisher(object):
-    def __init__(self, url, topic='', hwm=1, clean_start=True):
-        if clean_start and url.startswith('ipc://') and os.path.exists(url[6:]):
+    def __init__(self, url, topic="", hwm=1, clean_start=True):
+        if clean_start and url.startswith("ipc://") and os.path.exists(url[6:]):
             os.remove(url[6:])
         publisher = zmq.Context().socket(zmq.PUB)
         publisher.set_hwm(hwm)
@@ -53,31 +53,36 @@ class JSONPublisher(object):
         _topic = self._topic if topic is None else topic
         if data is not None:
             data = dict((k, v) for k, v in data.items() if v is not None)
-            send_string(self._publisher, '{}:{}'.format(_topic, json.dumps(data)), zmq.NOBLOCK)
+            send_string(self._publisher, "{}:{}".format(_topic, json.dumps(data)), zmq.NOBLOCK)
 
 # Class that publishes image for potential receivers to get it
 class ImagePublisher(object):
-    def __init__(self, url, topic='', hwm=1, clean_start=True):
-        if clean_start and url.startswith('ipc://') and os.path.exists(url[6:]):
+    def __init__(self, url, topic="", hwm=1, clean_start=True):
+        if clean_start and url.startswith("ipc://") and os.path.exists(url[6:]):
             os.remove(url[6:])
         publisher = zmq.Context().socket(zmq.PUB)
         publisher.set_hwm(hwm)
         publisher.bind(url)
         self._publisher = publisher
-        self._topic = topic
+        self._topic = topic.encode("utf-8")  # Encode the topic to bytes at initialization
 
     # Function to send data
     def publish(self, _img, topic=None):
-        _topic = self._topic if topic is None else topic
-        self._publisher.send_multipart([_topic,
-                                        json.dumps(dict(time=timestamp(), shape=_img.shape)),
-                                        np.ascontiguousarray(_img, dtype=np.uint8)],
-                                       flags=zmq.NOBLOCK)
+        _topic = self._topic if topic is None else topic.encode("utf-8")
+        # json.dumps(...) returns a string, it needs to be encoded into bytes.
+        self._publisher.send_multipart(
+            [
+                _topic,
+                json.dumps(dict(time=timestamp(), shape=_img.shape)).encode("utf-8"),
+                np.ascontiguousarray(_img, dtype=np.uint8),
+            ],
+            flags=zmq.NOBLOCK,
+        )
 
 # Class that connects to a zmq zerver via url
 # Receives the data the server is publishing
 class JSONReceiver(object):
-    def __init__(self, url, topic=b'', hwm=1, receive_timeout_ms=2, pop=False):
+    def __init__(self, url, topic=b"", hwm=1, receive_timeout_ms=2, pop=False):
         subscriber = zmq.Context().socket(zmq.SUB)
         subscriber.set_hwm(hwm)
         subscriber.setsockopt(zmq.RCVTIMEO, receive_timeout_ms)
@@ -95,7 +100,7 @@ class JSONReceiver(object):
         with self._lock:
             try:
                 # Does not replace local queue messages when none are available.
-                self._queue.appendleft(json.loads(receive_string(self._subscriber).split(':', 1)[1]))
+                self._queue.appendleft(json.loads(receive_string(self._subscriber).split(":", 1)[1]))
             except zmq.Again:
                 pass
 
@@ -116,10 +121,10 @@ class JSONReceiver(object):
 class CollectorThread(threading.Thread):
     def __init__(self, receivers, event=None, hz=1000):
         super(CollectorThread, self).__init__()
-        _list = (isinstance(receivers, tuple) or isinstance(receivers, list))
-        self._receivers = receivers if _list else [receivers] # An instance of JSONReceiver, made in the return inside json_collector
+        _list = isinstance(receivers, tuple) or isinstance(receivers, list)
+        self._receivers = receivers if _list else [receivers]
         self._quit_event = multiprocessing.Event() if event is None else event
-        self._sleep = 1. / hz
+        self._sleep = 1.0 / hz
 
     # Runs .get() of JSONReceiver
     def get(self, index=0):
@@ -149,7 +154,7 @@ def json_collector(url, topic, event, receive_timeout_ms=1000, hwm=1, pop=False)
 
 
 class ReceiverThread(threading.Thread):
-    def __init__(self, url, event=None, topic=b'', hwm=1, receive_timeout_ms=1):
+    def __init__(self, url, event=None, topic=b"", hwm=1, receive_timeout_ms=1):
         super(ReceiverThread, self).__init__()
         subscriber = zmq.Context().socket(zmq.SUB)
         subscriber.set_hwm(hwm)
@@ -177,7 +182,7 @@ class ReceiverThread(threading.Thread):
     def run(self):
         while not self._quit_event.is_set():
             try:
-                _latest = json.loads(receive_string(self._subscriber).split(':', 1)[1])
+                _latest = json.loads(receive_string(self._subscriber).split(":", 1)[1])
                 self._queue.appendleft(_latest)
                 list(map(lambda x: x(_latest), self._listeners))
             except zmq.Again:
@@ -185,7 +190,7 @@ class ReceiverThread(threading.Thread):
 
 
 class CameraThread(threading.Thread):
-    def __init__(self, url, event, topic=b'', hwm=1, receive_timeout_ms=25):
+    def __init__(self, url, event, topic=b"", hwm=1, receive_timeout_ms=25):
         super(CameraThread, self).__init__()
         subscriber = zmq.Context().socket(zmq.SUB)
         subscriber.set_hwm(hwm)
@@ -205,7 +210,7 @@ class CameraThread(threading.Thread):
             try:
                 [_, md, data] = self._subscriber.recv_multipart()
                 md = json.loads(md)
-                height, width, channels = md['shape']
+                height, width, channels = md["shape"]
                 img = np.frombuffer(buffer(data), dtype=np.uint8)
                 img = img.reshape((height, width, channels))
                 self._images.appendleft((md, img))
@@ -274,20 +279,20 @@ class LocalIPCServer(JSONServerThread):
 
     def register_start(self, errors, capabilities=None):
         capabilities = {} if capabilities is None else capabilities
-        self._m_startup.append((datetime.datetime.utcnow().strftime('%b %d %H:%M:%S.%s UTC'), errors))
+        self._m_startup.append((datetime.datetime.utcnow().strftime("%b %d %H:%M:%S.%s UTC"), errors))
         self._m_capabilities.append(capabilities)
 
     def serve(self, message):
         try:
-            if message.get('request') == 'system/startup/list' and self._m_startup:
+            if message.get("request") == "system/startup/list" and self._m_startup:
                 ts, errors = self._m_startup[-1]
-                messages = ['No errors']
+                messages = ["No errors"]
                 if errors:
                     d_errors = dict()  # Merge to obtain distinct keys.
                     [d_errors.update({error.key: error.message}) for error in errors]
-                    messages = ['{} - {}'.format(k, d_errors[k]) for k in d_errors.keys()]
+                    messages = ["{} - {}".format(k, d_errors[k]) for k in d_errors.keys()]
                 return {self._name: {ts: messages}}
-            elif message.get('request') == 'system/service/capabilities' and self._m_capabilities:
+            elif message.get("request") == "system/service/capabilities" and self._m_capabilities:
                 return {self._name: self._m_capabilities[-1]}
         except IndexError:
             pass

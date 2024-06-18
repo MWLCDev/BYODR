@@ -70,7 +70,6 @@ def change_segment_config(config_dir):
     # Get the local IP address's third octet
     ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
     third_octet_new = ip_address.split(".")[2]
-    print(config_dir)
 
     # Regular expression to match IP addresses
     ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
@@ -103,8 +102,6 @@ def change_segment_config(config_dir):
     # Print changes made
     if changes_made_in_file:
         logger.info("Updated {} with a new ip address of {}".format(config_dir, third_octet_new))
-    else:
-        logger.info("No changes needed for {}.".format(config_dir))
 
 
 def create_stream(config_file):
@@ -145,7 +142,9 @@ def create_stream(config_file):
         }
     _command = gst_commands.get(_type).format(**config)
     _socket_ref = parse_option("camera.output.class", str, "http-live", **kwargs)
-    logger.info("Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command))
+    location = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:{config['port']}{config['path']}"
+    logger.info("Socket '{}' location={}".format(name, location))
+    # logger.info("Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command))
     return (create_video_source(name, shape=(out_height, out_width, 3), command=_command), _socket_ref)
 
 

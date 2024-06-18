@@ -1,6 +1,5 @@
 FROM centipede2donald/ubuntu-bionic:python36-opencv32-gstreamer10
 
-
 RUN apt-get update && apt-get install -y \
   build-essential \
   libssl-dev \
@@ -13,15 +12,12 @@ RUN apt-get update && apt-get install -y \
 # /\ unzip utility
 RUN python3 -m pip install -U pip
 
-RUN pip3 install pymongo
-RUN pip3 install tornado
-RUN pip3 install folium
-RUN pip3 install Flask
-RUN pip3 install flask_socketio
-RUN pip3 install paramiko
-RUN pip3 install user-agents
-RUN pip3 install pythonping
+RUN pip3 install pymongo tornado folium Flask flask_socketio paramiko user-agents pythonping pysnmp pyasn1 pyasn1-modules
 
+# Ignore deprecation problem from cryptography 
+#/usr/local/lib/python3.6/dist-packages/pymongo/pyopenssl_context.py:26: CryptographyDeprecationWarning: Python 3.6 is no longer supported by the Python core team. Therefore, support for it is deprecated in cryptography. The next release of cryptography will remove support for Python 3.6.
+# from cryptography.x509 import load_der_x509_certificate as _load_der_x509_certificate
+ENV PYTHONWARNINGS "ignore::UserWarning"
 
 
 COPY ./common common/

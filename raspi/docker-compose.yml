@@ -41,6 +41,7 @@ services:
     environment:
       GPIOZERO_PIN_FACTORY: 'pigpio'
     volumes:
+
       - volume_local_config:/config:rw
   stream0:
     build:

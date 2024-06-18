@@ -1,15 +1,14 @@
 //Shared State variables that goes between the files/modules used
 
-import { Dot } from "/JS/mobileController/mobileController_b_shape_dot.js"
-import { topTriangle, bottomTriangle } from "/JS/mobileController/mobileController_b_shape_triangle.js"
+import { topTriangle} from "./mobileController_b_shape_triangle.js"
 
 class MobileControllerState {
   //The starting y coord when the triangles are relocated ()
   #initialYOffset = 0;
-  #cursorFollowingDot = new Dot();
   #selectedTriangle = null;
   // Hold the current value for steering and throttle to be sent through the websocket
-  #throttleSteeringJson = {};
+  // At first we send a default value
+  #throttleSteeringJson = { steering: 0, throttle: 0};
   //stands for WebSocket
   #ws;
   #stateErrors;
@@ -27,12 +26,7 @@ class MobileControllerState {
     return this.#initialYOffset;
   }
 
-  set cursorFollowingDot(value) {
-    this.#cursorFollowingDot = value;
-  }
-  get cursorFollowingDot() {
-    return this.#cursorFollowingDot;
-  }
+
 
   set selectedTriangle(value) {
     this.#selectedTriangle = value;
@@ -56,13 +50,6 @@ class MobileControllerState {
   }
   get stateErrors() {
     return this.#stateErrors;
-  }
-
-  set throttleSteeringJson(value) {
-    this.#throttleSteeringJson = value;
-  }
-  get throttleSteeringJson() {
-    return this.#throttleSteeringJson;
   }
 
   set websocket(value) {

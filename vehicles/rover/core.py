@@ -1,6 +1,7 @@
 import collections
 import logging
 import multiprocessing
+import queue
 import threading
 import time
 import subprocess
@@ -17,6 +18,10 @@ from requests.auth import HTTPDigestAuth
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_image_source
+
+# Needs to be installed on the router
+from pysnmp.hlapi import *
+from requests.auth import HTTPDigestAuth
 
 logger = logging.getLogger(__name__)
 
@@ -74,105 +79,39 @@ class ConfigurableImageGstSource(Configurable):
     def internal_start(self, **kwargs):
         self._close()
         _errors = []
-        _type = parse_option(
-            self._name + ".camera.type", str, "h264/rtsp", errors=_errors, **kwargs
-        )
-        assert _type in gst_commands.keys(), "Unrecognized camera type '{}'.".format(
-            _type
-        )
+        _type = parse_option(self._name + ".camera.type", str, "h264/rtsp", errors=_errors, **kwargs)
+        assert _type in gst_commands.keys(), "Unrecognized camera type '{_type}'."
         framerate = 25 if self._name == "front" else 12
-        framerate = parse_option(
-            self._name + ".camera.framerate", int, framerate, errors=_errors, **kwargs
-        )
-        out_width, out_height = [
-            int(x)
-            for x in parse_option(
-                self._name + ".camera.shape", str, "320x240", errors=_errors, **kwargs
-            ).split("x")
-        ]
+        framerate = parse_option(self._name + ".camera.framerate", int, framerate, errors=_errors, **kwargs)
+        out_width, out_height = [int(x) for x in parse_option(self._name + ".camera.shape", str, "320x240", errors=_errors, **kwargs).split("x")]
         if _type == "h264/rtsp":
             config = {
-                "ip": (
-                    parse_option(
-                        self._name + ".camera.ip",
-                        str,
-                        "192.168.1.64",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "port": (
-                    parse_option(
-                        self._name + ".camera.port", int, 554, errors=_errors, **kwargs
-                    )
-                ),
-                "user": (
-                    parse_option(
-                        self._name + ".camera.user",
-                        str,
-                        "user1",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "password": (
-                    parse_option(
-                        self._name + ".camera.password",
-                        str,
-                        "HaikuPlot876",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
-                "path": (
-                    parse_option(
-                        self._name + ".camera.path",
-                        str,
-                        "/Streaming/Channels/102",
-                        errors=_errors,
-                        **kwargs
-                    )
-                ),
+                "ip": (parse_option(self._name + ".camera.ip", str, "192.168.1.64", errors=_errors, **kwargs)),
+                "port": (parse_option(self._name + ".camera.port", int, 554, errors=_errors, **kwargs)),
+                "user": (parse_option(self._name + ".camera.user", str, "user1", errors=_errors, **kwargs)),
+                "password": (parse_option(self._name + ".camera.password", str, "HaikuPlot876", errors=_errors, **kwargs)),
+                "path": (parse_option(self._name + ".camera.path", str, "/Streaming/Channels/102", errors=_errors, **kwargs)),
                 "height": out_height,
                 "width": out_width,
                 "framerate": framerate,
             }
         else:
             _type = "h264/udp"
-            config = {
-                "port": (
-                    parse_option(
-                        self._name + ".camera.port", int, 5000, errors=_errors, **kwargs
-                    )
-                ),
-                "height": out_height,
-                "width": out_width,
-                "framerate": framerate,
-            }
+            config = {"port": (parse_option(self._name + ".camera.port", int, 5000, errors=_errors, **kwargs)), "height": out_height, "width": out_width, "framerate": framerate}
         self._shape = (out_height, out_width, 3)
-        self._ptz = parse_option(
-            self._name + ".camera.ptz.enabled", int, 1, errors=_errors, **kwargs
-        )
+        self._ptz = parse_option(self._name + ".camera.ptz.enabled", int, 1, errors=_errors, **kwargs)
         _command = gst_commands.get(_type).format(**config)
         self._sink = create_image_source(
             self._name, shape=self._shape, command=_command
         )
         self._sink.add_listener(self._publish)
-        logger.info("Gst '{}' command={}".format(self._name, _command))
+        rtsp_url = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:{config['port']}{config['path']}"
+        logger.info(f"Gst '{self._name}' command={rtsp_url}")
         return _errors
 
 
 class CameraPtzThread(threading.Thread):
-    def __init__(
-        self,
-        url,
-        user,
-        password,
-        preset_duration_sec=3.8,
-        scale=100,
-        speed=1.0,
-        flip=(1, 1),
-    ):
+    def __init__(self, url, user, password, preset_duration_sec=3.8, scale=100, speed=1.0, flip=(1, 1)):
         super(CameraPtzThread, self).__init__()
         self._quit_event = multiprocessing.Event()
         self._lock = threading.Lock()
@@ -190,7 +129,7 @@ class CameraPtzThread(threading.Thread):
         </PTZData>
         """
         self.set_auth(user, password)
-        self._queue = Queue.Queue(maxsize=1)
+        self._queue = queue.Queue(maxsize=1)
         self._previous = (0, 0)
 
     def set_url(self, url):
@@ -217,18 +156,12 @@ class CameraPtzThread(threading.Thread):
     def _perform(self, operation):
         # Goto a preset position takes time.
         prev = self._previous
-        if (
-            type(prev) == tuple
-            and prev[0] == "goto_home"
-            and time.time() - prev[1] < self._preset_duration
-        ):
+        if type(prev) == tuple and prev[0] == "goto_home" and time.time() - prev[1] < self._preset_duration:
             pass
         elif operation != prev:
             ret = self._run(operation)
             if ret and ret.status_code != 200:
-                logger.warning(
-                    "Got status {} on operation {}.".format(ret.status_code, operation)
-                )
+                logger.warning(f"Got status {ret.status_code} on operation {operation}.")
 
     def _run(self, operation):
         ret = None
@@ -247,17 +180,13 @@ class CameraPtzThread(threading.Thread):
         else:
             pan, tilt = operation
             self._previous = operation
-            ret = requests.put(
-                self._url + "/continuous",
-                data=self._ptz_xml.format(**dict(pan=pan, tilt=tilt)),
-                auth=self._auth,
-            )
+            ret = requests.put(self._url + "/continuous", data=self._ptz_xml.format(**dict(pan=pan, tilt=tilt)), auth=self._auth)
         return ret
 
     def add(self, command):
         try:
             self._queue.put_nowait(command)
-        except Queue.Full:
+        except queue.Full:
             pass
 
     def quit(self):
@@ -274,12 +203,9 @@ class CameraPtzThread(threading.Thread):
                     elif cmd.get("goto_home", 0):
                         operation = "goto_home"
                     elif "pan" in cmd and "tilt" in cmd:
-                        operation = (
-                            self._norm(cmd.get("pan")) * self._flip[0],
-                            self._norm(cmd.get("tilt")) * self._flip[1],
-                        )
+                        operation = (self._norm(cmd.get("pan")) * self._flip[0], self._norm(cmd.get("tilt")) * self._flip[1])
                     self._perform(operation)
-            except Queue.Empty:
+            except queue.Empty:
                 pass
             except IOError as e:
                 # E.g. a requests ConnectionError to the ip camera.
@@ -314,26 +240,12 @@ class PTZCamera(Configurable):
 
     def internal_start(self, **kwargs):
         errors = []
-        _type = parse_option(
-            self._name + ".camera.type", str, "h264/rtsp", errors=errors, **kwargs
-        )
-        ptz_enabled = _type == "h264/rtsp" and parse_option(
-            self._name + ".camera.ptz.enabled", int, 1, errors=errors, **kwargs
-        )
+        _type = parse_option(self._name + ".camera.type", str, "h264/rtsp", errors=errors, **kwargs)
+        ptz_enabled = _type == "h264/rtsp" and parse_option(self._name + ".camera.ptz.enabled", int, 1, errors=errors, **kwargs)
         if ptz_enabled:
-            _server = parse_option(
-                self._name + ".camera.ip", str, self._camera_ip, errors=errors, **kwargs
-            )
-            _user = parse_option(
-                self._name + ".camera.user", str, "user1", errors=errors, **kwargs
-            )
-            _password = parse_option(
-                self._name + ".camera.password",
-                str,
-                "HaikuPlot876",
-                errors=errors,
-                **kwargs
-            )
+            _server = parse_option(self._name + ".camera.ip", str, "192.168.1.64", errors=errors, **kwargs)
+            _user = parse_option(self._name + ".camera.user", str, "user1", errors=errors, **kwargs)
+            _password = parse_option(self._name + ".camera.password", str, "HaikuPlot876", errors=errors, **kwargs)
             _protocol = "http"
             _path = "/ISAPI/PTZCtrl/channels/1"
             _flip = "tilt"
@@ -343,10 +255,8 @@ class PTZCamera(Configurable):
                 _flipcode[0] = -1 if _flip in ("pan", "both") else 1
                 _flipcode[1] = -1 if _flip in ("tilt", "both") else 1
             _port = 80 if _protocol == "http" else 443
-            _url = "{protocol}://{server}:{port}{path}".format(
-                **dict(protocol=_protocol, server=_server, port=_port, path=_path)
-            )
-            logger.info("PTZ camera url={}.".format(_url))
+            _url = "{protocol}://{server}:{port}{path}".format(**dict(protocol=_protocol, server=_server, port=_port, path=_path))
+            logger.info(f"PTZ camera url={_url}.")
             if self._worker is None:
                 self._worker = CameraPtzThread(
                     _url, _user, _password, speed=_speed, flip=_flipcode
@@ -363,46 +273,92 @@ class PTZCamera(Configurable):
         return errors
 
 
-class GpsPollerThread(threading.Thread):
+class GpsPollerThreadSNMP(threading.Thread):
     """
-    https://wiki.teltonika-networks.com/view/RUT955_Modbus
-    https://wiki.teltonika-networks.com/view/RUT955_GPS_Protocols
-    https://community.victronenergy.com/questions/40965/wheres-my-boat-answers-rather-than-questions-gps-m.html
-    https://pymodbus.readthedocs.io/en/v1.3.2/examples/modbus-payload.html
+    A thread class that continuously polls GPS coordinates using SNMP and stores
+    the latest value in a queue. It can be used to retrieve the most recent GPS
+    coordinates that the SNMP-enabled device has reported.
+    https://wiki.teltonika-networks.com/view/RUT955_SNMP
+
+    Attributes:
+        _host (str): IP address of the SNMP-enabled device (e.g., router).
+        _community (str): SNMP community string for authentication.
+        _port (int): Port number where SNMP requests will be sent.
+        _quit_event (threading.Event): Event signal to stop the thread.
+        _queue (collections.deque): Thread-safe queue storing the latest GPS data.
+    Methods:
+        quit: Signals the thread to stop running.
+        get_latitude: Retrieves the latest latitude from the queue.
+        get_longitude: Retrieves the latest longitude from the queue.
+        fetch_gps_coordinates: Fetches GPS coordinates from the SNMP device.
+        run: Continuously polls for GPS coordinates until the thread is stopped.
     """
 
-    def __init__(self, host, port="502"):
-        super(GpsPollerThread, self).__init__()
+    # There was alternative solution with making a post request and fetch a new token https://wiki.teltonika-networks.com/view/Monitoring_via_JSON-RPC_windows_RutOS#GPS_Data
+    def __init__(self, host, community="public", port=161):
+        super(GpsPollerThreadSNMP, self).__init__()
         self._host = host
+        self._community = community
         self._port = port
-        self._quit_event = multiprocessing.Event()
+        self._quit_event = threading.Event()
         self._queue = collections.deque(maxlen=1)
 
     def quit(self):
         self._quit_event.set()
 
-    def get_latitude(self, default=0):
+    def get_latitude(self, default=0.0):
+        """
+        Args:
+            default (float): The default value to return if the queue is empty. Defaults to 0.0.
+
+        Returns:
+            float: The latest latitude value, or the default value if no data is available.
+        """
         return self._queue[0][0] if len(self._queue) > 0 else default
 
-    def get_longitude(self, default=0):
+    def get_longitude(self, default=0.0):
         return self._queue[0][1] if len(self._queue) > 0 else default
 
+    def fetch_gps_coordinates(self):
+        """
+        Sends an SNMP request to the device to retrieve the current
+        latitude and longitude values. If successful, the values are returned.
+
+        Returns:
+            tuple: A tuple containing the latitude and longitude as floats, or `None` if the request fails.
+        """
+        iterator = getCmd(
+            SnmpEngine(),
+            CommunityData(self._community, mpModel=1),
+            UdpTransportTarget((self._host, self._port)),
+            ContextData(),
+            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.1.0")),  # GPS Latitude
+            ObjectType(ObjectIdentity(".1.3.6.1.4.1.48690.3.2.0")),  # GPS Longitude
+        )
+
+        errorIndication, errorStatus, errorIndex, varBinds = next(iterator)
+
+        if errorIndication:
+            logger.error(f"Error: {errorIndication}")
+            return None
+        elif errorStatus:
+            logger.error(f"Error: {errorStatus.prettyPrint()} at {errorIndex and varBinds[int(errorIndex) - 1][0] or '?'}")
+            return None
+        else:
+            latitude, longitude = [float(varBind[1]) for varBind in varBinds]
+            return latitude, longitude
+
     def run(self):
+        """
+        The main method of the thread that runs continuously until the quit event is set.
+        """
         while not self._quit_event.is_set():
             try:
-                client = ModbusTcpClient(self._host, port=self._port)
-                client.connect()
-                response = client.read_holding_registers(143, 4, unit=1)
-                if hasattr(response, "registers"):
-                    decoder = BinaryPayloadDecoder.fromRegisters(
-                        response.registers, Endian.Big
-                    )
-                    latitude = decoder.decode_32bit_float()
-                    longitude = decoder.decode_32bit_float()
-                    self._queue.appendleft((latitude, longitude))
-                    time.sleep(0.100)
-                else:
-                    time.sleep(10)
+                coordinates = self.fetch_gps_coordinates()
+                if coordinates:
+                    self._queue.appendleft(coordinates)
+                    # logger.info(f"Latitude: {coordinates[0]}, Longitude: {coordinates[1]}")
+                    time.sleep(0.100)  # Interval for polling
             except Exception as e:
-                logger.warning(e)
+                logger.error(f"An error occurred: {e}")
                 time.sleep(10)

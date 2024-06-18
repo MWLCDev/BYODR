@@ -106,9 +106,8 @@ services:
     cpuset: '1'
     build:
       context: .
-      dockerfile: vehicles/rover/rover_vehicle.dockerfile
+      dockerfile: vehicles/rover/Dockerfile
     restart: always
-    command: ['python', 'app.py', '--name', 'vehicle']
     privileged: true # NvMedia device creation for omx decoder.
     network_mode: host
     environment:

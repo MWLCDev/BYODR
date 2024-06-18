@@ -8,7 +8,7 @@ import time
 import gi
 import numpy as np
 
-gi.require_version('Gst', '1.0')
+gi.require_version("Gst", "1.0")
 from gi.repository import Gst
 
 Gst.init(None)
@@ -17,8 +17,8 @@ logger = logging.getLogger(__name__)
 
 
 class RawGstSource(object):
-    def __init__(self, name='app', boot_time_seconds=20, command="videotestsrc ! decodebin ! videoconvert ! appsink"):
-        assert 'appsink' in command, "Need the appsink present in the gst command."
+    def __init__(self, name="app", boot_time_seconds=20, command="videotestsrc ! decodebin ! videoconvert ! appsink"):
+        assert "appsink" in command, "Need the appsink present in the gst command."
         self.name = name
         self.boot_time_seconds = boot_time_seconds
         self.command = command.replace("appsink", "appsink name=sink emit-signals=true sync=false async=false max-buffers=1 drop=true")
@@ -43,7 +43,7 @@ class RawGstSource(object):
         self.close()
 
     def _sample(self, sink):
-        buffer = sink.emit('pull-sample').get_buffer()
+        buffer = sink.emit("pull-sample").get_buffer()
         array = self.convert_buffer(buffer.extract_dup(0, buffer.get_size()))
         with self._listeners_lock:
             for listen in self._listeners:
@@ -65,12 +65,12 @@ class RawGstSource(object):
     def open(self):
         self._setup()
         self.video_pipe.set_state(Gst.State.PLAYING)
-        video_sink = self.video_pipe.get_by_name('sink')
-        video_sink.connect('new-sample', self._sample)
+        video_sink = self.video_pipe.get_by_name("sink")
+        video_sink.connect("new-sample", self._sample)
         bus = self.video_pipe.get_bus()
         bus.add_signal_watch()
-        bus.connect('message::eos', self._eos)
-        bus.connect('message::error', self._error)
+        bus.connect("message::eos", self._eos)
+        bus.connect("message::error", self._error)
         self.closed = False
         self._sample_time = time.time() + self.boot_time_seconds
         logger.info("Source {} opened.".format(self.name))

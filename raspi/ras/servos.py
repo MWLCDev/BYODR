@@ -8,9 +8,10 @@ import multiprocessing
 import os
 import shutil
 import signal
+import subprocess
 import time
 from abc import ABC, abstractmethod
-from configparser import ConfigParser as SafeConfigParser
+from configparser import ConfigParser
 
 import numpy as np
 from gpiozero import AngularServo  # interfacing with the GPIO pins of the Raspberry Pi
@@ -20,6 +21,8 @@ from byodr.utils.ipc import JSONPublisher, JSONServerThread
 from byodr.utils.option import parse_option
 from byodr.utils.protocol import MessageStreamProtocol
 from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder
+from gpiozero import AngularServo  # interfacing with the GPIO pins of the Raspberry Pi
+
 from .core import CommandHistory, HallOdometer, VESCDrive
 
 logger = logging.getLogger(__name__)
@@ -140,7 +143,7 @@ class AbstractSteerServoDriver(AbstractDriver, ABC):
     @staticmethod
     def _angular_servo(message):
         fields = ("pin", "min_pw", "max_pw", "frame")
-        m_config = [message.get(f) for f in fields]
+        m_config = [message.get(f) for f in fields]  # Correctly use 'f' as the argument for 'get'
         pin, min_pw, max_pw, frame = [m_config[0]] + [1e-3 * x for x in m_config[1:]]
         return AngularServo(pin=pin, min_pulse_width=min_pw, max_pulse_width=max_pw, frame_width=frame)
 
@@ -292,20 +295,52 @@ class SingularVescDriver(AbstractSteerServoDriver):
 
 
 class DualVescDriver(AbstractDriver):
-    """Manage two VESCs simultaneously, allowing for more complex control schemes like differential steering or dual-motor drive systems."""
-
-    def __init__(self, relay, **kwargs):
+    def __init__(self, relay, config_file_dir, **kwargs):
         super().__init__(relay)
         self._relay.close()
-        _pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **kwargs)
-        self._drive1 = VESCDrive(serial_port=parse_option("drive.0.serial.port", str, "/dev/ttyACM0", **kwargs), rpm_drive=False, cm_per_pole_pair=_pp_cm)
-        self._drive2 = VESCDrive(serial_port=parse_option("drive.1.serial.port", str, "/dev/ttyACM1", **kwargs), rpm_drive=False, cm_per_pole_pair=_pp_cm)
+        self._config_file_dir = config_file_dir
+        self._config_file_path = os.path.join(self._config_file_dir, "drive_config.ini")
+        self._previous_motor_alternate = None
+        self._pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **kwargs)
+        # Initialize with default configuration
+        self.update_drive_instances(kwargs)
+        self.last_config = None  # Attribute to store the last configuration
         self._steering_offset = 0
         self._steering_effect = max(0.0, float(kwargs.get("drive.steering.effect", 1.8)))
         self._throttle_config = dict(scale=parse_option("throttle.domain.scale", float, 2.0, **kwargs))
         self._axes_ordered = kwargs.get("drive.axes.mount.order", "normal") == "normal"
         self._axis0_multiplier = 1 if kwargs.get("drive.axis0.mount.direction", "forward") == "forward" else -1
         self._axis1_multiplier = 1 if kwargs.get("drive.axis1.mount.direction", "forward") == "forward" else -1
+
+    def update_drive_instances(self, config):
+        parser = ConfigParser()
+        parser.read(self._config_file_path)
+
+        motor_alternate = config.get("motor_alternate", False)
+        if motor_alternate != self._previous_motor_alternate:
+            self._previous_motor_alternate = motor_alternate
+            # Log and swap the ports
+            if motor_alternate:
+                port0, port1 = "/dev/ttyACM1", "/dev/ttyACM0"
+            else:
+                port0, port1 = "/dev/ttyACM0", "/dev/ttyACM1"
+
+            # Update instances with new serial ports
+            # Right wheel
+            self._drive1 = VESCDrive(serial_port=port0, rpm_drive=False, cm_per_pole_pair=self._pp_cm)
+            # Left wheel
+            self._drive2 = VESCDrive(serial_port=port1, rpm_drive=False, cm_per_pole_pair=self._pp_cm)
+
+            logger.info("Updated wheel port mapping: drive1={}, drive2={}".format(port0, port1))
+
+    def set_configuration(self, config):
+        if config != self.last_config:
+            if self.configuration_check(config):
+                self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
+                self._throttle_config["scale"] = max(0, config.get("motor_scale"))
+                self.update_drive_instances(config)
+                logger.info("Received new configuration {}.".format(config))
+                self.last_config = config  # Update last configuration
 
     def has_sensors(self):
         return self.is_configured()
@@ -316,12 +351,6 @@ class DualVescDriver(AbstractDriver):
     def relay_violated(self, on_integrity=True):
         if on_integrity:
             self._relay.open()
-
-    def set_configuration(self, config):
-        if self.configuration_check(config):
-            logger.info("Received configuration {}.".format(config))
-            self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
-            self._throttle_config["scale"] = max(0, config.get("motor_scale"))
 
     def is_configured(self):
         return self._drive1.is_open() and self._drive2.is_open()
@@ -354,39 +383,101 @@ class DualVescDriver(AbstractDriver):
 
 
 class MainApplication(Application):
-    """initialization of relay and communication components, handling of application configuration, and implementation of the main run loop.
-    It is central to the operation of the script, coordinating various components like relay, publisher, and platform.
-
-    Args:
-        Application (_type_): _description_
-    """
-
-    def __init__(self, event, relay, hz=50, **kwargs):
+    def __init__(self, event, config_file, relay, hz, test_mode=False):
         super(MainApplication, self).__init__(run_hz=hz, quit_event=event)
+        self.test_mode = test_mode
+        self.config_file_dir = config_file
+        self.relay = relay
         self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
-        self._drive_queue = collections.deque(maxlen=1)
-        self._odometer = HallOdometer(**kwargs)
+        self._drive_queue = collections.deque(maxlen=4)
+        self._last_drive_command = None  # Store the last drive command
+
         self._chassis = None
         self.platform = None
         self.publisher = None
-        # Setup the chassis.
-        _drive_type = parse_option("drive.type", str, **kwargs)
-        if _drive_type in ("gpio", "gpio_with_hall"):
-            self._chassis = GPIODriver(relay, **kwargs)
-        elif _drive_type == "vesc_single":
-            self._chassis = SingularVescDriver(relay, **kwargs)
-        elif _drive_type == "vesc_dual":
-            self._chassis = DualVescDriver(relay, **kwargs)
+        self._odometer = None  # Initialize here but set up later
+
+    def setup_components(self):
+        # Check configuration files and update, read configuration, then setup odometer and chassis
+        self.check_configuration_files()
+        kwargs = self.read_configuration()
+        self._odometer = HallOdometer(**kwargs)
+
+        drive_type = kwargs.get("drive.type", "unknown")
+        if drive_type in ["gpio", "gpio_with_hall"]:
+            self._chassis = GPIODriver(self.relay, **kwargs)
+        elif drive_type == "vesc_single":
+            self._chassis = SingularVescDriver(self.relay, **kwargs)
+        elif drive_type == "vesc_dual":
+            self._chassis = DualVescDriver(self.relay, self.config_file_dir, **kwargs)
         else:
-            raise AssertionError("Unknown drive type '{}'.".format(_drive_type))
+            raise AssertionError("Unknown drive type '{}'.".format(drive_type))
+
+        self.platform.add_listener(self._on_message)
+        self._integrity.reset()
+        self._cmd_history.reset()
+        self._odometer.setup()
+
+    def check_configuration_files(self):
+        """Checks if the configuration file exists, if not, creates it from the template."""
+        config_file = "driver.ini"
+        template_file_path = "ras/driver.template"
+
+        if not os.path.exists(self.config_file_dir):
+            shutil.copyfile(template_file_path, self.config_file_dir)
+            logger.info("Created {} from template at {}".format(config_file, self.config_file_dir))
+
+        self._verify_and_add_missing_keys(self.config_file_dir, template_file_path)
+
+    def read_configuration(self):
+        parser = ConfigParser()
+        parser.read(self.config_file_dir)
+        kwargs = {}
+        if parser.has_section("driver"):
+            kwargs.update(dict(parser.items("driver")))
+        if parser.has_section("odometer"):
+            kwargs.update(dict(parser.items("odometer")))
+        return kwargs
+
+    def _verify_and_add_missing_keys(self, ini_file, template_file):
+        config = ConfigParser()
+        template_config = ConfigParser()
+
+        config.read(ini_file)
+        template_config.read(template_file)
+
+        # Loop through each section and key in the template
+        for section in template_config.sections():
+            if not config.has_section(section):
+                config.add_section(section)
+            for key, value in template_config.items(section):
+                if not config.has_option(section, key):
+                    config.set(section, key, value)
+                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+
+        # Save changes to the ini file if any modifications have been made
+        with open(ini_file, "w") as configfile:
+            config.write(configfile)
 
     def _pop_config(self):
         return self._config_queue.popleft() if bool(self._config_queue) else None
 
     def _pop_drive(self):
-        return self._drive_queue.popleft() if bool(self._drive_queue) else None
+        """Get one command from one end of the drive queue"""
+        # This case happens when booting for the first time and PIL didn't send anything yet
+        if not self._drive_queue:
+            if self._last_drive_command:
+                # If the queue is empty and there's a last known command, return it instead of None
+                return self._last_drive_command
+            else:
+                # A default command if no commands have ever been received
+                return {"steering": 0.0, "throttle": 0.0, "reverse": 0, "wakeup": 0}
+        else:
+            # Pop the command from the queue and update the last known command
+            self._last_drive_command = self._drive_queue.popleft()
+            return self._last_drive_command
 
     def _on_message(self, message):
         self._integrity.on_message(message.get("time"))
@@ -394,12 +485,6 @@ class MainApplication(Application):
             self._config_queue.appendleft(message.get("data"))
         else:
             self._drive_queue.appendleft(message.get("data"))
-
-    def setup(self):
-        self.platform.add_listener(self._on_message)
-        self._integrity.reset()
-        self._cmd_history.reset()
-        self._odometer.setup()
 
     def finish(self):
         self._chassis.quit()
@@ -413,6 +498,7 @@ class MainApplication(Application):
             return
 
         c_config, c_drive = self._pop_config(), self._pop_drive()
+        # print(c_drive)
         self._chassis.set_configuration(c_config)
 
         v_steering = 0 if c_drive is None else c_drive.get("steering", 0)
@@ -444,38 +530,34 @@ def main():
     args = parser.parse_args()
 
     config_file = args.config
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        parser = SafeConfigParser()
-        parser.read(config_file)
-        kwargs = dict(parser.items("driver")) if parser.has_section("driver") else {}
-        kwargs.update(dict(parser.items("odometer")) if parser.has_section("odometer") else {})
 
-        _relay = SearchUsbRelayFactory().get_relay()
-        assert _relay.is_attached(), "The relay device is not attached."
+    _relay = SearchUsbRelayFactory().get_relay()
+    ras_dynamic_ip = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+    assert _relay.is_attached(), "The relay device is not attached."
 
-        holder = StaticRelayHolder(relay=_relay, channels=(0, 1))
-        try:
-            application = MainApplication(quit_event, relay=holder, hz=50, **kwargs)
+    holder = StaticRelayHolder(relay=_relay)
+    try:
 
-            application.publisher = JSONPublisher(url="tcp://0.0.0.0:5555", topic="ras/drive/status")
-            application.platform = JSONServerThread(url="tcp://0.0.0.0:5550", event=quit_event, receive_timeout_ms=50)
+        application = MainApplication(quit_event, config_file, relay=holder, hz=50)
 
-            threads = [application.platform]
-            if quit_event.is_set():
-                return 0
+        application.publisher = JSONPublisher(url="tcp://{}:5555".format(ras_dynamic_ip), topic="ras/drive/status")
+        application.platform = JSONServerThread(url="tcp://{}:5550".format(ras_dynamic_ip), event=quit_event, receive_timeout_ms=50)
+        application.setup_components()  # Set up components including reading the config
 
-            [t.start() for t in threads]
-            application.run()
+        threads = [application.platform]
+        if quit_event.is_set():
+            return 0
 
-            logger.info("Waiting on threads to stop.")
-            [t.join() for t in threads]
-        finally:
-            holder.open()
-    else:
-        shutil.copyfile("ras/driver.template", config_file)
-        logger.info("Created a new driver configuration file from template.")
-        while not quit_event.is_set():
-            time.sleep(1)
+        [t.start() for t in threads]
+        application.run()
+
+        logger.info("Waiting on threads to stop.")
+        [t.join() for t in threads]
+    finally:
+        holder.open()
+
+    while not quit_event.is_set():
+        time.sleep(1)
 
 
 if __name__ == "__main__":

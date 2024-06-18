@@ -9,6 +9,7 @@ import threading
 
 import cv2
 import numpy as np
+
 # For operators see: https://github.com/glenfletcher/Equation/blob/master/Equation/equation_base.py
 from Equation import Expression
 from scipy.special import softmax
@@ -96,7 +97,7 @@ class RouteMemory(object):
         other_evidence = self._evidence[_competitor]
         _tracking = self._tracking is not None
 
-        _nlf = .90
+        _nlf = 0.90
         if _tracking and _errors[_image] > np.power(image_evidence, _nlf):
             _match = code_points[_image]
             self._tracking = None
@@ -138,8 +139,7 @@ class Navigator(object):
         return network
 
     def _pull_image_features(self, image):
-        return self._network.features(dave_image=self._fn_dave_image(image),
-                                      alex_image=self._fn_alex_image(image))
+        return self._network.features(dave_image=self._fn_dave_image(image), alex_image=self._fn_alex_image(image))
 
     def _route_open(self, route):
         # This may take a while.
@@ -178,7 +178,7 @@ class Navigator(object):
     def restart(self, fn_dave_image, fn_alex_image, recognition_threshold=0, gpu_id=0, runtime_compilation=1):
         self._quit_event.clear()
         with self._lock:
-            _load_image = (lambda fname: self._fn_alex_image(cv2.imread(fname)))
+            _load_image = lambda fname: self._fn_alex_image(cv2.imread(fname))
             _store = FileSystemRouteDataSource(self._routes_directory, fn_load_image=_load_image, load_instructions=False)
             self._store = ReloadableDataSource(_store)
             self._fn_dave_image = fn_dave_image
@@ -199,10 +199,7 @@ class Navigator(object):
         _alex_img = self._fn_alex_image(image)
         _destination = self._destination
         _command = 0 if _destination is None else 1
-        _out = self._network.forward(dave_image=_dave_img,
-                                     alex_image=_alex_img,
-                                     maneuver_command=_command,
-                                     destination=_destination)
+        _out = self._network.forward(dave_image=_dave_img, alex_image=_alex_img, maneuver_command=_command, destination=_destination)
         action, critic, surprise, command, path, brake, brake_critic, coordinates, query = _out
 
         # noinspection PyUnusedLocal
@@ -227,9 +224,9 @@ class Navigator(object):
             self._network.deactivate()
 
 
-def _norm_scale(v, min_=0., max_=1.):
-    """Zero values below the minimum but let values larger than the maximum be scaled up. """
-    return abs(max(0., v - min_) / (max_ - min_))
+def _norm_scale(v, min_=0.0, max_=1.0):
+    """Zero values below the minimum but let values larger than the maximum be scaled up."""
+    return abs(max(0.0, v - min_) / (max_ - min_))
 
 
 def _null_expression(*args):
@@ -273,31 +270,23 @@ class TFRunner(Configurable):
 
     def internal_start(self, **kwargs):
         _errors = []
-        self._gpu_id = parse_option('gpu.id', int, 0, _errors, **kwargs)
-        self._process_frequency = parse_option('clock.hz', int, 20, _errors, **kwargs)
-        self._steering_scale_left = parse_option('driver.dnn.steering.scale.left', lambda x: abs(float(x)), -1, _errors, **kwargs)
-        self._steering_scale_right = parse_option('driver.dnn.steering.scale.right', float, 1, _errors, **kwargs)
-        _penalty_up_momentum = parse_option('driver.autopilot.filter.momentum.up', float, 0.35, _errors, **kwargs)
-        _penalty_down_momentum = parse_option('driver.autopilot.filter.momentum.down', float, 0.25, _errors, **kwargs)
-        _penalty_ceiling = parse_option('driver.autopilot.filter.ceiling', float, 2.0, _errors, **kwargs)
+        self._gpu_id = parse_option("gpu.id", int, 0, _errors, **kwargs)
+        self._process_frequency = parse_option("clock.hz", int, 20, _errors, **kwargs)
+        self._steering_scale_left = parse_option("driver.dnn.steering.scale.left", lambda x: abs(float(x)), -1, _errors, **kwargs)
+        self._steering_scale_right = parse_option("driver.dnn.steering.scale.right", float, 1, _errors, **kwargs)
+        _penalty_up_momentum = parse_option("driver.autopilot.filter.momentum.up", float, 0.35, _errors, **kwargs)
+        _penalty_down_momentum = parse_option("driver.autopilot.filter.momentum.down", float, 0.25, _errors, **kwargs)
+        _penalty_ceiling = parse_option("driver.autopilot.filter.ceiling", float, 2.0, _errors, **kwargs)
         self._total_penalty_filter = DynamicMomentum(up=_penalty_up_momentum, down=_penalty_down_momentum, ceiling=_penalty_ceiling)
         self._steer_confidence_filter = DynamicMomentum(up=_penalty_up_momentum, down=_penalty_down_momentum, ceiling=1.0)
         self._brake_confidence_filter = DynamicMomentum(up=_penalty_up_momentum, down=_penalty_down_momentum, ceiling=1.0)
-        self._fn_steer_mu = _build_expression(
-            'driver.dnn.steer.mu.equation', '(7.0 * (-0.50 + surprise + loss)) **7', _errors, **kwargs
-        )
-        self._fn_brake_mu = _build_expression(
-            'driver.dnn.brake.mu.equation', '2.0 * surprise + 2.5 * (loss > 0.75) * (loss - 0.75)', _errors, **kwargs
-        )
-        _fn_dave_image = get_registered_function('dnn.image.transform.dave', 'dave__320_240__200_66__0', _errors, **kwargs)
-        _fn_alex_image = get_registered_function('dnn.image.transform.alex', 'alex__200_100', _errors, **kwargs)
-        _nav_threshold = parse_option('navigator.point.recognition.threshold', float, 0.100, _errors, **kwargs)
-        _rt_compile = parse_option('runtime.graph.compilation', int, 1, _errors, **kwargs)
-        self._navigator.restart(fn_dave_image=_fn_dave_image,
-                                fn_alex_image=_fn_alex_image,
-                                recognition_threshold=_nav_threshold,
-                                gpu_id=self._gpu_id,
-                                runtime_compilation=_rt_compile)
+        self._fn_steer_mu = _build_expression("driver.dnn.steer.mu.equation", "(7.0 * (-0.50 + surprise + loss)) **7", _errors, **kwargs)
+        self._fn_brake_mu = _build_expression("driver.dnn.brake.mu.equation", "2.0 * surprise + 2.5 * (loss > 0.75) * (loss - 0.75)", _errors, **kwargs)
+        _fn_dave_image = get_registered_function("dnn.image.transform.dave", "dave__320_240__200_66__0", _errors, **kwargs)
+        _fn_alex_image = get_registered_function("dnn.image.transform.alex", "alex__200_100", _errors, **kwargs)
+        _nav_threshold = parse_option("navigator.point.recognition.threshold", float, 0.100, _errors, **kwargs)
+        _rt_compile = parse_option("runtime.graph.compilation", int, 1, _errors, **kwargs)
+        self._navigator.restart(fn_dave_image=_fn_dave_image, fn_alex_image=_fn_alex_image, recognition_threshold=_nav_threshold, gpu_id=self._gpu_id, runtime_compilation=_rt_compile)
         return _errors
 
     def _dnn_steering(self, raw):
@@ -313,26 +302,27 @@ class TFRunner(Configurable):
         _total_running_penalty = min(1, max(0, self._total_penalty_filter.calculate(_steer_penalty + _obstacle_penalty)))
         # Smooth the instant individual values for reporting purposes.
         _normalized_brake_critic = self._fn_brake_mu(surprise=0, loss=max(0, brake_critic))
-        _steer_running_confidence = 1. - min(1, max(0, self._steer_confidence_filter.calculate(_steer_penalty)))
-        _brake_running_confidence = 1. - min(1, max(0, self._brake_confidence_filter.calculate(_normalized_brake_critic)))
-        return dict(time=timestamp(),
-                    action=float(self._dnn_steering(action)),
-                    obstacle=float(brake),
-                    surprise_out=float(surprise),
-                    critic_out=float(critic),
-                    brake_critic_out=float(brake_critic),
-                    steer_penalty=float(_steer_penalty),
-                    brake_penalty=float(_obstacle_penalty),
-                    total_penalty=float(_total_running_penalty),
-                    steer_confidence=float(_steer_running_confidence),
-                    brake_confidence=float(_brake_running_confidence),
-                    internal=[float(0)],
-                    navigation_point=int(-1 if nav_point_id is None else nav_point_id),
-                    navigation_image=int(-1 if nav_image_id is None else nav_image_id),
-                    navigation_distance=float(1 if nav_distance is None else nav_distance),
-                    navigation_command=int(_command_index),
-                    navigation_path=[float(v) for v in path]
-                    )
+        _steer_running_confidence = 1.0 - min(1, max(0, self._steer_confidence_filter.calculate(_steer_penalty)))
+        _brake_running_confidence = 1.0 - min(1, max(0, self._brake_confidence_filter.calculate(_normalized_brake_critic)))
+        return dict(
+            time=timestamp(),
+            action=float(self._dnn_steering(action)),
+            obstacle=float(brake),
+            surprise_out=float(surprise),
+            critic_out=float(critic),
+            brake_critic_out=float(brake_critic),
+            steer_penalty=float(_steer_penalty),
+            brake_penalty=float(_obstacle_penalty),
+            total_penalty=float(_total_running_penalty),
+            steer_confidence=float(_steer_running_confidence),
+            brake_confidence=float(_brake_running_confidence),
+            internal=[float(0)],
+            navigation_point=int(-1 if nav_point_id is None else nav_point_id),
+            navigation_image=int(-1 if nav_image_id is None else nav_image_id),
+            navigation_distance=float(1 if nav_distance is None else nav_distance),
+            navigation_command=int(_command_index),
+            navigation_path=[float(v) for v in path],
+        )
 
 
 class InferenceApplication(Application):
@@ -361,9 +351,9 @@ class InferenceApplication(Application):
     def _config(self):
         parser = SafeConfigParser()
         # Ignore the teleop managed configuration use a location not accessible via the ui. Overrides come last.
-        _override = os.path.join(self._config_dir, 'inference')
-        [parser.read(_f) for _f in self._glob(self._internal_models, '*.ini') + self._glob(_override, '*.ini')]
-        cfg = dict(parser.items('inference')) if parser.has_section('inference') else {}
+        _override = os.path.join(self._config_dir, "inference")
+        [parser.read(_f) for _f in self._glob(self._internal_models, "*.ini") + self._glob(_override, "*.ini")]
+        cfg = dict(parser.items("inference")) if parser.has_section("inference") else {}
         logger.info(cfg)
         return cfg
 
@@ -395,36 +385,33 @@ class InferenceApplication(Application):
         image = self.camera.capture()[-1]
         if image is not None:
             # The teleop service is the authority on route state.
-            c_route = None if c_teleop is None else c_teleop.get('navigator').get('route')
+            c_route = None if c_teleop is None else c_teleop.get("navigator").get("route")
             state = self._runner.forward(image=image, route=c_route)
-            state['_fps'] = self.get_actual_hz()
+            state["_fps"] = self.get_actual_hz()
             self.publisher.publish(state)
         chat = self.ipc_chatter()
         if chat is not None:
-            if chat.get('command') == 'restart':
+            if chat.get("command") == "restart":
                 self.setup()
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Inference server.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
-    parser.add_argument('--internal', type=str, default='/models', help='Directory with the default inference models.')
-    parser.add_argument('--user', type=str, default='/user_models', help='Directory with the user inference models.')
-    parser.add_argument('--routes', type=str, default='/routes', help='Directory with the navigation routes.')
+    parser = argparse.ArgumentParser(description="Inference server.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
+    parser.add_argument("--internal", type=str, default="/models", help="Directory with the default inference models.")
+    parser.add_argument("--user", type=str, default="/user_models", help="Directory with the user inference models.")
+    parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
     args = parser.parse_args()
 
-    application = InferenceApplication(config_dir=args.config,
-                                       internal_models=args.internal,
-                                       user_models=args.user,
-                                       navigation_routes=args.routes)
+    application = InferenceApplication(config_dir=args.config, internal_models=args.internal, user_models=args.user, navigation_routes=args.routes)
     quit_event = application.quit_event
 
-    teleop = json_collector(url='ipc:///byodr/teleop.sock', topic=b'aav/teleop/input', event=quit_event)
-    ipc_chatter = json_collector(url='ipc:///byodr/teleop_c.sock', topic=b'aav/teleop/chatter', pop=True, event=quit_event)
+    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
+    ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
-    application.publisher = JSONPublisher(url='ipc:///byodr/inference.sock', topic='aav/inference/state')
-    application.camera = CameraThread(url='ipc:///byodr/camera_0.sock', topic=b'aav/camera/0', event=quit_event)
-    application.ipc_server = LocalIPCServer(url='ipc:///byodr/inference_c.sock', name='inference', event=quit_event)
+    application.publisher = JSONPublisher(url="ipc:///byodr/inference.sock", topic="aav/inference/state")
+    application.camera = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
+    application.ipc_server = LocalIPCServer(url="ipc:///byodr/inference_c.sock", name="inference", event=quit_event)
     application.teleop = lambda: teleop.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
 
@@ -440,6 +427,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format='%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s', datefmt='%Y%m%d:%H:%M:%S %p %Z')
+    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()
