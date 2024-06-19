@@ -6,53 +6,39 @@ html {
   height: 100%;
   overflow: hidden;
   /* This will prevent scrollbar from appearing */
-  overflow: hidden;
-  /* This will prevent scrollbar from appearing */
 }
 
 canvas {
   display: block;
 }
 
+/* top input container START */
 #mobile-controller-top-input-container {
   position: fixed;
-  width: 100%;
+  width: 80%;
   display: flex;
+  left: 50%;
+  transform: translateX(-50%);
   align-items: center;
   justify-content: center;
   flex-direction: column;
   margin: 1vh 0;
 }
 
-#dead-zone-container {
-  margin: 1vh 0;
-  display: none;
-  /* Hide this container as it's now moved to scale-offset-input-containers */
-}
-
-.scale-offset-input-containers {
+.input-container {
   font-size: 14px;
   display: flex;
   align-items: center;
-  margin-left: 10px;
-  margin-top: 10px;
-  /* Added margin-top for better spacing */
-}
-
-.scale-offset-input-containers label {
-  width: 110px;
-}
-
-.scale-offset-input-box-containers {
-  display: flex;
-  align-items: center;
+  margin: 10px;
   width: 100%;
 }
 
-.deadzone-input-text,
-.scale-input-text,
-.offset-input-text {
-  width: 60px;
+.input-container label {
+  width: 110px;
+}
+
+.input-text {
+  width: 2rem;
   margin-left: 15px;
   display: inline-block;
   overflow: hidden;
@@ -60,10 +46,10 @@ canvas {
   text-overflow: ellipsis;
 }
 
-
 input[type=range] {
   -webkit-appearance: none;
-  width: 80%;
+  appearance: none;
+  width: 50%;
   margin: 10px 0;
 }
 
@@ -84,6 +70,8 @@ input[type=range]::-webkit-slider-thumb {
   background: #555;
   margin-top: -4px;
 }
+
+/* top input container END */
 
 /* Adjusted styles for the container and option buttons to center them horizontally at the bottom of the page */
 .mobile_controller_button_container {
