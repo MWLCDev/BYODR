@@ -22,14 +22,14 @@ canvas {
   align-items: center;
   justify-content: center;
   flex-direction: column;
-  margin: 1vh 0;
+  margin: 1.5rem 0 0.5rem 0;
 }
 
 .input-container {
   font-size: 14px;
   display: flex;
   align-items: center;
-  margin: 10px;
+  margin: 0.5rem 0;
   width: 100%;
 }
 
