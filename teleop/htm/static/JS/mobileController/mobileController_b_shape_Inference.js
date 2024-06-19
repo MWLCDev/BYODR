@@ -26,7 +26,7 @@ class InferenceToggleButton {
      false == working on normal mode
      true == Inference is working on mobile controller 
      train == Inference is on training mode
-     auto == Inference is on training mode
+     auto == Inference is on auto navigation mode
     */
     this._inferenceState = "false";
     this.currentAutoSpeed = 0
