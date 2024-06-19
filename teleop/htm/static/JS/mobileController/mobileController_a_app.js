@@ -14,6 +14,7 @@ sendJSONCommand();
 MotorDataInput.showInputElements();
 let intervalId;
 let inferenceToggleButton
+let deadZoneText = document.getElementById('deadZone-input-text');
 
 window.addEventListener('load', () => {
   initializeWS()
@@ -22,11 +23,14 @@ window.addEventListener('load', () => {
   new ToggleButtonHandler('confidenceToggleButton')
   let deadZoneSlider = document.getElementById('deadZoneWidth');
   deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
+  deadZoneText.textContent = getSavedDeadZoneWidth() * 2
 });
 
 // Dead zone width slider input event listener
 document.getElementById('deadZoneWidth').addEventListener('input', function () {
   let value = this.value;
+  deadZoneText.textContent = getSavedDeadZoneWidth() * 2
+  console.log(value)
   // Save the new dead zone width to local storage after handling the dot move
   saveDeadZoneWidth(value);
 });
@@ -55,7 +59,7 @@ app.view.addEventListener('touchstart', (event) => {
         break;
       default:
         if (followingButtonHandler.toggleButton.innerText === "Stop Following") {
-          followingButtonHandler.sendSwitchFollowingRequest("Stop Following")
+          followingButtonHandler.sendSwitchFollowingRequest("stop_following")
         }
         document.getElementById("mobile-controller-top-input-container").style.display = "none";
         document.getElementById("mobile-controller-bottom-input-container").style.display = "none";
@@ -70,10 +74,8 @@ app.view.addEventListener('touchstart', (event) => {
 
 
 function startOperating(event) {
-
   // Hide the button when triangles are pressed
   followingButtonHandler.setStyle('display', 'none');
-
   cursorFollowingDot.show()
   handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
   handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
