@@ -26,11 +26,44 @@ canvas {
 
 #dead-zone-container {
   margin: 1vh 0;
+  display: none;
+  /* Hide this container as it's now moved to scale-offset-input-containers */
 }
+
+.scale-offset-input-containers {
+  font-size: 14px;
+  display: flex;
+  align-items: center;
+  margin-left: 10px;
+  margin-top: 10px;
+  /* Added margin-top for better spacing */
+}
+
+.scale-offset-input-containers label {
+  width: 110px;
+}
+
+.scale-offset-input-box-containers {
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.deadzone-input-text,
+.scale-input-text,
+.offset-input-text {
+  width: 60px;
+  margin-left: 15px;
+  display: inline-block;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 
 input[type=range] {
   -webkit-appearance: none;
-  width: 70%;
+  width: 80%;
   margin: 10px 0;
 }
 
@@ -116,32 +149,6 @@ input[type=range]::-webkit-slider-thumb {
   top: 20px;
 }
 
-.scale-offset-input-containers {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
-}
-
-.scale-offset-input-containers label {
-  width: 110px;
-}
-
-.scale-offset-input-box-containers {
-  display: flex;
-  align-items: center;
-}
-
-.scale-input-text,
-.offset-input-text {
-    width: 60px;
-    margin-left: 15px;
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
 .scale-offset-confirm-text {
   font-size: 14px;
   margin-left: 10px;
@@ -153,13 +160,22 @@ input[type=range]::-webkit-slider-thumb {
 
 
 canvas#following_imageCanvas {
-  display: none; /* Initially hidden */
-  position: fixed; /* Fixed position to keep the canvas in the center of the viewport */
-  top: 50%; /* Align center vertically */
-  left: 50%; /* Align center horizontally */
-  transform: translate(-50%, -50%); /* Adjust position to the exact center */
-  border: 1px solid black; /* Optional: Adds a border around the canvas */
-  max-width: 640px; /* Maximum width of the canvas */
-  max-height: 480px; /* Maximum height of the canvas */
-  aspect-ratio: 4 / 3; /* Maintain 4:3 aspect ratio */
+  display: none;
+  /* Initially hidden */
+  position: fixed;
+  /* Fixed position to keep the canvas in the center of the viewport */
+  top: 50%;
+  /* Align center vertically */
+  left: 50%;
+  /* Align center horizontally */
+  transform: translate(-50%, -50%);
+  /* Adjust position to the exact center */
+  border: 1px solid black;
+  /* Optional: Adds a border around the canvas */
+  max-width: 640px;
+  /* Maximum width of the canvas */
+  max-height: 480px;
+  /* Maximum height of the canvas */
+  aspect-ratio: 4 / 3;
+  /* Maintain 4:3 aspect ratio */
 }
