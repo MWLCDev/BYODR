@@ -224,20 +224,12 @@ function handleTriangleMove(y, inferenceToggleButton) {
   } else if (CTRL_STAT.detectedTriangle === 'top' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
-  }
-  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
+  } else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawBottomTriangle_TopRectangle(yOffset);
-  }
-
-
-  else if (CTRL_STAT.detectedTriangle === 'top') {
+  } else if (CTRL_STAT.detectedTriangle === 'top') {
     document.getElementById('toggle_button_container').style.display = 'none';
     drawTopTriangle_BottomRectangle(yOffset);
-  }
-  else if (CTRL_STAT.detectedTriangle === 'bottom' && INFState != "true") {
-    document.getElementById('toggle_button_container').style.display = 'none';
-    drawBottomTriangle_TopRectangle(yOffset);
   }
 }
 
