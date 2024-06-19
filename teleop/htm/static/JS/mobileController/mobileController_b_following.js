@@ -48,8 +48,13 @@ class ToggleButtonHandler {
       })
         .then(response => response.json())
         .then(data => {
+          const previousState = this._followingState;
           this.assignFollowingState(data.following_status);
-          this.toggleButtonAppearance();
+
+          // Only call this function if the current state changed from the received one
+          if (previousState !== this._followingState) {
+            this.toggleButtonAppearance();
+          }
         })
         .catch(error => console.error("Error polling backend:", error));
     }, 500);
