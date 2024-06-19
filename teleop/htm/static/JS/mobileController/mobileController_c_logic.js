@@ -255,7 +255,6 @@ function sendJSONCommand() {
         dataToSend[key] = CTRL_STAT.throttleSteeringJson[key];
       }
     }
-
     CTRL_STAT.websocket.send(JSON.stringify(dataToSend));
     CTRL_STAT.isWebSocketOpen = true;
 

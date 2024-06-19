@@ -184,13 +184,17 @@ class OverviewConfidence:
 
 
 class ThrottleController:
-    def __init__(self, teleop_publisher, route_store):
+    def __init__(self, teleop_publisher, route_store, timeout=1.0):
         self.current_throttle = 0.0
         self.throttle_change_step = 0.05
         self.teleop_publisher = teleop_publisher
         self.route_store = route_store
         self.command_queue = queue.Queue()
         self.following_state = "inactive"
+        self.current_source = None  # Track the current source
+        self.last_command_time = time.time()  # Track the last command time
+        # Timeout period that after it, will switch to another source
+        self.timeout = timeout  
 
         # Start the thread to consume from the queue
         # The main thread can be used to run this function, but I would leave the main thread free
@@ -204,18 +208,31 @@ class ThrottleController:
         """Continuously consumes commands from the queue and processes them."""
         while True:
             try:
+                current_time = time.time()
                 cmd = self.command_queue.get(block=True)
-                if self.following_state == "active":
-                    if cmd.get("source") == "followingActive":
-                        self._process_command(cmd)
-                    else:
-                        pass
-                        # Can be used to save the commands from other sources then process them later
-                        # self.command_queue.put(cmd)
-                else:
+                if self._should_process_command(cmd, current_time):
                     self._process_command(cmd)
+                elif current_time - self.last_command_time > self.timeout:
+                    self.current_source = None  # Reset current source if timeout occurs
             except Exception as e:
                 logger.error(f"Error processing command from queue: {e}")
+
+    def _should_process_command(self, cmd, current_time):
+        """Checks if the command should be processed based on throttle and steering values and current source."""
+        if self.current_source is None or self.current_source == cmd.get("source"):
+            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                self.current_source = cmd.get("source")
+                self.last_command_time = current_time
+                return True
+            if self.current_source == cmd.get("source"):
+                self.last_command_time = current_time
+                return True
+        else:
+            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                self.current_source = cmd.get("source")
+                self.last_command_time = current_time
+                return True
+        return False
 
     def _process_command(self, cmd):
         """Processes a command from the queue, smoothing the throttle changes if necessary."""
@@ -225,7 +242,7 @@ class ThrottleController:
 
         if "throttle" not in cmd and "steering" not in cmd:
             self.current_throttle = 0
-            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
+            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": self._timestamp(), "navigator": {"route": None}, "button_b": 1})
             return
 
         target_throttle = float(cmd.get("throttle", 0))
@@ -245,7 +262,7 @@ class ThrottleController:
     def _teleop_publish(self, cmd):
         """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        # logger.info(cmd)
+        logger.info(cmd)
         self.teleop_publisher.publish(cmd)
 
     def update_following_state(self, state):
