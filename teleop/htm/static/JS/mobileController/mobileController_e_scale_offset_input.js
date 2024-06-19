@@ -16,13 +16,10 @@ class MotorDataInput {
       .then(response => response.json())
       .then(data => {
 
-        // Get the current values from the backend and place them in the sliders
-        this.SCALEINPUT.value = data.vehicle["ras.driver.motor.scale"];
-        this.OFFSETINPUT.value = data.vehicle["ras.driver.steering.offset"];
-
-        // Update the text next to the slider to show the current value
-        this.SCALEINPUT_TEXT.textContent = `${this.SCALEINPUT.value}`;
-        this.OFFSETINPUT_TEXT.textContent = `${this.OFFSETINPUT.value}`;
+        // Get the current values from the backend and place them in the sliders 
+        // then update the text next to the slider
+        this.SCALEINPUT.value = this.SCALEINPUT_TEXT.textContent = data.vehicle["ras.driver.motor.scale"];
+        this.OFFSETINPUT.value = this.OFFSETINPUT_TEXT.textContent = data.vehicle["ras.driver.steering.offset"];
       })
       .catch(error => {
         console.error('Error fetching data:', error);
