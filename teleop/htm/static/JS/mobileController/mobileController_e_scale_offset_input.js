@@ -1,16 +1,16 @@
 class MotorDataInput {
   static SCALEINPUT = document.getElementById('scale_input_box_ID');
   static OFFSETINPUT = document.getElementById('offset_input_box_ID');
-  static SCALEINPUT_TEXT = document.querySelector('.scale-input-text');
-  static OFFSETINPUT_TEXT = document.querySelector('.offset-input-text');
+  static SCALEINPUT_TEXT = document.getElementById('scale-input-text');
+  static OFFSETINPUT_TEXT = document.getElementById('offset-input-text');
 
 
   static hideInputElements() {
-    document.querySelector('.mobile-controller-motor-settings-container').classList.add('hidden');
+    document.getElementById('mobile-controller-top-input-container').classList.add('hidden');
   }
 
   static showInputElements() {
-    document.querySelector('.mobile-controller-motor-settings-container').classList.remove('hidden');
+    document.getElementById('mobile-controller-top-input-container').classList.remove('hidden');
 
     fetch('/teleop/user/options')
       .then(response => response.json())
