@@ -29,7 +29,7 @@ window.addEventListener('load', () => {
 // Dead zone width slider input event listener
 document.getElementById('deadZoneWidth').addEventListener('input', function () {
   let value = this.value;
-  deadZoneText.textContent = getSavedDeadZoneWidth() * 2
+  deadZoneText.textContent = value * 2
   console.log(value)
   // Save the new dead zone width to local storage after handling the dot move
   saveDeadZoneWidth(value);
