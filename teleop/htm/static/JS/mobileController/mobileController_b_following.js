@@ -5,7 +5,7 @@ class ToggleButtonHandler {
     this.toggleButton = document.getElementById(buttonId);
     this.canvas = document.getElementById("following_imageCanvas");
     this.ctx = this.canvas.getContext('2d');
-    this._followingState = "loading";
+    this._followingState = undefined;
     this.initialSetup();
     this.startPolling();
   }
@@ -50,7 +50,6 @@ class ToggleButtonHandler {
         .then(data => {
           const previousState = this._followingState;
           this.assignFollowingState(data.following_status);
-
           // Only call this function if the current state changed from the received one
           if (previousState !== this._followingState) {
             this.toggleButtonAppearance();
