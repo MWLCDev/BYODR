@@ -84,6 +84,7 @@ class CommandController:
         for person in persons:
             try:
                 self.person_height = person.xywh[0][3]
+                # The horizontal position of the (detected person's bounding box center) within the frame
                 x_center_percentage = person.xywhn[0][0]
 
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
@@ -91,7 +92,7 @@ class CommandController:
                 self.current_throttle = self.calculate_throttle()
 
                 # Check if calibration is needed
-                self.check_calibration_needed()
+                self.check_calibration_needed(x_center_percentage)
 
                 if self.calibration_flag:
                     self.perform_calibration()
@@ -100,9 +101,11 @@ class CommandController:
             except Exception as e:
                 logger.warning(f"Exception updating control commands: {e}")
 
-    def check_calibration_needed(self):
+    def check_calibration_needed(self, x_center_percentage):
         """Check if calibration is needed and raise the flag if necessary."""
-        if (self.left_red_zone <= self.current_camera_pan <= self.right_red_zone) and not (self.min_camera_pan_safe_zone <= self.current_azimuth <= self.max_camera_pan_safe_zone):
+        # print(self.left_red_zone, x_center_percentage, self.right_red_zone)
+        # print(self.min_camera_pan_safe_zone, self.current_azimuth, self.max_camera_pan_safe_zone)
+        if (self.left_red_zone <= x_center_percentage <= self.right_red_zone) and (self.min_camera_pan_safe_zone <= self.current_azimuth <= self.max_camera_pan_safe_zone):
             self.calibration_flag = True
             self.left_red_zone /= 2
             self.right_red_zone /= 2
