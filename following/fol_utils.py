@@ -123,7 +123,7 @@ class CommandController:
 
         self.current_steering = max(-1, min(1, self.current_steering))
         self.current_camera_pan = -self.current_steering * self.pan_movement_offset
-        print(f"S:{self.current_steering} C_P:{self.current_camera_pan}")
+        logger.info(f"S:{self.current_steering} C_P:{self.current_camera_pan}")
 
     def calculate_throttle(self):
         if self.person_height <= self.start_height:

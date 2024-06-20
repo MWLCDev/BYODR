@@ -297,10 +297,10 @@ class CameraControl:
         self.base_url = base_url
         self.user = user
         self.password = password
-        self.lock = threading.Lock()  # Initialize a lock for camera control
 
     def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Continuous"):
         try:
+            # pan = tilt [-100:100]
             if method == "Momentary":
                 url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
                 payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
@@ -308,6 +308,7 @@ class CameraControl:
                 url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Continuous"
                 payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Continuous><duration>{duration}</duration></Continuous></PTZData>"
             elif method == "Absolute":
+                # pan [0:3550], tilt [0-900]
                 url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
                 payload = (
                     "<PTZData>"
