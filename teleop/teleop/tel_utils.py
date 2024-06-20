@@ -194,7 +194,7 @@ class ThrottleController:
         self.current_source = None  # Track the current source
         self.last_command_time = time.time()  # Track the last command time
         # Timeout period that after it, will switch to another source
-        self.timeout = timeout  
+        self.timeout = timeout
 
         # Start the thread to consume from the queue
         # The main thread can be used to run this function, but I would leave the main thread free
@@ -262,7 +262,7 @@ class ThrottleController:
     def _teleop_publish(self, cmd):
         """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        logger.info(cmd)
+        # logger.info(cmd)
         self.teleop_publisher.publish(cmd)
 
     def update_following_state(self, state):
@@ -391,6 +391,23 @@ class CameraControl:
         except requests.exceptions.HTTPError as err:
             return f"Error: {err}"
 
+    def get_preset_position(self, preset_id):
+        """Gets the coordinates of a preset position."""
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}"
+        try:
+            response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
+            response.raise_for_status()
+            print(response.text)
+            xml_root = ET.fromstring(response.content)
+            ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
+            azimuth = xml_root.find(".//hik:azimuth", ns).text
+            elevation = xml_root.find(".//hik:elevation", ns).text
+            return (azimuth, elevation)
+        except requests.exceptions.RequestException as e:
+            return f"Failed to get preset position: {e}"
+        except ET.ParseError as e:
+            return f"XML parsing error: {e}"
+
 
 class FollowingUtils:
     def __init__(self, tel_chatter, throttle_controller, fol_comm_socket):
@@ -405,6 +422,8 @@ class FollowingUtils:
         config.read(user_config_file_dir)
         front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
         self.camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
+        preset_coords = self.camera_control.get_preset_position(1)
+        print(f"Preset 1 coordinates: {preset_coords}")
 
     def get_following_state(self):
         return self.following_state
