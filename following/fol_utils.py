@@ -51,7 +51,6 @@ class YoloInference:
         self.image_counter = 0
         for existing_file in os.listdir(self.image_save_path):
             os.remove(os.path.join(self.image_save_path, existing_file))
-        logger.info("Tracking session reset: Image counter zeroed and folder cleared.")
 
 
 class CommandController:
@@ -65,7 +64,7 @@ class CommandController:
         self.current_azimuth = 0
         self.person_height = 0
         self.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
-        self.calibration_flag = False  # New flag for calibration process
+        self.calibration_flag = False
 
         self.get_fol_configs()
 
@@ -73,8 +72,8 @@ class CommandController:
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
-        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3450, [], **self.user_config_args)  # max is 3600
-        self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 150, [], **self.user_config_args)
+        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3600
+        self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 50, [], **self.user_config_args)
         self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
 
         self.original_left_red_zone = self.left_red_zone
@@ -175,8 +174,9 @@ class CommandController:
                 else:
                     cmd["camera_pan"] = int(camera_pan)
                 self.publisher.publish(cmd)
-            if source not in ["followingInactive", "followingLoading"]:
-                logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+            # if source not in ["followingInactive", "followingLoading"]:
+            # logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+            # logger.info(cmd)
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")
 

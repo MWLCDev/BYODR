@@ -242,7 +242,7 @@ class ThrottleController:
 
         if "throttle" not in cmd and "steering" not in cmd:
             self.current_throttle = 0
-            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": self._timestamp(), "navigator": {"route": None}, "button_b": 1})
+            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
             return
 
         target_throttle = float(cmd.get("throttle", 0))
@@ -398,7 +398,6 @@ class CameraControl:
         try:
             response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
             response.raise_for_status()
-            print(response.text)
             xml_root = ET.fromstring(response.content)
             ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
             azimuth = xml_root.find(".//hik:azimuth", ns).text
@@ -423,8 +422,6 @@ class FollowingUtils:
         config.read(user_config_file_dir)
         front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
         self.camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
-        preset_coords = self.camera_control.get_preset_position(1)
-        print(f"Preset 1 coordinates: {preset_coords}")
 
     def get_following_state(self):
         return self.following_state
@@ -442,7 +439,7 @@ class FollowingUtils:
                 self.throttle_controller.throttle_control(ctrl)
                 self._update_following_status(ctrl)
                 self._handle_camera_commands(ctrl)
-                self._publish_camera_azimuth()
+                self._publish_camera_azimuth()  # should be always or only when following is working?
         except Exception as e:
             logger.error(f"Error handling control command: {e}")
 
@@ -462,6 +459,8 @@ class FollowingUtils:
                     self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
                 elif ctrl["camera_pan"] == "go_preset_1":
                     self.camera_control.goto_preset_position(preset_id=1)
+                    # Wait until camera is in preset1
+                    time.sleep(2)
             except Exception as cam_err:
                 logger.error(f"Error in camera control: {cam_err}")
 
