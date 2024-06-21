@@ -118,9 +118,9 @@ class CommandController:
     def perform_calibration(self):
         """Perform the calibration process to align the vehicle with the camera direction."""
         if self.current_azimuth < 1800:
-            self.current_steering = (self.current_azimuth - 1800) / 1800
+            self.current_steering = (self.current_azimuth - 1800) / 1800 / 3
         else:
-            self.current_steering = (1800 - self.current_azimuth) / 1800
+            self.current_steering = (1800 - self.current_azimuth) / 1800 / 3
 
         self.current_steering = max(-1, min(1, self.current_steering))
         self.current_camera_pan = -self.current_steering * self.pan_movement_offset
