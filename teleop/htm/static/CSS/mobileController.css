@@ -23,6 +23,7 @@ canvas {
   justify-content: center;
   flex-direction: column;
   margin: 1.5rem 0 0.5rem 0;
+  box-sizing: border-box;
 }
 
 .input-container {
@@ -31,26 +32,30 @@ canvas {
   align-items: center;
   margin: 0.5rem 0;
   width: 100%;
+  box-sizing: border-box;
 }
 
 .input-container label {
   width: 110px;
+  flex-shrink: 0; /* Ensure label doesn't shrink */
 }
 
 .input-text {
-  width: 2rem;
+  width: 4ch; /* Fixed width to accommodate 3 characters */
   margin-left: 15px;
   display: inline-block;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
+  text-align: right; /* Align text to the right for a consistent look */
 }
 
 input[type=range] {
   -webkit-appearance: none;
   appearance: none;
-  width: 50%;
+  flex-grow: 1; /* Allow the input to grow and fill available space */
   margin: 10px 0;
+  box-sizing: border-box;
 }
 
 input[type=range]::-webkit-slider-runnable-track {
@@ -71,10 +76,17 @@ input[type=range]::-webkit-slider-thumb {
   margin-top: -4px;
 }
 
+/* Adjust for larger screens */
+@media (min-width: 768px) {
+  #mobile-controller-top-input-container {
+    width: 50%;
+  }
+}
+
 /* top input container END */
 
 /* Adjusted styles for the container and option buttons to center them horizontally at the bottom of the page */
-.mobile_controller_button_container {
+#mobile-controller-bottom-input-container {
   position: fixed;
   bottom: 2vw;
   left: 50%;
