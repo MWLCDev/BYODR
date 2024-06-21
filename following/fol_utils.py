@@ -16,7 +16,7 @@ class YoloInference:
 
     def __init__(self, model_path, user_config_args):
         self.user_config_args = user_config_args
-        self.model = YOLO(model_path)
+        self.model = YOLO(model_path, task="detect")
         self.image_save_path = "/byodr/yolo_person"
         self.image_counter = 0
         self.results = None
@@ -25,7 +25,8 @@ class YoloInference:
 
     def run(self):
         stream_uri = self.get_stream_uri()
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False)
+        # track() method ensures that the tracker persists across frame
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, tracker="botsort.yaml")
         logger.info("Yolo model is loaded")
 
     def get_stream_uri(self):
