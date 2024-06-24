@@ -320,13 +320,15 @@ class FollowingController:
     def _control_logic(self, stop):
         """Processes each frame of YOLO output."""
         try:
-            if stop():
-                logger.info("YOLO model stopped")
-                self.fol_state = "inactive"
-                self.command_controller.publish_command(source="followingReady")
-                break
-            self.yolo_inference.track_and_save_image(r)
-            self._update_control_commands(r.boxes.cpu().numpy())
+            for r in self.yolo_inference.results:
+                if stop():
+                    logger.info("YOLO model stopped")
+                    self.fol_state = "inactive"
+                    self.command_controller.publish_command(source="followingReady")
+                    break
+                self._update_control_commands(r.boxes.cpu().numpy())
+                followed_person_id = self.command_controller.followed_person_id
+                self.yolo_inference.track_and_save_image(r, followed_person_id)
         except Exception as e:
             logger.error(f"Exception in _control_logic: {e}")
             self.quit_event.set()
