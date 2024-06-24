@@ -6,6 +6,7 @@ class MobileControllerState {
 	//The starting y coord when the triangles are relocated ()
 	#initialYOffset = 0;
 	#selectedTriangle = null;
+	#followingState = null;
 	// Hold the current value for steering and throttle to be sent through the websocket
 	// At first we send a default value
 	#throttleSteeringJson = { steering: 0, throttle: 0 };
@@ -38,6 +39,13 @@ class MobileControllerState {
 	}
 	get throttleSteeringJson() {
 		return this.#throttleSteeringJson;
+	}
+  
+	set followingState(value) {
+		this.#followingState = value;
+	}
+	get followingState() {
+		return this.#followingState;
 	}
 
 	set stateErrors(value) {

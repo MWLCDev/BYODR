@@ -1,4 +1,5 @@
 import { redraw, removeTriangles } from './mobileController_d_pixi.js';
+import CTRL_STAT from './mobileController_z_state.js';
 
 class ToggleButtonHandler {
 	constructor(buttonId) {
@@ -8,30 +9,26 @@ class ToggleButtonHandler {
 		this.confidenceToggleBtn = document.getElementById('confidenceToggleButton');
 		this.canvas = document.getElementById('following_imageCanvas');
 		this.ctx = this.canvas.getContext('2d');
-		this._followingState = undefined;
 		this.initialSetup();
 		this.startPolling();
-	}
-
-	get getFollowingState() {
-		return this._followingState;
 	}
 
 	initialSetup() {
 		this.resizeCanvas();
 		window.addEventListener('resize', () => this.resizeCanvas());
-		this.toggleButton.addEventListener('click', () => this.handleButtonClick());
+		this.toggleButton.addEventListener('click', () => this.handleFollowingToggleButtonClick());
 	}
 
-	handleButtonClick() {
-		if (this._followingState == 'inactive') {
+	handleFollowingToggleButtonClick() {
+		if (CTRL_STAT.followingState == 'inactive') {
 			this.sendSwitchFollowingRequest('start_following');
-		} else if (this._followingState == 'active') {
+		} else if (CTRL_STAT.followingState == 'active') {
 			this.sendSwitchFollowingRequest('stop_following');
 		}
 	}
 
 	sendSwitchFollowingRequest(command) {
+    console.log(command)
 		fetch('/switch_following', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -49,10 +46,10 @@ class ToggleButtonHandler {
 			})
 				.then((response) => response.json())
 				.then((data) => {
-					const previousState = this._followingState;
+					const previousState = CTRL_STAT.followingState;
 					this.assignFollowingState(data.following_status);
 					// Only call this function if the current state changed from the received one
-					if (previousState !== this._followingState) {
+					if (previousState !== CTRL_STAT.followingState) {
 						this.toggleButtonAppearance();
 					}
 				})
@@ -70,13 +67,13 @@ class ToggleButtonHandler {
 		// console.log(backendCommand, this._followingState)
 		switch (backendCommand) {
 			case 'active':
-				this._followingState = 'active'; // The system is actively following
+				CTRL_STAT.followingState = 'active'; // The system is actively following
 				break;
 			case 'inactive':
-				this._followingState = 'inactive'; // The system is ready and not following
+				CTRL_STAT.followingState = 'inactive'; // The system is ready and not following
 				break;
 			case 'loading':
-				this._followingState = 'loading'; // The system is loading
+				CTRL_STAT.followingState = 'loading'; // The system is loading
 				break;
 			default:
 				console.log('Following: Unknown command received from the backend:', backendCommand);
@@ -84,19 +81,19 @@ class ToggleButtonHandler {
 	}
 
 	toggleButtonAppearance() {
-		if (this._followingState == 'active') {
+		if (CTRL_STAT.followingState == 'active') {
 			removeTriangles();
 			this.showCanvas();
 			this.controlInputControllerVisibility('none');
 			this.toggleButton.innerText = 'Stop Following';
 			this.toggleButton.style.backgroundColor = '#ff6347';
-		} else if (this._followingState == 'inactive') {
+		} else if (CTRL_STAT.followingState == 'inactive') {
 			redraw(undefined, true, true, true);
 			this.hideCanvas();
 			this.controlInputControllerVisibility('flex');
 			this.toggleButton.innerText = 'Start Following';
 			this.toggleButton.style.backgroundColor = '#67b96a';
-		} else if (this._followingState == 'loading') {
+		} else if (CTRL_STAT.followingState == 'loading') {
 			this.hideCanvas();
 			controlInputControllerVisibility('flex');
 			this.toggleButton.innerText = 'Loading...';
@@ -133,7 +130,7 @@ class ToggleButtonHandler {
 	}
 
 	resizeCanvas() {
-		if (this._followingState == 'active') {
+		if (CTRL_STAT.followingState == 'active') {
 			removeTriangles();
 		}
 		let maxWidth = window.innerWidth * 0.8; // 80% of the viewport width

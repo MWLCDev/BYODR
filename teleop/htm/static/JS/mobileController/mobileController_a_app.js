@@ -1,11 +1,11 @@
+import { followingButtonHandler } from './mobileController_b_following.js';
+import { ToggleButtonHandler } from './mobileController_b_shape_confidence.js';
+import { cursorFollowingDot } from './mobileController_b_shape_dot.js';
 import { InferenceToggleButton } from './mobileController_b_shape_Inference.js';
 import { bottomTriangle, topTriangle } from './mobileController_b_shape_triangle.js';
 import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, saveDeadZoneWidth, sendJSONCommand } from './mobileController_c_logic.js';
-import { cursorFollowingDot } from './mobileController_b_shape_dot.js';
-import { MotorDataInput } from './mobileController_e_scale_offset_input.js';
-import { ToggleButtonHandler } from './mobileController_b_shape_confidence.js';
-import { followingButtonHandler } from './mobileController_b_following.js';
 import { app, changeTrianglesColor, redraw, removeTriangles } from './mobileController_d_pixi.js';
+import { MotorDataInput } from './mobileController_e_scale_offset_input.js';
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
@@ -37,7 +37,7 @@ document.getElementById('deadZoneWidth').addEventListener('input', function () {
 
 window.addEventListener('resize', () => {
 	// To not show the triangles if the stream canvas is shown
-	if (followingButtonHandler.getFollowingState != 'active') {
+	if (CTRL_STAT.followingState != 'active') {
 		app.renderer.resize(window.innerWidth, window.innerHeight);
 		topTriangle.updateDimensions();
 		bottomTriangle.updateDimensions();
@@ -46,7 +46,7 @@ window.addEventListener('resize', () => {
 });
 
 app.view.addEventListener('touchstart', (event) => {
-	console.log(followingButtonHandler.getFollowingState);
+	console.log(CTRL_STAT.followingState);
 	CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
 	detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
 	//Make sure it will move only if the user clicks inside one of the two triangles
@@ -61,7 +61,7 @@ app.view.addEventListener('touchstart', (event) => {
 			default:
 				document.getElementById('mobile-controller-top-input-container').style.display = 'none';
 				document.getElementById('mobile-controller-bottom-input-container').style.display = 'none';
-				if (followingButtonHandler.getFollowingState == 'active') {
+				if (CTRL_STAT.followingState == 'active') {
 					removeTriangles();
 				} else {
 					console.log("won't move");
@@ -106,7 +106,7 @@ app.view.addEventListener('touchend', () => {
 			document.getElementById('mobile-controller-bottom-input-container').style.display = 'flex';
 
 			redraw(); // Reset triangles to their original position
-			if (followingButtonHandler.getFollowingState === 'active') {
+			if (CTRL_STAT.followingState === 'active') {
 				removeTriangles();
 				document.getElementById('mobile-controller-top-input-container').style.display = 'none';
 				document.getElementById('inference_toggle_button').style.display = 'none';
