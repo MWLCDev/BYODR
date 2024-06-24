@@ -25,7 +25,7 @@ class YoloInference:
 
     def run(self):
         stream_uri = self.get_stream_uri()
-        # track() method ensures that the tracker persists across frame
+        # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
         self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, tracker="./botsort.yaml")
         logger.info("Yolo model is loaded")
@@ -34,11 +34,31 @@ class YoloInference:
         bottom_camera_uri = parse_option("camera.front.camera.ip", str, "192.168.1.64", [], **self.user_config_args)
         return f"rtsp://user1:HaikuPlot876@{bottom_camera_uri}:554/Streaming/Channels/103"
 
+    def draw_boxes(self, img, results):
+        """Draw boxes on detected objects (persons) in the returned tensor"""
+        for r in results:
+            boxes = r.boxes
+
+            for box in boxes:
+                # bounding box
+                x1, y1, x2, y2 = box.xyxy[0]
+                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # convert to int values
+                cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
+
+                # object details
+                org = (x1, y1)
+                font = cv2.FONT_HERSHEY_SIMPLEX
+                fontScale = 1
+                color = (255, 0, 0)
+                thickness = 2
+                cv2.putText(img, r.names[int(box.cls)], org, font, fontScale, color, thickness)
+
     def track_and_save_image(self, result):
         """Tracks objects in video stream and saves the latest image with annotations."""
-        full_annotated_image = result.plot(show=False, pil=False)
+        img = result.orig_img  # get the original image
+        self.draw_boxes(img, [result])  # draw the boxes on the image
         filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg")
-        cv2.imwrite(filename, full_annotated_image)
+        cv2.imwrite(filename, img)
         self.image_counter += 1
 
         # Manage saved images to keep only the latest 10
