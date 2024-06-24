@@ -36,7 +36,7 @@ class YoloInference:
         bottom_camera_uri = parse_option("camera.front.camera.ip", str, "192.168.1.64", [], **self.user_config_args)
         return f"rtsp://user1:HaikuPlot876@{bottom_camera_uri}:554/Streaming/Channels/103"
 
-    def draw_boxes(self, img, results):
+    def draw_boxes(self, img, results, followed_person_id=None):
         """Draw boxes on detected objects (persons) in the returned tensor"""
         for r in results:
             boxes = r.boxes
@@ -45,20 +45,36 @@ class YoloInference:
                 # bounding box
                 x1, y1, x2, y2 = box.xyxy[0]
                 x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # convert to int values
-                cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 3)
 
-                # object details
-                org = (x1, y1)
-                font = cv2.FONT_HERSHEY_SIMPLEX
-                fontScale = 1
-                color = (255, 0, 0)
+                # text and background
+                label = None
+                person_id = int(box.id[0]) if box.id is not None and len(box.id) > 0 and box.id[0] is not None else -1  # Ensure person_id is an int
+
+                if person_id == followed_person_id:
+                    label = "Followed"
+                else:
+                    label = "Not Followed"
+
+                font = cv2.FONT_HERSHEY_DUPLEX
+                font_scale = 1
                 thickness = 2
-                cv2.putText(img, r.names[int(box.cls)], org, font, fontScale, color, thickness)
+                text_size = cv2.getTextSize(label, font, font_scale, thickness)[0]
+                text_x, text_y = x1, y1
+                text_w, text_h = text_size[0], text_size[1]
 
-    def track_and_save_image(self, result):
+                # background rectangle for text
+                cv2.rectangle(img, (text_x, text_y - text_h), (text_x + text_w, text_y), (255, 0, 255), -1)
+
+                # text on the background
+                cv2.putText(img, label, (text_x, text_y - 2), font, font_scale, (255, 255, 255), thickness)
+
+                # put bounding box in the image
+                cv2.rectangle(img, (x1, y1), (x2, y2), (255, 0, 255), 2)
+
+    def track_and_save_image(self, result, followed_person_id):
         """Tracks objects in video stream and saves the latest image with annotations."""
         img = result.orig_img  # get the original image
-        self.draw_boxes(img, [result])  # draw the boxes on the image
+        self.draw_boxes(img, [result], followed_person_id)  # pass the followed person ID
         filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg")
         cv2.imwrite(filename, img)
         self.image_counter += 1
@@ -86,9 +102,9 @@ class CommandController:
         self.current_camera_pan = 0
         self.current_azimuth = 0
         self.person_height = 0
+        self.followed_person_id = None
         self.publisher = JSONPublisher(url="ipc:///byodr/following.sock", topic="aav/following/controls")
         self.calibration_flag = False
-
         self.get_fol_configs()
 
     def get_fol_configs(self):
