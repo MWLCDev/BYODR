@@ -36,15 +36,16 @@ class YoloInference:
         bottom_camera_uri = parse_option("camera.front.camera.ip", str, "192.168.1.64", [], **self.user_config_args)
         return f"rtsp://user1:HaikuPlot876@{bottom_camera_uri}:554/Streaming/Channels/103"
 
-    def draw_boxes(self, img, results, followed_person_id=None):
+    def draw_boxes(self, img, results, followed_person_id=None, width=None, height=None):
         """Draw boxes on detected objects (persons) in the returned tensor"""
         for r in results:
             boxes = r.boxes
 
             for box in boxes:
-                # bounding box
-                x1, y1, x2, y2 = box.xyxy[0]
-                x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)  # convert to int values
+                # normalized bounding box
+                x1n, y1n, x2n, y2n = box.xyxyn[0]
+                # scale to image size
+                x1, y1, x2, y2 = int(x1n * width), int(y1n * height), int(x2n * width), int(y2n * height)
 
                 # text and background
                 label = None
@@ -74,7 +75,9 @@ class YoloInference:
     def track_and_save_image(self, result, followed_person_id):
         """Tracks objects in video stream and saves the latest image with annotations."""
         img = result.orig_img  # get the original image
-        self.draw_boxes(img, [result], followed_person_id)  # pass the followed person ID
+        img_height, img_width = result.orig_shape
+        # img = cv2.resize(img, (width, height))  # Resize the image to decrease the bandwidth on mobile controller 
+        self.draw_boxes(img, [result], followed_person_id, width=img_width, height=img_height)  # pass the followed person ID and new dimensions
         filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg")
         cv2.imwrite(filename, img)
         self.image_counter += 1
