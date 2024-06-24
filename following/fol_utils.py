@@ -109,29 +109,26 @@ class CommandController:
 
     def get_fol_configs(self):
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
-        self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
-        self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
+        self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)  # In percentage
+        self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)  # In percentage
         self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3550
         self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 50, [], **self.user_config_args)
-        self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
+        self.unsafe_height = parse_option("following.unsafe_height", float, 0.75, [], **self.user_config_args)  # In percentage
 
         self.original_left_red_zone = self.left_red_zone
         self.original_right_red_zone = self.right_red_zone
 
     def update_control_commands(self, persons):
         """Updates camera pan, steering, and throttle based on the operator's position on the screen."""
-        # Initialize variables to find the person with the lowest ID
         lowest_id = float("inf")
         person_to_follow = None
 
         try:
             # Iterate through each person detected
             for person in persons:
-                self.person_height = person.xywh[0][3]
-
+                self.person_height = person.xywhn[0][3]
                 # Check if person is too close to the camera
-                if self.person_height >= self.start_height:
-                    # If any person is too close, do not send any commands
+                if self.person_height >= self.unsafe_height:
                     self.current_throttle = 0
                     self.current_steering = 0
                     self.current_camera_pan = 0
