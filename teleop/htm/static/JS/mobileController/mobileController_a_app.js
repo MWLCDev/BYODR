@@ -5,8 +5,7 @@ import { cursorFollowingDot } from './mobileController_b_shape_dot.js';
 import { MotorDataInput } from './mobileController_e_scale_offset_input.js';
 import { ToggleButtonHandler } from './mobileController_b_shape_confidence.js';
 import { followingButtonHandler } from './mobileController_b_following.js';
-
-import { app, changeTrianglesColor, redraw } from './mobileController_d_pixi.js';
+import { app, changeTrianglesColor, redraw, removeTriangles } from './mobileController_d_pixi.js';
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
 // Initialize sending commands only once, instead of calling it each time we touch the triangles
@@ -26,6 +25,7 @@ window.addEventListener('load', () => {
 	deadZoneText.textContent = getSavedDeadZoneWidth() * 2;
 });
 
+// This function should be moved to e_scale file. Will be done in a different branch
 // Dead zone width slider input event listener
 document.getElementById('deadZoneWidth').addEventListener('input', function () {
 	let value = this.value;
@@ -46,9 +46,10 @@ window.addEventListener('resize', () => {
 });
 
 app.view.addEventListener('touchstart', (event) => {
+	console.log(followingButtonHandler.getFollowingState);
 	CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
 	detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
-	//if condition to make sure it will move only if the user clicks inside one of the two triangles
+	//Make sure it will move only if the user clicks inside one of the two triangles
 	if (CTRL_STAT.detectedTriangle !== 'none') {
 		switch (CTRL_STAT.stateErrors) {
 			case 'controlError':
@@ -58,13 +59,15 @@ app.view.addEventListener('touchstart', (event) => {
 				console.error('Connection lost with the robot. Please reconnect');
 				break;
 			default:
-				if (followingButtonHandler.toggleButton.innerText === 'Stop Following') {
-					followingButtonHandler.sendSwitchFollowingRequest('stop_following');
-				}
 				document.getElementById('mobile-controller-top-input-container').style.display = 'none';
 				document.getElementById('mobile-controller-bottom-input-container').style.display = 'none';
-				startOperating(event);
-				app.view.addEventListener('touchmove', onTouchMove);
+				if (followingButtonHandler.getFollowingState == 'active') {
+					removeTriangles();
+				} else {
+					console.log("won't move");
+					startOperating(event);
+					app.view.addEventListener('touchmove', onTouchMove);
+				}
 				break;
 		}
 	} else {
@@ -73,6 +76,7 @@ app.view.addEventListener('touchstart', (event) => {
 });
 
 function startOperating(event) {
+	console.log('1');
 	// Hide the button when triangles are pressed
 	followingButtonHandler.setStyle('display', 'none');
 	cursorFollowingDot.show();
@@ -93,6 +97,8 @@ function onTouchMove(event) {
 }
 
 app.view.addEventListener('touchend', () => {
+	// it should keep hiding the triangles if the fol is still working
+
 	//So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
 	if (CTRL_STAT.detectedTriangle !== 'none') {
 		if (inferenceToggleButton.getInferenceState != 'true') {
@@ -100,6 +106,12 @@ app.view.addEventListener('touchend', () => {
 			document.getElementById('mobile-controller-bottom-input-container').style.display = 'flex';
 
 			redraw(); // Reset triangles to their original position
+			if (followingButtonHandler.getFollowingState === 'active') {
+				removeTriangles();
+				document.getElementById('mobile-controller-top-input-container').style.display = 'none';
+				document.getElementById('inference_toggle_button').style.display = 'none';
+				document.getElementById('confidenceToggleButton').style.display = 'none';
+			}
 
 			CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
 			app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU

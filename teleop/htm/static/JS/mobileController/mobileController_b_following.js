@@ -97,6 +97,8 @@ class ToggleButtonHandler {
 			this.toggleButton.innerText = 'Start Following';
 			this.toggleButton.style.backgroundColor = '#67b96a';
 		} else if (this._followingState == 'loading') {
+			this.hideCanvas();
+			controlInputControllerVisibility('flex');
 			this.toggleButton.innerText = 'Loading...';
 			this.toggleButton.style.backgroundColor = '#ffa500';
 		}
