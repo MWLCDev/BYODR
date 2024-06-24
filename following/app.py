@@ -14,9 +14,8 @@ logger = logging.getLogger(__name__)
 
 log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
 
-
-signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
-signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
+# Initialize quit event
+quit_event = multiprocessing.Event()
 
 
 def _interrupt():
@@ -24,7 +23,8 @@ def _interrupt():
     quit_event.set()
 
 
-quit_event = multiprocessing.Event()
+signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
+signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 
 
 class FollowingApplication(Application):
@@ -33,7 +33,7 @@ class FollowingApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self.controller = FollowingController(model_path="yolov8n.engine", user_config_args=self.get_user_config_file_contents())
+        self.controller = FollowingController(model_path="yolov8n.engine", user_config_args=self.get_user_config_file_contents(), event=quit_event)
 
     def _check_user_config(self):
         """See if there is an available user config file, and assign it to the self var"""
@@ -78,7 +78,7 @@ def main():
     application = FollowingApplication(event=quit_event, config_dir=args.config, hz=20)
 
     # Getting data from the received sockets declared above
-    application.controller.teleop_chatter = lambda: teleop_cha.get()    
+    application.controller.teleop_chatter = lambda: teleop_cha.get()
     application.controller.initialize_following()
     application.setup()
     threads = [teleop_cha]
@@ -91,6 +91,9 @@ def main():
     try:
         application.run()
     except KeyboardInterrupt:
+        quit_event.set()
+    except Exception as e:
+        logger.error(f"Exception occurred: {e}")
         quit_event.set()
 
     logger.info("Waiting on threads to stop.")

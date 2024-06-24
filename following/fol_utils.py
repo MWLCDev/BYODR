@@ -2,6 +2,7 @@ import logging
 import os
 import threading
 import time
+import multiprocessing
 
 import cv2
 from byodr.utils.ipc import JSONPublisher
@@ -9,6 +10,7 @@ from byodr.utils.option import parse_option
 from ultralytics import YOLO
 
 logger = logging.getLogger(__name__)
+quit_event = multiprocessing.Event()
 
 
 class YoloInference:
@@ -221,10 +223,11 @@ class CommandController:
 class FollowingController:
     """Coordinates between `YoloInference` and `CommandController`."""
 
-    def __init__(self, model_path, user_config_args):
+    def __init__(self, model_path, user_config_args, event):
         self.yolo_inference = YoloInference(model_path, user_config_args)
         self.command_controller = CommandController(user_config_args)
         self.run_yolo_inf = None
+        self.quit_event = event
         self.stop_threads = False
         self.stop_yolo = threading.Event()
         self.fol_state = "loading"
@@ -252,6 +255,7 @@ class FollowingController:
             self._publish_current_state()
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
+            quit_event.set()
 
     def _start_following(self):
         """Start the following process."""
@@ -289,7 +293,7 @@ class FollowingController:
 
     def _control_logic(self, stop):
         """Processes each frame of YOLO output."""
-        for r in self.yolo_inference.results:
+        try:
             if stop():
                 logger.info("YOLO model stopped")
                 self.fol_state = "inactive"
@@ -297,6 +301,9 @@ class FollowingController:
                 break
             self.yolo_inference.track_and_save_image(r)
             self._update_control_commands(r.boxes.cpu().numpy())
+        except Exception as e:
+            logger.error(f"Exception in _control_logic: {e}")
+            self.quit_event.set()
 
     def _update_control_commands(self, boxes):
         """Update control commands based on detected boxes."""
