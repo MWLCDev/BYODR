@@ -104,35 +104,45 @@ class CommandController:
 
     def update_control_commands(self, persons):
         """Updates camera pan, steering, and throttle based on the operator's position on the screen."""
-        command_to_send = None  # To store the command of the person with the lowest ID
+        # Initialize variables to find the person with the lowest ID
+        lowest_id = float("inf")
+        person_to_follow = None
 
-        for person in persons:
-            try:
+        try:
+            # Iterate through each person detected
+            for person in persons:
                 self.person_height = person.xywh[0][3]
-                # The horizontal position of the (detected person's bounding box center) within the frame
-                x_center_percentage = person.xywhn[0][0]
 
-                if self.person_height <= self.start_height:
-                    # If any person is too close, the vehicle should not move
-                    self.reset_control_commands()
-                    return
+                # Check if person is too close to the camera
+                if self.person_height >= self.start_height:
+                    # If any person is too close, do not send any commands
+                    self.current_throttle = 0
+                    self.current_steering = 0
+                    self.current_camera_pan = 0
+                    return  # Exit the loop early
 
-                if person.id < command_to_send.get("id", float("inf")):
-                    command_to_send = {"id": person.id, "x_center_percentage": x_center_percentage, "height": self.person_height}
+                # Update the person to follow based on the lowest ID
+                person_id = int(person.id[0])
+                if person_id < lowest_id:
+                    lowest_id = person_id
+                    person_to_follow = person
 
-            except Exception as e:
-                logger.warning(f"Exception updating control commands: {e}")
+            # If no person was too close, proceed with updating the commands
+            if person_to_follow:
+                x_center_percentage = person_to_follow.xywhn[0][0]
+                self.followed_person_id = int(person_to_follow.id[0])
+                self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
+                self.current_steering = self.calculate_steering(x_center_percentage)
+                self.current_throttle = self.calculate_throttle()
 
-        if command_to_send:
-            self.current_camera_pan = int(self.calculate_camera_pan(command_to_send["x_center_percentage"]))
-            self.current_steering = self.calculate_steering(command_to_send["x_center_percentage"])
-            self.current_throttle = self.calculate_throttle()
+                # Check if calibration is needed
+                self.check_calibration_needed(x_center_percentage)
 
-            # Check if calibration is needed
-            self.check_calibration_needed(command_to_send["x_center_percentage"])
+                if self.calibration_flag:
+                    self.perform_calibration()
 
-            if self.calibration_flag:
-                self.perform_calibration()
+        except Exception as e:
+            logger.warning(f"Exception updating control commands: {e}")
 
     def check_calibration_needed(self, x_center_percentage):
         """Check if calibration is needed and raise the flag if necessary."""
