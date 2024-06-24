@@ -8,9 +8,7 @@ class ToggleButtonHandler {
 	 */
 	constructor(buttonId) {
 		this.toggleButton = document.getElementById(buttonId);
-		this.toggleButton.addEventListener('click', () => {
-			this.handleButtonClick();
-		});
+		this.toggleButton.addEventListener('click', () => this.handleConfidenceToggleButtonClick());
 		this.confidenceWS = {}; // Placeholder for WebSocket.
 		this.autoReconnectInterval = 9000;
 		this.initializeConfidenceWS();
@@ -54,6 +52,14 @@ class ToggleButtonHandler {
 		if (!this.confidenceWS.websocket || this.confidenceWS.websocket.readyState === WebSocket.CLOSED) {
 			this.initializeConfidenceWS();
 		}
+	}
+	/**
+	 * Handles button click events by sending appropriate commands based on the button's current state.
+	 */
+	handleConfidenceToggleButtonClick() {
+		// Determine the command based on the opposite of the current button text
+		let currentText = this.toggleButton.innerText;
+		this.sendSwitchFollowingRequest(currentText);
 	}
 
 	/**
