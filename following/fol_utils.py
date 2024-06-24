@@ -26,7 +26,8 @@ class YoloInference:
     def run(self):
         stream_uri = self.get_stream_uri()
         # track() method ensures that the tracker persists across frame
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, tracker="botsort.yaml")
+        # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, tracker="./botsort.yaml")
         logger.info("Yolo model is loaded")
 
     def get_stream_uri(self):
@@ -36,11 +37,11 @@ class YoloInference:
     def track_and_save_image(self, result):
         """Tracks objects in video stream and saves the latest image with annotations."""
         full_annotated_image = result.plot(show=False, pil=False)
-        full_annotated_image = cv2.cvtColor(full_annotated_image, cv2.COLOR_RGB2BGR)
         filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg")
         cv2.imwrite(filename, full_annotated_image)
         self.image_counter += 1
 
+        # Manage saved images to keep only the latest 10
         all_images = sorted(os.listdir(self.image_save_path), key=lambda x: os.path.getctime(os.path.join(self.image_save_path, x)))
         if len(all_images) > 10:
             oldest_image = all_images[0]
@@ -72,7 +73,7 @@ class CommandController:
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)
-        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3600
+        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3550
         self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 50, [], **self.user_config_args)
         self.start_height = parse_option("following.start_height", int, 340, [], **self.user_config_args)
 
@@ -81,25 +82,35 @@ class CommandController:
 
     def update_control_commands(self, persons):
         """Updates camera pan, steering, and throttle based on the operator's position on the screen."""
+        command_to_send = None  # To store the command of the person with the lowest ID
+
         for person in persons:
             try:
                 self.person_height = person.xywh[0][3]
                 # The horizontal position of the (detected person's bounding box center) within the frame
                 x_center_percentage = person.xywhn[0][0]
 
-                self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
-                self.current_steering = self.calculate_steering(x_center_percentage)
-                self.current_throttle = self.calculate_throttle()
+                if self.person_height <= self.start_height:
+                    # If any person is too close, the vehicle should not move
+                    self.reset_control_commands()
+                    return
 
-                # Check if calibration is needed
-                self.check_calibration_needed(x_center_percentage)
+                if person.id < command_to_send.get("id", float("inf")):
+                    command_to_send = {"id": person.id, "x_center_percentage": x_center_percentage, "height": self.person_height}
 
-                if self.calibration_flag:
-                    self.perform_calibration()
-
-                break  # Only process the first detected person
             except Exception as e:
                 logger.warning(f"Exception updating control commands: {e}")
+
+        if command_to_send:
+            self.current_camera_pan = int(self.calculate_camera_pan(command_to_send["x_center_percentage"]))
+            self.current_steering = self.calculate_steering(command_to_send["x_center_percentage"])
+            self.current_throttle = self.calculate_throttle()
+
+            # Check if calibration is needed
+            self.check_calibration_needed(command_to_send["x_center_percentage"])
+
+            if self.calibration_flag:
+                self.perform_calibration()
 
     def check_calibration_needed(self, x_center_percentage):
         """Check if calibration is needed and raise the flag if necessary."""
@@ -108,7 +119,7 @@ class CommandController:
         if (self.left_red_zone <= x_center_percentage <= self.right_red_zone) and (self.min_camera_pan_safe_zone <= self.current_azimuth <= self.max_camera_pan_safe_zone):
             self.calibration_flag = True
             self.left_red_zone /= 2
-            self.right_red_zone /= 2
+            self.right_red_zone = (self.right_red_zone // 2) + self.right_red_zone
         else:
             self.calibration_flag = False
             self.left_red_zone = self.original_left_red_zone

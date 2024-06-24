@@ -41,7 +41,7 @@ canvas {
 }
 
 .input-text {
-  width: 4ch; /* Fixed width to accommodate 3 characters */
+  width: 4ch; 
   margin-left: 15px;
   display: inline-block;
   overflow: hidden;
