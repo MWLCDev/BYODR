@@ -182,9 +182,7 @@ class CommandController:
         logger.info(f"S:{self.current_steering} C_P:{self.current_camera_pan}")
 
     def calculate_throttle(self):
-        if self.person_height <= self.start_height:
-            return max(0.2, min(1, ((-(0.01) * self.person_height) + 3.6)))  # 0.2 at 340p height; 1 at 260p height
-        return 0
+        return max(0.2, min(1, ((-(0.01) * self.person_height) + 3.6)))  # 0.2 at 340p height; 1 at 260p height
 
     def calculate_camera_pan(self, x_center_percentage):
         if x_center_percentage < self.left_red_zone:
