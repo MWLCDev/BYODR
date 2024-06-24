@@ -3,6 +3,9 @@ import { redraw, removeTriangles } from './mobileController_d_pixi.js';
 class ToggleButtonHandler {
   constructor(buttonId) {
     this.toggleButton = document.getElementById(buttonId);
+    this.topInputDiv = document.getElementById("mobile-controller-top-input-container")
+    this.inferenceToggleBtn = document.getElementById("inference_toggle_button")
+    this.confidenceToggleBtn = document.getElementById("confidenceToggleButton")
     this.canvas = document.getElementById("following_imageCanvas");
     this.ctx = this.canvas.getContext('2d');
     this._followingState = undefined;
@@ -59,6 +62,11 @@ class ToggleButtonHandler {
     }, 500);
   }
 
+  controlInputControllerVisibility(command) {
+    this.topInputDiv.style.display = command;
+    this.inferenceToggleBtn.style.display = command;
+    this.confidenceToggleBtn.style.display = command;
+  }
 
   assignFollowingState(backendCommand) {
     // console.log(backendCommand, this._followingState)
@@ -82,11 +90,13 @@ class ToggleButtonHandler {
     if (this._followingState == "active") {
       removeTriangles();
       this.showCanvas();
+      this.controlInputControllerVisibility("none")
       this.toggleButton.innerText = "Stop Following";
       this.toggleButton.style.backgroundColor = "#ff6347";
     } else if (this._followingState == "inactive") {
       redraw(undefined, true, true, true);
       this.hideCanvas();
+      this.controlInputControllerVisibility("flex")
       this.toggleButton.innerText = "Start Following";
       this.toggleButton.style.backgroundColor = "#67b96a";
     } else if (this._followingState == "loading") {
