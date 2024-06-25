@@ -41,7 +41,7 @@ canvas {
 }
 
 .input-text {
-  width: 4ch; 
+  width: 5ch; 
   margin-left: 15px;
   display: inline-block;
   overflow: hidden;
