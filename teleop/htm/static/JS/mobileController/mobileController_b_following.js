@@ -9,6 +9,8 @@ class ToggleButtonHandler {
 		this.confidenceToggleBtn = document.getElementById('confidenceToggleButton');
 		this.canvas = document.getElementById('following_imageCanvas');
 		this.ctx = this.canvas.getContext('2d');
+		this.errorLogged = false; // Add this line to initialize the error flag
+
 		this.initialSetup();
 		this.startPolling();
 	}
@@ -28,7 +30,6 @@ class ToggleButtonHandler {
 	}
 
 	sendSwitchFollowingRequest(command) {
-    console.log(command)
 		fetch('/switch_following', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -52,8 +53,14 @@ class ToggleButtonHandler {
 					if (previousState !== CTRL_STAT.followingState) {
 						this.toggleButtonAppearance();
 					}
+					this.errorLogged = false; // Reset the error flag if request is successful
 				})
-				.catch((error) => console.error('Error polling backend:', error));
+				.catch((error) => {
+					if (!this.errorLogged) {
+						console.error('Error polling backend:', error);
+						this.errorLogged = true; // Set the error flag
+					}
+				});
 		}, 500);
 	}
 
