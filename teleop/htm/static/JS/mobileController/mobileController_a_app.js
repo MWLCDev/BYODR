@@ -30,7 +30,6 @@ window.addEventListener('load', () => {
 document.getElementById('deadZoneWidth').addEventListener('input', function () {
 	let value = this.value;
 	deadZoneText.textContent = value * 2;
-	console.log(value);
 	// Save the new dead zone width to local storage after handling the dot move
 	saveDeadZoneWidth(value);
 });
@@ -46,7 +45,6 @@ window.addEventListener('resize', () => {
 });
 
 app.view.addEventListener('touchstart', (event) => {
-	console.log(CTRL_STAT.followingState);
 	CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
 	detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
 	//Make sure it will move only if the user clicks inside one of the two triangles
@@ -64,7 +62,6 @@ app.view.addEventListener('touchstart', (event) => {
 				if (CTRL_STAT.followingState == 'active') {
 					removeTriangles();
 				} else {
-					console.log("won't move");
 					startOperating(event);
 					app.view.addEventListener('touchmove', onTouchMove);
 				}
@@ -76,7 +73,6 @@ app.view.addEventListener('touchstart', (event) => {
 });
 
 function startOperating(event) {
-	console.log('1');
 	// Hide the button when triangles are pressed
 	followingButtonHandler.setStyle('display', 'none');
 	cursorFollowingDot.show();

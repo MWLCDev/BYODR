@@ -1,6 +1,6 @@
+import { followingButtonHandler } from './mobileController_b_following.js';
 import { cursorFollowingDot } from './mobileController_b_shape_dot.js';
 import { bottomTriangle, topTriangle } from './mobileController_b_shape_triangle.js';
-
 import { drawBottomTriangle_TopRectangle, drawTopTriangle_BottomRectangle, redraw } from './mobileController_d_pixi.js';
 import CTRL_STAT from './mobileController_z_state.js';
 
@@ -213,6 +213,7 @@ function handleTriangleMove(y, inferenceToggleButton) {
 	}
 
 	let INFState = inferenceToggleButton.getInferenceState;
+	// let FOLState =
 	if (INFState == 'auto') {
 		inferenceToggleButton.handleSpeedControl(CTRL_STAT.selectedTriangle);
 	} else if (INFState == 'train') {

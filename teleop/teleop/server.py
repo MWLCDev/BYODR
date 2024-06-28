@@ -130,7 +130,7 @@ class FollowingHandler(web.RequestHandler):
     def post(self):
         # Extract command as a string
         command_text = self.get_body_argument("command", default=None)
-        
+
         end_time = timestamp() + 1e5
         while timestamp() < end_time:
             command_dict = {"following": command_text}
@@ -139,6 +139,7 @@ class FollowingHandler(web.RequestHandler):
 
         self.send_state()
 
+
 class FollowingStatusHandler(web.RequestHandler):
     def initialize(self, **kwargs):
         self._fn_control = kwargs.get("fn_control")
@@ -146,6 +147,7 @@ class FollowingStatusHandler(web.RequestHandler):
     def get(self):
         following_status = self._fn_control.get_following_state()
         self.write({"status": "success", "following_status": following_status})
+
 
 class ControlServerSocket(websocket.WebSocketHandler):
     # There can be only one operator in control at any time.
@@ -208,9 +210,8 @@ class ConfidenceHandler(websocket.WebSocketHandler):
 
     def open(self):
         self.start_time = time.clock()
-        logger.info("Confidence websocket connection opened.")
+        # logger.info("Confidence websocket connection opened.")
         self.runner = OverviewConfidence(self.inference, self.vehicle)
-        self.write_message("Connection established.")
 
     def send_loading_message(self):
         self.write_message("loading")
