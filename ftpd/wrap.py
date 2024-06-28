@@ -15,9 +15,19 @@ _MAIN_COMMAND = ["/usr/sbin/pure-ftpd", "-P", "localhost", "-p", "30000:30009", 
 def main():
     pw_file = os.path.join(os.path.sep, "etc", "pureftpd", "pureftpd.passwd")
     if not os.path.exists(pw_file):
-        subprocess.call(["/app/create_user.sh"])
-        logger.info("Created the default ftp user.")
-    subprocess.call(_MAIN_COMMAND)
+        try:
+            subprocess.check_call(["/app/create_user.sh"])
+            logger.info("Created the default ftp user.")
+        except subprocess.CalledProcessError as e:
+            logger.error("Failed to create user: {}".format(e))
+        except PermissionError as e:
+            logger.error("Permission denied: {}".format(e))
+    try:
+        subprocess.check_call(_MAIN_COMMAND)
+    except subprocess.CalledProcessError as e:
+        logger.error("Failed to start FTP service: {}".format(e))
+    except PermissionError as e:
+        logger.error("Permission denied: {}".format(e))
 
 
 if __name__ == "__main__":
