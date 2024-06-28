@@ -221,10 +221,9 @@ class ThrottleController:
     def teleop_publish(self, cmd):
         # We are the authority on route state.
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
+        logger.info(cmd)
         self.teleop_publisher.publish(cmd)
 
-    def update_following_state(self, state):
-        self.following_state = state
 
 
 class EndpointHandlers:

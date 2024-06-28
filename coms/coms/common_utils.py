@@ -11,15 +11,13 @@ common_queue = Queue(maxsize=1)
 
 
 class ComsApplication(Application):
-    def __init__(self, event, config_dir=os.getcwd()):
+    def __init__(self, event, config_dir=os.getcwd(), hz=20):
         """set up configuration directory and a configuration file path
 
         Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
-
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. This directory is where the application expects to find its .ini configuration files.
+            event: allow for thread-safe signaling between processes or threads.
         """
-        super(ComsApplication, self).__init__(quit_event=event)
+        super(ComsApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._config_hash = -1
         self._robot_config_file = None
@@ -120,7 +118,6 @@ class SocketManager:
 
 class TeleopChatter:
     """Resolve the data incoming from Teleop chatter socket"""
-
     def __init__(self, _robot_config_dir, _segment_config_dir):
         self.robot_config_dir = _robot_config_dir
         self.seg_config_dir = _segment_config_dir

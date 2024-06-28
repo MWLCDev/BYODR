@@ -33,13 +33,13 @@ def main():
     args = parser.parse_args()
 
     application = ComsApplication(event=quit_event, config_dir=args.config)
-    application.setup()
     tel_chatter = TeleopChatter(application.get_robot_config_file(), application.get_user_config_file())
     socket_manager = SocketManager(tel_chatter, quit_event=quit_event)
 
     # Starting the functions that will allow the client and server of each segment to start sending and receiving data
     communication_thread = threading.Thread(target=start_communication, args=(socket_manager, application.get_robot_config_file()))
 
+    application.setup()
     socket_manager.start_threads()
 
     # Starting the threads of Coms
