@@ -73,7 +73,7 @@ class AbstractDriver(ABC):
         raise NotImplementedError()
 
     @abstractmethod
-    def drive(self, steering, throttle):
+    def drive(self, steering, throttle, spin):
         raise NotImplementedError()
 
     @abstractmethod
@@ -104,7 +104,7 @@ class NoopDriver(AbstractDriver):
     def velocity(self):
         return 0
 
-    def drive(self, steering, throttle):
+    def drive(self, steering, throttle, spin):
         return 0
 
     def quit(self):
@@ -200,7 +200,7 @@ class GPIODriver(AbstractSteerServoDriver):
     def velocity(self):
         raise NotImplementedError()
 
-    def drive(self, steering, throttle):
+    def drive(self, steering, throttle, spin):
         self._apply_steering(steering)
         _motor_effort = 0
         if self._motor_servo is not None:
@@ -263,7 +263,7 @@ class SingularVescDriver(AbstractSteerServoDriver):
             logger.warning(e)
             return 0
 
-    def drive(self, steering, throttle):
+    def drive(self, steering, throttle, spin):
         _motor_effort = self._throttle_config.get("scale") * throttle
         _operational = self._drive.set_effort(_motor_effort)
         if _operational:
@@ -345,7 +345,7 @@ class DualVescDriver(AbstractDriver):
             logger.warning(e)
             return 0
 
-    def drive(self, steering, throttle):
+    def drive(self, steering, throttle, spin):
         _motor_scale = self._throttle_config.get("scale")
         # Scale down throttle for one wheel, the other retains its value.
         steering = min(1.0, max(-1.0, steering + self._steering_offset))
@@ -355,8 +355,15 @@ class DualVescDriver(AbstractDriver):
         right = throttle if steering < 0 else throttle * effect
         a = (right if self._axes_ordered else left) * self._axis0_multiplier * _motor_scale
         b = (left if self._axes_ordered else right) * self._axis1_multiplier * _motor_scale
-        self._drive1.set_effort(a)
-        self._drive2.set_effort(b)
+        if spin == 1 and abs(steering) <= 1e-9:
+            self._drive1.set_effort(-a)
+            self._drive2.set_effort(b)
+        elif spin == -1 and abs(steering) <= 1e-9:
+            self._drive1.set_effort(a)
+            self._drive2.set_effort(-b)
+        else:
+            self._drive1.set_effort(a)
+            self._drive2.set_effort(b)
         return np.mean([a, b])
 
     def quit(self):
@@ -487,6 +494,7 @@ class MainApplication(Application):
         v_steering = 0 if c_drive is None else c_drive.get("steering", 0)
         v_throttle = 0 if c_drive is None else c_drive.get("throttle", 0)
         v_wakeup = False if c_drive is None else bool(c_drive.get("wakeup"))
+        v_spin = None if c_drive is None else c_drive.get("spin", None)
 
         self._cmd_history.touch(steering=v_steering, throttle=v_throttle, wakeup=v_wakeup)
         if self._cmd_history.is_missing():
@@ -496,7 +504,7 @@ class MainApplication(Application):
 
         # Immediately zero out throttle when violations start occurring.
         v_throttle = 0 if n_violations > 0 else v_throttle
-        _effort = self._chassis.drive(v_steering, v_throttle)
+        _effort = self._chassis.drive(v_steering, v_throttle, v_spin)
         _data = dict(time=timestamp(), configured=int(self._chassis.is_configured()), motor_effort=_effort)
         if self._chassis.has_sensors():
             _data.update(dict(velocity=self._chassis.velocity()))

@@ -38,6 +38,12 @@ logger = logging.getLogger(__name__)
 
 
 class JSONPublisher(object):
+    """
+    Attributes:
+        hwm (int): The high-water mark (queue size) for the publisher socket.
+        clean_start (bool): If True, removes existing IPC socket file before binding.
+    """
+
     def __init__(self, url, topic="", hwm=1, clean_start=True):
         if clean_start and url.startswith("ipc://") and os.path.exists(url[6:]):
             os.remove(url[6:])
@@ -48,6 +54,7 @@ class JSONPublisher(object):
         self._topic = topic
 
     def publish(self, data, topic=None):
+        """Removes any key-value pair where the value is `None`"""
         _topic = self._topic if topic is None else topic
         if data is not None:
             data = dict((k, v) for k, v in data.items() if v is not None)
@@ -79,6 +86,11 @@ class ImagePublisher(object):
 
 class JSONReceiver(object):
     def __init__(self, url, topic=b"", hwm=1, receive_timeout_ms=2, pop=False):
+        """
+        Args:
+            receive_timeout_ms (int): The timeout for receiving messages (optional, default is 2 ms).
+            pop (bool): If True, clears the queue after a message is retrieved (optional, default is False).
+        """
         subscriber = zmq.Context().socket(zmq.SUB)
         subscriber.set_hwm(hwm)
         subscriber.setsockopt(zmq.RCVTIMEO, receive_timeout_ms)
@@ -100,12 +112,20 @@ class JSONReceiver(object):
                 pass
 
     def get(self):
+        """
+        Retrieves the latest message or the entire queue.
+
+        Returns:
+            The latest message if `hwm` is 1, otherwise the entire queue.
+            Clears the queue if `pop` is True.
+        """
         _view = self._queue[0] if (self._queue and self._unpack) else list(self._queue) if self._queue else None
         if self._pop:
             self._queue.clear()
         return _view
 
     def peek(self):
+        """Peeks at the latest message without removing it from the queue."""
         return self._queue[0] if self._queue else None
 
 
@@ -129,6 +149,12 @@ class CollectorThread(threading.Thread):
         self._quit_event.set()
 
     def run(self):
+        """
+         Continuously consumes messages from all receivers.
+
+        This method runs in a loop until the quit event is set, consuming messages
+        from all receivers and sleeping for a specified duration between polls.
+        """
         while not self._quit_event.is_set():
             # Empty the receiver queues to not block upstream senders.
             list(map(lambda receiver: receiver.consume(), self._receivers))

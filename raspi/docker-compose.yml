@@ -9,7 +9,7 @@ services:
     privileged: true
     user: root
     restart: always
-    network_mode: "host"
+    network_mode: 'host'
     command: bash -c "/bin/rm -rf /var/run/pigpio.pid && /pigpio/pigpiod -gl"
   zerotier:
     image: zyclonite/zerotier:1.6.6
@@ -35,14 +35,14 @@ services:
     user: root
     restart: always
     depends_on:
-      - "pigpiod"
-    network_mode: "host"
+      - 'pigpiod'
+    network_mode: 'host'
     command: bash -c "modprobe i2c-dev && python3 -m ras.servos --config /config/driver.ini"
     environment:
       GPIOZERO_PIN_FACTORY: 'pigpio'
     volumes:
-
       - volume_local_config:/config:rw
+  #Bottom camera
   stream0:
     build:
       context: .
@@ -50,11 +50,12 @@ services:
     privileged: true
     user: root
     restart: always
-    network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9101", "--config", "/config/camera0.ini"]
+    network_mode: 'host'
+    command: ['python3', '-m', 'stream.camera', '--port', '9101', '--config', '/config/camera0.ini', '--ip-ending', '64']
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
+  #Upper camera
   stream1:
     build:
       context: .
@@ -62,9 +63,8 @@ services:
     privileged: true
     user: root
     restart: always
-    network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9102", "--config", "/config/camera1.ini"]
+    network_mode: 'host'
+    command: ['python3', '-m', 'stream.camera', '--port', '9102', '--config', '/config/camera1.ini', '--ip-ending', '65']
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
-

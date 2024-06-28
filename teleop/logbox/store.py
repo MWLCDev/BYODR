@@ -153,7 +153,13 @@ image-shape-hwc: "{image_shape}"
                 timestamp = event.timestamp
                 steering = float(event.steering)
                 desired_speed = float(event.desired_speed)
-                heading = float(event.heading)
+                
+                # Handle possible non-numeric 'heading' value
+                try:
+                    heading = float(event.heading)
+                except ValueError:
+                    heading = 0.0  # Default to 0.0 or another appropriate fallback value
+
                 throttle = float(event.throttle)
                 steer_src = event.steer_src
                 filename = "{}__st{:+2.2f}__th{:+2.2f}__dsp{:+2.1f}__he{:+2.2f}__{}.jpg".format(str(timestamp), steering, throttle, desired_speed, heading, str(steer_src))
