@@ -475,3 +475,63 @@ class JSONNavigationHandler(JSONRequestHandler):
         elif action in ("close", "toggle"):
             self._store.close()
         self.write(json.dumps(dict(message="ok")))
+
+
+class RunGetSSIDPython(tornado.web.RequestHandler):
+    """Run a python script to get the SSID of current robot"""
+
+    async def get(self):
+        try:
+            # Use the IOLoop to run fetch_ssid in a thread
+            loop = tornado.ioloop.IOLoop.current()
+
+            config = configparser.ConfigParser()
+            config.read("/config/config.ini")
+            front_camera_ip = config["camera"]["front.camera.ip"]
+            parts = front_camera_ip.split(".")
+            network_prefix = ".".join(parts[:3])
+            router_IP = f"{network_prefix}.1"
+            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
+            ssid = await loop.run_in_executor(None, fetch_ssid, router_IP, 22, "root", "Modem001", "uci get wireless.@wifi-iface[0].ssid")
+
+            logger.info(f"SSID of current robot: {ssid}")
+            self.write(ssid)
+        except Exception as e:
+            logger.error(f"Error fetching SSID of current robot: {e}")
+            self.set_status(500)
+            self.write("Error fetching SSID of current robot.")
+        self.finish()
+
+
+class DirectingUser(tornado.web.RequestHandler):
+    """Directing the user based on their used device"""
+
+    def get(self):
+        user_agent_str = self.request.headers.get("User-Agent")
+        user_agent = user_agents.parse(user_agent_str)
+
+        if user_agent.is_mobile:
+            # if user is on mobile, redirect to the mobile page
+            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
+            self.redirect("/mc")
+        else:
+            # else redirect to normal control page
+            self.redirect("/nc")
+
+
+class TemplateRenderer(tornado.web.RequestHandler):
+    # Any static routes should be added here
+    _TEMPLATES = {"nc": "index.html", "user_menu": "user_menu.html", "mc": "mobile_controller_ui.html"}
+
+    def initialize(self, page_name="nc"):
+        self.page_name = page_name
+
+    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
+        if page_name is None:
+            page_name = self.page_name
+        template_name = self._TEMPLATES.get(page_name)
+        if template_name:
+            self.render(f"../htm/templates/{template_name}")
+        else:
+            self.set_status(404)
+            self.write("Page not found.")

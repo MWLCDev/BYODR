@@ -39,7 +39,7 @@ from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedUser, SharedState
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
-from .tel_utils import (DirectingUser, EndpointHandlers, RunGetSSIDPython,
+from .tel_utils import EndpointHandlers, ThrottleController, EndpointHandlers
                         TemplateRenderer, ThrottleController)
 
 logger = logging.getLogger(__name__)
