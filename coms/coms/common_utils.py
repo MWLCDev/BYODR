@@ -1,15 +1,14 @@
 import configparser
 import glob
 import os
-import time
 from queue import Queue
 from byodr.utils import Application, hash_dict, timestamp
 from byodr.utils.ipc import JSONPublisher, json_collector
 from .robot_comm import *
 
 
-
 common_queue = Queue(maxsize=1)
+
 
 class ComsApplication(Application):
     def __init__(self, event, config_dir=os.getcwd()):
@@ -78,14 +77,9 @@ class SocketManager:
         self.teleop_receiver = json_collector(url="ipc:///byodr/teleop_to_coms.sock", topic=b"aav/teleop/input", event=quit_event)
         self.coms_to_pilot_publisher = JSONPublisher(url="ipc:///byodr/coms_to_pilot.sock", topic="aav/coms/input")
         self.pilot_receiver = json_collector(url="ipc:///byodr/pilot_to_coms.sock", topic=b"aav/pilot/watchdog", event=quit_event)
-        self.vehicle_receiver = json_collector(url='ipc:///byodr/velocity_to_coms.sock', topic=b'ras/drive/velocity', event=quit_event)
+        self.vehicle_receiver = json_collector(url="ipc:///byodr/velocity_to_coms.sock", topic=b"ras/drive/velocity", event=quit_event)
 
-
-        self.threads = [self.tel_chatter_socket, 
-                        self.teleop_receiver, 
-                        self.vehicle_receiver,  
-                        self.pilot_receiver, 
-                        ]
+        self.threads = [self.tel_chatter_socket, self.teleop_receiver, self.vehicle_receiver, self.pilot_receiver]
 
     def publish_to_pilot(self, message):
         # Method to publish a message using coms_to_pilot_publisher
@@ -109,7 +103,7 @@ class SocketManager:
     def get_velocity(self):
         # Method to get data from vehicle_receiver
         return self.vehicle_receiver.get()
-        
+
     def get_watchdog_status(self):
         # Method to get the watchdog status from pilot_receiver
         return self.pilot_receiver.get()

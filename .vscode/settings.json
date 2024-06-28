@@ -1,6 +1,7 @@
 {
     "cSpell.words": [
-        "teleop"
+      "Coms",
+      "teleop"
     ],
     "python.analysis.typeCheckingMode": "off",
     "liveServer.settings.port": 5501,

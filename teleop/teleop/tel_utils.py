@@ -1,5 +1,3 @@
-import concurrent.futures
-import configparser
 import glob
 import logging
 import os
@@ -7,15 +5,12 @@ import threading
 import time
 from datetime import datetime
 
-import cv2
 import folium
-import numpy as np
 import pandas as pd
-import tornado.ioloop
-import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 
-from .getSSID import fetch_ssid
+# needs to be installed on the router
+from pysnmp.hlapi import *
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +126,8 @@ class OverviewConfidence:
         m.save(file_path)
         with open(file_path, "r") as file:
             content = file.read()
-        offline_dep = self.use_local_files(content)  # Ensure this method is defined to handle local file dependencies
+            # Ensure this method is defined to handle local file dependencies
+        offline_dep = self.use_local_files(content)
 
         with open(file_path, "w") as file:
             file.write(offline_dep)

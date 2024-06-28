@@ -1,15 +1,15 @@
+import json
 import logging
-import paramiko, time, re, json
-from ipaddress import ip_address
-import paramiko
-import traceback
+import re
 import subprocess
+import time
+import traceback
+from ipaddress import ip_address
+
+import paramiko
 
 # Declaring the logger
-logging.basicConfig(
-    format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s",
-    datefmt="%Y%m%d:%H:%M:%S %p %Z",
-)
+logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
 logging.getLogger().setLevel(logging.INFO)
 logger = logging.getLogger(__name__)
 

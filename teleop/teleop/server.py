@@ -3,6 +3,7 @@
 from __future__ import absolute_import
 
 import collections
+import configparser
 import json
 import logging
 import os
@@ -13,13 +14,15 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+import tornado.ioloop
+import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
-from tornado.gen import coroutine
 
-from .tel_utils import *
+from .getSSID import fetch_ssid
+from .tel_utils import OverviewConfidence
 
 logger = logging.getLogger(__name__)
 
@@ -27,7 +30,6 @@ logger = logging.getLogger(__name__)
 import tornado.websocket
 
 latest_message = {}
-
 
 class MobileControllerCommands(tornado.websocket.WebSocketHandler):
     """Get the command from mobile controller"""
@@ -67,6 +69,7 @@ class MobileControllerCommands(tornado.websocket.WebSocketHandler):
                 _response = json.dumps(dict(control="operator"))
                 msg["time"] = timestamp()  # add timestamp to the sent command
                 self.throttle_controller(msg)
+                # print(msg)
             else:  # This block might not be needed if every user is always an operator
                 if msg.get("_operator") == "force":
                     self.operators.clear()
@@ -144,9 +147,8 @@ class ConfidenceHandler(websocket.WebSocketHandler):
 
     def open(self):
         self.start_time = time.clock()
-        logger.info("Confidence websocket connection opened.")
+        # logger.info("Confidence websocket connection opened.")
         self.runner = OverviewConfidence(self.inference, self.vehicle)
-        self.write_message("Connection established.")
 
     def send_loading_message(self):
         self.write_message("loading")
