@@ -33,7 +33,7 @@ class RasSpeedOdometer(object):
         self._motor_effort_speed_factor = speed_factor
         self._values = collections.deque(maxlen=1)
         self._receiver = None
-        self.velocity_to_coms = JSONPublisher(url='ipc:///byodr/velocity_to_coms.sock', topic='ras/drive/velocity')
+        self.velocity_to_coms = JSONPublisher(url="ipc:///byodr/velocity_to_coms.sock", topic="ras/drive/velocity")
         # Initialize the queue with the startup time.
         self._values.append((0, timestamp()))
 
@@ -49,8 +49,8 @@ class RasSpeedOdometer(object):
             value = float(msg.get("motor_effort")) * self._motor_effort_speed_factor
         # Checking if the message from the Pi includes velocity
         # logger.info("Sending data to Coms: {}".format(dict(velocity = value)))
-        
-        self.velocity_to_coms.publish({'velocity': value})
+
+        self.velocity_to_coms.publish({"velocity": value})
         self._values.append((value, timestamp()))
 
     def get(self):
@@ -218,24 +218,27 @@ class ConfigFiles:
         self.__set_parsers()
 
     def __set_parsers(self):
+        self.robot_config_dir = os.path.join(self._config_dir, "robot_config.ini")
         self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
+        self.robot_config_parser = SafeConfigParser()
         self.segment_config_parser = SafeConfigParser()
+        self.robot_config_parser.read(self.robot_config_dir)
         self.segment_config_parser.read(self.segment_config_dir)
 
     def check_configuration_files(self):
-        """Checks if configuration file for segment exist, if not, then create it from the template"""
+        """Checks if configuration file for segment and robot exist, if not, then create them from the template"""
         # FOR DEBUGGING
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         # print(_candidates)
-        required_files = ["config.ini"]
-        template_files = {"config.ini": "config.template"}
-        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/
+        required_files = ["config.ini", "robot_config.ini"]
+        template_files = {"config.ini": "config.template", "robot_config.ini": "robot_config.template"}
+        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/robot_config.ini
         for file in required_files:
             file_path = os.path.join(self._config_dir, file)
             if not os.path.exists(file_path):
                 template_file = template_files[file]
                 shutil.copyfile(template_file, file_path)
-                logger.info(f"Created {file} from template.")
+                logger.info("Created {} from template.".format(file))
 
             # Verify and add missing keys
             self._verify_and_add_missing_keys(file_path, template_files[file])
