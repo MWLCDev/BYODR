@@ -1,24 +1,16 @@
 import collections
 import logging
 import multiprocessing
+import os
 import queue
 import threading
 import time
-import subprocess
-import os
-import Queue
-import requests
-import glob
-from ConfigParser import SafeConfigParser
-from pymodbus.client.sync import ModbusTcpClient
-from pymodbus.constants import Endian
-from pymodbus.payload import BinaryPayloadDecoder
-from requests.auth import HTTPDigestAuth
 
+import requests
 from byodr.utils import Configurable
 from byodr.utils.option import parse_option
 from byodr.utils.video import create_image_source
-
+from configparser import ConfigParser as SafeConfigParser
 # Needs to be installed on the router
 from pysnmp.hlapi import *
 from requests.auth import HTTPDigestAuth

@@ -6,9 +6,6 @@ import os
 import re
 import shutil
 import subprocess
-import re
-
-from ConfigParser import SafeConfigParser
 
 from byodr.utils import Application, Configurable, PeriodicCallTrace, timestamp
 from byodr.utils.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
@@ -16,6 +13,7 @@ from byodr.utils.location import GeoTracker
 from byodr.utils.option import hash_dict, parse_option
 from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
+
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(lineno)d %(message)s"

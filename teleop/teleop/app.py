@@ -16,6 +16,7 @@ from byodr.utils import Application, ApplicationExit, hash_dict
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
+from byodr.utils.ssh import Router, Nano
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -53,33 +54,97 @@ def _load_nav_image(fname):
 
 
 class TeleopApplication(Application):
-    def __init__(self, event, config_dir=os.getcwd()):
-        """set up configuration directory and a configuration file path
+    """set up configuration directory and a configuration file path
 
-        Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
+    Args:
+        event: allow for thread-safe signaling between processes or threads.
+    """
 
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its .ini configuration files.
-        """
-        super(TeleopApplication, self).__init__(quit_event=event)
+    def __init__(self, event, hz, config_dir=os.getcwd()):
+        super(TeleopApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
-        self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self.rut_ip = None
-
-    def _check_user_config(self):
-        _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) > 0:
-            self._user_config_file = _candidates[0]
+        # Initialize variables to None
+        self._robot_config_file = None
+        self._user_config_file = None
+        self._router = Router()
+        self._nano = Nano()
 
     def _config(self):
         parser = SafeConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("teleop")) if parser.has_section("teleop") else {}
         return cfg
-    
-    def get_user_config_file(self):
+
+    def __check_configuration_files(self):
+        _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
+
+        for file_path in _candidates:
+            # Extract the filename from the path
+            file_name = os.path.basename(file_path)
+
+            if file_name == "robot_config.ini":
+                self._robot_config_file = file_path
+            elif file_name == "config.ini":
+                self._user_config_file = file_path
+
+        # Optional: Check if both files were found
+        if self._robot_config_file is None or self._user_config_file is None:
+            logger.info("Warning: Not all config files were found")
+
+    def get_user_config_dir(self):
         return self._user_config_file
+
+    def get_robot_config_dir(self):
+        return self._robot_config_file
+
+    def populate_robot_config(self):
+        """Add mac address, SSID, and IP for current robot in robot_config file"""
+        # It is done here because vehicle service doesn't support any communication with the router (low py version 2.7)
+        config = configparser.ConfigParser()
+        config.read(self._robot_config_file)
+
+        # Check how many segments are present
+        segments = [s for s in config.sections() if s.startswith("segment_")]
+        if len(segments) > 1:
+            logger.info("Part of robot. Nothing to do.")
+            return
+
+        if len(segments) == 1:
+            segment = segments[0]
+
+            # Fetch new values
+            new_values = {
+                "mac.address": self._router.fetch_router_mac(),
+                "wifi.name": self._router.fetch_ssid(),
+                "ip.number": self._nano.get_ip_address(),
+            }
+
+            updated = False
+            for key, new_value in new_values.items():
+                # Get current value
+                current_value = config.get(segment, key, fallback="")
+
+                if new_value != current_value:
+                    config[segment][key] = new_value
+                    logger.info(f"Changed value of {key} with {new_value}")
+                    updated = True
+
+            # Write the updated configuration back to the file if there were updates
+            if updated:
+                with open(self._robot_config_file, "w") as configfile:
+                    config.write(configfile)
+            else:
+                logger.info("No changes made to the robot configuration.")
+
+    def setup(self):
+        if self.active():
+            self.__check_configuration_files()
+            self.populate_robot_config()
+            _config = self._config()
+            _hash = hash_dict(**_config)
+            if _hash != self._config_hash:
+                self._config_hash = _hash
 
     def read_user_config(self):
         """
@@ -87,7 +152,7 @@ class TeleopApplication(Application):
         and initializes components with specific configuration values.
         """
         config = configparser.ConfigParser()
-        config.read(self.get_user_config_file())
+        config.read(self.get_user_config_dir())
 
         # Flatten the configuration sections and keys into a single dictionary
         config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
@@ -103,7 +168,7 @@ class TeleopApplication(Application):
 
     def setup(self):
         if self.active():
-            self._check_user_config()
+            self.__check_configuration_files()
             self.read_user_config()
             _config = self._config()
             _hash = hash_dict(**_config)
@@ -140,111 +205,31 @@ def main():
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
-    application = TeleopApplication(event=quit_event, config_dir=args.config)
-    application.setup()
-
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
+    teleop_to_coms_publisher = JSONPublisher(url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input")
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
+    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
-    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     throttle_controller = ThrottleController(teleop_to_coms_publisher, route_store)
-
+    application = TeleopApplication(event=quit_event, config_dir=args.config, hz=20)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
     threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread]
+    application.setup()
 
     if quit_event.is_set():
         return 0
 
     [t.start() for t in threads]
-
-    teleop_to_coms_publisher = JSONPublisher(url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input")
-    # external_publisher = JSONPublisher(url='ipc:///byodr/external.sock', topic='aav/external/input')
-    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
-    zm_client = JSONZmqClient(
-        urls=[
-            "ipc:///byodr/pilot_c.sock",
-            "ipc:///byodr/inference_c.sock",
-            "ipc:///byodr/vehicle_c.sock",
-            "ipc:///byodr/relay_c.sock",
-            "ipc:///byodr/camera_c.sock",
-        ]
-    )
-
-    def on_options_save():
-        chatter.publish(dict(time=timestamp(), command="restart"))
-        application.setup()
-
-    def list_process_start_messages():
-        return zm_client.call(dict(request="system/startup/list"))
-
-    def list_service_capabilities():
-        return zm_client.call(dict(request="system/service/capabilities"))
-
-    def get_navigation_image(image_id):
-        return route_store.get_image(image_id)
-
-    def throttle_control(cmd):
-        global current_throttle # The throttle value that we will send in this iteration of the function. Starts as 0.0
-        global throttle_change_step # Always 0.1
-
-
-        # Sometimes the JS part sends over a command with no throttle (When we are on the main page of teleop, without a controller, or when we want to brake urgently)
-        if "throttle" in cmd:
-
-            first_key = next(iter(cmd)) # First key of the dict, checking if its throttle or steering
-            target_throttle = float(cmd.get("throttle")) # Getting the throttle value of the user's finger. Thats the throttle value we want to end up at
-
-            # If steering is the 1st key of the dict, then it means the user gives no throttle input 
-            if first_key == "steering":
-                # Getting the sign of the previous throttle, so that we know if we have to add or subtract the step when braking
-                braking_sign = -1 if current_throttle < 0 else 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we were going forwards or backwards
-                current_throttle = current_throttle - (braking_sign*throttle_change_step)
-                
-                # Capping the value at 0 so that the robot does not move while idle
-                if braking_sign > 0 and current_throttle < 0:
-                    current_throttle = 0.0
-
-            # If throttle is the 1st key of the dict, then it means the user gives throttle input 
-            else:
-                # Getting the sign of the target throttle, so that we know if we have to add or subtract the step when accelerating
-                accelerate_sign = 0
-                if target_throttle < current_throttle:
-                    accelerate_sign = -1
-                elif target_throttle > current_throttle:
-                    accelerate_sign = 1
-
-                # Decreasing or increasing the throttle by each iteration, by the step we have defined.
-                # Dec or Inc depends on if we want to go forwards or backwards
-                current_throttle = current_throttle + (accelerate_sign*throttle_change_step)
-                
-                # Capping the value at the value of the user's finger so that the robot does not move faster than the user wants
-                if (accelerate_sign > 0 and current_throttle > target_throttle) or (accelerate_sign < 0 and current_throttle < target_throttle):
-                    current_throttle = target_throttle
-                
-            # Sending commands to Coms/Pilot
-            cmd["throttle"] = current_throttle
-            teleop_publish(cmd)
-
-        # When we receive commands without throttle in them, we reset the current throttle value to 0 and send a 0 command
-        else:
-            current_throttle = 0
-            teleop_publish({'steering': 0.0, 'throttle': 0, 'time': timestamp(), 'navigator': {'route': None}, 'button_b': 1})
-
-    def teleop_publish(cmd):
-        # We are the authority on route state.
-        cmd["navigator"] = dict(route=route_store.get_selected_route())
-        teleop_to_coms_publisher.publish(cmd)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
@@ -279,11 +264,11 @@ def main():
                 (r"/ws/cam/rear", CameraMJPegSocket, dict(image_capture=(lambda: camera_rear.capture()))),
                 (r"/ws/nav", NavImageHandler, dict(fn_get_image=(lambda image_id: endpoint_handlers.get_navigation_image(image_id)))),
                 # Get or save the options for the user
-                (r"/teleop/user/options", ApiUserOptionsHandler, dict(user_options=(UserOptions(application.get_user_config_file())), fn_on_save=endpoint_handlers.on_options_save)),
+                (r"/teleop/user/options", ApiUserOptionsHandler, dict(user_options=(UserOptions(application.get_user_config_dir())), fn_on_save=endpoint_handlers.on_options_save)),
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
-                # Path to where the static files are stored (JS,CSS, images)
+                # Path to where the static files are stored (JS, CSS, images)
                 (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
             ],  # Disable request logging with an empty lambda expression
             # un/comment if you want to see the requests from tornado

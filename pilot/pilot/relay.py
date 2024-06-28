@@ -16,9 +16,7 @@ from byodr.utils.protocol import MessageStreamProtocol
 from byodr.utils.usbrelay import SingleChannelUsbRelay
 
 logger = logging.getLogger(__name__)
-log_format = '%(levelname)s: %(filename)s %(funcName)s %(message)s'
-
-
+log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 def execute(arguments):
@@ -26,9 +24,9 @@ def execute(arguments):
     _device.attach()
 
     _cmd = arguments.cmd
-    if _cmd == 'open':
+    if _cmd == "open":
         _device.open()
-    elif _cmd == 'close':
+    elif _cmd == "close":
         _device.close()
     else:
         raise AssertionError("Invalid command string '{}'.".format(_cmd))
@@ -36,11 +34,11 @@ def execute(arguments):
 
 # Class that is receiving a status of the pi
 class StatusReceiverThreadFactory(object):
-    def __init__(self, topic=b'ras/drive/status'):
+    def __init__(self, topic=b"ras/drive/status"):
         self._topic = topic
 
     def create(self, master_uri):
-        return ReceiverThread(url=('{}:5555'.format(master_uri)), topic=self._topic)
+        return ReceiverThread(url=("{}:5555".format(master_uri)), topic=self._topic)
 
 
 # Class that is sending commands to the pi
@@ -50,13 +48,13 @@ class PiClientFactory(object):
 
     @staticmethod
     def create(master_uri):
-        return JSONZmqClient(urls='{}:5550'.format(master_uri))
+        return JSONZmqClient(urls="{}:5550".format(master_uri))
 
 
 class AbstractRelay(six.with_metaclass(ABCMeta, object)):
     @staticmethod
     def _latest_or_none(candidate, patience):
-        _time = 0 if candidate is None else candidate.get('time')
+        _time = 0 if candidate is None else candidate.get("time")
         _on_time = (timestamp() - _time) < patience
         return candidate if _on_time else None
 
@@ -81,6 +79,7 @@ class NoopMonitoringRelay(AbstractRelay):
     def quit(self):
         pass
 
+
 # Class that handles the functionality of the sending/receiving functions of this service.
 # Also controls the relay (green relay connected to the pi and nano)
 class RealMonitoringRelay(AbstractRelay):
@@ -91,8 +90,9 @@ class RealMonitoringRelay(AbstractRelay):
         self._integrity = MessageStreamProtocol(max_age_ms=200, max_delay_ms=250)
         self._status_factory = StatusReceiverThreadFactory() if status_factory is None else status_factory
         self._client_factory = PiClientFactory() if client_factory is None else client_factory
+        self.watchdog_to_coms = JSONPublisher(url="ipc:///byodr/pilot_to_coms.sock", topic="aav/pilot/watchdog")
         self._relay_closed_calltrace = collections.deque(maxlen=1)
-        self._patience_micro = 100.
+        self._patience_micro = 100.0
         self._config_hash = -1
         self._pi_config = None
         self._pi_client = None
@@ -106,8 +106,8 @@ class RealMonitoringRelay(AbstractRelay):
 
     def _send_drive(self, throttle=0.0, steering=0.0, reverse_gear=False, wakeup=False):
         if self._pi_client is not None:
-            throttle = max(-1., min(1., throttle))
-            steering = max(-1., min(1., steering))
+            throttle = max(-1.0, min(1.0, throttle))
+            steering = max(-1.0, min(1.0, steering))
             _reverse = 1 if reverse_gear else 0
             _wakeup = 1 if wakeup else 0
             self._pi_client.call(dict(time=timestamp(), method="ras/servo/drive", data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup)))
@@ -116,25 +116,25 @@ class RealMonitoringRelay(AbstractRelay):
         pi_status = None if self._pi_status is None else self._pi_status.pop_latest()
 
         # Checking if the Pi is setup according to the configuration we sent
-        if pi_status is not None and not bool(pi_status.get('configured')):
+        if pi_status is not None and not bool(pi_status.get("configured")):
             self._send_config(self._servo_config)
 
         # Checking the source of the commands that we are about to send to the Pi
         if pilot is None:
             self._send_drive()
         else:
-            _reverse = coms and coms.get('arrow_down', 0)
-            _wakeup = coms and coms.get('button_b', 0)
-            self._send_drive(steering=pilot.get('steering'), throttle=pilot.get('throttle'), reverse_gear=_reverse, wakeup=_wakeup)
+            _reverse = coms and coms.get("arrow_down", 0)
+            _wakeup = coms and coms.get("button_b", 0)
+            self._send_drive(steering=pilot.get("steering"), throttle=pilot.get("throttle"), reverse_gear=_reverse, wakeup=_wakeup)
 
     def _config(self):
         parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, '*.ini'))]
-        return dict(parser.items('vehicle')) if parser.has_section('vehicle') else {}
+        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+        return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
 
     # Function that runs whenever the Nano receives a config reply from the Pi
     def _on_receive(self, msg):
-        self._integrity.on_message(msg.get('time'))
+        self._integrity.on_message(msg.get("time"))
 
     def setup(self):
         _hash = hash_dict(**self._config())
@@ -156,7 +156,7 @@ class RealMonitoringRelay(AbstractRelay):
             self._pi_client.quit()
         if self._pi_status is not None:
             self._pi_status.quit()
-        
+
         # Restarting the sockets that handle communication with the Pi
         logger.info("Processing pi at uri '{}'.".format(_pi_uri))
         self._pi_config = _pi_uri
@@ -172,12 +172,12 @@ class RealMonitoringRelay(AbstractRelay):
         self._send_config(self._servo_config)
         return errors
 
-    # Opens the relays connected to the Nano. Open => no flow of current 
+    # Opens the relays connected to the Nano. Open => no flow of current
     def _open_relay(self):
         self._relay.open()
         self._relay_closed_calltrace.clear()
 
-    # Closes the relays connected to the Nano. Closed => flow of current 
+    # Closes the relays connected to the Nano. Closed => flow of current
     def _close_relay(self):
         # In normal operation the relay is constantly asked to close.
         now = timestamp()
@@ -212,18 +212,17 @@ class RealMonitoringRelay(AbstractRelay):
         elif self.n_violations > 5:
             self._open_relay()
             self._drive(None, None)
-            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
+            self.watchdog_to_coms.publish(dict(status="0"))  # Status 0 = Not ok
         else:
             self._drive(None, None)
-            self.watchdog_to_coms.publish(dict(status = '0')) # Status 0 = Not ok
+            self.watchdog_to_coms.publish(dict(status="0"))  # Status 0 = Not ok
         # print(n_violations)
 
 
 def main():
 
-    
-    parser = argparse.ArgumentParser(description='Spdt usb relay.')
-    subparsers = parser.add_subparsers(help='Methods.')
+    parser = argparse.ArgumentParser(description="Spdt usb relay.")
+    subparsers = parser.add_subparsers(help="Methods.")
 
     parser_a = subparsers.add_parser("exec", help="Open or close the relay.")
     parser_a.add_argument("--cmd", type=str, required=True, help="Open or close the relay.")
