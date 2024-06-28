@@ -10,37 +10,23 @@ import multiprocessing
 import os
 import signal
 import threading
-import concurrent.futures
-import configparser
-import user_agents  # Check in the request header if it is a phone or not
-
-
 from concurrent.futures import ThreadPoolExecutor
 
 from byodr.utils import Application, ApplicationExit, hash_dict
-from byodr.utils.ipc import (CameraThread, JSONPublisher, JSONZmqClient,
-                             json_collector)
-from byodr.utils.navigate import (FileSystemRouteDataSource,
-                                  ReloadableDataSource)
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from pymongo import MongoClient
+from six.moves.configparser import SafeConfigParser
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from byodr.utils import Application, hash_dict, ApplicationExit
-from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from six.moves.configparser import SafeConfigParser
-from logbox.app import LogApplication, PackageApplication
-from logbox.core import MongoLogBox, SharedUser, SharedState
-from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
 from .server import *
 from .tel_utils import EndpointHandlers, ThrottleController, EndpointHandlers
-                        TemplateRenderer, ThrottleController)
 
 logger = logging.getLogger(__name__)
 
@@ -53,9 +39,6 @@ quit_event = multiprocessing.Event()
 # A thread pool to run blocking tasks
 thread_pool = ThreadPoolExecutor()
 
-# Variables in use for the throttle_control() function
-current_throttle = 0.0
-throttle_change_step = 0.1
 
 def _interrupt():
     logger.info("Received interrupt, quitting.")
@@ -170,6 +153,8 @@ def main():
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
+    throttle_controller = ThrottleController(teleop_to_coms_publisher, route_store)
 
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
