@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import argparse
 import collections
 import glob
 import logging
@@ -14,23 +13,9 @@ from byodr.utils import timestamp
 from byodr.utils.ipc import ReceiverThread, JSONZmqClient
 from byodr.utils.option import parse_option, hash_dict
 from byodr.utils.protocol import MessageStreamProtocol
-from byodr.utils.usbrelay import SingleChannelUsbRelay
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
-
-
-def execute(arguments):
-    _device = SingleChannelUsbRelay()
-    _device.attach()
-
-    _cmd = arguments.cmd
-    if _cmd == "open":
-        _device.open()
-    elif _cmd == "close":
-        _device.close()
-    else:
-        raise AssertionError("Invalid command string '{}'.".format(_cmd))
 
 
 class StatusReceiverThreadFactory(object):
@@ -69,6 +54,7 @@ class AbstractRelay(six.with_metaclass(ABCMeta, object)):
 
 
 class NoopMonitoringRelay(AbstractRelay):
+    """Fake class made for testing"""
     def setup(self):
         return []
 
@@ -196,19 +182,6 @@ class RealMonitoringRelay(AbstractRelay):
             self._drive(None, None)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Spdt usb relay.")
-    subparsers = parser.add_subparsers(help="Methods.")
-
-    parser_a = subparsers.add_parser("exec", help="Open or close the relay.")
-    parser_a.add_argument("--cmd", type=str, required=True, help="Open or close the relay.")
-    parser_a.set_defaults(func=execute)
-
-    args = parser.parse_args()
-    args.func(args)
-
-
 if __name__ == "__main__":
     logging.basicConfig(format=log_format)
     logging.getLogger().setLevel(logging.INFO)
-    main()
