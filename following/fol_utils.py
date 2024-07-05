@@ -77,8 +77,8 @@ class YoloInference:
         """Tracks objects in video stream and saves the latest image with annotations."""
         img = result.orig_img  # get the original image
         img_height, img_width = result.orig_shape
-        # img = cv2.resize(img, (width, height))  # Resize the image to decrease the bandwidth on mobile controller 
-        self.draw_boxes(img, [result], followed_person_id, width=img_width, height=img_height)  # pass the followed person ID and new dimensions
+        img = cv2.resize(img, (img_width // 2, img_height // 2))  # Resize the image to decrease the bandwidth on mobile controller
+        self.draw_boxes(img, [result], followed_person_id, width=(img_width // 2), height=(img_height // 2))  # pass the followed person ID and new dimensions
         filename = os.path.join(self.image_save_path, f"image_{self.image_counter}.jpg")
         cv2.imwrite(filename, img)
         self.image_counter += 1
