@@ -248,13 +248,15 @@ class CommandController:
 class FollowingController:
     """Coordinates between `YoloInference` and `CommandController`."""
 
-    def __init__(self, model_path, user_config_args, event):
+    def __init__(self, model_path, user_config_args, event, hz):
         self.yolo_inference = YoloInference(model_path, user_config_args)
         self.command_controller = CommandController(user_config_args)
-        self.run_yolo_inf = None
-        self.quit_event = event
-        self.stop_threads = False
         self.stop_yolo = threading.Event()
+        self.quit_event = event
+        self.hz = hz
+        self.run_yolo_inf = None
+        self.stop_threads = False
+
         self.fol_state = "loading"
 
     def initialize_following(self):
@@ -317,9 +319,19 @@ class FollowingController:
             )
 
     def _control_logic(self, stop):
-        """Processes each frame of YOLO output."""
+        """Processes each frame of YOLO output with a controlled rate."""
+        frame_interval = 1 / self.hz  # Calculate the time interval between frames
+        last_time = time.time()
+
         try:
             for r in self.yolo_inference.results:
+                current_time = time.time()
+                elapsed = current_time - last_time
+                if elapsed < frame_interval:
+                    time.sleep(frame_interval - elapsed)  # Delay processing to maintain the specified hz
+                last_time = time.time()
+
+                logger.info(round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2))
                 if stop():
                     logger.info("YOLO model stopped")
                     self.fol_state = "inactive"
