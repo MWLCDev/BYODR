@@ -18,19 +18,20 @@ class YoloInference:
 
     def __init__(self, model_path, user_config_args):
         self.user_config_args = user_config_args
+        self.model_path = model_path
         self.model = YOLO(model_path, task="detect")
         self.image_save_path = "/byodr/yolo_person"
         self.image_counter = 0
         self.results = None
-
         os.makedirs(self.image_save_path, exist_ok=True)
 
     def run(self):
         stream_uri = self.get_stream_uri()
         # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, tracker="./botsort.yaml")
-        logger.info("Yolo model is loaded")
+        # image size is a tuple of (h, w)
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(384, 640), tracker="./botsort.yaml")
+        logger.info(f"{self.model_path} model is loaded")
 
     def get_stream_uri(self):
         bottom_camera_uri = parse_option("camera.front.camera.ip", str, "192.168.1.64", [], **self.user_config_args)
