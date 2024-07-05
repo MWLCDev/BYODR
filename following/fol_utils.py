@@ -117,7 +117,7 @@ class CommandController:
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)  # In percentage
         self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3550
         self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 50, [], **self.user_config_args)
-        self.unsafe_height = parse_option("following.unsafe_height", float, 0.75, [], **self.user_config_args)  # In percentage
+        self.unsafe_height = parse_option("following.unsafe_height", float, 0.65, [], **self.user_config_args)  # In percentage
 
         self.original_left_red_zone = self.left_red_zone
         self.original_right_red_zone = self.right_red_zone
@@ -125,7 +125,7 @@ class CommandController:
     def update_control_commands(self, persons):
         """Updates camera pan, steering, and throttle based on the operator's position on the screen."""
         lowest_id = float("inf")
-        person_to_follow = None
+        person_to_follow = {}
 
         try:
             # Iterate through each person detected
@@ -137,17 +137,24 @@ class CommandController:
                     self.current_steering = 0
                     self.current_camera_pan = 0
                     return  # Exit the loop early
+                # it throws the error when the person isn't followed
+                print(person)
 
                 # Update the person to follow based on the lowest ID
                 person_id = int(person.id[0])
                 if person_id < lowest_id:
                     lowest_id = person_id
-                    person_to_follow = person
+                    person_to_follow = {
+                        "id": person_id,
+                        "x_center_percentage": person.xywhn[0][0],
+                        "height": person.xywhn[0][3],
+                    }
 
             # If no person was too close, proceed with updating the commands
             if person_to_follow:
-                x_center_percentage = person_to_follow.xywhn[0][0]
-                self.followed_person_id = int(person_to_follow.id[0])
+                logger.info(person_to_follow)
+                x_center_percentage = person_to_follow["x_center_percentage"]
+                self.followed_person_id = int(person_to_follow["id"])
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
@@ -233,7 +240,7 @@ class CommandController:
                     cmd["camera_pan"] = int(camera_pan)
                 self.publisher.publish(cmd)
             # if source not in ["followingInactive", "followingLoading"]:
-            # logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+            #     logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
             # logger.info(cmd)
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")

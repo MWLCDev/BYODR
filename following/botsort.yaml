@@ -2,11 +2,11 @@
 # Default YOLO tracker settings for BoT-SORT tracker https://github.com/NirAharon/BoT-SORT
 
 tracker_type: botsort # tracker type, ['botsort', 'bytetrack']
-track_high_thresh: 0.5 # threshold for the first association
+track_high_thresh: 0.4 # threshold for the first association
 track_low_thresh: 0.05 # threshold for the second association
-new_track_thresh: 0.6 # threshold for init new track if the detection does not match any tracks
-track_buffer: 300 # buffer to calculate the time when to remove tracks
-match_thresh: 0.4
+new_track_thresh: 0.3 # lower threshold for initializing new tracks
+track_buffer: 500 # increase buffer to maintain tracks longer
+match_thresh: 0.5
 # min_box_area: 10  # threshold for min box areas(for tracker evaluation, not used for now)
 # mot20: False  # for tracker evaluation(not used for now)
 
@@ -20,10 +20,10 @@ with_reid: True
 
 
 # ✅tracker_type: botsort: Tracker type, with options ['botsort', 'bytetrack']. Choose between BoT-SORT or ByteTrack for object tracking.
-# ✅track_high_thresh: 0.5: Threshold for the first association. It determines the confidence level for the initial track association.
+# ✅track_high_thresh: 0.5: Threshold for the first association. Detections with a confidence score above this threshold will be considered for tracking.
 # ✅track_low_thresh: 0.1: Threshold for the second association. This threshold is used for refining track associations.
 # ✅new_track_thresh: 0.6: Threshold for initializing a new track if the detection doesn't match any existing tracks. This parameter influences the creation of new object tracks.
-# ✅track_buffer: 30: Buffer to calculate the time when to remove tracks. It helps manage the retention period for tracks in the tracking system.
+# ✅track_buffer: 30: Buffer to calculate the time when to remove tracks. It helps manage the retention period for tracks in the tracking system. Measured in frames
 # ✅match_thresh: This parameter determines the level of similarity required for associating detections with existing tracks.
 # ✅gmc_method:I is used for tracking in scenarios with camera movement or background motion
 # ✅proximity_thresh: 0.5: Threshold for proximity. It plays a role in determining the closeness criteria for objects or tracks.

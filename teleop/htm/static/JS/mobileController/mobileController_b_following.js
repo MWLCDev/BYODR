@@ -64,12 +64,6 @@ class ToggleButtonHandler {
 		}, 500);
 	}
 
-	controlInputControllerVisibility(command) {
-		this.topInputDiv.style.display = command;
-		this.inferenceToggleBtn.style.display = command;
-		this.confidenceToggleBtn.style.display = command;
-	}
-
 	assignFollowingState(backendCommand) {
 		// console.log(backendCommand, this._followingState)
 		switch (backendCommand) {
@@ -102,10 +96,16 @@ class ToggleButtonHandler {
 			this.toggleButton.style.backgroundColor = '#67b96a';
 		} else if (CTRL_STAT.followingState == 'loading') {
 			this.hideCanvas();
-			controlInputControllerVisibility('flex');
+			this.controlInputControllerVisibility('flex');
 			this.toggleButton.innerText = 'Loading...';
 			this.toggleButton.style.backgroundColor = '#ffa500';
 		}
+	}
+
+	controlInputControllerVisibility(command) {
+		this.topInputDiv.style.display = command;
+		this.inferenceToggleBtn.style.display = command;
+		this.confidenceToggleBtn.style.display = command;
 	}
 
 	showCanvas() {
