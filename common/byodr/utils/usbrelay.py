@@ -231,15 +231,15 @@ class StaticRelayHolder(object):
 
     def open(self, channels=None):
         with self._lock:
-            [self._relay.open(ch) for ch in self._arg_(channels)]
+            [self._relay.open() for ch in self._arg_(channels)]
 
     def close(self, channels=None):
         with self._lock:
             for ch in self._arg_(channels):
-                self._relay.close(ch)
+                self._relay.close()
                 if ch in self._pulse_channels:
                     time.sleep(0.100)
-                    self._relay.open(ch)
+                    self._relay.open()
 
     def states(self):
         with self._lock:
