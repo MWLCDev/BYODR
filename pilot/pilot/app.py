@@ -9,19 +9,20 @@ import os
 import signal
 import threading
 
-from six.moves.configparser import SafeConfigParser
-from tornado import web, ioloop
-from tornado.httpserver import HTTPServer
-from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-
 from byodr.utils import Application, ApplicationExit
+from byodr.utils.gpio_relay import ThreadSafeGpioRelay
 from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
 from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
+from six.moves.configparser import SafeConfigParser
+from tornado import ioloop, web
+from tornado.httpserver import HTTPServer
+from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
 from .core import CommandProcessor
-from .relay import RealMonitoringRelay, NoopMonitoringRelay
-from .web import RelayControlRequestHandler, RelayConfigRequestHandler
+from .relay import NoopMonitoringRelay, RealMonitoringRelay
+from .web import RelayConfigRequestHandler, RelayControlRequestHandler
 
 logger = logging.getLogger(__name__)
 
@@ -99,7 +100,6 @@ class PilotApplication(Application):
         teleop = self.teleop()
         commands = (teleop, self.ros(), self.vehicle(), self.inference())
         pilot = self._processor.next_action(*commands)
-        # print(pilot)
         self._monitor.step(pilot, teleop)
         if pilot is not None:
             self.publisher.publish(pilot)
@@ -116,8 +116,7 @@ def main():
     parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
     args = parser.parse_args()
 
-    _relay = SearchUsbRelayFactory().get_relay()
-    logger.info("The USB Relay is {} attached.".format("well" if _relay.is_attached() else "not"))
+    _relay = ThreadSafeGpioRelay()
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)

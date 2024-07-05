@@ -100,6 +100,8 @@ class DoubleChannelUsbRelay(object):
 
 
 class TransientMemoryRelay(object):
+    """Fake class, I suppose"""
+
     def __init__(self, num_channels=4):
         self._state = [0] * num_channels
 
