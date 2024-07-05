@@ -53,13 +53,9 @@ class PilotApplication(Application):
         self._init(relay)
 
     def _init(self, _relay):
-        if _relay.is_attached():
-            self._holder = StaticRelayHolder(relay=_relay, default_channels=(0, 1))
-            self._monitor = RealMonitoringRelay(relay=self._holder, config_dir=self._config_dir)
-        else:
-            _relay = TransientMemoryRelay()
-            self._holder = StaticRelayHolder(relay=_relay, default_channels=())
-            self._monitor = NoopMonitoringRelay()
+        self._holder = StaticRelayHolder(relay=_relay, default_channels=(0, 1))
+        self._monitor = RealMonitoringRelay(relay=self._holder, config_dir=self._config_dir)
+
 
     def _config(self):
         parser = SafeConfigParser()
