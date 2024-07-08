@@ -9,19 +9,18 @@ import os
 import shutil
 import signal
 import subprocess
-import threading
 import time
 from abc import ABC, abstractmethod
 from configparser import ConfigParser
 
 import numpy as np
-import RPi.GPIO as GPIO
 from byodr.utils import Application, timestamp
 from byodr.utils.ipc import JSONPublisher, JSONServerThread
 from byodr.utils.option import parse_option
 from byodr.utils.protocol import MessageStreamProtocol
-from byodr.utils.usbrelay import StaticRelayHolder
 from gpiozero import AngularServo  # interfacing with the GPIO pins of the Raspberry Pi
+
+from BYODR.utils.gpio_relay import ThreadSafePIGpioRelay
 
 from .core import CommandHistory, HallOdometer, VESCDrive
 
@@ -37,62 +36,6 @@ quit_event = multiprocessing.Event()
 def _interrupt():
     logger.info("Received interrupt, quitting.")
     quit_event.set()
-
-
-class ThreadSafeGpioRelay:
-    """
-    Thread-safe class for managing a GPIO relay on a Raspberry Pi.
-    """
-
-    def __init__(self, pin=15):
-        self.pin = pin
-        self.state = False  # False for OFF, True for ON
-        self.lock = threading.Lock()
-        GPIO.setmode(GPIO.BOARD)  # Set the pin numbering system to BOARD
-        GPIO.setup(self.pin, GPIO.OUT, initial=GPIO.LOW)
-
-    def open(self):
-        """
-        Turns the relay ON (sets the GPIO pin LOW).
-        """
-        with self.lock:
-            GPIO.output(self.pin, GPIO.LOW)
-            self.state = False
-
-    def close(self):
-        """
-        Turns the relay OFF (sets the GPIO pin HIGH).
-        """
-        with self.lock:
-            GPIO.output(self.pin, GPIO.HIGH)
-            self.state = True
-
-    def toggle(self):
-        """
-        Toggles the relay state.
-        """
-        with self.lock:
-            self.state = not self.state
-            GPIO.output(self.pin, GPIO.LOW if self.state else GPIO.HIGH)
-
-    def get_state(self):
-        """
-        Returns the current state of the relay.
-        """
-        with self.lock:
-            return self.state
-
-    def cleanup(self):
-        """
-        Clean up GPIO resources to ensure a proper shutdown.
-        """
-        GPIO.cleanup(self.pin)
-
-    def __del__(self):
-        """
-        Ensures the GPIO pin is cleaned up when the object is deleted.
-        """
-        self.cleanup()
 
 
 class AbstractDriver(ABC):
@@ -570,11 +513,9 @@ def main():
     parser.add_argument("--config", type=str, default="/config/driver.ini", help="Configuration file.")
     args = parser.parse_args()
 
-    # while True:
-    #     pass
     config_file = args.config
 
-    _relay = ThreadSafeGpioRelay()
+    _relay = ThreadSafePIGpioRelay()
     ras_dynamic_ip = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
 
     try:
