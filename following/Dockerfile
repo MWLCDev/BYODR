@@ -28,8 +28,14 @@ COPY ./common/ /common/
 COPY ./following/ /app/
 WORKDIR /app
 
-# Set PYTHONPATH environment variable
-ENV PYTHONPATH "${PYTHONPATH}:/common"
+ENV PYTHONPATH "/app:/common:${PYTHONPATH}"
+
+# Should use this one in the future. to keep the imports also desciverable by the local env. Will need to add `common.` at the beginning of each byodr import 
+# COPY ./common/ /app/common/
+# COPY ./following/ /app/following/
+# WORKDIR /app/following
+# ENV PYTHONPATH "/app:${PYTHONPATH}"
+
 
 # Command to run your application
 CMD ["python3", "app.py"]

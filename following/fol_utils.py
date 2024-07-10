@@ -30,7 +30,7 @@ class YoloInference:
         # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
         # image size is a tuple of (h, w)
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(384, 640), tracker="./botsort.yaml")
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(480, 640), tracker="./botsort.yaml")
         logger.info(f"{self.model_path} model is loaded")
 
     def get_stream_uri(self):
@@ -138,7 +138,7 @@ class CommandController:
                     self.current_camera_pan = 0
                     return  # Exit the loop early
                 # it throws the error when the person isn't followed
-                print(person)
+                # print(person)
 
                 # Update the person to follow based on the lowest ID
                 person_id = int(person.id[0])
@@ -152,7 +152,7 @@ class CommandController:
 
             # If no person was too close, proceed with updating the commands
             if person_to_follow:
-                logger.info(person_to_follow)
+                # logger.info(person_to_follow)
                 x_center_percentage = person_to_follow["x_center_percentage"]
                 self.followed_person_id = int(person_to_follow["id"])
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
@@ -338,7 +338,7 @@ class FollowingController:
                     time.sleep(frame_interval - elapsed)  # Delay processing to maintain the specified hz
                 last_time = time.time()
 
-                logger.info(round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2))
+                # logger.info(round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2)) # speed
                 if stop():
                     logger.info("YOLO model stopped")
                     self.fol_state = "inactive"
