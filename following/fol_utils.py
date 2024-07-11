@@ -347,9 +347,16 @@ class FollowingController:
                 self._update_control_commands(r.boxes.cpu().numpy())
                 followed_person_id = self.command_controller.followed_person_id
                 self.yolo_inference.track_and_save_image(r, followed_person_id)
+                self.end_to_end_inf_time = round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2)  # end-to-end result is in ms
         except Exception as e:
             logger.error(f"Exception in _control_logic: {e}")
             self.quit_event.set()
+
+    def get_current_model_fps(self):
+        """Calculate and return the current frames per second. It is based on the end-to-end speed of the model, not how fast the whole app is working"""
+        if self.end_to_end_inf_time == 0:
+            return 0  # Return zero FPS to indicate no processing is happening or to avoid division by zero.
+        return round(1000 / self.end_to_end_inf_time, 2)  # Total time is in ms, so 1000 ms / total time gives FPS.
 
     def _update_control_commands(self, boxes):
         """Update control commands based on detected boxes."""
