@@ -131,43 +131,40 @@ class CommandController:
         try:
             # Iterate through each person detected
             for person in persons:
-                self.person_height = person.xywhn[0][3]
-                # Check if person is too close to the camera
-                if self.person_height >= self.unsafe_height:
-                    self.current_throttle = 0
-                    self.current_steering = 0
-                    self.current_camera_pan = 0
-                    return  # Exit the loop early
-                # it throws the error when the person isn't followed
-                # print(person)
+                try:
+                    self.person_height = person.xywhn[0][3]
+                    # Check if person is too close to the camera
+                    if self.person_height >= self.unsafe_height:
+                        self.current_throttle = 0
+                        self.current_steering = 0
+                        self.current_camera_pan = 0
+                        return  # Exit the loop early
+                    # it throws the error when the person isn't followed
+                    # Skip the person if there is no ID assigned
+                    if person.id is None or len(person.id) == 0 or person.id[0] is None:
+                        continue
 
-                # Update the person to follow based on the lowest ID
-                person_id = int(person.id[0])
-                if person_id < lowest_id:
-                    lowest_id = person_id
-                    person_to_follow = {
-                        "id": person_id,
-                        "x_center_percentage": person.xywhn[0][0],
-                        "height": person.xywhn[0][3],
-                    }
+                    person_id = int(person.id[0])
+                    if person_id < lowest_id:
+                        lowest_id = person_id
+                        person_to_follow = {"id": person_id, "x_center_percentage": person.xywhn[0][0]}
+                except TypeError as e:
+                    logger.error(f"Error processing person: {person} with error {e}")
 
             # If no person was too close, proceed with updating the commands
             if person_to_follow:
-                # logger.info(person_to_follow)
                 x_center_percentage = person_to_follow["x_center_percentage"]
                 self.followed_person_id = int(person_to_follow["id"])
                 self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
                 self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
 
-                # Check if calibration is needed
                 self.check_calibration_needed(x_center_percentage)
-
                 if self.calibration_flag:
                     self.perform_calibration()
 
         except Exception as e:
-            logger.warning(f"Exception updating control commands: {e}")
+            logger.error(f"Exception updating control commands: {e}, with person_to_follow: {person_to_follow}")
 
     def check_calibration_needed(self, x_center_percentage):
         """Check if calibration is needed and raise the flag if necessary."""
