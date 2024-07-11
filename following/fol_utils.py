@@ -231,13 +231,14 @@ class CommandController:
 
             cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": source}
 
-            if camera_pan is not None:
+            if camera_pan is not None and source == "followingActive":
                 # Make sure to define the preset for the camera
                 if camera_pan == "go_preset_1":
                     cmd["camera_pan"] = camera_pan
+                    print("going to preset")
                 else:
                     cmd["camera_pan"] = int(camera_pan)
-                self.publisher.publish(cmd)
+            self.publisher.publish(cmd)
             # if source not in ["followingInactive", "followingLoading"]:
             #     logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
             # logger.info(cmd)
