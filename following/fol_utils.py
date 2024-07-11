@@ -1,8 +1,9 @@
 import logging
+import multiprocessing
 import os
 import threading
 import time
-import multiprocessing
+from collections import deque
 
 import cv2
 from byodr.utils.ipc import JSONPublisher
@@ -263,6 +264,7 @@ class FollowingController:
         self.hz = hz
         self.run_yolo_inf = None
         self.stop_threads = False
+        self.total_time = 0
 
         self.fol_state = "loading"
 
@@ -327,18 +329,10 @@ class FollowingController:
 
     def _control_logic(self, stop):
         """Processes each frame of YOLO output with a controlled rate."""
-        frame_interval = 1 / self.hz  # Calculate the time interval between frames
-        last_time = time.time()
-
+        frame_time = 1 / self.hz  # Calculate the time each frame should take based on the Hz rate
         try:
             for r in self.yolo_inference.results:
-                current_time = time.time()
-                elapsed = current_time - last_time
-                if elapsed < frame_interval:
-                    time.sleep(frame_interval - elapsed)  # Delay processing to maintain the specified hz
-                last_time = time.time()
-
-                # logger.info(round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2)) # speed
+                start_time = time.time()  # Record the start time of the loop iteration
                 if stop():
                     logger.info("YOLO model stopped")
                     self.fol_state = "inactive"
@@ -348,6 +342,11 @@ class FollowingController:
                 followed_person_id = self.command_controller.followed_person_id
                 self.yolo_inference.track_and_save_image(r, followed_person_id)
                 self.end_to_end_inf_time = round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2)  # end-to-end result is in ms
+                print(self.get_current_model_fps())
+                # Calculate the actual time to sleep to maintain the frame rate
+                sleep_time = frame_time - (time.time() - start_time)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)  # Sleep to maintain the desired frame rate
         except Exception as e:
             logger.error(f"Exception in _control_logic: {e}")
             self.quit_event.set()
