@@ -170,10 +170,11 @@ class CommandController:
         """Check if calibration is needed and raise the flag if necessary."""
         # print(self.left_red_zone, x_center_percentage, self.right_red_zone)
         # print(self.min_camera_pan_safe_zone, self.current_azimuth, self.max_camera_pan_safe_zone)
+        # While the person is still in the middle of the green zone and the current camera azimuth is between the safe zones,
         if (self.left_red_zone <= x_center_percentage <= self.right_red_zone) and (self.min_camera_pan_safe_zone <= self.current_azimuth <= self.max_camera_pan_safe_zone):
             self.calibration_flag = True
-            self.left_red_zone /= 2
-            self.right_red_zone = (self.right_red_zone // 2) + self.right_red_zone
+            self.left_red_zone = 0.275
+            self.right_red_zone = 0.85
         else:
             self.calibration_flag = False
             self.left_red_zone = self.original_left_red_zone
