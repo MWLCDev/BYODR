@@ -155,13 +155,14 @@ class CommandController:
             if person_to_follow:
                 x_center_percentage = person_to_follow["x_center_percentage"]
                 self.followed_person_id = int(person_to_follow["id"])
-                self.current_camera_pan = int(self.calculate_camera_pan(x_center_percentage))
-                self.current_steering = self.calculate_steering(x_center_percentage)
                 self.current_throttle = self.calculate_throttle()
 
                 self.check_calibration_needed(x_center_percentage)
                 if self.calibration_flag:
-                    self.perform_calibration()
+                    self.perform_calibration()  # It will override camera pan and vehicle steering
+                else:
+                    self.current_camera_pan = self.calculate_camera_pan(x_center_percentage)
+                    self.current_steering = self.calculate_steering(x_center_percentage)
 
         except Exception as e:
             logger.error(f"Exception updating control commands: {e}, with person_to_follow: {person_to_follow}")
