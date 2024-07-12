@@ -3,7 +3,6 @@ import multiprocessing
 import os
 import threading
 import time
-from collections import deque
 
 import cv2
 from byodr.utils.ipc import JSONPublisher
@@ -116,8 +115,8 @@ class CommandController:
         self.pan_movement_offset = parse_option("camera.pan_movement_offset", int, 50, [], **self.user_config_args)
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)  # In percentage
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)  # In percentage
-        self.max_camera_pan_safe_zone = parse_option("following.max_camera_pan_safe_zone", float, 3550, [], **self.user_config_args)  # max is 3550
-        self.min_camera_pan_safe_zone = parse_option("following.min_camera_pan_safe_zone", float, 50, [], **self.user_config_args)
+        self.max_camera_pan = parse_option("following.max_camera_pan", float, 3500, [], **self.user_config_args)  # max is 3550
+        self.min_camera_pan = parse_option("following.min_camera_pan", float, 50, [], **self.user_config_args)  # when going right
         self.unsafe_height = parse_option("following.unsafe_height", float, 0.65, [], **self.user_config_args)  # In percentage
 
         self.original_left_red_zone = self.left_red_zone
@@ -169,11 +168,11 @@ class CommandController:
 
     def check_calibration_needed(self, x_center_percentage):
         """Check if calibration is needed and raise the flag if necessary."""
-        # print(self.left_red_zone, x_center_percentage, self.right_red_zone)
-        # print(self.min_camera_pan_safe_zone, self.current_azimuth, self.max_camera_pan_safe_zone)
-        # While the person is still in the middle of the green zone and the current camera azimuth is between the safe zones,
-        if (self.left_red_zone <= x_center_percentage <= self.right_red_zone) and (self.min_camera_pan_safe_zone <= self.current_azimuth <= self.max_camera_pan_safe_zone):
+        # Calibration can only start if the user is in the middle of camera view and the azimuth isn't less than min or more than max value
+        # (if it is between them, that means it isn't pointing forward)
+        if (self.left_red_zone <= x_center_percentage <= self.right_red_zone) and (self.min_camera_pan <= self.current_azimuth <= self.max_camera_pan):
             self.calibration_flag = True
+            # Nearly half of original value
             self.left_red_zone = 0.275
             self.right_red_zone = 0.85
         else:
@@ -187,20 +186,23 @@ class CommandController:
             self.current_steering = (self.current_azimuth - 1800) / 1800 / 3
         else:
             self.current_steering = (1800 - self.current_azimuth) / 1800 / 3
+            print("going left")
 
         self.current_steering = max(-1, min(1, self.current_steering))
         self.current_camera_pan = -self.current_steering * self.pan_movement_offset
-        logger.info(f"S:{self.current_steering} C_P:{self.current_camera_pan}")
+        logger.info(f"S:{self.current_steering:.2f} C_P:{self.current_camera_pan:.2f}")
 
     def calculate_throttle(self):
         return max(0.2, min(1, ((-(0.01) * self.person_height) + 3.6)))  # 0.2 at 340p height; 1 at 260p height
 
     def calculate_camera_pan(self, x_center_percentage):
-        if x_center_percentage < self.left_red_zone:
+        """Calculate camera pan to follow the user depending on their position in the camera view"""
+        if x_center_percentage < self.left_red_zone:  # If user inside the left red zone
             return -self.calculate_pan_adjustment(x_center_percentage)
         elif x_center_percentage > self.right_red_zone:
             return self.calculate_pan_adjustment(x_center_percentage)
         else:
+            # WHY DID I ADD THIS CODE ?
             if self.current_camera_pan != 0:
                 if self.current_camera_pan > 0:
                     return self.pan_movement_offset // 4
@@ -230,18 +232,19 @@ class CommandController:
             throttle = round(throttle, 3)
             steering = round(steering, 3)
 
-            cmd = {"throttle": throttle, "steering": steering, "button_b": 1, "source": source}
+            cmd = {"throttle": throttle, "steering": steering, "source": source}
 
             if camera_pan is not None and source == "followingActive":
+                cmd["button_b"] = 1
                 # Make sure to define the preset for the camera
                 if camera_pan == "go_preset_1":
                     cmd["camera_pan"] = camera_pan
                     print("going to preset")
-                else:
+                elif camera_pan != 0:
                     cmd["camera_pan"] = int(camera_pan)
             self.publisher.publish(cmd)
-            # if source not in ["followingInactive", "followingLoading"]:
-            #     logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+            if source not in ["followingInactive", "followingLoading"]:
+                logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
             # logger.info(cmd)
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")
@@ -264,8 +267,6 @@ class FollowingController:
         self.hz = hz
         self.run_yolo_inf = None
         self.stop_threads = False
-        self.total_time = 0
-
         self.fol_state = "loading"
 
     def initialize_following(self):
@@ -297,7 +298,12 @@ class FollowingController:
         """Start the following process."""
         if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
             self.fol_state = "active"
-            self.command_controller.publish_command(self.command_controller.current_throttle, self.command_controller.current_steering, camera_pan="go_preset_1")
+            self.command_controller.publish_command(
+                self.command_controller.current_throttle,
+                self.command_controller.current_steering,
+                camera_pan="go_preset_1",
+                source="followingActive",
+            )
             self.yolo_inference.reset_tracking_session()
             self.stop_threads = False
             self.run_yolo_inf = threading.Thread(target=self._control_logic, args=(lambda: self.stop_threads,))
@@ -342,7 +348,6 @@ class FollowingController:
                 followed_person_id = self.command_controller.followed_person_id
                 self.yolo_inference.track_and_save_image(r, followed_person_id)
                 self.end_to_end_inf_time = round(r.speed["preprocess"] + r.speed["inference"] + r.speed["postprocess"], 2)  # end-to-end result is in ms
-                print(self.get_current_model_fps())
                 # Calculate the actual time to sleep to maintain the frame rate
                 sleep_time = frame_time - (time.time() - start_time)
                 if sleep_time > 0:
