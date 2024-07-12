@@ -31,7 +31,7 @@ class YoloInference:
         # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
         # image size is a tuple of (h, w)
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(480, 640), tracker="./botsort.yaml")
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(480, 640), tracker="botsort.yaml")
         logger.info(f"{self.model_path} model is loaded")
 
     def get_stream_uri(self):
