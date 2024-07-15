@@ -210,12 +210,16 @@ class CommandController:
             return 0  # Return 0 to maintain neutral camera position on error
 
     def calculate_steering(self, x_center_percentage):
-        if x_center_percentage < self.left_red_zone:
-            return -1 + (x_center_percentage / self.left_red_zone)
-        elif x_center_percentage > self.right_red_zone:
-            return (x_center_percentage - self.right_red_zone) / (1 - self.right_red_zone)
-        else:
-            return 0
+        try:
+            if x_center_percentage < self.left_red_zone:
+                return -1 + (x_center_percentage / self.left_red_zone)
+            elif x_center_percentage > self.right_red_zone:
+                return (x_center_percentage - self.right_red_zone) / (1 - self.right_red_zone)
+            else:
+                return 0
+        except Exception as e:
+            logger.error(f"Error calculating steering: {e}")
+            return 0  # Return neutral steering on error
 
     def publish_command(self, throttle=0, steering=0, camera_pan=0, source="Following"):
         """Publishes the control commands to Teleop."""
