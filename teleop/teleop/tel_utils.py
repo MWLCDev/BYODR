@@ -427,6 +427,9 @@ class FollowingUtils:
         return self.following_state
 
     def set_following_state(self, new_state):
+        #if the new state is "active", which is different from the old state, then this means to start the 
+        if self.following_state == "inactive" and new_state == "active":
+            self.camera_control.goto_preset_position(preset_id=1)
         self.following_state = new_state
         self.throttle_controller.update_following_state(new_state)
 
