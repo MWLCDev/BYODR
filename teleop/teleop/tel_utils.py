@@ -441,8 +441,6 @@ class FollowingUtils:
                 ctrl["time"] = int(timestamp())
                 self.throttle_controller.throttle_control(ctrl)
                 self._update_following_status(ctrl)
-                self._handle_camera_commands(ctrl)
-                self._publish_camera_azimuth()  # should be always or only when following is working?
         except Exception as e:
             logger.error(f"Error handling control command: {e}")
 
@@ -454,6 +452,7 @@ class FollowingUtils:
             self.set_following_state("inactive")
         elif ctrl["source"] == "followingActive":
             self.set_following_state("active")
+            self._publish_camera_azimuth()
 
     def _handle_camera_commands(self, ctrl):
         if "camera_pan" in ctrl:
