@@ -196,27 +196,18 @@ class CommandController:
         return max(0.2, min(1, ((-(0.01) * self.person_height) + 3.6)))  # 0.2 at 340p height; 1 at 260p height
 
     def calculate_camera_pan(self, x_center_percentage):
-        """Calculate camera pan to follow the user depending on their position in the camera view"""
-        if x_center_percentage < self.left_red_zone:  # If user inside the left red zone
-            return -self.calculate_pan_adjustment(x_center_percentage)
-        elif x_center_percentage > self.right_red_zone:
-            return self.calculate_pan_adjustment(x_center_percentage)
-        else:
-            # WHY DID I ADD THIS CODE ?
-            if self.current_camera_pan != 0:
-                if self.current_camera_pan > 0:
-                    return self.pan_movement_offset // 4
-                else:
-                    return self.pan_movement_offset // 4
-        return 0
-
-    def calculate_pan_adjustment(self, x_center_percentage):
-        """Sends a normalized value for camera pan, based on how deep is OP in the red zone"""
-        if x_center_percentage < self.left_red_zone:
-            return self.pan_movement_offset * ((self.left_red_zone - x_center_percentage) / self.left_red_zone)
-        elif x_center_percentage > self.right_red_zone:
-            return self.pan_movement_offset * ((x_center_percentage - self.right_red_zone) / (1 - self.right_red_zone))
-        return 0
+        """Calculate camera pan to follow the user depending on their position in the camera view."""
+        try:
+            if x_center_percentage < self.left_red_zone:
+                pan_adjustment = -self.pan_movement_offset * ((self.left_red_zone - x_center_percentage) / self.left_red_zone)
+            elif x_center_percentage > self.right_red_zone:
+                pan_adjustment = self.pan_movement_offset * ((x_center_percentage - self.right_red_zone) / (1 - self.right_red_zone))
+            else:
+                pan_adjustment = 0
+            return pan_adjustment
+        except Exception as e:
+            logger.error(f"Failed to calculate camera pan: {e}")
+            return 0  # Return 0 to maintain neutral camera position on error
 
     def calculate_steering(self, x_center_percentage):
         if x_center_percentage < self.left_red_zone:
