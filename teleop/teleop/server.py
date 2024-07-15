@@ -22,7 +22,7 @@ from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
 
 from .getSSID import fetch_ssid
-from .tel_utils import *
+from .tel_utils import OverviewConfidence
 
 logger = logging.getLogger(__name__)
 
@@ -209,7 +209,6 @@ class ConfidenceHandler(websocket.WebSocketHandler):
         self.vehicle = vehicle_s
 
     def open(self):
-        self.start_time = time.clock()
         # logger.info("Confidence websocket connection opened.")
         self.runner = OverviewConfidence(self.inference, self.vehicle)
 

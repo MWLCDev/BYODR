@@ -1,12 +1,12 @@
+import configparser
 import glob
 import logging
 import os
+import queue
 import threading
 import time
 import xml.etree.ElementTree as ET
 from datetime import datetime
-import configparser, queue
-
 
 import folium
 import pandas as pd
@@ -16,7 +16,6 @@ from byodr.utils import timestamp
 # needs to be installed on the router
 from pysnmp.hlapi import *
 from requests.auth import HTTPDigestAuth
-
 
 logger = logging.getLogger(__name__)
 
@@ -379,6 +378,7 @@ class CameraControl:
 
     def goto_preset_position(self, preset_id):
         """Moves the PTZ camera to a specific preset position."""
+        print("trying to move to preset")
         url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}/goto"
         response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), headers={"Content-Type": "application/xml"})
         try:
@@ -436,10 +436,11 @@ class FollowingUtils:
     def process_socket_commands(self):
         try:
             ctrl = self.following_socket.get()
-            # logger.info(ctrl)
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
                 self.throttle_controller.throttle_control(ctrl)
+                self._handle_camera_commands(ctrl)
+                # logger.info(ctrl)
                 self._update_following_status(ctrl)
         except Exception as e:
             logger.error(f"Error handling control command: {e}")
@@ -457,12 +458,10 @@ class FollowingUtils:
     def _handle_camera_commands(self, ctrl):
         if "camera_pan" in ctrl:
             try:
-                if isinstance(ctrl["camera_pan"], int):
-                    self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
-                elif ctrl["camera_pan"] == "go_preset_1":
+                if ctrl["camera_pan"] == "go_preset_1":
                     self.camera_control.goto_preset_position(preset_id=1)
-                    # Wait until camera is in preset1
-                    time.sleep(2)
+                elif isinstance(ctrl["camera_pan"], int):
+                    self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
             except Exception as cam_err:
                 logger.error(f"Error in camera control: {cam_err}")
 
