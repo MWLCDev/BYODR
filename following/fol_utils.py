@@ -137,6 +137,7 @@ class CommandController:
                         self.current_throttle = 0
                         self.current_steering = 0
                         self.current_camera_pan = 0
+                        self.current_camera_pan = self.calculate_camera_pan(person.xywhn[0][0])
                         return  # Exit the loop early
                     # it throws the error when the person isn't followed
                     # Skip the person if there is no ID assigned
