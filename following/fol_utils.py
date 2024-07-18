@@ -239,7 +239,7 @@ class CommandController:
                 elif camera_pan != 0:
                     cmd["camera_pan"] = int(camera_pan)
             self.publisher.publish(cmd)
-            if source not in ["followingInactive", "followingLoading"]:
+            if source == "followingActive" and (cmd["throttle"] != 0 or cmd["steering"] != 0):
                 logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
             # logger.info(cmd)
         except Exception as e:
