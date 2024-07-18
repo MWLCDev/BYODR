@@ -111,3 +111,5 @@ docs/
 # Google protocol buffers
 *.pb
 /.balena/
+
+following/min_app.py

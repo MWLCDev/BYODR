@@ -100,13 +100,13 @@ class RealMonitoringRelay(AbstractRelay):
         if self._pi_client is not None and data is not None:
             self._pi_client.call(dict(time=timestamp(), method="ras/driver/config", data=data))
 
-    def _send_drive(self, throttle=0.0, steering=0.0, reverse_gear=False, wakeup=False):
+    def _send_drive(self, throttle=0.0, steering=0.0, reverse_gear=False, wakeup=False, spin=None):
         if self._pi_client is not None:
             throttle = max(-1.0, min(1.0, throttle))
             steering = max(-1.0, min(1.0, steering))
             _reverse = 1 if reverse_gear else 0
             _wakeup = 1 if wakeup else 0
-            self._pi_client.call(dict(time=timestamp(), method="ras/servo/drive", data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup)))
+            self._pi_client.call(dict(time=timestamp(), method="ras/servo/drive", data=dict(steering=steering, throttle=throttle, reverse=_reverse, wakeup=_wakeup, spin=spin)))
 
     def _drive(self, pilot, teleop):
         pi_status = None if self._pi_status is None else self._pi_status.pop_latest()
@@ -117,7 +117,7 @@ class RealMonitoringRelay(AbstractRelay):
         else:
             _reverse = teleop and teleop.get("arrow_down", 0)
             _wakeup = teleop and teleop.get("button_b", 0)
-            self._send_drive(steering=pilot.get("steering"), throttle=pilot.get("throttle"), reverse_gear=_reverse, wakeup=_wakeup)
+            self._send_drive(steering=pilot.get("steering"), throttle=pilot.get("throttle"), reverse_gear=_reverse, wakeup=_wakeup, spin=pilot.get("spin"))
 
     def _config(self):
         parser = SafeConfigParser()

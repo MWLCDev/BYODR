@@ -3,7 +3,6 @@ from __future__ import absolute_import
 
 import argparse
 import asyncio
-import configparser
 import glob
 import logging
 import multiprocessing
@@ -12,13 +11,9 @@ import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor
 
-import tornado.web
 from byodr.utils import Application, ApplicationExit, hash_dict
-from byodr.utils.ipc import (CameraThread, JSONPublisher, JSONZmqClient,
-                             json_collector)
-from byodr.utils.navigate import (FileSystemRouteDataSource,
-                                  ReloadableDataSource)
-from byodr.utils.option import parse_option
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
@@ -28,12 +23,11 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import (DirectingUser, EndpointHandlers, RunGetSSIDPython,
-                        TemplateRenderer, ThrottleController)
+from .tel_utils import EndpointHandlers, FollowingUtils, ThrottleController
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
@@ -56,24 +50,27 @@ def _load_nav_image(fname):
 
 
 class TeleopApplication(Application):
-    def __init__(self, event, config_dir=os.getcwd()):
-        """set up configuration directory and a configuration file path
+    """set up configuration directory and a configuration file path
 
-        Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
+    Args:
+        event: allow for thread-safe signaling between processes or threads.
+    """
 
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its .ini configuration files.
-        """
-        super(TeleopApplication, self).__init__(quit_event=event)
+    def __init__(self, tel_chatter, throttle_controller, fol_comm_socket, event, hz, config_dir=os.getcwd()):
+        super(TeleopApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
-        self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._user_config_file = None
         self.rut_ip = None
+        self.following_utils = FollowingUtils(tel_chatter, throttle_controller, fol_comm_socket)
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) > 0:
-            self._user_config_file = _candidates[0]
+        for file_path in _candidates:
+            # Extract the filename from the path
+            file_name = os.path.basename(file_path)
+            if file_name == "config.ini":
+                self._user_config_file = file_path
 
     def _config(self):
         parser = SafeConfigParser()
@@ -84,34 +81,17 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
-    def read_user_config(self):
-        """
-        Reads the configuration file, flattens the configuration sections and keys,
-        and initializes components with specific configuration values.
-        """
-        config = configparser.ConfigParser()
-        config.read(self.get_user_config_file())
-
-        # Flatten the configuration sections and keys into a single dictionary
-        config_dict = {f"{section}.{option}": value for section in config.sections() for option, value in config.items(section)}
-
-        errors = []
-        # Use the flattened config dictionary as **kwargs to parse_option
-        # A close implementation for how the parse_option is called in the internal_start function for each service.
-        self.rut_ip = parse_option("vehicle.gps.provider.host", str, "192.168.1.1", errors, **config_dict)
-
-        if errors:
-            for error in errors:
-                logger.info(f"Configuration error: {error}")
-
     def setup(self):
         if self.active():
             self._check_user_config()
-            self.read_user_config()
+            self.following_utils.configs(self._user_config_file)
             _config = self._config()
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
+
+    def step(self):
+        self.following_utils.process_socket_commands()
 
 
 def main():
@@ -120,15 +100,9 @@ def main():
       - MongoDB connection and indexing.
       - Route data source for navigation.
       - Camera threads for front and rear cameras.
-      - JSON collectors for the pilot, vehicle, and inference data.
-      - LogBox setup for logging.
       - Threaded applications for logging and packaging data.
 
-    It initializes multiple threads for various components, including cameras, pilot, vehicle, inference, and logging.
-
-    JSON publishers are set up for teleop data and chatter data.
-
-    """
+    It initializes multiple threads for various components, including cameras, pilot, vehicle, inference, and logging."""
     parser = argparse.ArgumentParser(description="Teleop sockets server.")
     parser.add_argument("--name", type=str, default="none", help="Process name.")
     parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
@@ -143,35 +117,32 @@ def main():
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
-    application = TeleopApplication(event=quit_event, config_dir=args.config)
-    application.setup()
-
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
+    following_comm_socket = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
+    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
+    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
-
+    throttle_controller = ThrottleController(teleop_publisher, route_store)
+    application = TeleopApplication(tel_chatter=chatter, throttle_controller=throttle_controller, fol_comm_socket=following_comm_socket, event=quit_event, config_dir=args.config, hz=20)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread]
 
+    threads = [camera_front, camera_rear, pilot, following_comm_socket, vehicle, inference, logbox_thread, package_thread, threading.Thread(target=application.run)]
+    application.setup()
     if quit_event.is_set():
         return 0
 
     [t.start() for t in threads]
-
-    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
-    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
-    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
-    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
-    # Initialize ThrottleController
-    throttle_controller = ThrottleController(teleop_publisher, route_store)
 
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
@@ -193,7 +164,10 @@ def main():
                 # Navigate to Mobile controller UI
                 (r"/(mc)", TemplateRenderer),
                 # Getting the commands from the mobile controller (commands are sent in JSON)
-                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
+                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(throttle_controller=throttle_controller.throttle_control)),
+                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
+                (r"/switch_following", FollowingHandler, dict(fn_control=application.following_utils.teleop_publish_to_following)),
+                (r"/switch_following_status", FollowingStatusHandler, dict(fn_control=application.following_utils)),
                 # Run python script to get the SSID for the current segment
                 (r"/run_get_SSID", RunGetSSIDPython),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
@@ -210,7 +184,7 @@ def main():
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
-                # Path to where the static files are stored (JS,CSS, images)
+                # Path to where the static files are stored (JS, CSS, images)
                 (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
             ],  # Disable request logging with an empty lambda expression
             # un/comment if you want to see the requests from tornado
