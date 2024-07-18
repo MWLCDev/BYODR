@@ -116,8 +116,9 @@ class CommandController:
         self.left_red_zone = parse_option("following.left_red_zone", float, 0.45, [], **self.user_config_args)  # In percentage
         self.right_red_zone = parse_option("following.right_red_zone", float, 0.55, [], **self.user_config_args)  # In percentage
         self.max_camera_pan = parse_option("following.max_camera_pan", float, 3500, [], **self.user_config_args)  # max is 3550
-        self.min_camera_pan = parse_option("following.min_camera_pan", float, 50, [], **self.user_config_args)  # when going right
+        self.min_camera_pan = parse_option("following.min_camera_pan", float, 50, [], **self.user_config_args)  # value increments from 0 when panning right
         self.unsafe_height = parse_option("following.unsafe_height", float, 0.65, [], **self.user_config_args)  # In percentage
+        self.steering_adjustment_factor = parse_option("following.steering_adjustment_factor", int, 3, [], **self.user_config_args)
 
         self.original_left_red_zone = self.left_red_zone
         self.original_right_red_zone = self.right_red_zone
@@ -136,15 +137,14 @@ class CommandController:
                     if self.person_height >= self.unsafe_height:
                         self.current_throttle = 0
                         self.current_steering = 0
-                        self.current_camera_pan = 0
                         self.current_camera_pan = self.calculate_camera_pan(person.xywhn[0][0])
                         return  # Exit the loop early
-                    # it throws the error when the person isn't followed
                     # Skip the person if there is no ID assigned
                     if person.id is None or len(person.id) == 0 or person.id[0] is None:
                         continue
 
                     person_id = int(person.id[0])
+                    # print(person)
                     if person_id < lowest_id:
                         lowest_id = person_id
                         person_to_follow = {"id": person_id, "x_center_percentage": person.xywhn[0][0]}
@@ -184,10 +184,9 @@ class CommandController:
     def perform_calibration(self):
         """Perform the calibration process to align the vehicle with the camera direction."""
         if self.current_azimuth < 1800:
-            self.current_steering = (self.current_azimuth - 1800) / 1800 / 3
+            self.current_steering = (self.current_azimuth - 1800) / 1800 / self.steering_adjustment_factor
         else:
-            self.current_steering = (1800 - self.current_azimuth) / 1800 / 3
-            print("going left")
+            self.current_steering = (1800 - self.current_azimuth) / 1800 / self.steering_adjustment_factor
 
         self.current_steering = max(-1, min(1, self.current_steering))
         self.current_camera_pan = -self.current_steering * self.pan_movement_offset
@@ -235,12 +234,11 @@ class CommandController:
                 # Make sure to define the preset for the camera
                 if camera_pan == "go_preset_1":
                     cmd["camera_pan"] = camera_pan
-                    print("going to preset")
                 elif camera_pan != 0:
                     cmd["camera_pan"] = int(camera_pan)
             self.publisher.publish(cmd)
             if source == "followingActive" and (cmd["throttle"] != 0 or cmd["steering"] != 0):
-                logger.info(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
+                print(f'Control commands: T:{cmd["throttle"]}, S:{cmd["steering"]}, C_P:{cmd.get("camera_pan", "N/A")}')
             # logger.info(cmd)
         except Exception as e:
             logger.warning(f"Error while sending teleop command {e}")
