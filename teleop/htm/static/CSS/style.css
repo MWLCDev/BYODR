@@ -3,6 +3,13 @@ html {
   background-image: linear-gradient(to top, white, black);
 }
 
+
+
+.dark-mode {
+  background-color: black;
+  color: white;
+}
+
 body {
   /* background-color: black; */
   /* color: white; */
