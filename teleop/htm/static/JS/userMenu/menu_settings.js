@@ -12,30 +12,12 @@ class RealSettingsBackend {
   }
 }
 
-
-class FakeSettingsBackend extends RealSettingsBackend {
-  constructor() {
-    super();
-  }
-  _call_get_state(cb) {
-    cb({ "platform": { 'entry': [new Date().toLocaleString()] } });
-  }
-  _call_get_settings(cb) {
-    cb({ "vehicle": { "ras.driver.motor.scale": "14", "ras.driver.steering.offset": "0.54" } });
-  }
-  _call_save_settings(data, cb) {
-    console.log("Dev backend save settings: " + data);
-    cb({});
-  }
-}
-
-
 var menu_settings = {
   _backend: null,
 
   _init: function (el_parent) {
     // In development mode there is no use of a backend.
-    this._backend = dev_tools.is_develop() ? new FakeSettingsBackend() : new RealSettingsBackend();
+    this._backend =  new RealSettingsBackend();
     // Construct the dom elements.
     const div_column = $("<div/>", { id: 'column' });
     div_column.append($("<h2/>").text("systems"));
