@@ -6,20 +6,38 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<title>teleop</title>
 		<link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
 		<script src="../static/external/jquery-3.4.1.min.js"></script>
 		<link rel="shortcut icon" href="#" />
 	</head>
 	<body>
+		<nav class="hamburger_menu_nav">
+			<div id="hamburger_menu_top_nav">
+				<!-- These ASCII codes are for testing only -->
+				<p><a href="#" id="home_link">&#9881; Homepage</a></p>
+				<p><a href="#" id="ai_training_link">&#9881; AI Training</a></p>
+				<p><a href="#" id="autopilot_link">&#9881; Autopilot</a></p>
+				<p><a href="#" id="map_recognition_link">&#9881; Map Recognition</a></p>
+				<p><a href="#" id="follow_link">&#9881; Follow</a></p>
+			</div>
+			<div id="hamburger_menu_bottom_nav">
+				<p><a href="#" id="settings_link">&#9881; Advanced Settings</a></p>
+				<p><a href="#" id="controls_link">&#9881; Controls</a></p>
+				<p><a href="#" id="events_link">&#9881; Training Events</a></p>
+				<p><a href="/mc" id="phone_controller_link">&#9881; Control by Phone</a></p>
+				<p>current mode toggle</p>
+				<p>logo place holder</p>
+			</div>
+		</nav>
 		<!-- https://volodymyrzh.medium.com/implementing-dark-mode-with-css-and-javascript-fd3b2105e081 -->
 		<!-- Top Layer: Logo and Hamburger Menu -->
 		<div id="header_bar">
-			<a title="navigate to user menu page" href="/user_menu">
-				<div class="hamburger_menu">
-					<div class="bar"></div>
-					<div class="bar"></div>
-					<div class="bar"></div>
-				</div>
-			</a>
+			<div id="hamburger_menu_toggle" title="navigate to user menu page">
+				<div class="bar"></div>
+				<div class="bar"></div>
+				<div class="bar"></div>
+			</div>
+
 			<img src="../static/assets/VR - Logo 144 px.png" class="center_logo" />
 		</div>
 
@@ -138,5 +156,6 @@
 		<script src="../static/JS/Index/index_video_mjpeg.js"></script>
 		<script src="../static/JS/http-live-player.js"></script>
 		<script src="../static/JS/performance-polyfill.js"></script>
+		<script src="../static/JS/userMenu/user_menu.js"></script>
 	</body>
 </html>

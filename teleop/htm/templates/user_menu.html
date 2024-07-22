@@ -3,79 +3,45 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Menu</title>
+		<title>user settings</title>
 		<link rel="stylesheet" href="../static/external/jquery-ui-1.12.1.min.css" />
 		<link rel="stylesheet" href="../static/external/radioslider-1.0.0_b1.min.css" />
 		<link rel="stylesheet" href="../static/external/datatables/datatables-1.11.5.min.css" />
 		<link rel="stylesheet" href="../static/external/datatables/fixedheader-3.2.2.min.css" />
-		<link rel="shortcut icon" href="#" />
-		<style type="text/css">
-			.application {
-				display: flex;
-				min-height: 100vh;
-				flex-direction: column;
-			}
-
-			.application-body {
-				display: flex;
-				flex: 1;
-			}
-
-			.application-content {
-				flex: 1;
-				padding: 20px;
-				font-family: 'Arial';
-				background: whitesmoke;
-			}
-
-			.application-nav {
-				/* last value is the width of the columns */
-				flex: 0 0 12em;
-				border-right: 1px solid gray;
-			}
-
-			.application-nav a {
-				font-family: 'Arial';
-				font-size: 20px;
-				color: darkblue;
-			}
-
-			.application-nav a:link,
-			a:visited {
-				text-decoration: none;
-			}
-
-			.application-nav a:hover {
-				text-decoration: underline;
-			}
-
-			.application-nav a.active {
-				font-weight: bold;
-			}
-
-			table#logbox td {
-				white-space: nowrap;
-			}
-		</style>
+		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
+		<link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
 	</head>
 
 	<body class="application">
-		<header></header>
 		<div class="application-body">
-			<nav class="application-nav">
-				<p style="padding-bottom: 50px">
-					<a id="home_link" href="#">Home</a>
-				</p>
-				<p><a id="settings_link" href="#">Settings</a></p>
-				<p><a id="controls_link" href="#">Controls</a></p>
-				<p><a id="logbox_link" href="#">Events</a></p>
-				<p><a id="logbox_link" href="/mc">Control by phone</a></p>
+			<div id="hamburger_menu_toggle" title="navigate to user menu page">
+				<div class="bar"></div>
+				<div class="bar"></div>
+				<div class="bar"></div>
+			</div>
+			<nav class="hamburger_menu_nav">
+				<div id="hamburger_menu_top_nav">
+					<!-- These ASCII codes are for testing only -->
+					<p><a href="#" id="home_link">&#9881; Homepage</a></p>
+					<p><a href="#" id="ai_training_link">&#9881; AI Training</a></p>
+					<p><a href="#" id="autopilot_link">&#9881; Autopilot</a></p>
+					<p><a href="#" id="map_recognition_link">&#9881; Map Recognition</a></p>
+					<p><a href="#" id="follow_link">&#9881; Follow</a></p>
+				</div>
+				<div id="hamburger_menu_bottom_nav">
+					<p><a href="#" id="settings_link">&#9881; Advanced Settings</a></p>
+					<p><a href="#" id="controls_link">&#9881; Controls</a></p>
+					<p><a href="#" id="events_link">&#9881; Training Events</a></p>
+					<p><a href="/mc" id="phone_controller_link">&#9881; Control by Phone</a></p>
+					<p>current mode toggle</p>
+					<p>logo place holder</p>
+				</div>
 			</nav>
+
 			<main class="application-content">
 				<div id="application-content-container"></div>
 			</main>
 		</div>
-		<footer></footer>
 		<script src="../static/external/jquery-3.4.1.min.js"></script>
 		<script src="../static/external/jquery-ui-1.12.1.min.js"></script>
 		<script src="../static/external/jquery.radioslider-1.0.0_b1.min.js"></script>
@@ -85,55 +51,6 @@
 		<script src="../static/JS/userMenu/menu_settings.js"></script>
 		<script src="../static/JS/userMenu/menu_controls.js"></script>
 		<script src="../static/JS/userMenu/menu_logbox.js"></script>
+		<script src="../static/JS/userMenu/user_menu.js"></script>
 	</body>
 </html>
-<script type="text/javascript">
-	function _user_menu_route_screen(screen) {
-		$('.application-nav a').each(function () {
-			$(this).removeClass('active');
-		});
-
-		const el_parent = $('main.application-content');
-		const el_container = $('<div/>', { id: 'application-content-container' });
-		el_parent.find('div#application-content-container').remove();
-		el_parent.append(el_container);
-
-		window.localStorage.setItem('user.menu.screen', screen);
-		switch (screen) {
-			case 'controls':
-				$('a#controls_link').addClass('active');
-				menu_user_controls_main(el_container);
-				break;
-			case 'logbox':
-				$('a#logbox_link').addClass('active');
-				menu_user_logbox_main(el_container);
-				break;
-			default:
-				$('a#settings_link').addClass('active');
-				menu_user_settings_main(el_container);
-		}
-	}
-
-	document.addEventListener('DOMContentLoaded', function () {
-		// Set up the click handlers.
-		$('a#home_link').click(function () {
-			location = dev_tools.is_develop() ? '/index.htm?develop=' + dev_tools.is_develop() : '/';
-		});
-		$('a#settings_link').click(function () {
-			_user_menu_route_screen('settings');
-		});
-		$('a#controls_link').click(function () {
-			_user_menu_route_screen('controls');
-		});
-		$('a#logbox_link').click(function () {
-			_user_menu_route_screen('logbox');
-		});
-
-		// Activate the selected screen.
-		var screen = window.localStorage.getItem('user.menu.screen');
-		if (screen == null) {
-			screen = 'settings';
-		}
-		_user_menu_route_screen(screen);
-	});
-</script>

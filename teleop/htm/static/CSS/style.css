@@ -36,21 +36,6 @@ body {
   margin: 0 auto;
 }
 
-.hamburger_menu {
-  cursor: pointer;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-around;
-  width: 30px;
-  height: 25px;
-  background-color: var(--background-color-light_m) !important;
-}
-
-.hamburger_menu .bar {
-  height: 3px;
-  background-color: #333;
-  border-radius: 2px;
-}
 
 /* Second Layer: Advanced View */
 #debug_drive_bar {
@@ -430,13 +415,13 @@ div.overlay_distance {
   }
 
   .flex-container,
-  .hamburger_menu,
+  #hamburger_menu_toggle,
   #control_bar,
   #debug_drive_bar {
     flex-direction: column;
   }
 
-  .hamburger_menu {
+  #hamburger_menu_toggle {
     margin-bottom: 10px;
   }
 
