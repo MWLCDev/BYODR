@@ -305,10 +305,10 @@ var teleop_screen = {
         }
         // des_speed is the desired speed
         // vel_y is the actual vehicle speed
-        var el_alpha_speed = $('div#alpha_speed_value');
+        var el_alpha_speed = $('p#alpha_speed_value');
         var el_alpha_speed_label = $('div#alpha_speed_label');
         var el_beta_speed_container = $('div#beta_speed');
-        var el_beta_speed = $('div#beta_speed_value');
+        var el_beta_speed = $('p#beta_speed_value');
         if (message._is_on_autopilot) {
             el_alpha_speed.text(message.max_speed.toFixed(1));
             el_beta_speed.text(message.vel_y.toFixed(1));
@@ -353,7 +353,6 @@ var teleop_screen = {
         const _active = this.active_camera;
         const _selected = this.selected_camera;
         const viewport_container = this.el_viewport_container;
-        const overlay_container = $('div#overlay_image_container');
         const overlay_image = $('img#overlay_image');
 
         viewport_container.removeClass('selected');
@@ -506,11 +505,11 @@ screen_utils._init();
 
 document.addEventListener("DOMContentLoaded", function() {
     if (page_utils.get_stream_type() == 'mjpeg') {
-        $('a#video_stream_mjpeg').addClass('active');
-        $('a#video_stream_h264').addClass('inactive');
+        $('#video_stream_mjpeg').addClass('active');
+        $('#video_stream_h264').addClass('inactive');
     } else {
-        $('a#video_stream_mjpeg').addClass('inactive');
-        $('a#video_stream_h264').addClass('active');
+        $('#video_stream_mjpeg').addClass('inactive');
+        $('#video_stream_h264').addClass('active');
     }
     teleop_screen._init();
     screen_poll_platform();

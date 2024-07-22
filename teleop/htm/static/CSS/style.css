@@ -1,8 +1,8 @@
 :root {
-  --background-color-light: #ffffff;
-  --text-color-light: #000000;
-  --background-color-dark: #121212;
-  --text-color-dark: #ffffff;
+  --background-color-light_m: #ffffff;
+  --text-color-ligh_m: #000000;
+  --background-color-dark_m: #121212;
+  --text-color-dark_m: #ffffff;
   --VOR-color: #654279;
 }
 
@@ -21,17 +21,13 @@ body {
 }
 
 /* Top Layer: Logo and Hamburger Menu */
-
 #header_bar {
   padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid var(--VOR-color);
-  /* Add 'solid' to define the border style */
-
   /* border-bottom-left-radius: 10px; */
-
 }
 
 .center_logo {
@@ -47,7 +43,7 @@ body {
   justify-content: space-around;
   width: 30px;
   height: 25px;
-  background-color: var(--background-color-light) !important;
+  background-color: var(--background-color-light_m) !important;
 }
 
 .hamburger_menu .bar {
@@ -62,8 +58,6 @@ body {
   padding: 10px;
   width: 100%;
   border-bottom: 2px solid var(--VOR-color);
-  /* Add 'solid' to define the border style */
-
 }
 
 #debug_drive_values {
@@ -107,13 +101,15 @@ body {
   margin-bottom: 5px;
 }
 
-img.caret_img {
+.caret {
   cursor: pointer;
-  margin: 0 5px;
-  margin: 5px 0;
-  cursor: pointer;
-  width: 20px;
-  height: 20px;
+  font-size: 20px;
+  /* Adjust size of the arrow */
+  display: inline-block;
+  transition: color 0.3s;
+  /* Smooth transition for color change */
+  color: var(--caret-color, #000);
+  /* Default color, with option to override */
 }
 
 
@@ -125,7 +121,7 @@ img.caret_img {
 
 .middle_section,
 .right_section {
-  flex: 1;
+  /* flex: 1; */
   display: inline-flex;
   align-items: center;
 }
@@ -138,27 +134,60 @@ img.caret_img {
   padding: 0 20px;
 }
 
-
-
 .stream_quality {
   display: flex;
   align-items: center;
-  padding: 0 20px;
+  padding: 0 0 0 2rem;
 }
 
-#mjpeg_stream_controls,
-#stream_links {
+#mjpeg_stream_controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  margin: 0 0.5rem;
+}
+
+#stream_quality_dropdown {
   display: flex;
   flex-direction: row;
   align-items: center;
-  margin: 5px 0;
+  justify-content: center;
 }
 
-#stream_links a {
+#video_stream_type {
   padding: 8px 16px;
-  margin: 0 10px;
+  margin: 0 5px;
+  background-color: #868686;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+  /* Necessary to remove default dropdown arrow */
 }
 
+#video_stream_type:hover {
+  background-color: #0056b3;
+}
+
+#video_stream_type {
+  position: relative;
+}
+
+#video_stream_type::after {
+  content: '\25BC';
+  /* Unicode for down arrow */
+  color: white;
+  position: absolute;
+  right: 10px;
+  top: calc(50% - 0.5em);
+  pointer-events: none;
+  /* Prevents the arrow from being clickable */
+}
 
 #horizontal_bar {
   width: 100%;
@@ -183,37 +212,58 @@ a:hover {
   background-color: #0056b3;
 }
 
-
 button:hover {
   background-color: #0056b3;
 }
 
-#stream_links a {
+
+#confidence_button_normal_controller {
+  background-color: var(--VOR-color);
   color: white;
-  text-decoration: none;
-  background-color: #007bff;
+  border: none;
   padding: 8px 16px;
-  border-radius: 4px;
-  display: inline-block;
-  transition: background-color 0.3s;
-}
-
-#stream_links a:hover {
-  background-color: #0056b3;
-}
-
-
-
-.geo_data {
-  display: none;
-  background: rgba(255, 255, 255, 0.8);
-  padding: 5px 10px;
-  border-radius: 5px;
   font-size: 14px;
-  position: absolute;
-  bottom: 10px;
-  left: 20px;
+  border-radius: 4px;
+  cursor: pointer;
 }
+
+.speed_value {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  flex-direction: column;
+}
+
+.speed_value p {
+  font-weight: bold;
+}
+
+.speed_display {
+  display: flex;
+  align-items: center;
+  justify-content: start;
+  margin-right: 20px;
+}
+
+.right_section button {
+  background-color: #28a745;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.right_section button:hover {
+  background-color: #218838;
+}
+
+/* Fourth Layer: Camera Stream View  */
+#viewport_canvas {
+  width: 100% !important;
+  height: 100% !important;
+}
+
 
 #control_bar {
   position: absolute;
@@ -226,11 +276,9 @@ button:hover {
   flex-direction: column;
   align-items: center;
   z-index: 99;
-
 }
 
 .preview_img {
-  width: 15vw;
   height: auto;
   border-radius: 5px;
   margin: 5px 0;
@@ -249,11 +297,6 @@ button:hover {
   right: 0;
 }
 
-#debug_drive_values {
-  align-items: center;
-  display: flex;
-}
-
 #viewport_container {
   position: relative;
   bottom: 0;
@@ -262,99 +305,58 @@ button:hover {
   overflow: hidden;
 }
 
-
-#speed_value {
-  display: inline-block;
-  min-width: 50px;
-  text-align: center;
-}
-
-#stream_links a {
-  margin: 0 5px;
-  padding: 5px 10px;
-  background-color: #007bff;
-  border-radius: 4px;
-  color: white;
-}
-
-#stream_links a:hover {
-  background-color: #0056b3;
-}
-
-#confidence_button_normal_controller {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
-  border-radius: 4px;
-  cursor: pointer;
-}
-
-#confidence_button_normal_controller:hover {
-  background-color: #218838;
-}
-
-.speed_display {
-  display: flex;
-  justify-content: space-around;
-  display: flex;
-  align-items: center;
-  justify-content: start;
-  margin-right: 20px;
-}
-
-.stream_quality {
-  display: flex;
-  align-items: center;
-}
-
-#mjpeg_stream_controls {
+#message_box_container {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  background-color: rgba(0, 0, 0, 0.75);
+  padding: 20px;
+  border-bottom-left-radius: 10px;
+  border-bottom-right-radius: 10px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  margin: 10px 0;
-}
-
-
-#stream_links {
-  display: flex;
   justify-content: center;
-  margin-top: 10px;
+  color: #f7f7f7;
+  width: 100%;
 }
 
-#stream_links a {
+#message_box_button_take_control {
+  height: 100%;
+  font-size: 18;
+  text-align: center;
+  color: var(--text-color-dark_m);
+  background-color: var(--VOR-color);
+}
+
+
+#geo_data {
+  background: rgba(255, 255, 255, 0.8);
   padding: 5px 10px;
-  margin: 0 5px;
-  background-color: #007bff;
-  color: white;
-  border-radius: 4px;
-  text-decoration: none;
+  border-radius: 5px;
+  font-size: 14px;
+  position: absolute;
+  bottom: 2.5rem;
+  left: 2rem;
+  display: flex
 }
 
-#stream_links a:hover {
-  background-color: #0056b3;
+#geo_data p:nth-child(2) {
+  margin-left: 10px;
 }
 
-.right_section button {
-  background-color: #28a745;
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
-  cursor: pointer;
+#navigation_geo_lat,
+#navigation_geo_long {
+  font-weight: bold;
 }
 
-.right_section button:hover {
-  background-color: #218838;
+div.overlay_distance {
+  position: absolute;
+  z-index: 51;
+  text-align: center;
+  color: rgba(0, 0, 0, 0.5);
 }
-
-
-#viewport_canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
-
 
 #overlay_image_container {
   position: absolute;
