@@ -1,17 +1,21 @@
 var toggleBtn = document.getElementById('hamburger_menu_toggle');
 var nav = document.querySelector('.hamburger_menu_nav');
-var content = document.querySelector('.application-content');
+var userMenu = document.getElementById('application-content');
+var normalUI = document.getElementById('normal_ui');
 var navLinks = document.querySelectorAll('.hamburger_menu_nav a'); // Select all nav links
 
 // Function to toggle the sidebar and content blur
+
 function toggleSidebar() {
-	nav.classList.toggle('active');
-	content.classList.toggle('expanded');
-	toggleBtn.classList.toggle('active');
+	if (nav) nav.classList.toggle('active');
+	if (normalUI) normalUI.classList.toggle('expanded');
+	if (userMenu) userMenu.classList.toggle('expanded');
+	if (toggleBtn) toggleBtn.classList.toggle('active');
 }
 
-// Event listener for the toggle button
-toggleBtn.addEventListener('click', toggleSidebar);
+if (toggleBtn) {
+	toggleBtn.addEventListener('click', toggleSidebar);
+}
 
 navLinks.forEach(function (link) {
 	link.addEventListener('click', function () {
@@ -39,9 +43,10 @@ function _user_menu_route_screen(screen) {
 	const el_container = $('<div/>', { id: 'application-content-container' });
 	el_parent.find('div#application-content-container').remove();
 	el_parent.append(el_container);
-
 	// Save the last visited screen in the cache
 	window.localStorage.setItem('user.menu.screen', screen);
+
+
 	switch (screen) {
 		case 'controls':
 			$('a#controls_link').addClass('active');
