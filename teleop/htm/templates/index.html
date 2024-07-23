@@ -7,11 +7,14 @@
 		<title>teleop</title>
 		<link rel="stylesheet" type="text/css" href="../static/CSS/style.css" />
 		<link rel="stylesheet" type="text/css" href="../static/CSS/user_menu.css" />
-		<script src="../static/external/jquery-3.4.1.min.js"></script>
+		<link rel="stylesheet" href="../static/external/jquery-ui-1.12.1.min.css" />
+		<link rel="stylesheet" href="../static/external/radioslider-1.0.0_b1.min.css" />
+		<link rel="stylesheet" href="../static/external/datatables/datatables-1.11.5.min.css" />
+		<link rel="stylesheet" href="../static/external/datatables/fixedheader-3.2.2.min.css" />
+
 		<link rel="shortcut icon" href="#" />
 	</head>
 	<body>
-
 		<nav class="hamburger_menu_nav">
 			<div id="hamburger_menu_top_nav">
 				<!-- These ASCII codes are for testing only -->
@@ -40,16 +43,17 @@
 
 			<img src="../static/assets/VR - Logo 144 px.png" class="center_logo" />
 		</div>
-		<div id="normal_ui">
+		<main class="application-content">
+			<div id="application-content-container">
+				<!-- Where the elements are displayed -->
+			</div>
+		</main>
 
-			<main class="application-content">
-				<div id="application-content-container">
-					<!-- Where the elements are displayed -->
-				</div>
-			</main>
-		</div>
-
-		
+		<script src="../static/external/jquery-3.4.1.min.js"></script>
+		<script src="../static/external/jquery-ui-1.12.1.min.js"></script>
+		<script src="../static/external/jquery.radioslider-1.0.0_b1.min.js"></script>
+		<script src="../static/external/datatables/datatables-1.11.5.min.js"></script>
+		<script src="../static/external/datatables/fixedheader-3.2.2.min.js"></script>
 		<script type="module" src="../static/JS/userMenu/user_menu.js"></script>
 	</body>
 </html>

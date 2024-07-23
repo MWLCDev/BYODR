@@ -37,13 +37,8 @@ class RealNavigatorController {
 				$('img#next_navigation_image').css('opacity', 1 - 0.85 * _nni_dist);
 			}
 			const backend_active = message.nav_active;
-			const is_backend_change = backend_active != this.backend_active;
-			const is_image_change = message.nav_image[0] != this.navigation_images[0] || message.nav_image[1] != this.navigation_images[1];
 			this.backend_active = backend_active;
 			this.navigation_images = message.nav_image;
-			if (is_image_change || is_backend_change) {
-				this._schedule_navigation_image_update();
-			}
 			if (backend_active) {
 				this.el_point.text(message.nav_point);
 			}
@@ -66,7 +61,6 @@ export function navigator_stop_all() {
 teleop_screen.add_toggle_debug_values_listener(function (show) {
 	navigator_controller.in_debug = show;
 });
-console.log('3');
 
 // prettier-ignore
 server_socket.add_server_message_listener(function (message) {

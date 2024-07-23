@@ -1,3 +1,6 @@
+import { initializeSettings } from './menu_settings.js';
+import { fetchData } from './menu_logbox.js';
+// TODO: rename this file
 var toggleBtn = document.getElementById('hamburger_menu_toggle');
 var nav = document.querySelector('.hamburger_menu_nav');
 var userMenu = document.getElementById('application-content');
@@ -48,10 +51,25 @@ function _user_menu_route_screen(screen) {
 	switch (screen) {
 		case 'home_link':
 			$('a#home_link').addClass('active');
-			$('#application-content-container').load('/normal_ui', function () {
-				console.log(screen);
-        
-			});
+			$('#application-content-container').load('/normal_ui', function () {});
+			break;
+		case 'settings_link':
+			$('a#settings_link').addClass('active');
+			$('#application-content-container').load('/menu_settings', function () {});
+			initializeSettings();
+			break;
+		case 'controls_link':
+			$('a#controls_link').addClass('active');
+			$('#application-content-container').load('/menu_controls', function () {});
+			break;
+		case 'events_link':
+			$('a#events_link').addClass('active');
+			$('#application-content-container').load('/menu_logbox', function () {});
+			fetchData();
+			break;
+		case 'phone_controller_link':
+			$('a#phone_controller_link').addClass('active');
+			$('#application-content-container').load('/mc', function () {});
 			break;
 	}
 }
@@ -60,7 +78,18 @@ document.addEventListener('DOMContentLoaded', function () {
 	// Set up the click handlers.
 	$('a#home_link').click(function () {
 		_user_menu_route_screen('home_link');
-		// location = '/normal_ui';
+	});
+	$('a#settings_link').click(function () {
+		_user_menu_route_screen('settings_link');
+	});
+	$('a#controls_link').click(function () {
+		_user_menu_route_screen('controls_link');
+	});
+	$('a#events_link').click(function () {
+		_user_menu_route_screen('events_link');
+	});
+	$('a#phone_controller_link').click(function () {
+		_user_menu_route_screen('phone_controller_link');
 	});
 
 	// Load the last visited screen from cache. Default value for it is settings tab

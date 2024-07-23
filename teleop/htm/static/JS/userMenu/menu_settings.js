@@ -1,166 +1,98 @@
-class RealSettingsBackend {
-  constructor() {
-  }
-  _call_get_state(cb) {
-    $.get("/teleop/system/state", cb);
-  }
-  _call_get_settings(cb) {
-    $.get("/teleop/user/options", cb);
-  }
-  _call_save_settings(data, cb) {
-    $.post("/teleop/user/options", data).done(cb);
-  }
+// Initialize settings content
+export function initializeSettings() {
+	fetchUserSettings();
 }
 
-var menu_settings = {
-  _backend: null,
+// Fetch user settings from backend and generate form inputs
+function fetchUserSettings() {
+	fetch('/teleop/user/options')
+		.then((response) => response.json())
+		.then((settings) => {
+			const form = document.getElementById('form_user_options');
+			form.innerHTML = ''; // Clear existing form content
+			Object.entries(settings).forEach(([section, options]) => {
+				const fieldset = document.createElement('fieldset');
+				const legend = document.createElement('legend');
+				legend.textContent = section;
+				fieldset.appendChild(legend);
 
-  _init: function (el_parent) {
-    // In development mode there is no use of a backend.
-    this._backend =  new RealSettingsBackend();
-    // Construct the dom elements.
-    const div_column = $("<div/>", { id: 'column' });
-    div_column.append($("<h2/>").text("systems"));
-    div_column.append($("<div/>", { id: 'system_state' }));
-    div_column.append($("<h2/>").text("options"));
-    div_column.append($("<form/>", { id: 'form_user_options', action: '' }));
-    el_parent.append(div_column);
-    // Get and render.
-    this._poll_system_state();
-    this._create_user_settings();
-  },
+				Object.entries(options).forEach(([name, value]) => {
+					const input = document.createElement('input');
+					// Bool values are case sensitive between js and python
+					input.type = value === 'True' || value === 'False' ? 'checkbox' : 'text';
+					input.name = name;
+					if (value === 'True' || value === 'False') {
+						input.checked = value === 'true';
+					} else {
+						input.value = value;
+					}
 
-  _system_state_update: function (data) {
-    const el_parent = $("div#system_state");
-    el_parent.find('table').remove();
-    var el_table = $("<table/>");
-    Object.keys(data).forEach(subsystem => {
-      Object.keys(data[subsystem]).forEach(timestamp => {
-        var startup_errors = data[subsystem][timestamp];
-        startup_errors.forEach(err_msg => {
-          var el_row = $("<tr/>");
-          el_row.append($("<td/>").text(subsystem));
-          el_row.append($("<td/>").text(timestamp));
-          el_row.append($("<td/>").text(err_msg));
-          el_table.append(el_row);
-        });
-      });
-    });
-    el_parent.append(el_table);
-  },
+					const label = document.createElement('label');
+					label.textContent = name;
+					label.appendChild(input);
 
-  _poll_system_state: function () {
-    menu_settings._backend._call_get_state(menu_settings._system_state_update);
-  },
+					const div = document.createElement('div');
+					div.appendChild(label);
+					fieldset.appendChild(div);
+				});
 
-  _create_user_settings: function () {
-    menu_settings._backend._call_get_settings(menu_settings._create_settings_form);
-  },
+				form.appendChild(fieldset);
+			});
+			document.getElementById('submit_save_apply').disabled = true; // Disable save button initially
+		});
+}
 
-  _start_state_polling: function () {
-    setTimeout(menu_settings._poll_system_state, 0);
-    setTimeout(menu_settings._poll_system_state, 2000);
-    setTimeout(menu_settings._poll_system_state, 10000);
-  },
+// Save settings to backend
+function saveSettings() {
+	const inputs = document.querySelectorAll('#form_user_options input');
+	const settings = Array.from(inputs).reduce((acc, input) => {
+		const isChanged = input.type === 'checkbox' ? input.checked.toString() !== input.defaultChecked.toString() : input.value !== input.defaultValue;
+		if (isChanged) {
+			acc[input.name] = input.type === 'checkbox' ? input.checked : input.value;
+		}
+		return acc;
+	}, {});
 
-  _settings_form_submit: function () {
-    $("input#submit_save_apply").prop('disabled', true);
-    const form_inputs = $("form#form_user_options").find(':input').toArray();
-    let p_body = {};
-  
-    form_inputs.forEach((input) => {
-      let isDirty = false;
-      let value;
-  
-      // Check if the input is a checkbox and handle boolean values
-      if (input.type === 'checkbox') {
-        isDirty = input.checked.toString().toLowerCase() !== input.defaultValue.toLowerCase();
-        value = input.checked ? 'True' : 'False'; // Convert boolean to string matching server expectation
-      } else {
-        isDirty = input.value !== input.defaultValue;
-        value = input.value;
-      }
-  
-      if (isDirty) {
-        const section = input.attributes.section.value;
-        p_body[section] = p_body[section] || [];
-        p_body[section].push([input.name, value]);
-      }
-    });
-  
-    // p_body now contains the string 'True' or 'False' for checkboxes,
-    // and the string value for other inputs. No need to map through p_body to convert values.
-  
-    menu_settings._backend._call_save_settings(JSON.stringify(p_body), function (data) {
-      // Update the default values to the current state after successful save
-      form_inputs.forEach((input) => {
-        if (input.type === 'checkbox') {
-          input.defaultValue = input.checked.toString(); // Update defaultValue to 'true' or 'false'
-        } else {
-          input.defaultValue = input.value;
-        }
-      });
-      $("input#submit_save_apply").prop('disabled', false);
-      menu_settings._start_state_polling();
-    });
-  },
+	if (Object.keys(settings).length === 0) {
+		alert('No changes to save.');
+		return;
+	}
 
-  _create_settings_form: function (data) {
-    const el_form = $("form#form_user_options");
-    Object.keys(data).forEach(section => {
-      var el_table = $("<table/>");
-      el_table.append($("<caption/>").text(section).css('font-weight', 'bold').css('text-align', 'left'));
-      var section_a = Object.keys(data[section]).sort();
-      section_a.forEach(name => {
-        var value = data[section][name].toString().toLowerCase(); // Convert to string and lower case for comparison
-        var el_row = $("<tr/>");
-        el_row.append($("<td/>").text(name));
-        var el_input_td = $("<td/>");
+	fetch('/teleop/user/options', {
+		method: 'POST',
+		headers: {
+			'Content-Type': 'application/json',
+		},
+		body: JSON.stringify(settings),
+	})
+		.then((response) => {
+			if (response.ok) {
+				alert('Settings saved successfully.');
+				document.getElementById('submit_save_apply').disabled = true; // Disable button after successful save
+				fetchUserSettings(); // Refresh settings form
+			} else {
+				throw new Error('Failed to save settings');
+			}
+		})
+		.catch((error) => {
+			alert('Error saving settings: ' + error.message);
+		});
+}
 
-        // Check if the value is a boolean
-        if (value === 'true' || value === 'false') {
-          // Create a toggle switch
-          var el_input = $("<input/>", {
-            section: section,
-            name: name,
-            type: 'checkbox',
-            checked: value === 'true' // Check if the value is 'true'
-          });
-          el_input_td.append(el_input);
-        } else {
-          // Use a text input for non-boolean values
-          el_input_td.append($("<input/>", {
-            section: section,
-            name: name,
-            type: 'text',
-            value: value,
-            size: 40,
-            maxlen: 80
-          }));
-        }
-        el_row.append(el_input_td);
-        el_table.append(el_row);
-      });
-      el_form.append(el_table);
-    });
-    const el_button = $("<input/>", {
-      id: 'submit_save_apply',
-      type: 'button',
-      value: 'Save',
-      disabled: true,
-      click: menu_settings._settings_form_submit
-    });
-    el_form.append(el_button);
-    el_form.on("input", function (evt) {
-      el_button.prop('disabled', false);
-    });
+// Set up event handlers only if the elements exist on the page
+document.addEventListener('DOMContentLoaded', () => {
+  const submitButton = document.getElementById('submit_save_apply');
+  const form = document.getElementById('form_user_options');
+
+  if (submitButton) {
+      submitButton.addEventListener('click', saveSettings);
   }
-}
 
-
-
-// --------------------------------------------------- Init and public --------------------------------------------------------- //
-
-function menu_user_settings_main(el_parent) {
-  menu_settings._init(el_parent);
-}
+  if (form) {
+      form.addEventListener('input', () => {
+          if (submitButton) {
+              submitButton.disabled = false; // Enable save button on change
+          }
+      });
+  }
+});

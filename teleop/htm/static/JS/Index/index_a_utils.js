@@ -165,7 +165,6 @@ export var page_utils = {
 socket_utils._init();
 dev_tools._init();
 page_utils._init();
-console.log("1")
 document.addEventListener("DOMContentLoaded", function () {
   page_utils.request_capabilities(function (_capabilities) {
     dev_tools._vehicle = _capabilities.platform.vehicle;
