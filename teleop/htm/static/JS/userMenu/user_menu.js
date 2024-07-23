@@ -45,36 +45,22 @@ function _user_menu_route_screen(screen) {
 	el_parent.append(el_container);
 	// Save the last visited screen in the cache
 	window.localStorage.setItem('user.menu.screen', screen);
-
-
 	switch (screen) {
-		case 'controls':
-			$('a#controls_link').addClass('active');
-			menu_user_controls_main(el_container);
+		case 'home_link':
+			$('a#home_link').addClass('active');
+			$('#application-content-container').load('/normal_ui', function () {
+				console.log(screen);
+        
+			});
 			break;
-		case 'logbox':
-			$('a#logbox_link').addClass('active');
-			menu_user_logbox_main(el_container);
-			break;
-		default:
-			$('a#settings_link').addClass('active');
-			menu_user_settings_main(el_container);
 	}
 }
 
 document.addEventListener('DOMContentLoaded', function () {
 	// Set up the click handlers.
 	$('a#home_link').click(function () {
-		location = '/';
-	});
-	$('a#settings_link').click(function () {
-		_user_menu_route_screen('settings');
-	});
-	$('a#controls_link').click(function () {
-		_user_menu_route_screen('controls');
-	});
-	$('a#logbox_link').click(function () {
-		_user_menu_route_screen('logbox');
+		_user_menu_route_screen('home_link');
+		// location = '/normal_ui';
 	});
 
 	// Load the last visited screen from cache. Default value for it is settings tab

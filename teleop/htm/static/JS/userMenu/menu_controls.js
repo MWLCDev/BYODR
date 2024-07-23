@@ -160,3 +160,5 @@ var menu_controls = {
 function menu_user_controls_main(el_parent) {
 	menu_controls._init(el_parent);
 }
+
+export { menu_user_controls_main };

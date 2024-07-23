@@ -11,6 +11,7 @@
 		<link rel="shortcut icon" href="#" />
 	</head>
 	<body>
+
 		<nav class="hamburger_menu_nav">
 			<div id="hamburger_menu_top_nav">
 				<!-- These ASCII codes are for testing only -->
@@ -29,118 +30,26 @@
 				<p>logo place holder</p>
 			</div>
 		</nav>
+		<!-- Top Layer: Logo and Hamburger Menu -->
+		<div id="header_bar">
+			<div id="hamburger_menu_toggle" title="navigate to user menu page">
+				<div class="bar"></div>
+				<div class="bar"></div>
+				<div class="bar"></div>
+			</div>
+
+			<img src="../static/assets/VR - Logo 144 px.png" class="center_logo" />
+		</div>
 		<div id="normal_ui">
-			<!-- https://volodymyrzh.medium.com/implementing-dark-mode-with-css-and-javascript-fd3b2105e081 -->
-			<!-- Top Layer: Logo and Hamburger Menu -->
-			<div id="header_bar">
-				<div id="hamburger_menu_toggle" title="navigate to user menu page">
-					<div class="bar"></div>
-					<div class="bar"></div>
-					<div class="bar"></div>
-				</div>
 
-				<img src="../static/assets/VR - Logo 144 px.png" class="center_logo" />
-			</div>
-
-			<!-- Second Layer: Advanced View -->
-			<div class="normal_controller_advanced_view" id="debug_drive_bar" title="Drive values">
-				<div id="debug_drive_values" class="advanced_view_hidden">
-					<p>FPS front <span id="front_camera_framerate">0</span></p>
-					<p>FPS rear <span id="rear_camera_framerate">0</span></p>
-					<p>inference (Hz) <span id="inference_fps">0</span></p>
-					<p>st-mu <span id="inference_surprise">0</span></p>
-					<p>st-cri <span id="inference_critic">0</span></p>
-					<p>ob-mu <span id="inference_brake_critic">0</span></p>
-					<p>ob <span id="inference_obstacle">0</span></p>
-					<p>ds <span id="inference_desired_speed">0</span></p>
-					<p>bea <span id="navigation_heading">0</span></p>
-					<p>dist <span id="navigation_match_image_distance">0</span></p>
-					<p>cmd <span id="navigation_current_command">0</span></p>
-					<p>dir <span id="navigation_direction">0</span></p>
-					<p><span id="debug_screen_dimension"></span></p>
+			<main class="application-content">
+				<div id="application-content-container">
+					<!-- Where the elements are displayed -->
 				</div>
-			</div>
-
-			<!-- Third Layer: Stream Quality and Options -->
-			<div id="horizontal_bar" class="flex-container">
-				<!-- Dashboard & Speed Section (Left Section) -->
-				<div id="dashboard" class="left_section">
-					<div class="stream_quality">
-						<p>Stream quality</p>
-						<div id="mjpeg_stream_controls">
-							<span id="caret_up" class="caret">&#9650;</span>
-							<div id="speed_value">
-								<span id="mjpeg_quality_val">0</span>
-							</div>
-							<span id="caret_down" class="caret">&#9660;</span>
-						</div>
-						<div id="stream_quality_dropdown">
-							<select id="video_stream_type" title="Select video stream type">
-								<option id="video_stream_h264" value="h264">H264</option>
-								<option id="video_stream_mjpeg" value="mjpeg">mjpeg</option>
-							</select>
-						</div>
-					</div>
-
-					<div class="speed_display">
-						<div id="alpha_speed" class="speed_value">
-							<p id="alpha_speed_value">0</p>
-							<div id="alpha_speed_label">km/h</div>
-						</div>
-						<div id="beta_speed" class="speed_value">
-							<p id="beta_speed_value">0</p>
-							<div id="beta_speed_label">km/h</div>
-						</div>
-					</div>
-				</div>
-
-				<!-- Middle Section -->
-				<div class="middle_section hidden">
-					<!-- Placeholder for future content -->
-				</div>
-
-				<!-- Right Section -->
-				<div class="right_section">
-					<button id="confidence_button_normal_controller">Map recognition</button>
-				</div>
-			</div>
-
-			<!-- Fourth Layer: Camera Stream View -->
-			<div id="viewport_container">
-				<canvas id="viewport_canvas" width="640" height="480"></canvas>
-				<div id="overlay_image_container">
-					<img id="overlay_image" width="320" height="240" />
-					<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
-					<div id="overlay_center_distance1" class="overlay_distance">0.5</div>
-					<div id="overlay_left_marker0" class="overlay_distance">0.5</div>
-					<div id="overlay_left_marker1" class="overlay_distance">0.25</div>
-					<div id="overlay_right_marker0" class="overlay_distance">0.5</div>
-					<div id="overlay_right_marker1" class="overlay_distance">0.25</div>
-				</div>
-
-				<div id="control_bar">
-					<div id="overlay_control_container">
-						<img src="../static/assets/expand-collapse-icon-8.jpg" id="expand_camera_icon" title="Expand or collapse the camera overlay" />
-					</div>
-					<div id="preview_container" title="Show this camera on the main display">
-						<img id="mjpeg_camera_preview_image" class="preview_img" />
-					</div>
-				</div>
-
-				<!-- Message box container -->
-				<div id="message_box_container">
-					<input id="message_box_button_take_control" type="button" value="Take over control" />
-					<div id="message_box_message"></div>
-				</div>
-				<!-- Geo Data displayed at the bottom left -->
-				<div id="geo_data">
-					<p>Lat <span id="navigation_geo_lat"></span></p>
-					<p>Lon <span id="navigation_geo_long"></span></p>
-				</div>
-			</div>
+			</main>
 		</div>
 
-		<!-- JavaScript for Dynamic Elements -->
+		<!-- JavaScript for Dynamic Elements
 		<script src="../static/JS/Index/index.js"></script>
 		<script src="../static/JS/Index/index_a_utils.js"></script>
 		<script src="../static/JS/Index/index_b_gamepad.js"></script>
@@ -157,7 +66,7 @@
 		<script src="../static/JS/Index/index_video_hlp.js"></script>
 		<script src="../static/JS/Index/index_video_mjpeg.js"></script>
 		<script src="../static/JS/http-live-player.js"></script>
-		<script src="../static/JS/performance-polyfill.js"></script>
-		<script src="../static/JS/userMenu/user_menu.js"></script>
+		<script src="../static/JS/performance-polyfill.js"></script> -->
+		<script type="module" src="../static/JS/userMenu/user_menu.js"></script>
 	</body>
 </html>
