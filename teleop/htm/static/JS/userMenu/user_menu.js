@@ -4,16 +4,17 @@ import { fetchData } from './menu_logbox.js';
 var toggleBtn = document.getElementById('hamburger_menu_toggle');
 var nav = document.querySelector('.hamburger_menu_nav');
 var userMenu = document.getElementById('application-content');
-var normalUI = document.getElementById('normal_ui');
+var headerBar = document.getElementById('header_bar');
 var navLinks = document.querySelectorAll('.hamburger_menu_nav a'); // Select all nav links
 
 // Function to toggle the sidebar and content blur
 
 function toggleSidebar() {
-	if (nav) nav.classList.toggle('active');
-	if (normalUI) normalUI.classList.toggle('expanded');
-	if (userMenu) userMenu.classList.toggle('expanded');
-	if (toggleBtn) toggleBtn.classList.toggle('active');
+	nav.classList.toggle('active');
+	toggleBtn.classList.toggle('active');
+	userMenu.classList.toggle('expanded');
+	headerBar.classList.toggle('expanded');
+	console.log('found all');
 }
 
 if (toggleBtn) {

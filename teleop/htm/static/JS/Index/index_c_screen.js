@@ -223,22 +223,19 @@ export var teleop_screen = {
 		// const _show = this.in_debug && this.active_camera == 'front'? true: false;
 		const _show = this.active_camera == 'front';
 		const _hard_yellow = 'rgba(255, 255, 120, 0.99)';
-		const _soft_yellow = 'rgba(255, 255, 120, 0.50)';
 		if (_show) {
-			const _m = this._last_server_message;
-			const _color = _m != undefined && _m._is_on_autopilot && _m.max_speed < 1e-3 ? _hard_yellow : _soft_yellow;
-			this.overlay_center_markers[0].css('color', `${_color}`);
-			this.overlay_center_markers[1].css('color', `${_color}`);
-			this.overlay_left_markers[0].css('color', `${_color}`);
-			this.overlay_left_markers[1].css('color', `${_color}`);
-			this.overlay_right_markers[0].css('color', `${_color}`);
-			this.overlay_right_markers[1].css('color', `${_color}`);
-			this.overlay_center_markers[0].css('border-bottom', `2px solid ${_color}`);
-			this.overlay_center_markers[1].css('border-bottom', `3px solid ${_color}`);
-			this.overlay_left_markers[0].css('border-bottom', `3px solid ${_color}`);
-			this.overlay_left_markers[1].css('border-top', `2px solid ${_color}`);
-			this.overlay_right_markers[0].css('border-bottom', `3px solid ${_color}`);
-			this.overlay_right_markers[1].css('border-top', `2px solid ${_color}`);
+			this.overlay_center_markers[0].css('color', `${_hard_yellow}`);
+			this.overlay_center_markers[1].css('color', `${_hard_yellow}`);
+			this.overlay_left_markers[0].css('color', `${_hard_yellow}`);
+			this.overlay_left_markers[1].css('color', `${_hard_yellow}`);
+			this.overlay_right_markers[0].css('color', `${_hard_yellow}`);
+			this.overlay_right_markers[1].css('color', `${_hard_yellow}`);
+			this.overlay_center_markers[0].css('border-bottom', `2px solid ${_hard_yellow}`);
+			this.overlay_center_markers[1].css('border-bottom', `3px solid ${_hard_yellow}`);
+			this.overlay_left_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
+			this.overlay_left_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
+			this.overlay_right_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
+			this.overlay_right_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
 		}
 		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
 			if (_show) {

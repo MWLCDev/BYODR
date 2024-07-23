@@ -16,7 +16,7 @@ body {
   flex-direction: row;
 }
 
-.application-content {
+#application-content {
   flex: 1;
   font-family: 'Arial';
   background: whitesmoke;
@@ -26,7 +26,8 @@ body {
 
 /* TODO: make same id name as in normal_UI */
 /* Overlay when sidebar is active */
-.application-content::before {
+#application-content::before,
+#header_bar::before {
   content: '';
   display: none;
   position: fixed;
@@ -40,61 +41,114 @@ body {
 }
 
 /* Apply the blur effect to the content when sidebar is active */
-.application-content.expanded::before {
+#application-content.expanded::before,
+#header_bar.expanded::before {
   display: block;
 }
 
-.application-content.expanded {
+#application-content.expanded,
+#header_bar.expanded {
   filter: blur(5px);
   /* Adjust blur intensity as desired */
 }
 
-.hamburger_menu_nav {
-  width: 20em;
-  /* width of the sidebar */
-  border-right: 1px solid gray;
-  height: 100vh;
-  position: fixed;
-  left: -24em;
-  /* Start off-screen */
-  transition: left 0.5s;
-  z-index: 3;
-  background-color: var(--VOR-color);
-  color: #ffffff;
-  padding-left: 1.5em;
-  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-
+.nav_logo {
+  width: 30px;
+  /* Smaller size */
+  height: auto;
+  vertical-align: middle;
+  margin-right: 10px;
+  /* Space between icon and text */
 }
 
 #hamburger_menu_toggle {
-  font-size: 24px;
-  line-height: 1;
-  padding: 5px 10px;
-  position: fixed;
+  position: absolute;
   top: 15px;
+  left: 2rem;
   border: none;
   border-radius: 5px;
-  cursor: pointer;
-  transition: transform 0.5s, left 0.5s;
   cursor: pointer;
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  width: 40px;
+  width: 20px;
   height: 30px;
-  /* background-color: var(--background-color-light_m) !important; */
+  transition: left 0.5s ease-in-out;
+  /* Ensure smooth transition */
+  z-index: 5;
+  /* Make sure it's above other elements */
+}
+
+#hamburger_menu_toggle.active {
+  left: calc(20em - 50px);
+  /* Moves to the end minus the width of the toggle */
 }
 
 #hamburger_menu_toggle .bar {
+  width: 100%;
   height: 3px;
   background-color: #333;
   border-radius: 2px;
-
+  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
 
+#hamburger_menu_toggle.active .top {
+  transform: translateY(10px) rotate(45deg);
+  background-color: white;
+}
+
+
+#hamburger_menu_toggle.active .middle {
+  opacity: 0;
+}
+
+
+#hamburger_menu_toggle.active .bottom {
+  transform: translateY(-10px) rotate(-45deg);
+  background-color: white;
+}
+
+
+.hamburger_menu_nav {
+  height: 100vh;
+  position: fixed;
+  width: 20em;
+  border-right: 1px solid gray;
+  left: -20em;
+  /* Start off-screen */
+  transition: left 0.5s;
+  z-index: 3;
+  padding: 2rem 0 2rem 1.5rem;
+  background-color: var(--VOR-color);
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hamburger_menu_nav a {
+  font-family: 'Arial', sans-serif;
+  font-size: 1.25rem;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  padding: 1rem;
+  transition: font-size 0.3s ease, color 0.3s ease;
+}
+
+.hamburger_menu_nav img.nav_icon {
+  width: 25px;
+  /* Smaller icon size */
+  height: auto;
+  margin-right: 10px;
+  /* Space between icon and text */
+}
+
+#hamburger_menu_bottom_nav {
+  margin-top: auto;
+}
 
 .hamburger_menu_nav.active {
   left: 0;
@@ -102,51 +156,12 @@ body {
 }
 
 
-.hamburger_menu_nav a {
-  font-family: 'Arial';
-  font-size: 20px;
-  color: darkblue;
-  display: block;
-  /* Ensure the links take up the full width of the sidebar */
-  color: #ffffff;
-  padding: 10px 15px;
-  /* More spacious padding around text */
-  display: flex;
-  align-items: center;
-  /* Aligns icon and text vertically */
-}
-
-.hamburger_menu_nav a::before {
-  font-family: 'Font Awesome 5 Free';
-  /* Assuming you use Font Awesome */
-  margin-right: 10px;
-  /* Space between icon and text */
-}
-
-
-.hamburger_menu_nav a:link,
-.hamburger_menu_nav a:visited {
-  text-decoration: none;
-}
-
 .hamburger_menu_nav a:hover {
   text-decoration: underline;
-}
-
-.hamburger_menu_nav a.active {
-  font-weight: bold;
+  font-size: 1.35rem;
+  /* Slightly larger font size on hover */
 }
 
 table#logbox td {
   white-space: nowrap;
 }
-
-#hamburger_menu_bottom_nav {
-  bottom: 0%;
-}
-
-/* 
-#hamburger_menu_toggle.active {
-  transform: rotate(180deg);
-  left: 10em;
-} */
