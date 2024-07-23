@@ -10,23 +10,15 @@ jQuery.fn.is_visible = function () {
   return this.css('visibility') == 'visible';
 };
 
-function extend(proto, literal) {
-  var result = Object.create(proto);
-  Object.keys(literal).forEach(function (key) {
-    result[key] = literal[key];
-  });
-  return result;
-}
-
 // Define the sockets that will be used for communication
-var socket_utils = {
+export var socket_utils = {
   _init: function () {
     // noop.
   },
   create_socket: function (path, binary = true, reconnect = 100, assign = function (e) { }) {
-    ws_protocol = (document.location.protocol === "https:") ? "wss://" : "ws://";
-    ws_url = ws_protocol + document.location.hostname + ":" + document.location.port + path;
-    ws = new WebSocket(ws_url);
+    var ws_protocol = (document.location.protocol === "https:") ? "wss://" : "ws://";
+    var ws_url = ws_protocol + document.location.hostname + ":" + document.location.port + path;
+    var ws = new WebSocket(ws_url);
     // console.log(ws) //list of websockets used
     if (binary) {
       ws.binaryType = 'arraybuffer';
@@ -44,7 +36,7 @@ var socket_utils = {
   }
 }
 
-var dev_tools = {
+export var dev_tools = {
   _develop: null,
   _vehicle: null,
   _image_cache: new Map(),
@@ -122,7 +114,7 @@ var dev_tools = {
   }
 }
 
-var page_utils = {
+export var page_utils = {
   _capabilities: null,
 
   _init: function () {
@@ -173,7 +165,7 @@ var page_utils = {
 socket_utils._init();
 dev_tools._init();
 page_utils._init();
-
+console.log("1")
 document.addEventListener("DOMContentLoaded", function () {
   page_utils.request_capabilities(function (_capabilities) {
     dev_tools._vehicle = _capabilities.platform.vehicle;
