@@ -3,55 +3,159 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="stylesheet" type="text/css" href="../static/CSS/mobileController.css" />
-		<link rel="shortcut icon" href="#" />
-		<title>Mobile controller</title>
+		<title>Interactive Control Panel</title>
 	</head>
-
 	<body>
-		<div id="mobile-controller-top-input-container">
-			<div id="dead-zone-container">
-				<label for="deadZoneWidth">Dead Zone Width:</label>
-				<input type="range" id="deadZoneWidth" name="deadZoneWidth" min="0" max="0.5" step="0.01" value="0.1" />
-			</div>
-			<div class="mobile-controller-motor-settings-container">
-				<!-- Scale input container -->
-				<div class="scale-offset-input-containers">
-					<label for="scale_input_box_ID">Max km/h:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="scale_input_box_ID" name="scale_slider" min="1" max="7" step="0.5" value="3" class="scale-offset-input-box"/>
-						<span class="scale-input-text"> </span>
-					</div>
-				</div>
-
-				<!-- Offset input container -->
-				<div class="scale-offset-input-containers">
-					<label for="offset_input_box_ID">Turning offset:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="offset_input_box_ID" name="offset_slider" min="-1" max="1" step="0.02" value="0" class="scale-offset-input-box"/>
-						<span class="offset-input-text"> </span>
-					</div>
-				</div>
-			</div>
+		<div id="forward" class="square">
+			<canvas id="trailCanvas"></canvas>
 		</div>
+		<style>
+			body,
+			html {
+				height: 100%;
+				margin: 0;
+				display: flex;
+				flex-direction: column;
+				justify-content: center;
+				align-items: center;
+				background-color: #f0f0f0;
+			}
 
-		<div id="mobile-controller-bottom-input-container">
-			<div class="mobile_controller_button_container">
-				<div id="toggle_button_container">
-					<!-- FOR OT and MC: add your buttons here with the same class name -->
-					<button id="inference_toggle_button" class="mobile_option_button">Autopilot options</button>
-					<button id="confidenceToggleButton" class="mobile_option_button">Start overview confidence</button>
-				</div>
-				<div id="inference_auto_speed">0.0 Km/h</div>
-				<div id="inference_options_container">
-					<button id="inference_training_toggle" class="mobile_option_button">Start Training</button>
-					<button id="inference_auto_navigation_toggle" class="mobile_option_button">Start Auto-navigation</button>
-					<button id="hide_options" class="mobile_option_button">Hide Options</button>
-				</div>
-			</div>
-		</div>
+			.square {
+				width: 50vw;
+				height: 50vw;
+				margin: 10px;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				background-color: #ddd;
+				position: relative;
+				cursor: pointer;
+				transition: background-color 0.3s;
+        border-radius: 10px;
+			}
 
-		<script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
-		<script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
+			.active {
+				background-color: #bbb; /* Darker when active */
+			}
+
+			#trailCanvas {
+				position: absolute;
+				top: 0;
+				left: 0;
+				width: 100%;
+				height: 100%;
+			}
+
+			canvas {
+				pointer-events: none; /* Ensure the canvas does not interfere with clicking */
+			}
+		</style>
 	</body>
+	<script>
+		document.addEventListener('DOMContentLoaded', function () {
+			const forward = document.getElementById('forward');
+			const canvas = document.getElementById('trailCanvas');
+			const ctx = canvas.getContext('2d');
+			canvas.width = forward.clientWidth;
+			canvas.height = forward.clientHeight;
+
+			let isDrawing = false;
+			let lastX = 0;
+			let lastY = 0;
+			let lastTime = Date.now();
+			let frames = []; // Store the head frames
+
+			function drawPin(x, y) {
+				const currentTime = Date.now();
+				const timeDifference = currentTime - lastTime;
+				const dist = Math.sqrt((x - lastX) ** 2 + (y - lastY) ** 2);
+				const speed = dist / timeDifference; // Distance over time
+
+				// Store current frame data, including speed
+				const frame = {
+					startX: lastX,
+					startY: lastY,
+					endX: x,
+					endY: y,
+					speed: speed,
+				};
+
+				// Add new frame to frames array
+				frames.push(frame);
+
+				// Keep only the last n frames
+				if (frames.length > 10) {
+					frames.shift();
+				}
+
+				// Clear the entire canvas and redraw all frames for smooth transitions
+				ctx.clearRect(0, 0, canvas.width, canvas.height);
+				frames.forEach((frame, index) => {
+					ctx.beginPath();
+					ctx.moveTo(frame.startX, frame.startY);
+					ctx.lineTo(frame.endX, frame.endY);
+					// Adjust line width based on position in the array
+					// Linear increase in line width from tail to head
+					const factor = (index + 1) / frames.length; // Normalized position factor (0 to 1)
+					const lineWidth = factor * 8 + 2; // Scale factor by max width and min width
+					ctx.strokeStyle = '#451c58';
+					ctx.lineWidth = lineWidth;
+					ctx.stroke();
+				});
+
+				// Drawing the head of the pin at new position with shadow
+				ctx.shadowBlur = 10;
+				ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+				ctx.shadowOffsetX = 0;
+				ctx.shadowOffsetY = 5; // Vertical shadow to simulate lifting off the canvas
+				ctx.fillStyle = '#694978';
+
+				ctx.beginPath();
+				ctx.arc(x, y, 10, 0, Math.PI * 2);
+				ctx.fill();
+
+				// Reset shadow to avoid affecting other elements
+				ctx.shadowBlur = 0;
+				ctx.shadowColor = 'transparent';
+				ctx.shadowOffsetX = 0;
+				ctx.shadowOffsetY = 0;
+
+				lastX = x;
+				lastY = y;
+				lastTime = currentTime;
+			}
+
+			forward.addEventListener('mousedown', function (e) {
+				isDrawing = true;
+				const rect = canvas.getBoundingClientRect();
+				const x = e.clientX - rect.left;
+				const y = e.clientY - rect.top;
+				lastX = x;
+				lastY = y;
+				lastTime = Date.now(); // Reset the time on each new mousedown
+				drawPin(x, y);
+
+				function draw(e) {
+					if (!isDrawing) return;
+					const x = e.clientX - rect.left;
+					const y = e.clientY - rect.top;
+					drawPin(x, y);
+					lastX = x;
+					lastY = y;
+				}
+
+				forward.addEventListener('mousemove', draw);
+				forward.addEventListener(
+					'mouseup',
+					function () {
+						forward.removeEventListener('mousemove', draw);
+						isDrawing = false;
+						ctx.clearRect(0, 0, canvas.width, canvas.height); // Optionally clear on mouse up
+					},
+					{ once: true }
+				);
+			});
+		});
+	</script>
 </html>
