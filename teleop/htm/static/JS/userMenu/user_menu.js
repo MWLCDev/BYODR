@@ -14,7 +14,6 @@ function toggleSidebar() {
 	toggleBtn.classList.toggle('active');
 	userMenu.classList.toggle('expanded');
 	headerBar.classList.toggle('expanded');
-	console.log('found all');
 }
 
 if (toggleBtn) {

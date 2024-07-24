@@ -108,7 +108,6 @@ body {
   background-color: white;
 }
 
-
 .hamburger_menu_nav {
   height: 100vh;
   position: fixed;
@@ -125,7 +124,11 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-between;
+  background-image: url('../assets/nav_background.png');
+  background-position: bottom right;
+  background-repeat: no-repeat;
 }
+
 
 .hamburger_menu_nav a {
   font-family: 'Arial', sans-serif;
@@ -146,8 +149,10 @@ body {
   /* Space between icon and text */
 }
 
-#hamburger_menu_bottom_nav {
-  margin-top: auto;
+.hamburger_menu_nav a:hover {
+  text-decoration: underline;
+  font-size: 1.35rem;
+  /* Slightly larger font size on hover */
 }
 
 .hamburger_menu_nav.active {
@@ -155,11 +160,87 @@ body {
   /* Bring sidebar on-screen */
 }
 
+#hamburger_menu_bottom_nav {
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  flex-wrap: nowrap;
+  flex-direction: column;
+}
 
-.hamburger_menu_nav a:hover {
-  text-decoration: underline;
-  font-size: 1.35rem;
-  /* Slightly larger font size on hover */
+#nav_dark_mode_toggle {
+  order: 2;
+  width: 100%;
+  margin-left: auto;
+  margin-right: 1rem;
+
+}
+
+#hamburger_menu_bottom_nav .switch {
+  position: relative;
+  display: inline-block;
+  width: 60px;
+  height: 34px;
+}
+
+#hamburger_menu_bottom_nav .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+#hamburger_menu_bottom_nav .slider {
+  position: absolute;
+  cursor: pointer;
+  width: 60px;
+  /* Width of the slider */
+  height: 34px;
+  /* Height of the slider */
+  top: 50%;
+  /* Center vertically */
+  transform: translateY(-50%);
+  /* Align center */
+  background-color: #ccc;
+  transition: .4s;
+  border-radius: 34px;
+}
+
+#hamburger_menu_bottom_nav .slider:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: 4px;
+  top: 4px;
+  /* Adjusted from 'bottom' to 'top' to ensure vertical centering */
+  background-color: white;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+#hamburger_menu_bottom_nav input:checked+.slider:before {
+  transform: translateX(34px);
+  /* Ensure it moves exactly to the end of the slider */
+}
+
+
+#hamburger_menu_bottom_nav input:checked+.slider {
+  background-color: #2196F3;
+}
+
+#hamburger_menu_bottom_nav input:focus+.slider {
+  box-shadow: 0 0 1px #2196F3;
+}
+
+input:checked+.slider:before {
+  transform: translateX(26px);
+}
+
+.hamburger_menu_nav #VOR_nav {
+  width: 5rem;
+  margin-left: auto;
+  margin-right: 1rem;
 }
 
 table#logbox td {

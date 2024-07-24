@@ -15,7 +15,7 @@
 html,
 body {
   height: 100%;
-  background: #f7f7f7;
+  /* background: #f7f7f7; */
   color: #333;
   font-family: 'Arial', sans-serif;
 }
@@ -92,19 +92,11 @@ body {
 
 /* Third Layer: Stream Quality and Options */
 #horizontal_bar {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
   width: 100%;
-  padding: 10px 0;
-}
-
-.flex-container {
+  padding: 1rem 3vw;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding: 10px;
 }
 
 .stream_quality p {
@@ -199,9 +191,6 @@ body {
   /* Prevents the arrow from being clickable */
 }
 
-#horizontal_bar {
-  width: 100%;
-}
 
 button {
   transition: background-color 0.3s ease;
