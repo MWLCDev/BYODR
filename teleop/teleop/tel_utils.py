@@ -272,7 +272,15 @@ class DirectingUser(tornado.web.RequestHandler):
 
 class TemplateRenderer(tornado.web.RequestHandler):
     # Any static routes should be added here
-    _TEMPLATES = {"nc": "index.html", "user_menu": "user_menu.html", "mc": "mobile_controller_ui.html"}
+    _TEMPLATES = {
+        "nc": "index.html",
+        "user_menu": "user_menu/user_menu.html",
+        "menu_controls": "userMenu/menu_controls.html",
+        "menu_logbox": "userMenu/menu_logbox.html",
+        "menu_settings": "userMenu/menu_settings.html",
+        "mc": "mobile_controller_ui.html",
+        "normal_ui": "normal_ui.html",
+    }
 
     def initialize(self, page_name="nc"):
         self.page_name = page_name

@@ -192,6 +192,10 @@ def main():
                 (r"/(user_menu)", TemplateRenderer),
                 # Navigate to Mobile controller UI
                 (r"/(mc)", TemplateRenderer),
+                (r"/(normal_ui)", TemplateRenderer),
+                (r"/(menu_controls)", TemplateRenderer),
+                (r"/(menu_logbox)", TemplateRenderer),
+                (r"/(menu_settings)", TemplateRenderer),
                 # Getting the commands from the mobile controller (commands are sent in JSON)
                 (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
                 # Run python script to get the SSID for the current segment
