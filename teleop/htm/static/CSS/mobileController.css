@@ -1,150 +1,69 @@
-body,
-html {
-  margin: 0;
-  padding: 0;
+@font-face {
+  font-family: 'Sora';
+  src: url('../assets/Sora-VariableFont_wght.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+#mobile_controller_container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.square {
+  width: 80vw;
+  max-width: 1000px;
+  height: 35vh;
+  margin: 20px;
+  position: relative;
+  border: 0.5rem solid;
+  border-color: #f6f6f6;
+  border-radius: 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+}
+
+#forward_square .square_direction_text {
+  bottom: 2vh;
+}
+
+#backward_square .square_direction_text {
+  top: 2vh;
+}
+
+.square_direction_text {
+  display: block;
+  position: absolute;
   width: 100%;
-  height: 100%;
-  overflow: hidden;
-  /* This will prevent scrollbar from appearing */
+  text-align: center;
+  font-size: 1rem;
+  pointer-events: none;
+  /* Prevents text from blocking canvas interaction */
+  color: #8b7597;
+  font-family: 'Sora', Arial, sans-serif;
+  font-weight: bold;
+}
+
+.stop_text {
+  display: none;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  position: absolute;
+  width: 80%;
+  text-align: center;
+  font-size: 1rem;
+  pointer-events: none;
+  color: #ff0000;
+  font-family: 'Sora', Arial, sans-serif;
+  font-weight: bold;
 }
 
 canvas {
-  display: block;
-}
-
-#mobile-controller-top-input-container {
-  position: fixed;
   width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-direction: column;
-  margin: 1vh 0;
-}
-
-#dead-zone-container {
-  margin: 1vh 0;
-}
-
-input[type=range] {
-  -webkit-appearance: none;
-  width: 70%;
-  margin: 10px 0;
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 8px;
-  background: #ddd;
-  border: none;
-  border-radius: 3px;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  border: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: #555;
-  margin-top: -4px;
-}
-
-/* Adjusted styles for the container and option buttons to center them horizontally at the bottom of the page */
-.mobile_controller_button_container {
-  position: fixed;
-  bottom: 2vw;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px;
-  z-index: 1000;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.mobile_option_button {
-  display: flex;
-  margin: 0 5px;
-  width: 10vh;
-  height: 10vh;
-  background-color: #67b96a;
-  color: white;
-  border: none;
-  border-radius: 50%;
-  cursor: pointer;
-  justify-content: center;
-  align-items: center;
-}
-
-#inference_auto_speed {
-  display: none;
-  text-align: center;
-  width: 100%;
-  font-size: large;
-  margin-bottom: 10px;
-}
-
-#toggle_button_container {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-#inference_options_container {
-  display: none;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.mobile_view_container {
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.mobile-controller-motor-settings-container {
-  display: flex;
-  flex-direction: column;
-  align-items: left;
-  top: 20px;
-}
-
-.scale-offset-input-containers {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
-}
-
-.scale-offset-input-containers label {
-  width: 110px;
-}
-
-.scale-offset-input-box-containers {
-  display: flex;
-  align-items: center;
-}
-
-.scale-input-text,
-.offset-input-text {
-    width: 60px;
-    margin-left: 15px;
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-}
-
-.scale-offset-confirm-text {
-  font-size: 14px;
-  margin-left: 10px;
-}
-
-.hidden {
-  display: none;
+  height: 100%;
 }

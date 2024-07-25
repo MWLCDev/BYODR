@@ -18,8 +18,9 @@ body {
 
 #application-content {
   flex: 1;
+  width: 100vw;
   font-family: 'Arial';
-  background: whitesmoke;
+  /* background: whitesmoke; */
   transition: margin-left 0.3s;
   /* Smooth transition for content area */
 }
