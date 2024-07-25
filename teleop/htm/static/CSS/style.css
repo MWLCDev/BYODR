@@ -361,6 +361,8 @@ div.overlay_distance {
   visibility: visible;
   text-align: center;
   color: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+
 }
 
 #overlay_image {
