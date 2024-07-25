@@ -53,10 +53,6 @@ function redraw(yOffset = 0, showTopTriangle = true, showBottomTriangle = true, 
 		app.stage.addChild(bottomTriangle.graphics);
 	}
 
-	// Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-	if (CTRL_STAT.isWebSocketOpen) {
-		app.stage.addChild(cursorFollowingDot.graphics);
-	}
 }
 
 function drawTopTriangle_BottomRectangle(yOffset = 0) {
@@ -68,8 +64,6 @@ function drawTopTriangle_BottomRectangle(yOffset = 0) {
 	// Draw the red area at the bottom
 	app.stage.addChild(bottomRectangle.graphics);
 
-	// Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-	if (CTRL_STAT.isWebSocketOpen) app.stage.addChild(cursorFollowingDot.graphics);
 }
 
 function drawBottomTriangle_TopRectangle(yOffset = 0) {
@@ -81,8 +75,6 @@ function drawBottomTriangle_TopRectangle(yOffset = 0) {
 	// Draw the red area at the bottom
 	app.stage.addChild(topRectangle.graphics);
 
-	// Always add cursorFollowingDot to the stage since it's instantiated at the beginning
-	if (CTRL_STAT.isWebSocketOpen) app.stage.addChild(cursorFollowingDot.graphics);
 }
 
 export { app, changeTrianglesColor, redraw, removeTriangles, drawTopTriangle_BottomRectangle, drawBottomTriangle_TopRectangle };

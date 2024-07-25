@@ -1,7 +1,5 @@
 //Shared State variables that goes between the files/modules used
 class MobileControllerState {
-	//The starting y coord when the triangles are relocated ()
-	#initialYOffset = 0;
 	#selectedTriangle = null;
 	// Hold the current value for steering and throttle to be sent through the websocket
 	// At first we send a default value
@@ -9,19 +7,6 @@ class MobileControllerState {
 	//stands for WebSocket
 	#ws;
 	#stateErrors;
-	#isWebSocketOpen;
-
-	#detectedTriangle = 'none';
-	get midScreen() {
-		return window.innerHeight / 2 + this.#initialYOffset;
-	}
-
-	set initialYOffset(value) {
-		this.#initialYOffset = value;
-	}
-	get initialYOffset() {
-		return this.#initialYOffset;
-	}
 
 	set selectedTriangle(value) {
 		this.#selectedTriangle = value;
@@ -53,23 +38,6 @@ class MobileControllerState {
 		return this.#ws;
 	}
 
-	set isWebSocketOpen(value) {
-		this.#isWebSocketOpen = value;
-	}
-	get isWebSocketOpen() {
-		return this.#isWebSocketOpen;
-	}
-
-	set detectedTriangle(value) {
-		if (typeof value === 'string' || value instanceof String) {
-			this.#detectedTriangle = value;
-		} else {
-			console.error(`Value for (detectedTriangle) must be string, got ${value}`);
-		}
-	}
-	get detectedTriangle() {
-		return this.#detectedTriangle;
-	}
 }
 
 const sharedState = new MobileControllerState();
