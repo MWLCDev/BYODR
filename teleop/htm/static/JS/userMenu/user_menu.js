@@ -42,60 +42,60 @@ function _user_menu_route_screen(screen) {
 		$(this).removeClass('active');
 	});
 
-	const el_parent = $('main.application-content');
-	const el_container = $('<div/>', { id: 'application-content-container' });
-	el_parent.find('div#application-content-container').remove();
-	el_parent.append(el_container);
+	// Use the main element directly
+	const el_container = $('main#application-content');
+	el_container.empty(); // Clear the existing content
+
 	// Save the last visited screen in the cache
 	window.localStorage.setItem('user.menu.screen', screen);
+
 	switch (screen) {
 		case 'home_link':
 			$('a#home_link').addClass('active');
-			$('#application-content-container').load('/normal_ui', function () {});
+			el_container.load('/normal_ui');
 			break;
 		case 'settings_link':
 			$('a#settings_link').addClass('active');
-			$('#application-content-container').load('/menu_settings', function () {});
-			initializeSettings();
+			el_container.load('/menu_settings', initializeSettings); // Initialize settings after load
 			break;
 		case 'controls_link':
 			$('a#controls_link').addClass('active');
-			$('#application-content-container').load('/menu_controls', function () {});
+			el_container.load('/menu_controls');
 			break;
 		case 'events_link':
 			$('a#events_link').addClass('active');
-			$('#application-content-container').load('/menu_logbox', function () {});
-			fetchData();
+			el_container.load('/menu_logbox', fetchData); // Fetch data after load
 			break;
 		case 'phone_controller_link':
 			$('a#phone_controller_link').addClass('active');
-			$('#application-content-container').load('/mc', function () {});
+			el_container.load('/mc');
 			break;
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-	// Set up the click handlers.
-	$('a#home_link').click(function () {
-		_user_menu_route_screen('home_link');
-	});
-	$('a#settings_link').click(function () {
-		_user_menu_route_screen('settings_link');
-	});
-	$('a#controls_link').click(function () {
-		_user_menu_route_screen('controls_link');
-	});
-	$('a#events_link').click(function () {
-		_user_menu_route_screen('events_link');
-	});
-	$('a#phone_controller_link').click(function () {
-		_user_menu_route_screen('phone_controller_link');
-	});
-
-	// Load the last visited screen from cache. Default value for it is settings tab
-	var screen = window.localStorage.getItem('user.menu.screen');
-	if (screen == null) {
-		screen = 'settings';
+async function getSSID() {
+	try {
+		const response = await fetch('/run_get_SSID');
+		const data = await response.text();
+		return data;
+	} catch (error) {
+		console.error('Error fetching SSID for current robot:', error);
 	}
+}
+document.addEventListener('DOMContentLoaded', function () {
+	// Set up the click handlers for menu navigation
+	$('a#home_link, a#settings_link, a#controls_link, a#events_link, a#phone_controller_link').click(function () {
+		_user_menu_route_screen(this.id);
+	});
+	// Correctly handle the promise returned by getSSID
+	getSSID()
+		.then((ssid) => {
+			$('#header_bar #current_seg_name').text(ssid);
+		})
+		.catch((error) => {
+			console.error('Failed to fetch SSID:', error);
+		});
+	// Load the last visited screen from cache or default to 'settings'
+	var screen = window.localStorage.getItem('user.menu.screen') || 'settings_link';
 	_user_menu_route_screen(screen);
 });

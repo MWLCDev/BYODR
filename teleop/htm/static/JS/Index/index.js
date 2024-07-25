@@ -20,7 +20,6 @@ if (typeof document.hidden !== 'undefined') {
 
 function start_all_handlers() {
 	try {
-		console.log('started all');
 		navigator_start_all();
 		teleop_start_all();
 		mjpeg_start_all();

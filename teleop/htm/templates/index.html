@@ -16,27 +16,48 @@
 		<link rel="shortcut icon" href="#" />
 	</head>
 	<body>
-		<!-- prettier-ignore -->
 		<nav class="hamburger_menu_nav">
-      <div id="hamburger_menu_top_nav">
-        <p><a href="#" id="home_link"><img src="../static/assets/manual_mode.png" class="nav_icon">Manual Mode</a></p>
-        <p><a href="#" id="ai_training_link"><img src="../static/assets/ai_training_mode.png" class="nav_icon">AI Training</a></p>
-        <p><a href="#" id="autopilot_link"><img src="../static/assets/autopilot_mode.png" class="nav_icon">Autopilot</a></p>
-        <p><a href="#" id="map_recognition_link"><img src="../static/assets/map_recognition.png" class="nav_icon">Map Recognition</a></p>
-        <p><a href="#" id="follow_link"><img src="../static/assets/follow_mode.png" class="nav_icon">Follow</a></p>
-      </div>
-      <div id="hamburger_menu_bottom_nav">
-        <p><a href="#" id="settings_link"><img src="../static/assets/nav_advanved_settings.png" class="nav_icon">Advanced Settings</a></p>
-        <p><a href="#" id="controls_link"><img src="../static/assets/nav_controls_menu.png" class="nav_icon">Controls</a></p>
-        <p><a href="#" id="events_link"><img src="../static/assets/nav_training_events.png" class="nav_icon">Training Events</a></p>
-        <p><a href="#" id="phone_controller_link"><img src="../static/assets/nav_control_by_phone.png" class="nav_icon">Control by Phone</a></p>
-        <label id="nav_dark_mode_toggle">
-          <span class="slider round"></span>
-        </label>
-        
-        <img src="../static/assets/VR - Logo 144 px.png" id="VOR_nav" />
-    </div>
-</nav>
+			<div id="hamburger_menu_top_nav">
+				<p>
+					<a href="#" id="home_link"><img src="../static/assets/manual_mode.png" class="nav_icon" />Manual Mode</a>
+				</p>
+				<p>
+					<a href="#" id="ai_training_link"><img src="../static/assets/ai_training_mode.png" class="nav_icon" />AI Training</a>
+				</p>
+				<p>
+					<a href="#" id="autopilot_link"><img src="../static/assets/autopilot_mode.png" class="nav_icon" />Autopilot</a>
+				</p>
+				<p>
+					<a href="#" id="map_recognition_link"><img src="../static/assets/map_recognition.png" class="nav_icon" />Map Recognition</a>
+				</p>
+				<p>
+					<a href="#" id="follow_link"><img src="../static/assets/follow_mode.png" class="nav_icon" />Follow</a>
+				</p>
+			</div>
+			<div id="hamburger_menu_bottom_nav">
+				<p>
+					<a href="#" id="settings_link"><img src="../static/assets/nav_advanved_settings.png" class="nav_icon" />Advanced Settings</a>
+				</p>
+				<p>
+					<a href="#" id="controls_link"><img src="../static/assets/nav_controls_menu.png" class="nav_icon" />Controls</a>
+				</p>
+				<p>
+					<a href="#" id="events_link"><img src="../static/assets/nav_training_events.png" class="nav_icon" />Training Events</a>
+				</p>
+				<p>
+					<a href="#" id="phone_controller_link"><img src="../static/assets/nav_control_by_phone.png" class="nav_icon" />Control by Phone</a>
+				</p>
+				<div id="nav_dark_mode_toggle_container">
+					<label id="nav_dark_mode_toggle">
+						<input type="checkbox" />
+						<span class="slider"></span>
+					</label>
+					<p>light mode</p>
+				</div>
+
+				<img src="../static/assets/VOR_Logo_light.png" id="VOR_nav" />
+			</div>
+		</nav>
 
 		<!-- Top Layer: Logo and Hamburger Menu -->
 		<div id="hamburger_menu_toggle" title="navigate to user menu page">
@@ -46,12 +67,15 @@
 		</div>
 
 		<div id="header_bar">
-			<img src="../static/assets/VR - Logo 144 px.png" id="VOR_center_logo" />
+
+			<img src="../static/assets/VOR_Logo_dark.png" id="VOR_center_logo" />
+      <p id="current_seg_name"></p>
 		</div>
+
+
+
 		<main id="application-content">
-			<div id="application-content-container">
-				<!-- Where the elements are displayed -->
-			</div>
+			<!-- Where the elements are displayed -->
 		</main>
 
 		<script src="../static/external/jquery-3.4.1.min.js"></script>

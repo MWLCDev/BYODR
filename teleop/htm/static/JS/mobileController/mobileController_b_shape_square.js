@@ -84,6 +84,9 @@ class ControlSquare {
 		e.preventDefault();
 		if (e.type === 'mousedown') {
 			this.isDrawing = true;
+			this.otherSquare.style.borderColor = 'red';
+			this.otherStopText.style.display = 'block';
+			this.otherDirectionText.style.display = 'none';
 		} else if (!this.isDrawing) {
 			return;
 		}
@@ -107,6 +110,7 @@ class ControlSquare {
 		const y = touch.clientY;
 		this.updateCoordinates(x, y, this.canvas.getBoundingClientRect());
 	}
+
 	stopDrawing() {
 		this.isDrawing = false;
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
@@ -120,7 +124,6 @@ class ControlSquare {
 		this.canvas.addEventListener('mousedown', (e) => this.handleMouseEvent(e, this));
 		this.canvas.addEventListener('mousemove', (e) => this.handleMouseEvent(e, this));
 		this.canvas.addEventListener('mouseup', () => this.stopDrawing());
-		this.canvas.addEventListener('mouseleave', () => this.stopDrawing());
 
 		this.canvas.addEventListener('touchstart', (e) => this.handleTouchEvent(e, this));
 		this.canvas.addEventListener('touchmove', (e) => this.handleTouchEvent(e, this));
