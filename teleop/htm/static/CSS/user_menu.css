@@ -8,6 +8,42 @@
 
 body {
   margin: 0;
+  background-image: url('../static/assets/VR - pattern tree 1.png');
+  background-size: auto; /* Adjust to fit original image size */
+  background-repeat: no-repeat; /* Prevent the image from repeating */
+  background-attachment: fixed; /* Make the background image fixed on scroll */
+  background-position: right 5% bottom 5%; /* Position the background image at the bottom left */
+}
+
+fieldset {
+  border: 0;
+  padding-left: 5%;
+}
+
+/* Style the legend of the fieldset */
+legend {
+  font-family: 'Sora';  /* Change font family */
+  font-size: 24px;  /* Change font size */
+  font-weight: bold;  /* Make the font bold */
+  color: #333;  /* Change font color */
+  padding-right: 10px;
+  padding-bottom: 10px;
+}
+
+/* Style the labels and inputs inside the fieldset */
+fieldset label {
+  font-family: 'Noto Sans';  /* Different font family */
+  font-size: 20px;  /* Default font size */
+  color: #666;  /* Change font color */
+}
+
+/* Style the input text of the fieldset */
+fieldset input {
+  font-family: 'Noto Sans'; /* Match input font family with label */
+  font-size: 16px;  /* Default font size */
+  padding: 5px;
+  margin-left: 15px;
+  border-radius: 5px; /* Rounded edges */
 }
 
 .application-body {
@@ -164,4 +200,49 @@ body {
 
 table#logbox td {
   white-space: nowrap;
+}
+
+
+#settings_page_title {
+  color: #530D73;
+  font-family: 'Sora', sans-serif;  /* Example font family */
+  margin-bottom: 25px;               /* Example margin */
+}
+
+
+#options_text {
+  font-family: 'Sora', sans-serif;  /* Example font family */
+  margin-bottom: 18px;               /* Example margin */
+}
+
+button {
+  position: absolute;        /* Positions the button relative to the screen */
+  width: 80px;              /* Width of the button */
+  height: 40px;              /* Height of the button */
+  border: 1px solid #530D73;  /* Border color */
+  border-radius: 8px;        /* Rounded edges */
+  font-family: 'Sora';       /* Font family */
+  font-size: 14px;           /* Font size */
+  font-weight: 700;          /* Makes the text thicker */
+  cursor: pointer;           /* Pointer cursor on hover */
+  transition: background-color 0.3s ease, color 0.3s ease;  /* Smooth transitions */
+  text-align: center;        /* Center-align text */
+  padding: 0px 0px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Faint shadow */
+}
+
+
+#edit_button {
+  top: 12%;                /* Distance from the top of the screen */
+  right: 5%;              /* Distance from the left side of the screen */
+  color: #530D73;             /* Text color */
+  background-color: #f0f0f0; /* Background color */
+}
+
+
+#submit_save_apply {
+  top: 80%;                /* Distance from the top of the screen */
+  right: 5%;              /* Distance from the left side of the screen */
+  color: #f0f0f0;             /* Text color */
+  background-color: #530D73; /* Background color */
 }
