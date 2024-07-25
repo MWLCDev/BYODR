@@ -13,10 +13,11 @@ class ControlSquare {
 		this.otherDirectionText = otherSquare.querySelector('.square_direction_text');
 
 		this.isDrawing = false;
+		this.initX = 0;
+		this.initY = 0;
 		this.lastX = 0;
 		this.lastY = 0;
 		this.lastTime = Date.now();
-		this.frames = [];
 
 		this.initEventListeners();
 	}
@@ -36,34 +37,17 @@ class ControlSquare {
 	}
 
 	drawPin(x, y) {
-		const currentTime = Date.now();
-		const timeDifference = currentTime - this.lastTime;
-		const dist = Math.sqrt((x - this.lastX) ** 2 + (y - this.lastY) ** 2);
-		const speed = dist / timeDifference;
-
-		const frame = {
-			startX: this.lastX,
-			startY: this.lastY,
-			endX: x,
-			endY: y,
-			speed: speed,
-		};
-
-		this.frames.push(frame);
-		if (this.frames.length > 10) this.frames.shift();
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		this.frames.forEach((frame, index) => {
-			this.context.beginPath();
-			this.context.moveTo(frame.startX, frame.startY);
-			this.context.lineTo(frame.endX, frame.endY);
-			const factor = (index + 1) / this.frames.length;
-			const lineWidth = factor * 8 + 2;
-			this.context.strokeStyle = '#451c58';
-			this.context.lineWidth = lineWidth;
-			this.context.stroke();
-		});
+		// Draw the line from initial point to current point
+		this.context.beginPath();
+		this.context.moveTo(this.initX, this.initY);
+		this.context.lineTo(x, y);
+		this.context.strokeStyle = '#451c58';
+		this.context.lineWidth = 4;
+		this.context.stroke();
 
+		// Draw the pin with the shadow at the current location
 		this.context.shadowBlur = 10;
 		this.context.shadowColor = 'rgba(0, 0, 0, 0.5)';
 		this.context.shadowOffsetX = 0;
@@ -72,23 +56,29 @@ class ControlSquare {
 		this.context.beginPath();
 		this.context.arc(x, y, 10, 0, Math.PI * 2);
 		this.context.fill();
+
+		// Reset shadow for any other drawing
 		this.context.shadowBlur = 0;
 		this.context.shadowColor = 'transparent';
-
-		this.lastX = x;
-		this.lastY = y;
-		this.lastTime = currentTime;
 	}
 
 	handleMouseEvent(e) {
 		e.preventDefault();
 		if (e.type === 'mousedown') {
 			this.isDrawing = true;
+			this.initX = e.clientX - this.canvas.getBoundingClientRect().left; // Set initial X
+			this.initY = e.clientY - this.canvas.getBoundingClientRect().top; // Set initial Y
 			this.otherSquare.style.borderColor = 'red';
 			this.otherStopText.style.display = 'block';
 			this.otherDirectionText.style.display = 'none';
-		} else if (!this.isDrawing) {
-			return;
+		} else if (e.type === 'mousemove') {
+			if (!this.isDrawing) return;
+			const rect = this.canvas.getBoundingClientRect();
+			if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
+				if (this.square !== this.otherSquare) {
+					alert('Moved from one square to the other!');
+				}
+			}
 		}
 		const x = e.clientX;
 		const y = e.clientY;
@@ -99,11 +89,21 @@ class ControlSquare {
 		e.preventDefault();
 		if (e.type === 'touchstart') {
 			this.isDrawing = true;
+			const touch = e.touches[0];
+			this.initX = touch.clientX - this.canvas.getBoundingClientRect().left; // Set initial X
+			this.initY = touch.clientY - this.canvas.getBoundingClientRect().top; // Set initial Y
 			this.otherSquare.style.borderColor = 'red';
 			this.otherStopText.style.display = 'block';
 			this.otherDirectionText.style.display = 'none';
-		} else if (!this.isDrawing) {
-			return;
+		} else if (e.type === 'touchmove') {
+			if (!this.isDrawing) return;
+			const touch = e.touches[0];
+			const rect = this.canvas.getBoundingClientRect();
+			if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) {
+				if (this.square !== this.otherSquare) {
+					alert('Moved from one square to the other!');
+				}
+			}
 		}
 		const touch = e.touches[0];
 		const x = touch.clientX;
