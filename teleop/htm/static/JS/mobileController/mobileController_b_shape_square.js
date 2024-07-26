@@ -1,4 +1,3 @@
-import { sendJSONCommand } from './mobileController_c_logic.js';
 import CTRL_STAT from './mobileController_z_state.js';
 
 class ControlSquare {
@@ -168,7 +167,6 @@ class ControlSquare {
 			this.otherStopText.style.display = 'block';
 			this.otherDirectionText.style.display = 'none';
 		} else if (e.type === 'touchmove') {
-			sendJSONCommand();
 			if (!this.isDrawing) return;
 			const touch = e.touches[0];
 			const rect = this.canvas.getBoundingClientRect();

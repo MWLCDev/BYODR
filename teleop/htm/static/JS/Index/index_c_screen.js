@@ -228,7 +228,6 @@ export var teleop_screen = {
 			$('span#inference_surprise').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
 			$('span#inference_critic').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
 		}
-		//
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
 		var el_alpha_speed = $('p#alpha_speed_value');
@@ -241,8 +240,7 @@ export var teleop_screen = {
 		} else {
 			el_alpha_speed.text(message.vel_y.toFixed(1));
 		}
-		//
-		var el_steering_wheel = $('img#steeringWheel');
+		var el_steering_wheel = $('img.steeringWheel');
 		var el_autopilot_status = $('#autopilot_status');
 		var str_command_ctl = message.ctl + '_' + message._has_passage;
 		if (this.command_ctl != str_command_ctl) {
@@ -271,6 +269,7 @@ export var teleop_screen = {
 			el_autopilot_status.css('color', 'rgb(100, 217, 255)');
 		}
 		var display_rotation = Math.floor(message.ste * 90.0);
+    console.log(display_rotation)
 		el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
 	},
 
@@ -331,7 +330,7 @@ export var teleop_screen = {
 			cb();
 		});
 	},
-
+	//TODO: why it assigns the already init vars to consts?
 	controller_update: function (command) {
 		const message_box_container = this.el_message_box_container;
 		const message_box_message = this.el_message_box_message;
@@ -370,12 +369,12 @@ export var teleop_screen = {
 		} else {
 			message_box_container.hide();
 		}
-		if (command.arrow_left) {
+		if (command != undefined && command.arrow_left) {
 			this._schedule_camera_cycle();
-		} else if (command.arrow_right) {
+		} else if (command != undefined && command.arrow_right) {
 			this._schedule_camera_cycle();
 		}
-		if (command.button_right) {
+		if (command != undefined && command.button_right) {
 			this._schedule_photo_snapshot_effect();
 		}
 	},
