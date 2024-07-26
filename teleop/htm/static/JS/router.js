@@ -3,6 +3,7 @@ import { fetchData } from './userMenu/menu_logbox.js';
 import { start_all_handlers } from './index.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { network_utils } from './Index/index_a_utils.js';
+import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 
 function _user_menu_route_screen(screen) {
 	$('.hamburger_menu_nav a').each(function () {
@@ -15,6 +16,7 @@ function _user_menu_route_screen(screen) {
 
 	// Save the last visited screen in the cache
 	window.localStorage.setItem('user.menu.screen', screen);
+  CTRL_STAT.mobileIsActive = false;
 
 	switch (screen) {
 		case 'home_link':
@@ -40,6 +42,7 @@ function _user_menu_route_screen(screen) {
 			el_container.load('/mc', function () {
 				console.log('should load the function');
 				setupMobileController();
+				CTRL_STAT.mobileIsActive = true;
 			});
 			break;
 	}

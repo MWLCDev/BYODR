@@ -49,12 +49,12 @@ function setupNavigationBar() {
 }
 
 export function start_all_handlers() {
-  console.log("inside start")
+  console.log("will start handlers ")
 	try {
-    mjpeg_start_all();
+		mjpeg_start_all();
 		h264_start_all();
 	} catch (error) {
-    console.error('Error starting handlers:', error);
+		console.error('Error starting handlers:', error);
 	}
 }
 
@@ -64,24 +64,22 @@ export function stop_all_handlers() {
 }
 
 function handleVisibilityChange() {
-  if (document[hidden]) {
-    stop_all_handlers();
+	if (document[hidden]) {
+		stop_all_handlers();
 	} else {
-    start_all_handlers();
+		start_all_handlers();
 	}
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-  console.log("DOM loaded")
-  setupNavigationBar();
+	setupNavigationBar();
 	if (!dev_tools.is_develop()) {
-    window.history.pushState({}, '', '/');
+		window.history.pushState({}, '', '/');
 	}
 	document.addEventListener(visibilityChange, handleVisibilityChange, false);
 	window.addEventListener('focus', start_all_handlers);
-  console.log("finished start")
+	console.log('finished start');
 	window.addEventListener('blur', stop_all_handlers);
-	start_all_handlers();
 	navigator_start_all();
 	teleop_start_all();
 });
