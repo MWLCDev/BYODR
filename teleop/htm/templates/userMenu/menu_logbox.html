@@ -1,26 +1,46 @@
-<table id="logbox" class="display" style="width:100%">
-  <thead>
-      <tr>
-          <th>ID</th>
-          <th>Timestamp</th>
-          <th>Status</th>
-          <th>Mode</th>
-          <th>Max Speed</th>
-          <th>Desired Speed</th>
-          <th>Velocity</th>
-          <th>Steer</th>
-          <th>Throttle</th>
-          <th>Steer Intervention</th>
-          <th>Speed Intervention</th>
-          <th>Latitude</th>
-          <th>Longitude</th>
-          <th>AP Steer</th>
-          <th>AP Brake</th>
-          <th>AP Steer Confidence</th>
-          <th>AP Brake Confidence</th>
-      </tr>
-  </thead>
-  <tbody>
-      <!-- Dynamic content will be loaded here -->
-  </tbody>
-</table>
+<div class="content" id="logbox">
+    <div>
+        <h1 class="title" id="logbox">Training Events</h1>
+    </div>
+    <div id="logbox" class="entries">
+        <label for="entries_nr">Show</label>
+        <select name="cars" id="cars">
+        <option value="10">10</option>
+        <option value="25">25</option>
+        <option value="50">50</option>
+        <option value="100">100</option>
+        </select>
+        <span>entries</span>
+    </div>
+    <table id="logbox" class="display" style="width:100%">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Timestamp</th>
+                <th>Status</th>
+                <th>Mode</th>
+                <th>Max Speed</th>
+                <th>Desired Speed</th>
+                <th>Velocity</th>
+                <th>Steer</th>
+                <th>Throttle</th>
+                <th>Steer Intervention</th>
+                <th>Speed Intervention</th>
+                <th>Latitude</th>
+                <th>Longitude</th>
+                <th>AP Steer</th>
+                <th>AP Brake</th>
+                <th>AP Steer Confidence</th>
+                <th>AP Brake Confidence</th>
+            </tr>
+        </thead>
+        <div id="logbox" class="table_border">
+        <tbody>
+            <!-- Dynamic content will be loaded here -->
+        </tbody>
+        </div>
+    </table>
+    <div id="logbox" class="undertable">
+        <p>Showing <span class="from_nr" id="logbox">1</span> to <span class="to_nr" id="logbox">10</span> of <span class="max_nr" id="logbox">10</span> entries</p>
+    </div>
+</div>
