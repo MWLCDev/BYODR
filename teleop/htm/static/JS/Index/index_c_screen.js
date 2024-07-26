@@ -174,47 +174,8 @@ export var teleop_screen = {
 		});
 	},
 
-	_on_viewport_container_resize: function () {
-		// Must use the singleton reference because async functions call us.
-		const _instance = teleop_screen;
-		const vh = window.innerHeight - _instance.el_viewport_container.offset().top;
-		// Leave a little space at the very bottom.
-		_instance.el_viewport_container.height(vh - 2);
-		// Calculate the new marker locations.
-		var _markers = [0.24 * vh, 0.12 * vh, 0.18 * vh, 0.1 * vh];
-		if (dev_tools._vehicle == 'rover1') {
-			_markers = [0.52 * vh, 0.25 * vh, 0.45 * vh, 0.31 * vh];
-		}
-		_instance._set_distance_indicators(_markers);
-	},
-
-	_set_distance_indicators: function (values) {
-		this.overlay_center_markers[0].css('bottom', values[0]);
-		this.overlay_center_markers[1].css('bottom', values[1]);
-		this.overlay_left_markers[0].css('bottom', values[2]);
-		this.overlay_left_markers[1].css('bottom', values[3]);
-		this.overlay_right_markers[0].css('bottom', values[2]);
-		this.overlay_right_markers[1].css('bottom', values[3]);
-	},
-
 	_render_distance_indicators: function () {
-		// const _show = this.in_debug && this.active_camera == 'front'? true: false;
 		const _show = this.active_camera == 'front';
-		const _hard_yellow = 'rgba(255, 255, 120, 0.99)';
-		if (_show) {
-			this.overlay_center_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_center_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_left_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_left_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_right_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_right_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_center_markers[0].css('border-bottom', `2px solid ${_hard_yellow}`);
-			this.overlay_center_markers[1].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_left_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_left_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
-			this.overlay_right_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_right_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
-		}
 		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
 			if (_show) {
 				_m.show();

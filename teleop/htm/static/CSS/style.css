@@ -373,36 +373,44 @@ div.overlay_distance {
 #overlay_image {
   margin: 5px 0 0 5px;
   border-radius: 5px;
+  width: 320px;
+  height: 240px
 }
 
 #overlay_center_distance0 {
   width: 360px;
   left: calc(50vw - 180px);
+  bottom: calc(45vh - 0px);
 }
 
 #overlay_center_distance1 {
   width: 600px;
   left: calc(50vw - 300px);
+  bottom: calc(22vh - 0px)
 }
 
 #overlay_left_marker0 {
   width: 40px;
   left: 0;
+  bottom: calc(30vh - 0px)
 }
 
 #overlay_left_marker1 {
   width: 35px;
   left: 0;
+  bottom: calc(40vh - 0px)
 }
 
 #overlay_right_marker0 {
   width: 40px;
   right: 0;
+  bottom: calc(30vh - 0px)
 }
 
 #overlay_right_marker1 {
   width: 35px;
   right: 0;
+  bottom: calc(40vh - 0px)
 }
 
 
