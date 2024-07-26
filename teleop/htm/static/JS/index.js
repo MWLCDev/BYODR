@@ -1,8 +1,8 @@
-// import { dev_tools } from './Index/index_a_utils.js';
-// import { navigator_start_all, navigator_stop_all } from './Index/index_d_navigator.js';
-// import { teleop_start_all, teleop_stop_all } from './Index/index_e_teleop.js';
-// import { mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
-// import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
+import { dev_tools } from './Index/index_a_utils.js';
+import { navigator_start_all, navigator_stop_all } from './Index/index_d_navigator.js';
+import { teleop_start_all, teleop_stop_all } from './Index/index_e_teleop.js';
+import { mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
+import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
 
 var hidden, visibilityChange;
 if (typeof document.hidden !== 'undefined') {
@@ -17,15 +17,13 @@ if (typeof document.hidden !== 'undefined') {
 }
 
 function setupNavigationBar() {
-  console.log("loaded the class")
 	var toggleBtn = document.getElementById('hamburger_menu_toggle');
 	var nav = document.querySelector('.hamburger_menu_nav');
 	var userMenu = document.getElementById('application-content');
 	var headerBar = document.getElementById('header_bar');
 	var navLinks = document.querySelectorAll('.hamburger_menu_nav a');
-  
+
 	function toggleSidebar() {
-    console.log("toggled")
 		nav.classList.toggle('active');
 		toggleBtn.classList.toggle('active');
 		userMenu.classList.toggle('expanded');
@@ -51,38 +49,39 @@ function setupNavigationBar() {
 }
 
 export function start_all_handlers() {
+  console.log("inside start")
 	try {
-		navigator_start_all();
-		teleop_start_all();
-		mjpeg_start_all();
+    mjpeg_start_all();
 		h264_start_all();
 	} catch (error) {
-		console.error('Error starting handlers:', error);
+    console.error('Error starting handlers:', error);
 	}
 }
 
 export function stop_all_handlers() {
-	navigator_stop_all();
-	teleop_stop_all();
 	mjpeg_stop_all();
 	h264_stop_all();
 }
 
 function handleVisibilityChange() {
-	if (document[hidden]) {
-		stop_all_handlers();
+  if (document[hidden]) {
+    stop_all_handlers();
 	} else {
-		start_all_handlers();
+    start_all_handlers();
 	}
 }
 
 document.addEventListener('DOMContentLoaded', function () {
-	setupNavigationBar();
+  console.log("DOM loaded")
+  setupNavigationBar();
 	if (!dev_tools.is_develop()) {
-		window.history.pushState({}, '', '/');
+    window.history.pushState({}, '', '/');
 	}
-	// document.addEventListener(visibilityChange, handleVisibilityChange, false);
-	// window.addEventListener('focus', start_all_handlers);
-	// window.addEventListener('blur', stop_all_handlers);
-	// start_all_handlers();
+	document.addEventListener(visibilityChange, handleVisibilityChange, false);
+	window.addEventListener('focus', start_all_handlers);
+  console.log("finished start")
+	window.addEventListener('blur', stop_all_handlers);
+	start_all_handlers();
+	navigator_start_all();
+	teleop_start_all();
 });

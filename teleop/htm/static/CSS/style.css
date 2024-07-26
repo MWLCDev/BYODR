@@ -74,7 +74,8 @@ body {
   display: block;
   margin: 0 auto;
 }
-#current_seg_name{
+
+#current_seg_name {
   font-size: 0.8rem;
   color: #8b7597;
 }
@@ -269,8 +270,10 @@ button {
 
 /* Fourth Layer: Camera Stream View  */
 #viewport_canvas {
-  width: 100% !important;
-  height: 100% !important;
+  /* width: 100% !important;
+  height: 100% !important; */
+  width: 640px;
+  height: 480px
 }
 
 
@@ -367,7 +370,8 @@ div.overlay_distance {
   text-align: center;
   color: rgba(0, 0, 0, 0.5);
   pointer-events: none;
-
+  color: rgba(255, 255, 120, 0.99);
+  border-bottom: 2px solid rgba(255, 255, 120, 0.99)
 }
 
 #overlay_image {

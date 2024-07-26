@@ -349,44 +349,46 @@ export function mjpeg_stop_all() {
 	}
 }
 
-mjpeg_page_controller.init([mjpeg_front_camera, mjpeg_rear_camera]);
+document.addEventListener('DOMContentLoaded', function () {
+	mjpeg_page_controller.init([mjpeg_front_camera, mjpeg_rear_camera]);
 
-$('#video_stream_mjpeg').click(function () {
-	page_utils.set_stream_type('mjpeg');
-	location.reload();
-});
+	$('#video_stream_mjpeg').click(function () {
+		page_utils.set_stream_type('mjpeg');
+		location.reload();
+	});
 
-// Set the socket desired fps when the active camera changes.
-teleop_screen.add_camera_activation_listener(function (position) {
-	setTimeout(function () {
-		mjpeg_page_controller.set_camera_framerates(position);
-	}, 100);
-});
+	// Set the socket desired fps when the active camera changes.
+	teleop_screen.add_camera_activation_listener(function (position) {
+		setTimeout(function () {
+			mjpeg_page_controller.set_camera_framerates(position);
+		}, 100);
+	});
 
-// Build the main view if required.
-if (page_utils.get_stream_type() == 'mjpeg') {
-	const el_main_camera_display = document.getElementById('viewport_canvas');
-	const display_ctx = el_main_camera_display.getContext('2d');
-	// Render images for the active camera.
-	mjpeg_page_controller.add_camera_listener(
-		function (position, _cmd) {
-			if (teleop_screen.active_camera == position && _cmd.action == 'init') {
-				el_main_camera_display.width = _cmd.width;
-				el_main_camera_display.height = _cmd.height;
-				teleop_screen.on_canvas_init(_cmd.width, _cmd.height);
+	// Build the main view if required.
+	if (page_utils.get_stream_type() == 'mjpeg') {
+		const el_main_camera_display = document.getElementById('viewport_canvas');
+		const display_ctx = el_main_camera_display.getContext('2d');
+		// Render images for the active camera.
+		mjpeg_page_controller.add_camera_listener(
+			function (position, _cmd) {
+				if (teleop_screen.active_camera == position && _cmd.action == 'init') {
+					el_main_camera_display.width = _cmd.width;
+					el_main_camera_display.height = _cmd.height;
+					teleop_screen.on_canvas_init(_cmd.width, _cmd.height);
+				}
+			},
+			function (position, _blob) {
+				if (teleop_screen.active_camera == position) {
+					var img = new Image();
+					img.onload = function () {
+						// Do not run the canvas draws in parallel.
+						display_ctx.drawImage(img, 0, 0);
+						teleop_screen.canvas_update(display_ctx);
+					};
+					// Set the src to trigger the image load.
+					img.src = _blob;
+				}
 			}
-		},
-		function (position, _blob) {
-			if (teleop_screen.active_camera == position) {
-				var img = new Image();
-				img.onload = function () {
-					// Do not run the canvas draws in parallel.
-					display_ctx.drawImage(img, 0, 0);
-					teleop_screen.canvas_update(display_ctx);
-				};
-				// Set the src to trigger the image load.
-				img.src = _blob;
-			}
-		}
-	);
-}
+		);
+	}
+});

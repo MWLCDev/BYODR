@@ -13,9 +13,6 @@ export var screen_utils = {
 	},
 
 	_init: function () {
-		this._arrow_images.left = this._create_image('../static/assets/im_arrow_left.png?v=' + this._version);
-		this._arrow_images.right = this._create_image('../static/assets/im_arrow_right.png?v=' + this._version);
-		this._arrow_images.ahead = this._create_image('../static/assets/im_arrow_up.png?v=' + this._version);
 		this._arrow_images.none = this._create_image('../static/assets/im_arrow_none.png?v=' + this._version);
 		this._wheel_images.black = this._create_image('../static/assets/im_wheel_black.png?v=' + this._version);
 		this._wheel_images.blue = this._create_image('../static/assets/im_wheel_blue.png?v=' + this._version);
@@ -31,19 +28,6 @@ export var screen_utils = {
 			message.geo_head_text = message.geo_head.toFixed(2);
 		}
 		return message;
-	},
-
-	_turn_arrow_img: function (turn) {
-		switch (turn) {
-			//            case "intersection.left":
-			//                return this._arrow_images.left;
-			//            case "intersection.right":
-			//                return this._arrow_images.right;
-			//            case "intersection.ahead":
-			//                return this._arrow_images.ahead;
-			default:
-				return this._arrow_images.none;
-		}
 	},
 };
 
@@ -245,10 +229,6 @@ export var teleop_screen = {
 			$('span#inference_critic').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
 		}
 		//
-		if (this.command_turn != message.turn) {
-			this.command_turn = message.turn;
-			$('img#arrow').attr('src', screen_utils._turn_arrow_img(message.turn).src);
-		}
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
 		var el_alpha_speed = $('p#alpha_speed_value');
@@ -319,11 +299,9 @@ export var teleop_screen = {
 		}
 		if (show) {
 			this.el_drive_bar.show();
-			this._on_viewport_container_resize();
 			this.el_pilot_bar.css({ cursor: 'zoom-out' });
 		} else {
 			// this.el_drive_bar.hide();
-			// this._on_viewport_container_resize();
 			this.el_pilot_bar.css({ cursor: 'zoom-in' });
 		}
 		this.in_debug = show ? 1 : 0;
@@ -389,10 +367,8 @@ export var teleop_screen = {
 				button_take_control.hide();
 			}
 			message_box_container.show();
-			this._on_viewport_container_resize();
 		} else {
 			message_box_container.hide();
-			this._on_viewport_container_resize();
 		}
 		if (command.arrow_left) {
 			this._schedule_camera_cycle();
@@ -423,7 +399,6 @@ function screen_poll_platform() {
 			screen_poll_platform();
 		}, 200);
 	} else {
-		teleop_screen._on_viewport_container_resize();
 		teleop_screen._render_distance_indicators();
 	}
 }
@@ -440,5 +415,3 @@ if (page_utils.get_stream_type() == 'mjpeg') {
 }
 teleop_screen._init();
 screen_poll_platform();
-teleop_screen._on_viewport_container_resize();
-window.onresize = teleop_screen._on_viewport_container_resize;
