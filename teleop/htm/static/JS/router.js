@@ -1,41 +1,8 @@
-import { initializeSettings } from './menu_settings.js';
-import { fetchData } from './menu_logbox.js';
-// TODO: rename this file
-var toggleBtn = document.getElementById('hamburger_menu_toggle');
-var nav = document.querySelector('.hamburger_menu_nav');
-var userMenu = document.getElementById('application-content');
-var headerBar = document.getElementById('header_bar');
-var navLinks = document.querySelectorAll('.hamburger_menu_nav a'); // Select all nav links
-
-// Function to toggle the sidebar and content blur
-
-function toggleSidebar() {
-	nav.classList.toggle('active');
-	toggleBtn.classList.toggle('active');
-	userMenu.classList.toggle('expanded');
-	headerBar.classList.toggle('expanded');
-}
-
-if (toggleBtn) {
-	toggleBtn.addEventListener('click', toggleSidebar);
-}
-
-navLinks.forEach(function (link) {
-	link.addEventListener('click', function () {
-		// Hide the sidebar
-		toggleSidebar();
-	});
-});
-
-// Event listener for clicking outside the sidebar to close it
-document.addEventListener('click', function (event) {
-	var isClickInsideNav = nav.contains(event.target);
-	var isClickToggleBtn = toggleBtn.contains(event.target);
-
-	if (!isClickInsideNav && !isClickToggleBtn && nav.classList.contains('active')) {
-		toggleSidebar();
-	}
-});
+import { initializeSettings } from './userMenu/menu_settings.js';
+import { fetchData } from './userMenu/menu_logbox.js';
+import { start_all_handlers } from './index.js';
+import { setupMobileController } from './mobileController/mobileController_a_app.js';
+import { network_utils } from './Index/index_a_utils.js';
 
 function _user_menu_route_screen(screen) {
 	$('.hamburger_menu_nav a').each(function () {
@@ -52,7 +19,9 @@ function _user_menu_route_screen(screen) {
 	switch (screen) {
 		case 'home_link':
 			$('a#home_link').addClass('active');
-			el_container.load('/normal_ui');
+			el_container.load('/normal_ui', function () {
+				start_all_handlers();
+			});
 			break;
 		case 'settings_link':
 			$('a#settings_link').addClass('active');
@@ -68,27 +37,21 @@ function _user_menu_route_screen(screen) {
 			break;
 		case 'phone_controller_link':
 			$('a#phone_controller_link').addClass('active');
-			el_container.load('/mc');
+			el_container.load('/mc', function () {
+				console.log('should load the function');
+				setupMobileController();
+			});
 			break;
 	}
 }
 
-async function getSSID() {
-	try {
-		const response = await fetch('/run_get_SSID');
-		const data = await response.text();
-		return data;
-	} catch (error) {
-		console.error('Error fetching SSID for current robot:', error);
-	}
-}
 document.addEventListener('DOMContentLoaded', function () {
 	// Set up the click handlers for menu navigation
 	$('a#home_link, a#settings_link, a#controls_link, a#events_link, a#phone_controller_link').click(function () {
 		_user_menu_route_screen(this.id);
 	});
-	// Correctly handle the promise returned by getSSID
-	getSSID()
+	network_utils
+		.getSSID()
 		.then((ssid) => {
 			$('#header_bar #current_seg_name').text(ssid);
 		})

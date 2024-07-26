@@ -18,35 +18,17 @@
 	<body>
 		<nav class="hamburger_menu_nav">
 			<div id="hamburger_menu_top_nav">
-				<p>
-					<a href="#" id="home_link"><img src="../static/assets/manual_mode.png" class="nav_icon" />Manual Mode</a>
-				</p>
-				<p>
-					<a href="#" id="ai_training_link"><img src="../static/assets/ai_training_mode.png" class="nav_icon" />AI Training</a>
-				</p>
-				<p>
-					<a href="#" id="autopilot_link"><img src="../static/assets/autopilot_mode.png" class="nav_icon" />Autopilot</a>
-				</p>
-				<p>
-					<a href="#" id="map_recognition_link"><img src="../static/assets/map_recognition.png" class="nav_icon" />Map Recognition</a>
-				</p>
-				<p>
-					<a href="#" id="follow_link"><img src="../static/assets/follow_mode.png" class="nav_icon" />Follow</a>
-				</p>
+				<a href="#" id="home_link"><img src="../static/assets/manual_mode.png" class="nav_icon" />Manual Mode</a>
+				<a href="#" id="ai_training_link"><img src="../static/assets/ai_training_mode.png" class="nav_icon" />AI Training</a>
+				<a href="#" id="autopilot_link"><img src="../static/assets/autopilot_mode.png" class="nav_icon" />Autopilot</a>
+				<a href="#" id="map_recognition_link"><img src="../static/assets/map_recognition.png" class="nav_icon" />Map Recognition</a>
+				<a href="#" id="follow_link"><img src="../static/assets/follow_mode.png" class="nav_icon" />Follow</a>
 			</div>
 			<div id="hamburger_menu_bottom_nav">
-				<p>
-					<a href="#" id="settings_link"><img src="../static/assets/nav_advanved_settings.png" class="nav_icon" />Advanced Settings</a>
-				</p>
-				<p>
-					<a href="#" id="controls_link"><img src="../static/assets/nav_controls_menu.png" class="nav_icon" />Controls</a>
-				</p>
-				<p>
-					<a href="#" id="events_link"><img src="../static/assets/nav_training_events.png" class="nav_icon" />Training Events</a>
-				</p>
-				<p>
-					<a href="#" id="phone_controller_link"><img src="../static/assets/nav_control_by_phone.png" class="nav_icon" />Control by Phone</a>
-				</p>
+				<a href="#" id="settings_link"><img src="../static/assets/nav_advanved_settings.png" class="nav_icon" />Advanced Settings</a>
+				<a href="#" id="controls_link"><img src="../static/assets/nav_controls_menu.png" class="nav_icon" />Controls</a>
+				<a href="#" id="events_link"><img src="../static/assets/nav_training_events.png" class="nav_icon" />Training Events</a>
+				<a href="#" id="phone_controller_link"><img src="../static/assets/nav_control_by_phone.png" class="nav_icon" />Control by Phone</a>
 				<div id="nav_dark_mode_toggle_container">
 					<label id="nav_dark_mode_toggle">
 						<input type="checkbox" />
@@ -67,12 +49,9 @@
 		</div>
 
 		<div id="header_bar">
-
 			<img src="../static/assets/VOR_Logo_dark.png" id="VOR_center_logo" />
-      <p id="current_seg_name"></p>
+			<p id="current_seg_name"></p>
 		</div>
-
-
 
 		<main id="application-content">
 			<!-- Where the elements are displayed -->
@@ -83,6 +62,9 @@
 		<script src="../static/external/jquery.radioslider-1.0.0_b1.min.js"></script>
 		<script src="../static/external/datatables/datatables-1.11.5.min.js"></script>
 		<script src="../static/external/datatables/fixedheader-3.2.2.min.js"></script>
-		<script type="module" src="../static/JS/userMenu/user_menu.js"></script>
+		<script type="module" src="../static/JS/router.js"></script>
+		<script type="module" src="../static/JS/index.js"></script> 
+		<script type="module" src="../static/JS/http-live-player.js"></script>
+		<script type="module" src="../static/JS/performance-polyfill.js"></script>
 	</body>
 </html>

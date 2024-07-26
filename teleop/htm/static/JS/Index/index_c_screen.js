@@ -5,7 +5,6 @@ export var screen_utils = {
 	_version: '0.55.0',
 	_arrow_images: {},
 	_wheel_images: {},
-	_navigation_icons: {},
 
 	_create_image: function (url) {
 		var img = new Image(); // Make sure to declare 'img' locally
@@ -21,8 +20,6 @@ export var screen_utils = {
 		this._wheel_images.black = this._create_image('../static/assets/im_wheel_black.png?v=' + this._version);
 		this._wheel_images.blue = this._create_image('../static/assets/im_wheel_blue.png?v=' + this._version);
 		this._wheel_images.red = this._create_image('../static/assets/im_wheel_red.png?v=' + this._version);
-		this._navigation_icons.play = this._create_image('../static/assets/icon_play.png?v=' + this._version);
-		this._navigation_icons.pause = this._create_image('../static/assets/icon_pause.png?v=' + this._version);
 	},
 
 	_decorate_server_message: function (message) {
@@ -46,25 +43,6 @@ export var screen_utils = {
 			//                return this._arrow_images.ahead;
 			default:
 				return this._arrow_images.none;
-		}
-	},
-
-	_steering_wheel_img: function (message) {
-		if (message._is_on_autopilot && message._has_passage) {
-			return this._wheel_images.blue;
-		}
-		if (message._has_passage) {
-			return this._wheel_images.black;
-		}
-		return this._wheel_images.red;
-	},
-
-	_navigation_icon: function (state) {
-		switch (state) {
-			case 'play':
-				return this._navigation_icons.play;
-			default:
-				return this._navigation_icons.pause;
 		}
 	},
 };
@@ -286,9 +264,6 @@ export var teleop_screen = {
 
 	_server_message: function (message) {
 		this._last_server_message = message;
-
-		$('span#pilot_steering').text(message.ste.toFixed(3));
-		$('span#pilot_throttle').text(message.thr.toFixed(3));
 		// It may be the inference service is not (yet) available.
 		const _debug = this.in_debug;
 		if (message.inf_surprise != undefined) {
@@ -331,7 +306,6 @@ export var teleop_screen = {
 		var str_command_ctl = message.ctl + '_' + message._has_passage;
 		if (this.command_ctl != str_command_ctl) {
 			this.command_ctl = str_command_ctl;
-			el_steering_wheel.attr('src', screen_utils._steering_wheel_img(message).src);
 			if (message._is_on_autopilot) {
 				el_alpha_speed_label.text('MAX');
 				el_beta_speed_container.show();
@@ -500,7 +474,7 @@ if (page_utils.get_stream_type() == 'mjpeg') {
 	$('#video_stream_mjpeg').addClass('active');
 	$('#video_stream_h264').addClass('inactive');
 } else {
-  $('#video_stream_mjpeg').addClass('inactive');
+	$('#video_stream_mjpeg').addClass('inactive');
 	$('#video_stream_h264').addClass('active');
 }
 teleop_screen._init();
