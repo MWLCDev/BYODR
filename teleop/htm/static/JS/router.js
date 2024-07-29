@@ -1,8 +1,28 @@
 import { initializeSettings } from './userMenu/menu_settings.js';
 import { fetchData } from './userMenu/menu_logbox.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
-import { network_utils } from './Index/index_a_utils.js';
+import { network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
+import { screen_utils, teleop_screen } from './Index/index_c_screen.js';
+import { gamepad_socket } from './Index/index_e_teleop.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
+
+function initializeAllNormalUIComponents() {
+	teleop_screen._init();
+	screen_utils._init();
+	socket_utils._init();
+	dev_tools._init();
+	page_utils._init();
+
+	if (page_utils.get_stream_type() == 'mjpeg') {
+		$('#video_stream_type').val('mjpeg');
+	} else {
+		$('#video_stream_type').val('h264');
+	}
+
+	$('input#message_box_button_take_control').click(function () {
+		gamepad_socket._request_take_over_control();
+	});
+}
 
 function _user_menu_route_screen(screen) {
 	$('.hamburger_menu_nav a').each(function () {
@@ -20,7 +40,7 @@ function _user_menu_route_screen(screen) {
 	switch (screen) {
 		case 'home_link':
 			$('a#home_link').addClass('active');
-			el_container.load('/normal_ui');
+			el_container.load('/normal_ui', initializeAllNormalUIComponents);
 			break;
 		case 'settings_link':
 			$('a#settings_link').addClass('active');

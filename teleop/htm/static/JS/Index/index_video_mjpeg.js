@@ -353,9 +353,10 @@ function findCanvasAndExecute() {
 	const el_main_camera_display = document.getElementById('viewport_canvas');
 	if (el_main_camera_display) {
 		mjpeg_page_controller.init([mjpeg_front_camera, mjpeg_rear_camera]);
-		$('#video_stream_mjpeg').click(function () {
-			page_utils.set_stream_type('mjpeg');
-			location.reload();
+		$('#video_stream_type').change(function () {
+			var selectedStreamType = $(this).val(); // Get the selected option value
+			page_utils.set_stream_type(selectedStreamType); // Set the stream type
+			location.reload(); // Reload the page
 		});
 
 		// Set the socket desired fps when the active camera changes.

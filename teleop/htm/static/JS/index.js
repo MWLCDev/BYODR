@@ -77,6 +77,7 @@ window.addEventListener('load', function () {
 	if (!dev_tools.is_develop()) {
 		window.history.pushState({}, '', '/');
 	}
+  
 	document.addEventListener(visibilityChange, handleVisibilityChange, false);
 	window.addEventListener('focus', start_all_handlers);
 	window.addEventListener('blur', stop_all_handlers);

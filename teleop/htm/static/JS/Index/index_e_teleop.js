@@ -172,6 +172,3 @@ export function teleop_stop_all() {
 server_socket.add_server_message_listener(function (message) {
 	teleop_screen._server_message(message);
 });
-$('input#message_box_button_take_control').click(function () {
-	gamepad_socket._request_take_over_control();
-});

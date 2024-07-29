@@ -391,7 +391,7 @@ export var teleop_screen = {
 	},
 };
 
-function screen_poll_platform() {
+export function screen_poll_platform() {
 	if (dev_tools._vehicle == undefined) {
 		setTimeout(function () {
 			screen_poll_platform();
@@ -401,15 +401,4 @@ function screen_poll_platform() {
 	}
 }
 
-// --------------------------------------------------- Initialisations follow --------------------------------------------------------- //
-screen_utils._init();
-
-if (page_utils.get_stream_type() == 'mjpeg') {
-	$('#video_stream_mjpeg').addClass('active');
-	$('#video_stream_h264').addClass('inactive');
-} else {
-	$('#video_stream_mjpeg').addClass('inactive');
-	$('#video_stream_h264').addClass('active');
-}
-teleop_screen._init();
 screen_poll_platform();

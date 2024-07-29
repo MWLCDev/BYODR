@@ -133,13 +133,17 @@ export var page_utils = {
 	_capabilities: null,
 
 	_init: function () {
-		// noop.
+		this.request_capabilities((capabilities) => {
+			// console.log('Received platform vehicle ' + dev_tools._vehicle);
+		});
 	},
 
 	request_capabilities: function (callback) {
 		const _instance = this;
+		// Check if capabilities are already loaded
 		if (_instance._capabilities == undefined) {
 			if (dev_tools.is_develop()) {
+				// If in development mode, simulate capabilities
 				_instance._capabilities = {
 					platform: {
 						vehicle: dev_tools._random_choice(['rover1', 'carla1']),
@@ -148,12 +152,14 @@ export var page_utils = {
 				};
 				callback(_instance._capabilities);
 			} else {
+				// Fetch real capabilities from server if not in develop mode
 				jQuery.get('/teleop/system/capabilities', function (data) {
 					_instance._capabilities = data;
 					callback(_instance._capabilities);
 				});
 			}
 		} else {
+			// If already loaded, use the existing capabilities
 			callback(_instance._capabilities);
 		}
 	},
@@ -169,16 +175,6 @@ export var page_utils = {
 
 	set_stream_type: function (stream_type) {
 		window.localStorage.setItem('video.stream.type', stream_type);
+		console.log(stream_type);
 	},
 };
-
-// --------------------------------------------------- Initialisations follow --------------------------------------------------------- //
-socket_utils._init();
-dev_tools._init();
-page_utils._init();
-document.addEventListener('DOMContentLoaded', function () {
-	page_utils.request_capabilities(function (_capabilities) {
-		dev_tools._vehicle = _capabilities.platform.vehicle;
-		console.log('Received platform vehicle ' + dev_tools._vehicle);
-	});
-});
