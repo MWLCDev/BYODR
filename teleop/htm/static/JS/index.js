@@ -48,9 +48,10 @@ function setupNavigationBar() {
 	});
 }
 
-export function start_all_handlers() {
-  console.log("will start handlers ")
+function start_all_handlers() {
 	try {
+		// const el_main_camera_display = document.getElementById('viewport_canvas');
+		// console.log(el_main_camera_display.width, el_main_camera_display.height);
 		mjpeg_start_all();
 		h264_start_all();
 	} catch (error) {
@@ -58,7 +59,7 @@ export function start_all_handlers() {
 	}
 }
 
-export function stop_all_handlers() {
+function stop_all_handlers() {
 	mjpeg_stop_all();
 	h264_stop_all();
 }
@@ -71,14 +72,13 @@ function handleVisibilityChange() {
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function () {
+window.addEventListener('load', function () {
 	setupNavigationBar();
 	if (!dev_tools.is_develop()) {
 		window.history.pushState({}, '', '/');
 	}
 	document.addEventListener(visibilityChange, handleVisibilityChange, false);
 	window.addEventListener('focus', start_all_handlers);
-	console.log('finished start');
 	window.addEventListener('blur', stop_all_handlers);
 	navigator_start_all();
 	teleop_start_all();

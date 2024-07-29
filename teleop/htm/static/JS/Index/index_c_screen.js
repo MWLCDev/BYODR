@@ -269,7 +269,6 @@ export var teleop_screen = {
 			el_autopilot_status.css('color', 'rgb(100, 217, 255)');
 		}
 		var display_rotation = Math.floor(message.ste * 90.0);
-    console.log(display_rotation)
 		el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
 	},
 

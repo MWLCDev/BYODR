@@ -159,14 +159,11 @@ export var page_utils = {
 	},
 
 	get_stream_type: function () {
-		if (dev_tools.is_develop()) {
-			return 'mjpeg';
-		}
 		var stream_type = window.localStorage.getItem('video.stream.type');
-		if (stream_type == null) {
+		if (stream_type == 'h264') {
 			return 'h264';
 		} else {
-			return stream_type;
+			return 'mjpeg';
 		}
 	},
 

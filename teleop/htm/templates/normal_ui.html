@@ -63,8 +63,15 @@
 
 <!-- Fourth Layer: Camera Stream View -->
 <div id="viewport_container">
+	<!-- Where the main stream is shown -->
 	<canvas id="viewport_canvas"></canvas>
+	<!-- Message box container -->
+	<div id="message_box_container">
+		<input id="message_box_button_take_control" type="button" value="Take over control" />
+		<div id="message_box_message"></div>
+	</div>
 	<div id="overlay_image_container">
+		<!-- overlay_image => Where to show the magnified non-selected camera stream  -->
 		<img id="overlay_image" />
 		<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
 		<div id="overlay_center_distance1" class="overlay_distance">0.5</div>
@@ -83,11 +90,6 @@
 		</div>
 	</div>
 
-	<!-- Message box container -->
-	<div id="message_box_container">
-		<input id="message_box_button_take_control" type="button" value="Take over control" />
-		<div id="message_box_message"></div>
-	</div>
 	<!-- Displayed at the bottom left -->
 	<div id="geo_data">
 		<p>Lat <span id="navigation_geo_lat"></span></p>
