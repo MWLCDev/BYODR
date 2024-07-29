@@ -51,20 +51,16 @@ class ControlServerSocket(websocket.WebSocketHandler):
         pass
 
     def open(self, *args, **kwargs):
-        if not self._has_operators():
-            self.operators.add(self)
-            logger.info("Operator {} connected.".format(self.request.remote_ip))
-        elif self._is_operator():
-            logger.info("Operator {} reconnected.".format(self.request.remote_ip))
-        else:
-            logger.info("Viewer {} connected.".format(self.request.remote_ip))
+        self.operators.clear()  # Clear any previous operators
+        self.operators.add(self)  # Make the current one operator
+        logger.info("Operator {} connected.".format(self.request.remote_ip))
 
     def on_close(self):
         if self._is_operator():
             self.operators.clear()
-            logger.info("Operator {} disconnected.".format(self.request.remote_ip))
-        else:
-            logger.info("Viewer {} disconnected.".format(self.request.remote_ip))
+        #     logger.info("Operator {} disconnected.".format(self.request.remote_ip))
+        # else:
+        #     logger.info("Viewer {} disconnected.".format(self.request.remote_ip))
 
     def on_message(self, json_message):
         msg = json.loads(json_message)
