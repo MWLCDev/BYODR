@@ -277,7 +277,7 @@ table#logbox tbody{
   margin-bottom: 40px;
 }
 
-.entries#logbox{
+.dropdown#logbox{
   margin-top: 40px;
   margin-bottom: 40px;
 }
@@ -285,4 +285,12 @@ table#logbox tbody{
 .undertable#logbox{
   margin-top: 20px;
   margin-bottom: 20px;
+}
+
+.entries#logbox{
+  float: inline-start;
+}
+
+.pagination#logbox{
+  float: inline-end;
 }

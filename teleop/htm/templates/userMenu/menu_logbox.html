@@ -2,7 +2,8 @@
     <div>
         <h1 class="title" id="logbox">Training Events</h1>
     </div>
-    <div id="logbox" class="entries">
+
+    <div id="logbox" class="dropdown">
         <label for="entries_nr">Show</label>
         <select name="cars" id="cars">
         <option value="10">10</option>
@@ -12,6 +13,7 @@
         </select>
         <span>entries</span>
     </div>
+
     <table id="logbox" class="display" style="width:100%">
         <thead>
             <tr>
@@ -40,7 +42,10 @@
         </tbody>
         </div>
     </table>
+
     <div id="logbox" class="undertable">
-        <p>Showing <span class="from_nr" id="logbox">1</span> to <span class="to_nr" id="logbox">10</span> of <span class="max_nr" id="logbox">10</span> entries</p>
+        <div id="logbox" class="entries"></div><p>Showing <span class="from_nr" id="logbox">1</span> to <span class="to_nr" id="logbox">10</span> of <span class="max_nr" id="logbox">10</span> entries</p>
+        <div id="logbox" class="pagination"><button>Previous</button><button>1</button><button>2</button><span>...</span><button>20</button><button>Next</button></div>
+
     </div>
 </div>

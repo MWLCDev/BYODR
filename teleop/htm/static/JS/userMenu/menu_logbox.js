@@ -14,6 +14,7 @@ export function fetchData() {
 		length: length,
 		'order[0][dir]': orderDir,
 	}); // Include ordering parameters
+	
 	fetch(`${apiUrl}?${params.toString()}`)
 		.then((response) => response.json())
 		.then((data) => {
@@ -21,26 +22,31 @@ export function fetchData() {
 				console.error('Error from server:', data.error);
 				return;
 			}
-			processData(data.data, data.draw); // Ensure draw from server matches the expected draw
+			processData(data.data, data.draw, data.recordsTotal); // Ensure draw from server matches the expected draw
 		})
 		.catch((error) => console.error('Error loading the data:', error));
 }
 
-function processData(data, serverDraw) {
+function processData(data, serverDraw, totalRecords) {
+	console.log(data)
 	if (serverDraw !== drawCount - 1) {
 		console.warn('Received out of sync data');
 		return; // Handling out of sync response.
 	}
 	const tableBody = document.querySelector('#logbox tbody');
 	tableBody.innerHTML = ''; // Clear existing rows
-
 	data.forEach((row) => {
 		const tr = document.createElement('tr');
 		tr.innerHTML = row
 			.map((item, index) => {
 				// Handling 'null' and numeric conversions explicitly for proper display
 				if (item === 'null' || item === null) return '<td></td>'; // Render empty cell for null values
-				if (typeof item === 'number') return `<td>${item.toFixed(2)}</td>`; // Format numbers
+				console.log(typeof item, item)
+				if (typeof item === "number"){
+					console.log(item.toFixed(2)) 
+					return `<td>${item.toFixed(2)}</td>`; // Format numbers
+
+				} 
 				return `<td>${item}</td>`; // Default rendering
 			})
 			.join('');
