@@ -5,7 +5,6 @@ export var screen_utils = {
 	_version: '0.55.0',
 	_arrow_images: {},
 	_wheel_images: {},
-	_navigation_icons: {},
 
 	_create_image: function (url) {
 		var img = new Image(); // Make sure to declare 'img' locally
@@ -14,15 +13,10 @@ export var screen_utils = {
 	},
 
 	_init: function () {
-		this._arrow_images.left = this._create_image('../static/assets/im_arrow_left.png?v=' + this._version);
-		this._arrow_images.right = this._create_image('../static/assets/im_arrow_right.png?v=' + this._version);
-		this._arrow_images.ahead = this._create_image('../static/assets/im_arrow_up.png?v=' + this._version);
 		this._arrow_images.none = this._create_image('../static/assets/im_arrow_none.png?v=' + this._version);
 		this._wheel_images.black = this._create_image('../static/assets/im_wheel_black.png?v=' + this._version);
 		this._wheel_images.blue = this._create_image('../static/assets/im_wheel_blue.png?v=' + this._version);
 		this._wheel_images.red = this._create_image('../static/assets/im_wheel_red.png?v=' + this._version);
-		this._navigation_icons.play = this._create_image('../static/assets/icon_play.png?v=' + this._version);
-		this._navigation_icons.pause = this._create_image('../static/assets/icon_pause.png?v=' + this._version);
 	},
 
 	_decorate_server_message: function (message) {
@@ -34,38 +28,6 @@ export var screen_utils = {
 			message.geo_head_text = message.geo_head.toFixed(2);
 		}
 		return message;
-	},
-
-	_turn_arrow_img: function (turn) {
-		switch (turn) {
-			//            case "intersection.left":
-			//                return this._arrow_images.left;
-			//            case "intersection.right":
-			//                return this._arrow_images.right;
-			//            case "intersection.ahead":
-			//                return this._arrow_images.ahead;
-			default:
-				return this._arrow_images.none;
-		}
-	},
-
-	_steering_wheel_img: function (message) {
-		if (message._is_on_autopilot && message._has_passage) {
-			return this._wheel_images.blue;
-		}
-		if (message._has_passage) {
-			return this._wheel_images.black;
-		}
-		return this._wheel_images.red;
-	},
-
-	_navigation_icon: function (state) {
-		switch (state) {
-			case 'play':
-				return this._navigation_icons.play;
-			default:
-				return this._navigation_icons.pause;
-		}
 	},
 };
 
@@ -196,47 +158,8 @@ export var teleop_screen = {
 		});
 	},
 
-	_on_viewport_container_resize: function () {
-		// Must use the singleton reference because async functions call us.
-		const _instance = teleop_screen;
-		const vh = window.innerHeight - _instance.el_viewport_container.offset().top;
-		// Leave a little space at the very bottom.
-		_instance.el_viewport_container.height(vh - 2);
-		// Calculate the new marker locations.
-		var _markers = [0.24 * vh, 0.12 * vh, 0.18 * vh, 0.1 * vh];
-		if (dev_tools._vehicle == 'rover1') {
-			_markers = [0.52 * vh, 0.25 * vh, 0.45 * vh, 0.31 * vh];
-		}
-		_instance._set_distance_indicators(_markers);
-	},
-
-	_set_distance_indicators: function (values) {
-		this.overlay_center_markers[0].css('bottom', values[0]);
-		this.overlay_center_markers[1].css('bottom', values[1]);
-		this.overlay_left_markers[0].css('bottom', values[2]);
-		this.overlay_left_markers[1].css('bottom', values[3]);
-		this.overlay_right_markers[0].css('bottom', values[2]);
-		this.overlay_right_markers[1].css('bottom', values[3]);
-	},
-
 	_render_distance_indicators: function () {
-		// const _show = this.in_debug && this.active_camera == 'front'? true: false;
 		const _show = this.active_camera == 'front';
-		const _hard_yellow = 'rgba(255, 255, 120, 0.99)';
-		if (_show) {
-			this.overlay_center_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_center_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_left_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_left_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_right_markers[0].css('color', `${_hard_yellow}`);
-			this.overlay_right_markers[1].css('color', `${_hard_yellow}`);
-			this.overlay_center_markers[0].css('border-bottom', `2px solid ${_hard_yellow}`);
-			this.overlay_center_markers[1].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_left_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_left_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
-			this.overlay_right_markers[0].css('border-bottom', `3px solid ${_hard_yellow}`);
-			this.overlay_right_markers[1].css('border-top', `2px solid ${_hard_yellow}`);
-		}
 		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
 			if (_show) {
 				_m.show();
@@ -286,9 +209,6 @@ export var teleop_screen = {
 
 	_server_message: function (message) {
 		this._last_server_message = message;
-
-		$('span#pilot_steering').text(message.ste.toFixed(3));
-		$('span#pilot_throttle').text(message.thr.toFixed(3));
 		// It may be the inference service is not (yet) available.
 		const _debug = this.in_debug;
 		if (message.inf_surprise != undefined) {
@@ -308,11 +228,6 @@ export var teleop_screen = {
 			$('span#inference_surprise').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
 			$('span#inference_critic').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
 		}
-		//
-		if (this.command_turn != message.turn) {
-			this.command_turn = message.turn;
-			$('img#arrow').attr('src', screen_utils._turn_arrow_img(message.turn).src);
-		}
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
 		var el_alpha_speed = $('p#alpha_speed_value');
@@ -325,13 +240,11 @@ export var teleop_screen = {
 		} else {
 			el_alpha_speed.text(message.vel_y.toFixed(1));
 		}
-		//
-		var el_steering_wheel = $('img#steeringWheel');
+		var el_steering_wheel = $('img.steeringWheel');
 		var el_autopilot_status = $('#autopilot_status');
 		var str_command_ctl = message.ctl + '_' + message._has_passage;
 		if (this.command_ctl != str_command_ctl) {
 			this.command_ctl = str_command_ctl;
-			el_steering_wheel.attr('src', screen_utils._steering_wheel_img(message).src);
 			if (message._is_on_autopilot) {
 				el_alpha_speed_label.text('MAX');
 				el_beta_speed_container.show();
@@ -384,11 +297,9 @@ export var teleop_screen = {
 		}
 		if (show) {
 			this.el_drive_bar.show();
-			this._on_viewport_container_resize();
 			this.el_pilot_bar.css({ cursor: 'zoom-out' });
 		} else {
 			// this.el_drive_bar.hide();
-			// this._on_viewport_container_resize();
 			this.el_pilot_bar.css({ cursor: 'zoom-in' });
 		}
 		this.in_debug = show ? 1 : 0;
@@ -418,7 +329,7 @@ export var teleop_screen = {
 			cb();
 		});
 	},
-
+	//TODO: why it assigns the already init vars to consts?
 	controller_update: function (command) {
 		const message_box_container = this.el_message_box_container;
 		const message_box_message = this.el_message_box_message;
@@ -454,17 +365,15 @@ export var teleop_screen = {
 				button_take_control.hide();
 			}
 			message_box_container.show();
-			this._on_viewport_container_resize();
 		} else {
 			message_box_container.hide();
-			this._on_viewport_container_resize();
 		}
-		if (command.arrow_left) {
+		if (command != undefined && command.arrow_left) {
 			this._schedule_camera_cycle();
-		} else if (command.arrow_right) {
+		} else if (command != undefined && command.arrow_right) {
 			this._schedule_camera_cycle();
 		}
-		if (command.button_right) {
+		if (command != undefined && command.button_right) {
 			this._schedule_photo_snapshot_effect();
 		}
 	},
@@ -482,28 +391,14 @@ export var teleop_screen = {
 	},
 };
 
-function screen_poll_platform() {
+export function screen_poll_platform() {
 	if (dev_tools._vehicle == undefined) {
 		setTimeout(function () {
 			screen_poll_platform();
 		}, 200);
 	} else {
-		teleop_screen._on_viewport_container_resize();
 		teleop_screen._render_distance_indicators();
 	}
 }
 
-// --------------------------------------------------- Initialisations follow --------------------------------------------------------- //
-screen_utils._init();
-
-if (page_utils.get_stream_type() == 'mjpeg') {
-	$('#video_stream_mjpeg').addClass('active');
-	$('#video_stream_h264').addClass('inactive');
-} else {
-  $('#video_stream_mjpeg').addClass('inactive');
-	$('#video_stream_h264').addClass('active');
-}
-teleop_screen._init();
 screen_poll_platform();
-teleop_screen._on_viewport_container_resize();
-window.onresize = teleop_screen._on_viewport_container_resize;

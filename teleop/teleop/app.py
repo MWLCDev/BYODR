@@ -196,14 +196,11 @@ def main():
                 (r"/(menu_controls)", TemplateRenderer),
                 (r"/(menu_logbox)", TemplateRenderer),
                 (r"/(menu_settings)", TemplateRenderer),
-                # Getting the commands from the mobile controller (commands are sent in JSON)
-                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
-                # Run python script to get the SSID for the current segment
-                (r"/run_get_SSID", RunGetSSIDPython),
+                (r"/run_get_SSID", GetSegmentSSID),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
                 (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),
                 (r"/api/datalog/event/v10/image", JPEGImageRequestHandler, dict(mongo_box=_mongo)),
-                # Get the commands from the controller in normal UI
+                # Get movement commands from the controller in normal UI
                 (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_controller.throttle_control)),
                 (r"/ws/log", MessageServerSocket, dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek())))),
                 (r"/ws/cam/front", CameraMJPegSocket, dict(image_capture=(lambda: camera_front.capture()))),

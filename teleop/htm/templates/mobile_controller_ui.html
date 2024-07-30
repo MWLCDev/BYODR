@@ -1,57 +1,17 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<link rel="stylesheet" type="text/css" href="../static/CSS/mobileController.css" />
-		<link rel="shortcut icon" href="#" />
-		<title>Mobile controller</title>
-	</head>
+<div id="mobile_controller_container">
+	<div>
+		<img src="../static/assets/manual_mode.png" class="steeringWheel" />
+	</div>
+	<div id="forward_square" class="square">
+		<canvas class="trail_canvas"></canvas>
+		<div class="square_direction_text">FORWARD</div>
+		<span class="stop_text">DRAG YOUR FINGER TO THIS AREA TO FORCE THE ROBOT TO STOP</span>
+	</div>
 
-	<body>
-		<div id="mobile-controller-top-input-container">
-			<div id="dead-zone-container">
-				<label for="deadZoneWidth">Dead Zone Width:</label>
-				<input type="range" id="deadZoneWidth" name="deadZoneWidth" min="0" max="0.5" step="0.01" value="0.1" />
-			</div>
-			<div class="mobile-controller-motor-settings-container">
-				<!-- Scale input container -->
-				<div class="scale-offset-input-containers">
-					<label for="scale_input_box_ID">Max km/h:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="scale_input_box_ID" name="scale_slider" min="1" max="7" step="0.5" value="3" class="scale-offset-input-box"/>
-						<span class="scale-input-text"> </span>
-					</div>
-				</div>
+	<div id="backward_square" class="square">
+		<canvas class="trail_canvas"></canvas>
+		<div class="square_direction_text">BACKWARD</div>
+		<span class="stop_text">DRAG YOUR FINGER TO THIS AREA TO FORCE THE ROBOT TO STOP</span>
+	</div>
+</div>
 
-				<!-- Offset input container -->
-				<div class="scale-offset-input-containers">
-					<label for="offset_input_box_ID">Turning offset:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="offset_input_box_ID" name="offset_slider" min="-1" max="1" step="0.02" value="0" class="scale-offset-input-box"/>
-						<span class="offset-input-text"> </span>
-					</div>
-				</div>
-			</div>
-		</div>
-
-		<div id="mobile-controller-bottom-input-container">
-			<div class="mobile_controller_button_container">
-				<div id="toggle_button_container">
-					<!-- FOR OT and MC: add your buttons here with the same class name -->
-					<button id="inference_toggle_button" class="mobile_option_button">Autopilot options</button>
-					<button id="confidenceToggleButton" class="mobile_option_button">Start overview confidence</button>
-				</div>
-				<div id="inference_auto_speed">0.0 Km/h</div>
-				<div id="inference_options_container">
-					<button id="inference_training_toggle" class="mobile_option_button">Start Training</button>
-					<button id="inference_auto_navigation_toggle" class="mobile_option_button">Start Auto-navigation</button>
-					<button id="hide_options" class="mobile_option_button">Hide Options</button>
-				</div>
-			</div>
-		</div>
-
-		<script src="../static/external/pixi-v7.3.0-rc.2.min.js"></script>
-		<script type="module" src="../static/JS/mobileController/mobileController_a_app.js"></script>
-	</body>
-</html>

@@ -101,8 +101,9 @@ export function h264_stop_all() {
 }
 
 if (!dev_tools.is_develop()) {
-	$('#video_stream_h264').click(function () {
-		page_utils.set_stream_type('h264');
-		location.reload();
+	$('#video_stream_type').change(function () {
+		var selectedStreamType = $(this).val(); // Get the selected option value
+		page_utils.set_stream_type(selectedStreamType); // Set the stream type
+		location.reload(); // Reload the page
 	});
 }
