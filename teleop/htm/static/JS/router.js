@@ -36,24 +36,64 @@ function initializeAllNormalUIComponents() {
 function handleUserMenuRoute(selectedLinkId) {
 	CTRL_STAT.mobileIsActive = false;
 	$('.hamburger_menu_nav a').removeClass('active');
-	console.log(selectedLinkId);
 	$('#' + selectedLinkId).addClass('active');
-	window.localStorage.setItem('user.menu.screen', selectedLinkId); // Save the last visited screen in the cache
-	const activeImageSrc = $('#' + selectedLinkId + ' img').attr('src'); // Get the src from the image of the active link
-	$('.current_mode_img').attr('src', activeImageSrc); // Always update the mode image
+	window.localStorage.setItem('user.menu.screen', selectedLinkId);// Save the last visited screen in the cache
+	const activeImageSrc = $('#' + selectedLinkId + ' img').attr('src');// Get the src from the image of the active link
+	$('.current_mode_img').attr('src', activeImageSrc);// Always update the mode image
 
+	// Determine if mode switching is allowed on the current page
+	if (['home_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'].includes(selectedLinkId)) {
+		ensureModePageLoaded(() => {
+			updateMode(selectedLinkId);
+		});
+	} else {
+		// Load settings page as before
+		loadPageForSetting(selectedLinkId);
+	}
+}
+
+function ensureModePageLoaded(callback) {
+	const currentPage = $('main#application-content').data('current-page');
+	const targetPage = isMobileDevice() ? '/mc' : '/normal_ui'; // Determine the target page based on device type
+
+	// Check if current page supports mode switching
+	if (currentPage === '/normal_ui' || currentPage === '/mc') {
+		callback(); // Execute mode change if on the correct page
+	} else {
+		// Redirect to the appropriate mode page based on the device type
+		$('main#application-content').load(targetPage, () => {
+			$('main#application-content').data('current-page', targetPage);
+			callback(); // Execute mode change after loading the correct page
+		});
+	}
+}
+
+function updateMode(selectedLinkId) {
 	if (selectedLinkId === 'home_link') {
 		loadContentBasedOnDevice();
-	} else if (selectedLinkId === 'settings_link') {
-		loadPage('/menu_settings', initializeSettings);
-	} else if (selectedLinkId === 'controls_link') {
-		loadPage('/menu_controls');
-	} else if (selectedLinkId === 'events_link') {
-		loadPage('/menu_logbox', fetchData);
-	} else if (selectedLinkId === 'phone_controller_link') {
-		CTRL_STAT.mobileIsActive = true;
-		// Consider if you need special handling here similar to 'home_link'
+	} else {
+		$('.current_mode_img').attr('src', $('#' + selectedLinkId + ' img').attr('src'));
 	}
+}
+function loadPageForSetting(selectedLinkId) {
+	const urlMapping = {
+		settings_link: ['/menu_settings', initializeSettings],
+		controls_link: ['/menu_controls', null],
+		events_link: ['/menu_logbox', fetchData],
+	};
+	if (selectedLinkId in urlMapping) {
+		const [url, callback] = urlMapping[selectedLinkId];
+		loadPage(url, callback);
+	}
+}
+function loadPage(url, callback) {
+	const container = $('main#application-content');
+	container.empty();
+	// AJAX call to get the .html page from tornado
+	container.load(url, () => {
+		callback ? callback() : undefined;
+	});
+	container.data('current-page', url); // Store current page
 }
 
 function loadContentBasedOnDevice() {
@@ -69,12 +109,6 @@ function loadContentBasedOnDevice() {
 			CTRL_STAT.mobileIsActive = true;
 		});
 	}
-}
-
-function loadPage(url, callback) {
-	const container = $('main#application-content');
-	container.empty(); // Clear the existing content only when loading new pages
-	container.load(url, callback); // AJAX call to load the page
 }
 
 // Initialize event listeners on DOMContentLoaded
