@@ -13,6 +13,7 @@ class MobileControllerState {
 	get mobileIsActive() {
 		return this.#mobileIsActive;
 	}
+  
 	set selectedSquare(value) {
 		this.#selectedSquare = value;
 	}

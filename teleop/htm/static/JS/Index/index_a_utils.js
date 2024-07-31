@@ -10,6 +10,10 @@ jQuery.fn.is_visible = function () {
 	return this.css('visibility') == 'visible';
 };
 
+export function isMobileDevice() {
+	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+}
+
 export var network_utils = {
 	getSSID: async function () {
 		try {
