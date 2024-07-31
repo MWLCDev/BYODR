@@ -29,6 +29,68 @@ import tornado.websocket
 latest_message = {}
 
 
+class LatestImageHandler(tornado.web.RequestHandler):
+    def initialize(self, path):
+        self.image_save_path = path
+
+    def get(self):
+        self.set_header("Content-Type", "image/jpeg")
+        self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.set_header("Pragma", "no-cache")
+        self.set_header("Expires", "0")
+        try:
+            # Fetch all jpg files directly, assuming the folder contains only images
+            image_files = [f for f in os.listdir(self.image_save_path) if f.endswith(".jpg")]
+            # Get full paths
+            full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
+
+            # Sort files by creation time
+            full_paths.sort(key=os.path.getctime, reverse=True)
+
+            if full_paths:
+                # Open the most recent file
+                with open(full_paths[0], "rb") as img:
+                    self.write(img.read())
+            else:
+                self.write("No images available.")
+
+        except Exception as e:
+            self.write(f"Error fetching the latest image: {str(e)}")
+            self.set_status(500)  # Internal Server Error
+
+        finally:
+            self.finish()
+
+
+class FollowingHandler(web.RequestHandler):
+    def initialize(self, **kwargs):
+        self._fn_control = kwargs.get("fn_control")
+
+    def send_state(self):
+        self.write({"status": "success", "time": timestamp()})
+
+    def post(self):
+        # Extract command as a string
+        command_text = self.get_body_argument("command", default=None)
+
+        end_time = timestamp() + 1e5
+        while timestamp() < end_time:
+            command_dict = {"following": command_text}
+            # Pass the dictionary to the control function
+            self._fn_control(command_dict)
+
+        self.send_state()
+
+
+class FollowingStatusHandler(web.RequestHandler):
+    def initialize(self, **kwargs):
+        self._fn_control = kwargs.get("fn_control")
+
+    def get(self):
+        following_status = self._fn_control.get_following_state()
+        self.write({"status": "success", "following_status": following_status})
+
+
 class ControlServerSocket(websocket.WebSocketHandler):
     # There can be only one operator in control at any time.
     # Do not use a single variable since class attributes mutate to be instance attributes.
