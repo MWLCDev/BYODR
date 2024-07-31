@@ -1,5 +1,6 @@
 import { gamepad_controller } from './index_b_gamepad.js';
-import { dev_tools, page_utils } from './index_a_utils.js';
+import { dev_tools } from './index_a_utils.js';
+import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
 export var screen_utils = {
 	_version: '0.55.0',
@@ -159,14 +160,16 @@ export var teleop_screen = {
 	},
 
 	_render_distance_indicators: function () {
-		const _show = this.active_camera == 'front';
-		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
-			if (_show) {
-				_m.show();
-			} else {
-				_m.hide();
-			}
-		});
+		if (!CTRL_STAT.mobileIsActive) {
+			const _show = this.active_camera == 'front';
+			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
+				if (_show) {
+					_m.show();
+				} else {
+					_m.hide();
+				}
+			});
+		}
 	},
 
 	_select_next_camera: function () {
@@ -230,10 +233,10 @@ export var teleop_screen = {
 		}
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
-		var el_alpha_speed = $('p#alpha_speed_value');
-		var el_alpha_speed_label = $('div#alpha_speed_label');
-		var el_beta_speed_container = $('div#beta_speed');
-		var el_beta_speed = $('p#beta_speed_value');
+		var el_alpha_speed = $('p.alpha_speed_value');
+		var el_alpha_speed_label = $('div.alpha_speed_label');
+		var el_beta_speed_container = $('div.beta_speed');
+		var el_beta_speed = $('p.beta_speed_value');
 		if (message._is_on_autopilot) {
 			el_alpha_speed.text(message.max_speed.toFixed(1));
 			el_beta_speed.text(message.vel_y.toFixed(1));

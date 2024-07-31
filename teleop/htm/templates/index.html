@@ -18,7 +18,7 @@
 	<body>
 		<nav class="hamburger_menu_nav">
 			<div id="hamburger_menu_top_nav">
-				<a href="#" id="home_link"><img src="../static/assets/manual_mode.png" class="nav_icon" />Manual Mode</a>
+				<a href="#" id="home_link"><img src="../static/assets/manual_mode_nav.png" class="nav_icon" />Manual Mode</a>
 				<a href="#" id="ai_training_link"><img src="../static/assets/ai_training_mode.png" class="nav_icon" />AI Training</a>
 				<a href="#" id="autopilot_link"><img src="../static/assets/autopilot_mode.png" class="nav_icon" />Autopilot</a>
 				<a href="#" id="map_recognition_link"><img src="../static/assets/map_recognition.png" class="nav_icon" />Map Recognition</a>
@@ -29,6 +29,7 @@
 				<a href="#" id="controls_link"><img src="../static/assets/nav_controls_menu.png" class="nav_icon" />Controls</a>
 				<a href="#" id="events_link"><img src="../static/assets/nav_training_events.png" class="nav_icon" />Training Events</a>
 				<a href="#" id="phone_controller_link"><img src="../static/assets/nav_control_by_phone.png" class="nav_icon" />Control by Phone</a>
+
 				<div id="nav_dark_mode_toggle_container">
 					<label id="nav_dark_mode_toggle">
 						<input type="checkbox" />
@@ -42,15 +43,30 @@
 		</nav>
 
 		<!-- Top Layer: Logo and Hamburger Menu -->
-		<div id="hamburger_menu_toggle" title="navigate to user menu page">
+		<div id="hamburger_menu_toggle" title="Open the navbar">
 			<span class="bar top"></span>
 			<span class="bar middle"></span>
 			<span class="bar bottom"></span>
 		</div>
-
 		<div id="header_bar">
-			<img src="../static/assets/VOR_Logo_dark.png" id="VOR_center_logo" />
-			<p id="current_seg_name"></p>
+			<div class="left_section">
+				<div class="alpha_speed" class="speed_value" title="Current actual speed">
+					<p class="alpha_speed_value">0</p>
+					<div class="alpha_speed_label">km/h</div>
+				</div>
+			</div>
+
+			<div class="middle_section">
+				<div class="middle_content">
+					<img src="../static/assets/VOR_Logo_dark.png" id="VOR_center_logo" />
+					<p id="current_seg_name"></p>
+				</div>
+			</div>
+
+			<div class="right_section">
+				<!-- To show the current mode. It is only visible on mobile UI -->
+				<img src="../static/assets/manual_mode_nav.png" class="current_mode_img muted_purple" />
+			</div>
 		</div>
 
 		<main id="application-content">

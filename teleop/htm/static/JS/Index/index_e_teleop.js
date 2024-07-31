@@ -84,8 +84,7 @@ class MovementCommandSocket {
 
 	_capture(server_response) {
 		const gc_active = gamepad_controller.is_active();
-		const mc_active = CTRL_STAT.mobileIsActive;
-		if (mc_active) {
+		if (CTRL_STAT.mobileIsActive) {
 			this._send(CTRL_STAT.throttleSteeringJson);
 		} else {
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
@@ -97,14 +96,14 @@ class MovementCommandSocket {
 				gamepad_command.camera_id = 1;
 			}
 			this._send(gamepad_command);
+			//E.g { steering - throttle - pan - tilt - camera_id}
+			teleop_screen.controller_update(gamepad_command);
 		}
 		if (server_response != undefined && server_response.control == 'operator') {
 			teleop_screen.controller_status = gc_active;
 		} else if (server_response != undefined) {
 			teleop_screen.controller_status = 2;
 		}
-		//E.g { steering - throttle - pan - tilt - camera_id}
-		teleop_screen.controller_update(gamepad_command);
 	}
 
 	_start_socket() {

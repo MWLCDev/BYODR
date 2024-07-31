@@ -41,7 +41,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  /* background: rgba(0, 0, 0, 0.5); */
+  /* add a little dark opacity for it */
   z-index: 2;
   /* Below the sidebar and above the content */
 }
@@ -62,22 +63,60 @@ body {
   width: 100vw;
   padding: 10px 20px;
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid var(--VOR-color);
-  align-content: center;
+}
+
+#header_bar .left_section,
+#header_bar .middle_section,
+#header_bar .right_section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+#header_bar .left_section {
+  justify-content: flex-start;
+  padding-left: 42px;
+}
+
+#header_bar .middle_section {
+  flex: 2;
+  justify-content: center;
+}
+
+#header_bar .right_section {
+  justify-content: flex-end;
+}
+
+#header_bar .middle_content {
+  display: flex;
   flex-direction: column;
+  align-items: center;
+}
+
+#header_bar .left_section .alpha_speed {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1vw;
 }
 
 #VOR_center_logo {
   height: 30px;
   display: block;
-  margin: 0 auto;
 }
 
 #current_seg_name {
   font-size: 0.8rem;
   color: #8b7597;
+}
+
+/* Adjust the right section image */
+#header_bar .right_section img {
+  margin-left: auto;
+  /* Push the image to the right */
 }
 
 
@@ -112,14 +151,46 @@ body {
 /* Third Layer: Stream Quality and Options */
 #horizontal_bar {
   width: 100%;
-  padding: 1rem 3vw;
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
+#horizontal_bar .left_section,
+#horizontal_bar .middle_section,
+#horizontal_bar .right_section {
+  flex: 1;
+}
+
+.left_section {
+  display: flex;
+  align-items: center;
+}
+
+.middle_section {
+  gap: 20px;
+}
+
+.middle_section,
+.right_section {
+  display: inline-flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+
+.right_section {
+  justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px;
+}
+
 .stream_quality p {
   margin-bottom: 5px;
+  width: 30%;
 }
 
 .caret {
@@ -133,32 +204,15 @@ body {
   /* Default color, with option to override */
 }
 
-
-.left_section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-}
-
-.middle_section,
-.right_section {
-  /* flex: 1; */
-  display: inline-flex;
-  align-items: center;
-}
-
-.right_section {
-  justify-content: flex-end;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
-}
-
 .stream_quality {
   display: flex;
   align-items: center;
   padding: 0 0 0 2rem;
+  align-content: center;
+  justify-content: flex-start;
+  width: min-content;
+  padding-right: 1rem;
+
 }
 
 #mjpeg_stream_controls {
@@ -226,7 +280,6 @@ button {
 }
 
 
-
 #confidence_button_normal_controller {
   background-color: var(--VOR-color);
   color: white;
@@ -244,7 +297,7 @@ button {
   flex-direction: column;
 }
 
-.speed_value p {
+.alpha_speed_value {
   font-weight: bold;
 }
 
