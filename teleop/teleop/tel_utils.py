@@ -253,13 +253,7 @@ class DirectingUser(tornado.web.RequestHandler):
         user_agent_str = self.request.headers.get("User-Agent")
         user_agent = user_agents.parse(user_agent_str)
 
-        if user_agent.is_mobile:
-            # if user is on mobile, redirect to the mobile page
-            logger.info("User is operating through mobile phone. Redirecting to the mobile UI")
-            self.redirect("/mc")
-        else:
-            # else redirect to normal control page
-            self.redirect("/nc")
+        self.redirect("/nc")
 
 
 class TemplateRenderer(tornado.web.RequestHandler):
