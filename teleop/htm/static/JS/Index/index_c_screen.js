@@ -244,7 +244,7 @@ export var teleop_screen = {
 			el_alpha_speed.text(message.vel_y.toFixed(1));
 		}
 		var el_steering_wheel = $('img.steeringWheel');
-		var el_autopilot_status = $('#autopilot_status');
+		var el_autopilot_status = $('.autopilot_status');
 		var str_command_ctl = message.ctl + '_' + message._has_passage;
 		if (this.command_ctl != str_command_ctl) {
 			this.command_ctl = str_command_ctl;
@@ -255,7 +255,7 @@ export var teleop_screen = {
 				el_alpha_speed_label.text('km/h');
 				el_beta_speed_container.hide();
 				el_autopilot_status.text('00:00:00');
-				el_autopilot_status.css('color', 'white');
+				el_autopilot_status.css('color', 'black');
 			}
 			this._render_distance_indicators();
 		}

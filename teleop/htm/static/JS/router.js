@@ -1,6 +1,6 @@
 import { initializeSettings } from './userMenu/menu_settings.js';
 import { fetchData } from './userMenu/menu_logbox.js';
-import { setupMobileController } from './mobileController/mobileController_a_app.js';
+import { setupMobileController, assignNavButtonActions } from './mobileController/mobileController_a_app.js';
 import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
 import { screen_utils, teleop_screen } from './Index/index_c_screen.js';
 import { gamepad_socket } from './Index/index_e_teleop.js';
@@ -37,12 +37,12 @@ function handleUserMenuRoute(selectedLinkId) {
 	CTRL_STAT.mobileIsActive = false;
 	$('.hamburger_menu_nav a').removeClass('active');
 	$('#' + selectedLinkId).addClass('active');
-	window.localStorage.setItem('user.menu.screen', selectedLinkId);// Save the last visited screen in the cache
-	const activeImageSrc = $('#' + selectedLinkId + ' img').attr('src');// Get the src from the image of the active link
-	$('.current_mode_img').attr('src', activeImageSrc);// Always update the mode image
+	window.localStorage.setItem('user.menu.screen', selectedLinkId); // Save the last visited screen in the cache
+	const activeImageSrc = $('#' + selectedLinkId + ' img').attr('src'); // Get the src from the image of the active link
+	$('.current_mode_img').attr('src', activeImageSrc); // Always update the mode image
 
 	// Determine if mode switching is allowed on the current page
-	if (['home_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'].includes(selectedLinkId)) {
+	if (['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'].includes(selectedLinkId)) {
 		ensureModePageLoaded(() => {
 			updateMode(selectedLinkId);
 		});
@@ -69,12 +69,13 @@ function ensureModePageLoaded(callback) {
 }
 
 function updateMode(selectedLinkId) {
-	if (selectedLinkId === 'home_link') {
+	if (selectedLinkId === 'normal_ui_link') {
 		loadContentBasedOnDevice();
 	} else {
 		$('.current_mode_img').attr('src', $('#' + selectedLinkId + ' img').attr('src'));
 	}
 }
+
 function loadPageForSetting(selectedLinkId) {
 	const urlMapping = {
 		settings_link: ['/menu_settings', initializeSettings],
@@ -86,6 +87,7 @@ function loadPageForSetting(selectedLinkId) {
 		loadPage(url, callback);
 	}
 }
+
 function loadPage(url, callback) {
 	const container = $('main#application-content');
 	container.empty();
@@ -113,6 +115,7 @@ function loadContentBasedOnDevice() {
 
 // Initialize event listeners on DOMContentLoaded
 document.addEventListener('DOMContentLoaded', function () {
+  assignNavButtonActions()
 	if (isMobileDevice()) {
 		$('#events_link, #phone_controller_link').hide();
 	} else {

@@ -16,6 +16,7 @@ import tornado.web
 import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 from byodr.utils.ssh import Router
+
 # needs to be installed on the router
 from pysnmp.hlapi import *
 from requests.auth import HTTPDigestAuth
@@ -540,6 +541,7 @@ class FollowingUtils:
             ctrl = self.following_socket.get()
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
+                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image 
                 self.throttle_controller.throttle_control(ctrl)
                 # logger.info(ctrl)
                 self._update_following_status(ctrl)

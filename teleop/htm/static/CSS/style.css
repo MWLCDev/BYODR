@@ -204,6 +204,10 @@ body {
   /* Default color, with option to override */
 }
 
+.autopilot_status {
+  display: none;
+}
+
 .stream_quality {
   display: flex;
   align-items: center;
@@ -269,7 +273,6 @@ button {
   transition: background-color 0.3s ease;
   width: auto;
   padding: 10px 20px;
-  background-color: #007bff;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -309,17 +312,15 @@ button {
 }
 
 .right_section button {
-  background-color: #28a745;
   color: white;
   border: none;
-  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.right_section button:hover {
+/* .right_section button:hover {
   background-color: #218838;
-}
+} */
 
 /* Fourth Layer: Camera Stream View  */
 #viewport_container {

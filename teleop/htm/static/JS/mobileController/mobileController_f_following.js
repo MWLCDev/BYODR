@@ -1,32 +1,40 @@
-import { redraw, removeTriangles } from './mobileController_d_pixi.js';
 import CTRL_STAT from './mobileController_z_state.js';
 
 class ToggleButtonHandler {
 	constructor(buttonId) {
-		this.toggleButton = document.getElementById(buttonId);
-		this.topInputDiv = document.getElementById('mobile-controller-top-input-container');
-		this.inferenceToggleBtn = document.getElementById('inference_toggle_button');
-		this.confidenceToggleBtn = document.getElementById('confidenceToggleButton');
-		this.canvas = document.getElementById('following_imageCanvas');
-		this.ctx = this.canvas.getContext('2d');
+		this.toggleButton = $(buttonId);
 		this.errorLogged = false; // Add this line to initialize the error flag
-
 		this.initialSetup();
 		this.startPolling();
+		this.currentScreen = window.localStorage.getItem('user.menu.screen');
+	}
+
+	setupDomElem() {
+		// $("#mobile_controller_container .current_mode_state").text('Loading...')
+		const self = this; // Save the reference to 'this' (which is the class instance here)
+		$('#mobile_controller_container .current_mode_button').show();
+		$('#mobile_controller_container .current_mode_button').text('start following');
+		$('#mobile_controller_container .current_mode_text').text('Follow');
+		$('#mobile_controller_container .middle_section').hide();
+		$('#mobile_controller_container .square').hide();
+		$('#mobile_controller_container .current_mode_button').click(function () {
+			const buttonText = $(this).text().toLowerCase();
+			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('start_following');
+			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('stop_following');
+		});
+	}
+
+	initializeDOM() {
+		this.canvas = document.getElementById('following_imageCanvas');
+		if (this.canvas) {
+			this.ctx = this.canvas.getContext('2d');
+		} else {
+			setTimeout(initializeDOM, 500); // Retry after 500ms
+		}
 	}
 
 	initialSetup() {
-		this.resizeCanvas();
 		window.addEventListener('resize', () => this.resizeCanvas());
-		this.toggleButton.addEventListener('click', () => this.handleFollowingToggleButtonClick());
-	}
-
-	handleFollowingToggleButtonClick() {
-		if (CTRL_STAT.followingState == 'inactive') {
-			this.sendSwitchFollowingRequest('start_following');
-		} else if (CTRL_STAT.followingState == 'active') {
-			this.sendSwitchFollowingRequest('stop_following');
-		}
 	}
 
 	sendSwitchFollowingRequest(command) {
@@ -40,6 +48,7 @@ class ToggleButtonHandler {
 	}
 
 	startPolling() {
+		// TODO: should it keep pulling the state always in the background, or only when on following screen
 		setInterval(() => {
 			fetch('/switch_following_status', {
 				method: 'GET',
@@ -65,7 +74,7 @@ class ToggleButtonHandler {
 	}
 
 	assignFollowingState(backendCommand) {
-		// console.log(backendCommand, this._followingState)
+		// console.log(backendCommand, CTRL_STAT.followingState);
 		switch (backendCommand) {
 			case 'active':
 				CTRL_STAT.followingState = 'active'; // The system is actively following
@@ -82,46 +91,51 @@ class ToggleButtonHandler {
 	}
 
 	toggleButtonAppearance() {
-		if (CTRL_STAT.followingState == 'active') {
-			removeTriangles();
-			this.showCanvas();
-			this.controlInputControllerVisibility('none');
-			this.toggleButton.innerText = 'Stop Following';
-			this.toggleButton.style.backgroundColor = '#ff6347';
-		} else if (CTRL_STAT.followingState == 'inactive') {
-			redraw(undefined, true, true, true);
-			this.hideCanvas();
-			this.controlInputControllerVisibility('flex');
-			this.toggleButton.innerText = 'Start Following';
-			this.toggleButton.style.backgroundColor = '#67b96a';
-		} else if (CTRL_STAT.followingState == 'loading') {
-			this.hideCanvas();
-			this.controlInputControllerVisibility('flex');
-			this.toggleButton.innerText = 'Loading...';
-			this.toggleButton.style.backgroundColor = '#ffa500';
+		if (this.currentScreen == 'follow_link') {
+			if (CTRL_STAT.followingState == 'active') {
+				// Hide the movement squares
+				this.resizeCanvas();
+				this.showCanvas();
+				$('#mobile_controller_container .current_mode_button').text('stop');
+				$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
+				$('#mobile_controller_container .current_mode_button').css('border', 'none');
+				// this.toggleButton.innerText = 'Stop Following';
+				// this.toggleButton.style.backgroundColor = '#ff6347';
+			} else if (CTRL_STAT.followingState == 'inactive') {
+				$('#mobile_controller_container .square').show();
+				$('#mobile_controller_container .current_mode_button').text('start following');
+				$('#mobile_controller_container .current_mode_button').css('background-color', '#ffffff');
+				$('#mobile_controller_container .current_mode_button').css('border', '');
+
+				this.hideCanvas();
+				// this.toggleButton.innerText = 'Start Following';
+				// this.toggleButton.style.backgroundColor = '#67b96a';
+			} else if (CTRL_STAT.followingState == 'loading') {
+				this.hideCanvas();
+				$('#mobile_controller_container .current_mode_state').text('Loading...');
+				// this.toggleButton.style.backgroundColor = '#ffa500';
+			}
 		}
 	}
 
-	controlInputControllerVisibility(command) {
-		this.topInputDiv.style.display = command;
-		this.inferenceToggleBtn.style.display = command;
-		this.confidenceToggleBtn.style.display = command;
-	}
-
 	showCanvas() {
-		this.canvas.style.display = 'block';
-		if (!this.streamActive && !this.intervalId) {
-			this.streamActive = true;
-			this.intervalId = setInterval(() => this.refreshImage(), 150); // Start streaming
+		if (this.canvas) {
+			this.canvas.style.display = 'block';
+			if (!this.streamActive && !this.intervalId) {
+				this.streamActive = true;
+				this.intervalId = setInterval(() => this.refreshImage(), 150); // Start streaming
+			}
 		}
 	}
 
 	hideCanvas() {
-		this.canvas.style.display = 'none';
-		if (this.streamActive && this.intervalId) {
-			clearInterval(this.intervalId); // Stop streaming
-			this.intervalId = null;
-			this.streamActive = false;
+		if (this.canvas) {
+			this.canvas.style.display = 'none';
+			if (this.streamActive && this.intervalId) {
+				clearInterval(this.intervalId); // Stop streaming
+				this.intervalId = null;
+				this.streamActive = false;
+			}
 		}
 	}
 
@@ -137,36 +151,19 @@ class ToggleButtonHandler {
 	}
 
 	resizeCanvas() {
-		if (CTRL_STAT.followingState == 'active') {
-			removeTriangles();
+		if (this.canvas) {
+			let maxWidth = window.innerWidth * 0.8; // 80% of the viewport width
+			if (maxWidth > 640) maxWidth = 640; // Ensuring the width does not exceed 640 pixels
+			const maxHeight = (maxWidth * 3) / 4; // Maintain 4:3 ratio
+
+			this.canvas.width = maxWidth;
+			this.canvas.height = maxHeight;
+			this.canvas.style.width = `${maxWidth}px`;
+			this.canvas.style.height = `${maxHeight}px`;
 		}
-		let maxWidth = window.innerWidth * 0.8; // 80% of the viewport width
-		if (maxWidth > 640) maxWidth = 640; // Ensuring the width does not exceed 640 pixels
-		const maxHeight = (maxWidth * 3) / 4; // Maintain 4:3 ratio
-
-		this.canvas.width = maxWidth;
-		this.canvas.height = maxHeight;
-		this.canvas.style.width = `${maxWidth}px`;
-		this.canvas.style.height = `${maxHeight}px`;
-	}
-
-	getAttribute(attributeName) {
-		return this.toggleButton.getAttribute(attributeName);
-	}
-
-	setAttribute(attributeName, value) {
-		this.toggleButton.setAttribute(attributeName, value);
-	}
-
-	getStyle(property) {
-		return this.toggleButton.style[property];
-	}
-
-	setStyle(property, value) {
-		this.toggleButton.style[property] = value;
 	}
 }
 
-const followingButtonHandler = new ToggleButtonHandler('following_toggle_button');
+const followingButtonHandler = new ToggleButtonHandler('.hamburger_menu_nav a#follow_link');
 
 export { followingButtonHandler };

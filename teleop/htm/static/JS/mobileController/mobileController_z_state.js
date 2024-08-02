@@ -1,11 +1,12 @@
 //Shared State variables that goes between the files/modules used
 class MobileControllerState {
-	#mobileIsActive;
 	#selectedSquare = null;
+	#followingState = null;
 	// At first we send a default value
 	#throttleSteeringJson = { steering: 0, throttle: 0 };
-	#ws;
+	#mobileIsActive;
 	#stateErrors;
+	#ws;
 
 	set mobileIsActive(value) {
 		this.#mobileIsActive = value;
@@ -13,7 +14,7 @@ class MobileControllerState {
 	get mobileIsActive() {
 		return this.#mobileIsActive;
 	}
-  
+
 	set selectedSquare(value) {
 		this.#selectedSquare = value;
 	}
@@ -42,6 +43,13 @@ class MobileControllerState {
 	}
 	get websocket() {
 		return this.#ws;
+	}
+
+	set followingState(value) {
+		this.#followingState = value;
+	}
+	get followingState() {
+		return this.#followingState;
 	}
 }
 
