@@ -1,0 +1,30 @@
+:root {
+    --background-color-light_m: #ffffff;
+    --text-color-ligh_m: #000000;
+    --background-color-dark_m: #121212;
+    --text-color-dark_m: #ffffff;
+    --VOR-color: #654279;
+  }
+  
+  body {
+    margin: 0;
+  }
+
+  #controls_page_title {
+    color: #530D73;
+    font-family: 'Sora', sans-serif;
+    margin-bottom: 25px;
+  }
+
+  #background-image {
+    position: relative;
+    bottom: 0%;
+    background-image: url('../assets/VR - pattern tree 1.png');
+    background-size: contain;
+    background-position: right;
+    background-repeat: no-repeat;
+    z-index: -1;
+    width: 100%;
+    height: 130%;
+  }
+  
