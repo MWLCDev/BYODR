@@ -3,35 +3,19 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
+		<title>Relay Control Interface</title>
 	</head>
 	<body>
-		<h1>menu controls</h1>
-    <!-- TODO: change the class names  -->
-    <div id="mobile-controller-top-input-container">
-			<div id="dead-zone-container">
-				<label for="deadZoneWidth">Dead Zone Width:</label>
-				<input type="range" id="deadZoneWidth" name="deadZoneWidth" min="0" max="0.5" step="0.01" value="0.1" />
-			</div>
-			<div class="mobile-controller-motor-settings-container">
-				<!-- Scale input container -->
-				<div class="scale-offset-input-containers">
-					<label for="scale_input_box_ID">Max km/h:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="scale_input_box_ID" name="scale_slider" min="1" max="7" step="0.5" value="3" class="scale-offset-input-box"/>
-						<span class="scale-input-text"> </span>
-					</div>
-				</div>
-
-				<!-- Offset input container -->
-				<div class="scale-offset-input-containers">
-					<label for="offset_input_box_ID">Turning offset:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="offset_input_box_ID" name="offset_slider" min="-1" max="1" step="0.02" value="0" class="scale-offset-input-box"/>
-						<span class="offset-input-text"> </span>
-					</div>
-				</div>
-			</div>
+		<div id="controlPanel">
+			<h2>Primary Relays</h2>
+			<fieldset class="channel" data-index="2">
+				<legend>Channel 3</legend>
+				<input type="radio" id="channel3_off" name="channel3" value="false" checked /> <label for="channel3_off">Off</label> <input type="radio" id="channel3_on" name="channel3" value="true" /> <label for="channel3_on">On</label>
+			</fieldset>
+			<fieldset class="channel" data-index="3">
+				<legend>Channel 4</legend>
+				<input type="radio" id="channel4_off" name="channel4" value="false" checked /> <label for="channel4_off">Off</label> <input type="radio" id="channel4_on" name="channel4" value="true" /> <label for="channel4_on">On</label>
+			</fieldset>
 		</div>
 	</body>
 </html>
