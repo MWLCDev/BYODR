@@ -1,12 +1,22 @@
 import { initializeSettings } from './userMenu/menu_settings.js';
 import { fetchData } from './userMenu/menu_logbox.js';
-import { setupMobileController } from './mobileController/mobileController_a_app.js';
-import { network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
+import { setupMobileController, assignNavButtonActions } from './mobileController/mobileController_a_app.js';
+import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
 import { screen_utils, teleop_screen } from './Index/index_c_screen.js';
 import { gamepad_socket } from './Index/index_e_teleop.js';
+import { updateRelayStates } from './userMenu/menu_controls.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 
 function initializeAllNormalUIComponents() {
+	if (isMobileDevice()) {
+		$('#header_bar .left_section').show();
+		$('#header_bar .right_section').show();
+		$('.current_mode_img').show();
+	} else {
+		$('#header_bar .left_section').hide();
+		$('#header_bar .right_section').hide();
+		$('.current_mode_img').show();
+	}
 	teleop_screen._init();
 	screen_utils._init();
 	socket_utils._init();
@@ -24,51 +34,99 @@ function initializeAllNormalUIComponents() {
 	});
 }
 
-function _user_menu_route_screen(screen) {
-	$('.hamburger_menu_nav a').each(function () {
-		$(this).removeClass('active');
-	});
-
-	// Use the main element directly
-	const el_container = $('main#application-content');
-	el_container.empty(); // Clear the existing content
-
-	// Save the last visited screen in the cache
-	window.localStorage.setItem('user.menu.screen', screen);
+function handleUserMenuRoute(selectedLinkId) {
 	CTRL_STAT.mobileIsActive = false;
+	$('.hamburger_menu_nav a').removeClass('active');
+	$('#' + selectedLinkId).addClass('active');
+	window.localStorage.setItem('user.menu.screen', selectedLinkId); // Save the last visited screen in the cache
+	const activeImageSrc = $('#' + selectedLinkId + ' img').attr('src'); // Get the src from the image of the active link
+	$('.current_mode_img').attr('src', activeImageSrc); // Always update the mode image
 
-	switch (screen) {
-		case 'home_link':
-			$('a#home_link').addClass('active');
-			el_container.load('/normal_ui', initializeAllNormalUIComponents);
-			break;
-		case 'settings_link':
-			$('a#settings_link').addClass('active');
-			el_container.load('/menu_settings', initializeSettings); // Initialize settings after load
-			break;
-		case 'controls_link':
-			$('a#controls_link').addClass('active');
-			el_container.load('/menu_controls');
-			break;
-		case 'events_link':
-			$('a#events_link').addClass('active');
-			el_container.load('/menu_logbox', fetchData); // Fetch data after load
-			break;
-		case 'phone_controller_link':
-			$('a#phone_controller_link').addClass('active');
-			el_container.load('/mc', function () {
-				setupMobileController();
-				CTRL_STAT.mobileIsActive = true;
-			});
-			break;
+	// Determine if mode switching is allowed on the current page
+	if (['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'].includes(selectedLinkId)) {
+		ensureModePageLoaded(() => {
+			updateMode(selectedLinkId);
+		});
+	} else {
+		// Load settings page as before
+		loadPageForSetting(selectedLinkId);
 	}
 }
 
-document.addEventListener('DOMContentLoaded', function () {
-	// Set up the click handlers for menu navigation
-	$('a#home_link, a#settings_link, a#controls_link, a#events_link, a#phone_controller_link').click(function () {
-		_user_menu_route_screen(this.id);
+function ensureModePageLoaded(callback) {
+	const currentPage = $('main#application-content').data('current-page');
+	const targetPage = isMobileDevice() ? '/mc' : '/normal_ui'; // Determine the target page based on device type
+
+	// Check if current page supports mode switching
+	if (currentPage === '/normal_ui' || currentPage === '/mc') {
+		callback(); // Execute mode change if on the correct page
+	} else {
+		// Redirect to the appropriate mode page based on the device type
+		$('main#application-content').load(targetPage, () => {
+			$('main#application-content').data('current-page', targetPage);
+			callback(); // Execute mode change after loading the correct page
+		});
+	}
+}
+
+function updateMode(selectedLinkId) {
+	if (selectedLinkId === 'normal_ui_link') {
+		loadContentBasedOnDevice();
+	} else {
+		$('.current_mode_img').attr('src', $('#' + selectedLinkId + ' img').attr('src'));
+	}
+}
+
+function loadPageForSetting(selectedLinkId) {
+	const urlMapping = {
+		settings_link: ['/menu_settings', initializeSettings],
+		controls_link: ['/menu_controls', updateRelayStates],
+		events_link: ['/menu_logbox', fetchData],
+	};
+	if (selectedLinkId in urlMapping) {
+		const [url, callback] = urlMapping[selectedLinkId];
+		loadPage(url, callback);
+	}
+}
+
+function loadPage(url, callback) {
+	const container = $('main#application-content');
+	container.empty();
+	// AJAX call to get the .html page from tornado
+	container.load(url, () => {
+		callback ? callback() : undefined;
 	});
+	container.data('current-page', url); // Store current page
+}
+
+function loadContentBasedOnDevice() {
+	const container = $('main#application-content');
+	if (!isMobileDevice()) {
+		container.load('/normal_ui', () => {
+			initializeAllNormalUIComponents();
+		});
+	} else {
+		container.load('/mc', () => {
+			setupMobileController();
+			initializeAllNormalUIComponents();
+			CTRL_STAT.mobileIsActive = true;
+		});
+	}
+}
+
+// Initialize event listeners on DOMContentLoaded
+document.addEventListener('DOMContentLoaded', function () {
+	assignNavButtonActions();
+	if (isMobileDevice()) {
+		$('#events_link, #phone_controller_link').hide();
+	} else {
+		$('#events_link, #phone_controller_link').show();
+	}
+
+	$('.hamburger_menu_nav a').on('click', function () {
+		handleUserMenuRoute(this.id);
+	});
+
 	network_utils
 		.getSSID()
 		.then((ssid) => {
@@ -77,7 +135,8 @@ document.addEventListener('DOMContentLoaded', function () {
 		.catch((error) => {
 			console.error('Failed to fetch SSID:', error);
 		});
-	// Load the last visited screen from cache or default to 'settings'
-	var screen = window.localStorage.getItem('user.menu.screen') || 'settings_link';
-	_user_menu_route_screen(screen);
+
+	// Ensure lastVisitedScreen is read correctly from localStorage or falls back to 'settings_link'
+	const lastVisitedScreen = window.localStorage.getItem('user.menu.screen') || 'settings_link';
+	handleUserMenuRoute(lastVisitedScreen);
 });

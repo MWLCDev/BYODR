@@ -1,19 +1,25 @@
-import concurrent.futures
 import configparser
 import glob
 import logging
 import os
+import queue
 import threading
 import time
+import xml.etree.ElementTree as ET
 from datetime import datetime
 
 import folium
 import pandas as pd
+import requests
 import tornado.ioloop
 import tornado.web
 import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
 from byodr.utils.ssh import Router
+
+# needs to be installed on the router
+from pysnmp.hlapi import *
+from requests.auth import HTTPDigestAuth
 
 logger = logging.getLogger(__name__)
 
@@ -302,3 +308,274 @@ class EndpointHandlers:
 
     def get_navigation_image(self, image_id):
         return self.route_store.get_image(image_id)
+
+
+class ThrottleController:
+    def __init__(self, teleop_publisher, route_store, timeout=1.0):
+        self.current_throttle = 0.0
+        self.throttle_change_step = 0.05
+        self.teleop_publisher = teleop_publisher
+        self.route_store = route_store
+        self.command_queue = queue.Queue()
+        self.following_state = "inactive"
+        self.current_source = None  # Track the current source
+        self.last_command_time = time.time()  # Track the last command time
+        # Timeout period that after it, will switch to another source
+        self.timeout = timeout
+
+        # Start the thread to consume from the queue
+        # The main thread can be used to run this function, but I would leave the main thread free
+        threading.Thread(target=self.consume_queue, daemon=True).start()
+
+    def throttle_control(self, cmd):
+        """Enqueue moving commands instead of processing directly"""
+        self.command_queue.put(cmd)
+
+    def consume_queue(self):
+        """Continuously consumes commands from the queue and processes them."""
+        while True:
+            try:
+                current_time = time.time()
+                cmd = self.command_queue.get(block=True)
+                if self._should_process_command(cmd, current_time):
+                    self._process_command(cmd)
+                elif current_time - self.last_command_time > self.timeout:
+                    self.current_source = None  # Reset current source if timeout occurs
+            except Exception as e:
+                logger.error(f"Error processing command from queue: {e}")
+
+    def _should_process_command(self, cmd, current_time):
+        """Checks if the command should be processed based on throttle and steering values and current source."""
+        if self.current_source is None or self.current_source == cmd.get("source"):
+            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                self.current_source = cmd.get("source")
+                self.last_command_time = current_time
+                return True
+            if self.current_source == cmd.get("source"):
+                self.last_command_time = current_time
+                return True
+        else:
+            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                self.current_source = cmd.get("source")
+                self.last_command_time = current_time
+                return True
+        return False
+
+    def _process_command(self, cmd):
+        """Processes a command from the queue, smoothing the throttle changes if necessary."""
+        if cmd.get("mobileInferenceState") in ["true", "auto", "train"] or cmd.get("source") in ["followingActive"]:
+            self._teleop_publish(cmd)
+            return
+
+        if "throttle" not in cmd and "steering" not in cmd:
+            self.current_throttle = 0
+            self._teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
+            return
+
+        target_throttle = float(cmd.get("throttle", 0))
+
+        if "throttle" in cmd:
+            if abs(target_throttle - self.current_throttle) > self.throttle_change_step:
+                throttle_direction = (target_throttle - self.current_throttle) / abs(target_throttle - self.current_throttle)
+                self.current_throttle += throttle_direction * self.throttle_change_step
+                if (throttle_direction > 0 and self.current_throttle > target_throttle) or (throttle_direction < 0 and self.current_throttle < target_throttle):
+                    self.current_throttle = target_throttle
+            else:
+                self.current_throttle = target_throttle
+
+        cmd["throttle"] = self.current_throttle
+        self._teleop_publish(cmd)
+
+    def _teleop_publish(self, cmd):
+        """Private function which shouldn't be called directly"""
+        cmd["navigator"] = dict(route=self.route_store.get_selected_route())
+        # logger.info(cmd)
+        self.teleop_publisher.publish(cmd)
+
+    def update_following_state(self, state):
+        self.following_state = state
+
+
+class CameraControl:
+    def __init__(self, base_url, user, password):
+        self.base_url = base_url
+        self.user = user
+        self.password = password
+
+    def adjust_ptz(self, pan=None, tilt=None, panSpeed=100, tiltSpeed=100, duration=500, method="Continuous"):
+        try:
+            # pan = tilt [-100:100]
+            if method == "Momentary":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Momentary"
+                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Momentary><duration>{duration}</duration></Momentary></PTZData>"
+            elif method == "Continuous":
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Continuous"
+                payload = f"<PTZData><pan>{pan}</pan><tilt>{tilt}</tilt><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><zoom>0</zoom><Continuous><duration>{duration}</duration></Continuous></PTZData>"
+            elif method == "Absolute":
+                # pan [0:3550], tilt [0-900]
+                url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/Absolute"
+                payload = (
+                    "<PTZData>"
+                    f"<AbsoluteHigh><azimuth>{pan}</azimuth><elevation>{tilt}</elevation><panSpeed>{panSpeed}</panSpeed><tiltSpeed>{tiltSpeed}</tiltSpeed><absoluteZoom>10</absoluteZoom></AbsoluteHigh>"
+                    "</PTZData>"
+                )
+
+            response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
+            if response.status_code == 200:
+                return "Success: PTZ adjusted."
+            else:
+                logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                return f"Error: Unexpected response {response.status_code} - {response.text}"
+        except requests.exceptions.RequestException as err:
+            return f"Error: {err}"
+
+    def get_ptz_status(self):
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/status"
+        try:
+            response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
+            response.raise_for_status()
+            xml_root = ET.fromstring(response.content)
+            ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
+            azimuth = xml_root.find(".//hik:azimuth", ns).text
+            elevation = xml_root.find(".//hik:elevation", ns).text
+            return (azimuth, elevation)
+        except requests.exceptions.RequestException as e:
+            return f"Failed to get PTZ status: {e}"
+        except ET.ParseError as e:
+            return f"XML parsing error: {e}"
+
+    def set_home_position(self):
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/homeposition/set"
+        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+        try:
+            response.raise_for_status()
+            return "Success: Home position set."
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def goto_home_position(self):
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/homeposition/goto"
+        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password))
+        try:
+            response.raise_for_status()
+            if response.status_code == 200:
+                return "Success: Camera moved to Home position."
+            else:
+                logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                return f"Error: Unexpected response {response.status_code} - {response.text}"
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def set_preset_position(self, preset_id):
+        """Sets the current position of the PTZ camera as a preset position."""
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}"
+        payload = f"<PTZPreset><id>{preset_id}</id><presetName>Preset{preset_id}</presetName></PTZPreset>"
+        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), data=payload, headers={"Content-Type": "application/xml"})
+        try:
+            response.raise_for_status()
+            if response.status_code == 200:
+                return f"Success: Preset position {preset_id} set."
+            else:
+                logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                return f"Error: Unexpected response {response.status_code} - {response.text}"
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def goto_preset_position(self, preset_id):
+        """Moves the PTZ camera to a specific preset position."""
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}/goto"
+        response = requests.put(url, auth=HTTPDigestAuth(self.user, self.password), headers={"Content-Type": "application/xml"})
+        try:
+            response.raise_for_status()
+            if response.status_code == 200:
+                return f"Success: Camera moved to preset position {preset_id}."
+            else:
+                logger.info(f"Error: Unexpected response {response.status_code} - {response.text}")
+                return f"Error: Unexpected response {response.status_code} - {response.text}"
+        except requests.exceptions.HTTPError as err:
+            return f"Error: {err}"
+
+    def get_preset_position(self, preset_id):
+        """Gets the coordinates of a preset position."""
+        url = f"{self.base_url}/ISAPI/PTZCtrl/channels/1/presets/{preset_id}"
+        try:
+            response = requests.get(url, auth=HTTPDigestAuth(self.user, self.password))
+            response.raise_for_status()
+            xml_root = ET.fromstring(response.content)
+            ns = {"hik": "http://www.hikvision.com/ver20/XMLSchema"}
+            azimuth = xml_root.find(".//hik:azimuth", ns).text
+            elevation = xml_root.find(".//hik:elevation", ns).text
+            return (azimuth, elevation)
+        except requests.exceptions.RequestException as e:
+            return f"Failed to get preset position: {e}"
+        except ET.ParseError as e:
+            return f"XML parsing error: {e}"
+
+
+class FollowingUtils:
+    def __init__(self, tel_chatter, throttle_controller, fol_comm_socket):
+        self.tel_chatter = tel_chatter
+        self.throttle_controller = throttle_controller
+        self.following_socket = fol_comm_socket
+        self.following_state = "loading"
+        self.camera_control = None
+
+    def configs(self, user_config_file_dir):
+        config = configparser.SafeConfigParser()
+        config.read(user_config_file_dir)
+        front_camera_ip = config.get("camera", "front.camera.ip", fallback="192.168.1.64")
+        self.camera_control = CameraControl(f"http://{front_camera_ip}:80", "user1", "HaikuPlot876")
+
+    def get_following_state(self):
+        return self.following_state
+
+    def set_following_state(self, new_state):
+        # if the new state is "active", which is different from the old state, then this means to start the
+        if self.following_state == "inactive" and new_state == "active":
+            self.camera_control.goto_preset_position(preset_id=1)
+        self.following_state = new_state
+        self.throttle_controller.update_following_state(new_state)
+
+    def process_socket_commands(self):
+        try:
+            ctrl = self.following_socket.get()
+            if ctrl is not None:
+                ctrl["time"] = int(timestamp())
+                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image 
+                self.throttle_controller.throttle_control(ctrl)
+                # logger.info(ctrl)
+                self._update_following_status(ctrl)
+        except Exception as e:
+            logger.error(f"Error handling control command: {e}")
+
+    def _update_following_status(self, ctrl):
+        # There can be more than one source for the commands to TEL. That is why the sent value, is different from the ones stored as following_state
+        if ctrl["source"] == "followingLoading":
+            self.set_following_state("loading")
+        elif ctrl["source"] == "followingInactive":
+            self.set_following_state("inactive")
+        elif ctrl["source"] == "followingActive":
+            self.set_following_state("active")
+
+    def _handle_camera_commands(self, ctrl):
+        if "camera_pan" in ctrl:
+            try:
+                if ctrl["camera_pan"] == "go_preset_1":
+                    self.camera_control.goto_preset_position(preset_id=1)
+                elif isinstance(ctrl["camera_pan"], int):
+                    self.camera_control.adjust_ptz(pan=ctrl["camera_pan"], tilt=0, method="Momentary")
+            except Exception as cam_err:
+                logger.error(f"Error in camera control: {cam_err}")
+
+    def _publish_camera_azimuth(self):
+        try:
+            camera_azimuth, _ = self.camera_control.get_ptz_status()
+            self.tel_chatter.publish({"camera_azimuth": camera_azimuth})
+        except Exception as e:
+            logger.error(f"Error publishing camera azimuth: {e}")
+
+    def teleop_publish_to_following(self, cmd):
+        try:
+            self.tel_chatter.publish(cmd)
+        except Exception as e:
+            logger.error(f"Exception in teleop_publish_to_following: {e}")

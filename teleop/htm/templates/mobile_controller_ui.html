@@ -1,17 +1,28 @@
 <div id="mobile_controller_container">
-	<div>
-		<img src="../static/assets/manual_mode.png" class="steeringWheel" />
+	<div id="horizontal_bar">
+		<div class="left_section">
+			<p class="current_mode_text">manual drive</p>
+		</div>
+		<div class="middle_section">
+			<img src="../static/assets/manual_mode.png" class="steeringWheel deep_purple" />
+			<span class="autopilot_status"></span>
+		</div>
+		<div class="right_section">
+			<button class="current_mode_button">START FOLLOWING</button>
+			<p class="current_mode_state"></p>
+		</div>
 	</div>
+
 	<div id="forward_square" class="square">
 		<canvas class="trail_canvas"></canvas>
-		<div class="square_direction_text">FORWARD</div>
-		<span class="stop_text">DRAG YOUR FINGER TO THIS AREA TO FORCE THE ROBOT TO STOP</span>
+		<div class="square_text">forward</div>
+		<span class="stop_text">drag your finger to this area to force the robot to stop</span>
 	</div>
 
 	<div id="backward_square" class="square">
 		<canvas class="trail_canvas"></canvas>
-		<div class="square_direction_text">BACKWARD</div>
-		<span class="stop_text">DRAG YOUR FINGER TO THIS AREA TO FORCE THE ROBOT TO STOP</span>
+		<div class="square_text">backward</div>
+		<span class="stop_text">drag your finger to this area to force the robot to stop</span>
 	</div>
+	<canvas id="following_imageCanvas" width="640" height="480"></canvas>
 </div>
-

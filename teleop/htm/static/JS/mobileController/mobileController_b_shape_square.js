@@ -6,13 +6,13 @@ class ControlSquare {
 		this.canvas = element.querySelector('canvas');
 		this.context = this.canvas.getContext('2d');
 		this.stopText = element.querySelector('.stop_text');
-		this.directionText = element.querySelector('.square_direction_text');
+		this.directionText = element.querySelector('.square_text');
 
 		this.otherSquare = otherSquare;
 		this.otherCanvas = otherSquare.querySelector('canvas');
 		this.otherContext = this.otherCanvas.getContext('2d');
 		this.otherStopText = otherSquare.querySelector('.stop_text');
-		this.otherDirectionText = otherSquare.querySelector('.square_direction_text');
+		this.otherDirectionText = otherSquare.querySelector('.square_text');
 
 		this.isDrawing = false;
 		this.initX = 0;
@@ -28,6 +28,7 @@ class ControlSquare {
 		this.canvas.width = this.canvas.offsetWidth;
 		this.canvas.height = this.canvas.offsetHeight;
 	}
+
 	updateCoordinates(x, y, clientRect) {
 		x -= clientRect.left;
 		y -= clientRect.top;
@@ -69,6 +70,10 @@ class ControlSquare {
 		this.valueUpdateCallback = callback;
 	}
 
+	switchCanvasDisplay(command) {
+		this.canvas.style.display = command;
+	}
+  
 	drawPin(x, y) {
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
