@@ -208,6 +208,15 @@ body {
   display: none;
 }
 
+.beta_speed {
+  display: none;
+  /* display: flex; */
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  flex-direction: column;
+}
+
 .stream_quality {
   display: flex;
   align-items: center;

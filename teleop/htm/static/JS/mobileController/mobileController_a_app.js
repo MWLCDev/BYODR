@@ -1,7 +1,9 @@
 import { ControlSquare } from './mobileController_b_shape_square.js';
 import { setStatistics } from './mobileController_c_logic.js';
-import { followingButtonHandler } from './mobileController_f_following.js';
-import { autoNavigationToggleButton } from './mobileController_f_auto_navigation.js';
+import { followingNavButtonHandler } from './mobileController_f_following.js';
+import { autoNavigationNavButtonHandler } from './mobileController_f_auto_navigation.js';
+import { maneuverTrainingNavButtonHandler } from './mobileController_f_maneuver_training.js';
+import { confidenceNavButtonHandler } from './mobileController_f_confidence.js';
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
@@ -14,17 +16,18 @@ let backwardSquare;
  */
 export function assignNavButtonActions() {
 	$('.hamburger_menu_nav a#follow_link').click(() => {
-		// followingButtonHandler.handleFollowingToggleButtonClick();
-		followingButtonHandler.initializeDOM();
-		followingButtonHandler.setupDomElem();
+		followingNavButtonHandler.initializeDOM();
+		followingNavButtonHandler.initializeCanvas();
 	});
 	$('.hamburger_menu_nav a#autopilot_link').click(() => {
-		// followingButtonHandler.handleFollowingToggleButtonClick();
-		$('.autopilot_status').show();
-    autoNavigationToggleButton.initializeDOM()
-		// followingButtonHandler.initializeDOM();
-		// followingButtonHandler.setupDomElem();
+		autoNavigationNavButtonHandler.initializeDOM();
 	});
+	$('.hamburger_menu_nav a#ai_training_link').click(() => {
+		maneuverTrainingNavButtonHandler.initializeDOM();
+	});
+	$('.hamburger_menu_nav a#map_recognition_link').click(() => {
+    confidenceNavButtonHandler.initializeDOM()
+  });
 }
 
 export function setupMobileController() {

@@ -1,6 +1,6 @@
 import { server_socket } from '../Index/index_e_teleop.js';
 
-class AutoNavigationToggleButton {
+class AutoNavigationHandler {
 	constructor() {
 		this.logWS = {}; // Placeholder for WebSocket.
 		this.logWSmessage;
@@ -22,14 +22,27 @@ class AutoNavigationToggleButton {
 	}
 
 	initializeDOM() {
-		console.log('first');
+		//TODO: it should hide the canvas but keep the squares visible
 		$('#mobile_controller_container .steeringWheel').hide();
 		$('#mobile_controller_container .current_mode_button').show();
+		$('#mobile_controller_container .current_mode_text').hide();
+		$('.beta_speed').css('display', 'flex');
+		$('.control_symbol').css('display', 'flex');
+		$('.autopilot_status').show();
+		$('.autopilot_status').css('color', 'black');
 		$('#mobile_controller_container .current_mode_button').text('stop');
 		$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
 		$('#mobile_controller_container .current_mode_button').css('border', 'none');
-    $("#mobile_controller_container #forward_square .square_text").text("increase max speed")
-    $("#mobile_controller_container #backward_square .square_text").text("decrease max speed")
+		$('#mobile_controller_container #forward_square .square_text').text('increase max speed');
+		$('#mobile_controller_container #backward_square .square_text').text('decrease max speed');
+		document.querySelectorAll('.control_symbol').forEach((item) => {
+			item.addEventListener('touchstart', function () {
+				this.classList.add('active');
+			});
+			item.addEventListener('touchend', function () {
+				this.classList.remove('active');
+			});
+		});
 	}
 
 	get getInferenceState() {
@@ -167,5 +180,5 @@ class AutoNavigationToggleButton {
 		}
 	}
 }
-var autoNavigationToggleButton = new AutoNavigationToggleButton();
-export { autoNavigationToggleButton };
+var autoNavigationNavButtonHandler = new AutoNavigationHandler();
+export { autoNavigationNavButtonHandler };
