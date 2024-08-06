@@ -73,7 +73,7 @@ class ControlSquare {
 	switchCanvasDisplay(command) {
 		this.canvas.style.display = command;
 	}
-  
+
 	drawPin(x, y) {
 		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
@@ -138,29 +138,17 @@ class ControlSquare {
 		fade(); // Start the fade-out animation
 	}
 
-	handleMouseEvent(e) {
-		e.preventDefault();
-		if (e.type === 'mousedown') {
-			this.isDrawing = true;
-			this.initX = e.clientX - this.canvas.getBoundingClientRect().left; // Set initial X
-			this.initY = e.clientY - this.canvas.getBoundingClientRect().top; // Set initial Y
+	showOtherSquare(cmd) {
+		if (cmd) {
 			this.otherSquare.style.borderColor = 'red';
 			this.otherStopText.style.display = 'block';
 			this.otherDirectionText.style.display = 'none';
-		} else if (e.type === 'mousemove') {
-			if (!this.isDrawing) return;
-			const rect = this.canvas.getBoundingClientRect();
-			if (e.clientX < rect.left || e.clientX > rect.right || e.clientY < rect.top || e.clientY > rect.bottom) {
-				if (this.square !== this.otherSquare) {
-					alert('Moved from one square to the other!');
-				}
-			}
+		} else {
+			this.otherSquare.style.borderColor = '#f6f6f6';
+			this.otherStopText.style.display = 'none';
+			this.otherDirectionText.style.display = 'block';
 		}
-		const x = e.clientX;
-		const y = e.clientY;
-		this.updateCoordinates(x, y, this.canvas.getBoundingClientRect());
 	}
-
 	handleTouchEvent(e) {
 		e.preventDefault();
 		if (e.type === 'touchstart') {
@@ -168,14 +156,12 @@ class ControlSquare {
 			const touch = e.touches[0];
 			this.initX = touch.clientX - this.canvas.getBoundingClientRect().left; // Set initial X
 			this.initY = touch.clientY - this.canvas.getBoundingClientRect().top; // Set initial Y
-			this.otherSquare.style.borderColor = 'red';
-			this.otherStopText.style.display = 'block';
-			this.otherDirectionText.style.display = 'none';
+			this.showOtherSquare(true);
 		} else if (e.type === 'touchmove') {
 			if (!this.isDrawing) return;
 			const touch = e.touches[0];
 			const rect = this.canvas.getBoundingClientRect();
-			if (touch.clientX < rect.left || touch.clientX > rect.right || touch.clientY < rect.top || touch.clientY > rect.bottom) {
+			if (touch.clientY < rect.top || touch.clientY > rect.bottom) {
 				if (this.square !== this.otherSquare) {
 					alert('Moved from one square to the other!');
 				}
@@ -188,18 +174,12 @@ class ControlSquare {
 	}
 
 	stopDrawing() {
-		CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
+		CTRL_STAT.mobileCommandJSON = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
 		this.fadeOutDrawing(); // Call the fade-out method instead of immediate clear
-		this.otherSquare.style.borderColor = '#f6f6f6';
-		this.otherStopText.style.display = 'none';
-		this.otherDirectionText.style.display = 'block';
+		this.showOtherSquare(false);
 	}
 
 	initEventListeners() {
-		// this.canvas.addEventListener('mousedown', (e) => this.handleMouseEvent(e, this));
-		// this.canvas.addEventListener('mousemove', (e) => this.handleMouseEvent(e, this));
-		// this.canvas.addEventListener('mouseup', () => this.stopDrawing());
-
 		this.canvas.addEventListener('touchstart', (e) => this.handleTouchEvent(e, this));
 		this.canvas.addEventListener('touchmove', (e) => this.handleTouchEvent(e, this));
 		this.canvas.addEventListener('touchend', () => this.stopDrawing());

@@ -31,7 +31,7 @@ var NoneController = {
 	},
 
 	collapse: function (value, zone = 0) {
-		result = Math.abs(value) <= zone ? 0 : value > 0 ? value - zone : value + zone;
+		let result = Math.abs(value) <= zone ? 0 : value > 0 ? value - zone : value + zone;
 		// Scale back.
 		return result / (1 - zone);
 	},
@@ -61,7 +61,7 @@ var Xbox360StandardController = extend(NoneController, {
 	threshold: 0.195,
 
 	poll: function () {
-		pad = this.gamepad();
+		let pad = this.gamepad();
 		if (pad != undefined) {
 			this.set_throttle(pad.buttons[6].value, pad.buttons[7].value);
 			this.steering = this.collapse(pad.axes[2], this.threshold);
@@ -88,7 +88,7 @@ var PS4StandardController = extend(NoneController, {
 
 	poll: function () {
 		// On ubuntu 18 under chrome button 17 does not exist - use button 16.
-		pad = this.gamepad();
+		let pad = this.gamepad();
 		if (pad != undefined) {
 			this.set_throttle(pad.buttons[6].value, pad.buttons[7].value);
 			this.steering = this.collapse(pad.axes[2], this.threshold);
@@ -131,8 +131,8 @@ export var gamepad_controller = {
 	// Handle gamepad connections. When a gamepad connects, it checks if the gamepad is supported, then assigns the appropriate controller type (Xbox360StandardController or PS4StandardController) to the gamepad_controller object
 	_connect: function (gamepad, connecting) {
 		if (connecting) {
-			controller = this._create_gamepad(gamepad);
-			if (controller != undefined) {
+			let controller = this._create_gamepad(gamepad); // Using let for local scoping
+			if (controller !== undefined) {
 				this.controller = controller;
 				console.log('Connected ' + gamepad.id + " - mapping = '" + gamepad.mapping + "'.");
 			} else {
@@ -156,7 +156,6 @@ export var gamepad_controller = {
 		const ct = this.controller;
 		// Skip buttons when not pressed to save bandwidth.
 		var command = {};
-
 		if (ct.throttle && ct.throttle != 0) {
 			command.throttle = ct.throttle;
 			command.steering = ct.steering;
@@ -203,17 +202,5 @@ export var gamepad_controller = {
 	},
 };
 
-window.addEventListener(
-	'gamepadconnected',
-	function (e) {
-		gamepad_controller._connect(e.gamepad, true);
-	},
-	false
-);
-window.addEventListener(
-	'gamepaddisconnected',
-	function (e) {
-		gamepad_controller._connect(e.gamepad, false);
-	},
-	false
-);
+window.addEventListener('gamepadconnected', (e) => gamepad_controller._connect(e.gamepad, true));
+window.addEventListener('gamepaddisconnected', (e) => gamepad_controller._connect(e.gamepad, false));

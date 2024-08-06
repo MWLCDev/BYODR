@@ -1,23 +1,11 @@
 import { gamepad_controller } from './index_b_gamepad.js';
-import { dev_tools } from './index_a_utils.js';
-import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
+import { dev_tools, isMobileDevice } from './index_a_utils.js';
 
 export var screen_utils = {
-	_version: '0.55.0',
-	_arrow_images: {},
-	_wheel_images: {},
-
 	_create_image: function (url) {
 		var img = new Image(); // Make sure to declare 'img' locally
 		img.src = url;
 		return img;
-	},
-
-	_init: function () {
-		this._arrow_images.none = this._create_image('../static/assets/im_arrow_none.png?v=' + this._version);
-		this._wheel_images.black = this._create_image('../static/assets/im_wheel_black.png?v=' + this._version);
-		this._wheel_images.blue = this._create_image('../static/assets/im_wheel_blue.png?v=' + this._version);
-		this._wheel_images.red = this._create_image('../static/assets/im_wheel_red.png?v=' + this._version);
 	},
 
 	_decorate_server_message: function (message) {
@@ -160,7 +148,7 @@ export var teleop_screen = {
 	},
 
 	_render_distance_indicators: function () {
-		if (!CTRL_STAT.mobileIsActive) {
+		if (!isMobileDevice()) {
 			const _show = this.active_camera == 'front';
 			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
 				if (_show) {
@@ -213,7 +201,6 @@ export var teleop_screen = {
 	_server_message: function (message) {
 		this._last_server_message = message;
 		// It may be the inference service is not (yet) available.
-		const _debug = this.in_debug;
 		if (message.inf_surprise != undefined) {
 			$('span#inference_brake_critic').text(message.inf_brake_critic.toFixed(2));
 			$('span#inference_obstacle').text(message.inf_brake.toFixed(2));
@@ -233,31 +220,26 @@ export var teleop_screen = {
 		}
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
-		var el_alpha_speed = $('p.alpha_speed_value');
-		var el_alpha_speed_label = $('div.alpha_speed_label');
-		var el_beta_speed_container = $('div.beta_speed');
-		var el_beta_speed = $('p.beta_speed_value');
-		if (message._is_on_autopilot) {
-			el_alpha_speed.text(message.max_speed.toFixed(1));
-			el_beta_speed.text(message.vel_y.toFixed(1));
-		} else {
-			el_alpha_speed.text(message.vel_y.toFixed(1));
-		}
+		var el_inf_speed = $('div.inf_speed');
+		var el_inf_speed_val = $('p.inf_speed_value');
+		var el_inf_speed_label = $('div.inf_speed_label');
+		var el_rover_speed = $('p.rover_speed_value');
 		var el_steering_wheel = $('img.steeringWheel');
 		var el_autopilot_status = $('.autopilot_status');
-		var str_command_ctl = message.ctl + '_' + message._has_passage;
-		if (this.command_ctl != str_command_ctl) {
-			this.command_ctl = str_command_ctl;
-			if (message._is_on_autopilot) {
-				el_alpha_speed_label.text('MAX');
-				el_beta_speed_container.show();
-			} else {
-				el_alpha_speed_label.text('km/h');
-				el_beta_speed_container.hide();
-				el_autopilot_status.text('00:00:00');
-				el_autopilot_status.css('color', 'black');
-			}
+		if (message._is_on_autopilot) {
+			el_inf_speed.show();
+			el_autopilot_status.show();
+			el_inf_speed_val.text(message.max_speed.toFixed(1));
+			el_inf_speed_label.text('MAX');
 			this._render_distance_indicators();
+		} else {
+			el_inf_speed.hide();
+			el_autopilot_status.text('00:00:00');
+			el_autopilot_status.hide();
+			$('#mobile_controller_container .current_mode_button').text('start');
+			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
+			$('#mobile_controller_container .current_mode_button').css('color', 'white');
+			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
@@ -271,8 +253,14 @@ export var teleop_screen = {
 			el_autopilot_status.text(`${_zf_h}:${_zf_m}:${_zf_s}`);
 			el_autopilot_status.css('color', 'rgb(100, 217, 255)');
 		}
-		var display_rotation = Math.floor(message.ste * 90.0);
-		el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		el_rover_speed.text(message.vel_y.toFixed(1));
+		if (message.vel_y >= 0) {
+			var display_rotation = Math.floor(message.ste * 90.0);
+			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		} else {
+			var display_rotation = Math.floor(message.ste * -90.0 - 180);
+			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		}
 	},
 
 	_on_camera_selection: function () {
@@ -344,40 +332,42 @@ export var teleop_screen = {
 		const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
 		var show_message = false;
 		var show_button = false;
-		if (!is_connection_ok) {
-			message_box_message.text(c_msg_connection_lost);
-			message_box_message.removeClass();
-			message_box_message.addClass('error_message');
-			show_message = true;
-		} else if (controller_status == 0) {
-			message_box_message.text(c_msg_controller_err);
-			message_box_message.removeClass();
-			message_box_message.addClass('warning_message');
-			show_message = true;
-		} else if (controller_status == 2) {
-			message_box_message.text(c_msg_teleop_view_only);
-			message_box_message.removeClass();
-			message_box_message.addClass('warning_message');
-			show_message = true;
-			show_button = true;
-		}
-		if (show_message) {
-			if (show_button) {
-				button_take_control.show();
-			} else {
-				button_take_control.hide();
+		if (message_box_message != undefined) {
+			if (!is_connection_ok) {
+				message_box_message.text(c_msg_connection_lost);
+				message_box_message.removeClass();
+				message_box_message.addClass('error_message');
+				show_message = true;
+			} else if (controller_status == 0) {
+				message_box_message.text(c_msg_controller_err);
+				message_box_message.removeClass();
+				message_box_message.addClass('warning_message');
+				show_message = true;
+			} else if (controller_status == 2) {
+				message_box_message.text(c_msg_teleop_view_only);
+				message_box_message.removeClass();
+				message_box_message.addClass('warning_message');
+				show_message = true;
+				show_button = true;
 			}
-			message_box_container.show();
-		} else {
-			message_box_container.hide();
-		}
-		if (command != undefined && command.arrow_left) {
-			this._schedule_camera_cycle();
-		} else if (command != undefined && command.arrow_right) {
-			this._schedule_camera_cycle();
-		}
-		if (command != undefined && command.button_right) {
-			this._schedule_photo_snapshot_effect();
+			if (show_message) {
+				if (show_button) {
+					button_take_control.show();
+				} else {
+					button_take_control.hide();
+				}
+				message_box_container.show();
+			} else {
+				message_box_container.hide();
+			}
+			if (command != undefined && command.arrow_left) {
+				this._schedule_camera_cycle();
+			} else if (command != undefined && command.arrow_right) {
+				this._schedule_camera_cycle();
+			}
+			if (command != undefined && command.button_right) {
+				this._schedule_photo_snapshot_effect();
+			}
 		}
 	},
 

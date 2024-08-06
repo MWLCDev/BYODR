@@ -3,7 +3,7 @@ import { gamepad_controller } from './index_b_gamepad.js';
 import { socket_utils } from './index_a_utils.js';
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
-class RealServerSocket {
+class LoggerServerSocket {
 	constructor() {
 		this.server_message_listeners = [];
 	}
@@ -83,11 +83,22 @@ class MovementCommandSocket {
 	}
 
 	_capture(server_response) {
-		const gc_active = gamepad_controller.is_active();
-		if (CTRL_STAT.mobileIsActive) {
-			this._send(CTRL_STAT.throttleSteeringJson);
+    const gc_active = gamepad_controller.is_active();
+		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+		var current_page = localStorage.getItem('user.menu.screen');
+		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
+			this._send(CTRL_STAT.mobileCommandJSON);
+
+			// Reset all keys except throttle and steering
+			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
+				if (key !== 'throttle' && key !== 'steering') {
+					// Remove transient data
+					delete CTRL_STAT.mobileCommandJSON[key];
+				}
+			});
 		} else {
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
+			console.log(gamepad_command);
 			// The selected camera for ptz control can also be undefined.
 			gamepad_command.camera_id = -1;
 			if (teleop_screen.selected_camera == 'front') {
@@ -135,7 +146,7 @@ class MovementCommandSocket {
 					var message = JSON.parse(evt.data);
 					setTimeout(function () {
 						_instance._capture(message);
-					}, 10000);
+					}, 100);
 				};
 			});
 		}
@@ -153,7 +164,7 @@ class MovementCommandSocket {
 	}
 }
 
-export const server_socket = new RealServerSocket();
+export const server_socket = new LoggerServerSocket();
 export const gamepad_socket = new MovementCommandSocket();
 
 export function teleop_start_all() {

@@ -96,7 +96,7 @@ body {
   align-items: center;
 }
 
-#header_bar .left_section .alpha_speed {
+#header_bar .left_section .rover_speed {
   display: flex;
   flex-direction: row;
   align-items: center;
@@ -208,6 +208,15 @@ body {
   display: none;
 }
 
+.inf_speed {
+  display: none;
+  /* display: flex; */
+  justify-content: center;
+  align-items: center;
+  align-content: center;
+  flex-direction: column;
+}
+
 .stream_quality {
   display: flex;
   align-items: center;
@@ -300,7 +309,7 @@ button {
   flex-direction: column;
 }
 
-.alpha_speed_value {
+.inf_speed_value {
   font-weight: bold;
 }
 

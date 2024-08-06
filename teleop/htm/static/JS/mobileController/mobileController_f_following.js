@@ -1,6 +1,6 @@
 import CTRL_STAT from './mobileController_z_state.js';
 
-class ToggleButtonHandler {
+class FollowingHandler {
 	constructor(buttonId) {
 		this.toggleButton = $(buttonId);
 		this.errorLogged = false; // Add this line to initialize the error flag
@@ -9,7 +9,7 @@ class ToggleButtonHandler {
 		this.currentScreen = window.localStorage.getItem('user.menu.screen');
 	}
 
-	setupDomElem() {
+	initializeDOM() {
 		// $("#mobile_controller_container .current_mode_state").text('Loading...')
 		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .current_mode_button').show();
@@ -18,13 +18,12 @@ class ToggleButtonHandler {
 		$('#mobile_controller_container .middle_section').hide();
 		$('#mobile_controller_container .square').hide();
 		$('#mobile_controller_container .current_mode_button').click(function () {
-			const buttonText = $(this).text().toLowerCase();
 			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('start_following');
 			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('stop_following');
 		});
+    self.initializeCanvas()
 	}
-
-	initializeDOM() {
+	initializeCanvas() {
 		this.canvas = document.getElementById('following_imageCanvas');
 		if (this.canvas) {
 			this.ctx = this.canvas.getContext('2d');
@@ -164,6 +163,6 @@ class ToggleButtonHandler {
 	}
 }
 
-const followingButtonHandler = new ToggleButtonHandler('.hamburger_menu_nav a#follow_link');
+var followingNavButtonHandler = new FollowingHandler('.hamburger_menu_nav a#follow_link');
 
-export { followingButtonHandler };
+export { followingNavButtonHandler };

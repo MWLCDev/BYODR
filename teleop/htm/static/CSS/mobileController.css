@@ -21,8 +21,8 @@
   flex-direction: column;
   align-items: center;
   align-content: space-between;
-  justify-content: space-between;
-  /* padding: 5% 0; */
+  justify-content: flex-start;
+  gap: 1%;
   /* it is proportional to the height of .square */
 }
 
@@ -99,6 +99,13 @@
   flex-direction: column;
 }
 
+#backward_square.maneuver_square {
+  background: repeating-linear-gradient(-45deg, #ffffff, #ffffff 16px, #ccc 18px, #ccc 11px);
+  width: 100vw;
+  border: 0;
+
+}
+
 #forward_square .square_text {
   bottom: 2vh;
 }
@@ -133,7 +140,38 @@
   color: #ff0000;
   font-weight: bold;
   text-transform: uppercase;
+}
 
+.control_symbol {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  background-color: #FFFFFF;
+  /* Light background */
+  border-radius: 50%;
+  border: 14px solid #d0d0d0;
+  /* Light border */
+  color: #d0d0d0;
+  /* Light symbol color */
+  font-size: 9rem;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  /* Smooth transition for background, border, and color */
+}
+
+.control_symbol:active {
+  background-color: #555;
+  /* Darker background */
+  border-color: #333;
+  /* Darker border */
+  color: #fff;
+  /* White symbol color for better contrast */
 }
 
 #mobile_controller_container canvas {

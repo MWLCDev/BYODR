@@ -3,8 +3,9 @@ class MobileControllerState {
 	#selectedSquare = null;
 	#followingState = null;
 	// At first we send a default value
-	#throttleSteeringJson = { steering: 0, throttle: 0 };
+	#mobileCommandJSON = { steering: 0, throttle: 0 };
 	#mobileIsActive;
+	#currentPage;
 	#stateErrors;
 	#ws;
 
@@ -14,6 +15,12 @@ class MobileControllerState {
 	get mobileIsActive() {
 		return this.#mobileIsActive;
 	}
+	set currentPage(value) {
+		this.#currentPage = value;
+	}
+	get currentPage() {
+		return this.#currentPage;
+	}
 
 	set selectedSquare(value) {
 		this.#selectedSquare = value;
@@ -22,11 +29,11 @@ class MobileControllerState {
 		return this.#selectedSquare;
 	}
 
-	set throttleSteeringJson(value) {
-		this.#throttleSteeringJson = value;
+	set mobileCommandJSON(value) {
+		this.#mobileCommandJSON = value;
 	}
-	get throttleSteeringJson() {
-		return this.#throttleSteeringJson;
+	get mobileCommandJSON() {
+		return this.#mobileCommandJSON;
 	}
 
 	set stateErrors(value) {
