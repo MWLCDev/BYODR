@@ -14,6 +14,7 @@ body {
   color: #530D73;
   font-family: 'Sora', sans-serif;
   margin-bottom: 25px;
+  margin-left: 20px;
 }
 
 #background-image {
@@ -115,6 +116,7 @@ body {
 .relay-control-sliders-container {
   display: flex;
   align-items: center;
+  margin-top: 20px;
 }
 
 legend {
@@ -187,4 +189,24 @@ input:checked + .slider:before {
   color: #727272;  /* Change font color */
   width: 50%;
   text-align: center;
+}
+
+#save-button {
+  position: absolute;
+  width: 80px;              /* Width of the button */
+  height: 40px;              /* Height of the button */
+  border: 1px solid #530D73;  /* Border color */
+  border-radius: 8px;        /* Rounded edges */
+  font-family: 'Sora', sans-serif;       /* Font family */
+  font-size: 14px;           /* Font size */
+  font-weight: 700;          /* Makes the text thicker */
+  cursor: pointer;           /* Pointer cursor on hover */
+  transition: background-color 0.3s ease, color 0.3s ease;  /* Smooth transitions */
+  text-align: center;        /* Center-align text */
+  padding: 0px 0px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Faint shadow */
+  color: #f0f0f0;             /* Text color */
+  background-color: #530D73; /* Background color */
+  top: 55%;
+  left: 90%;
 }
