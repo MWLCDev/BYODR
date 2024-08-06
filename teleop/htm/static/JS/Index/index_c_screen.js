@@ -148,7 +148,7 @@ export var teleop_screen = {
 	},
 
 	_render_distance_indicators: function () {
-		if (!CTRL_STAT.mobileIsActive) {
+		if (!isMobileDevice()) {
 			const _show = this.active_camera == 'front';
 			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
 				if (_show) {
@@ -201,7 +201,6 @@ export var teleop_screen = {
 	_server_message: function (message) {
 		this._last_server_message = message;
 		// It may be the inference service is not (yet) available.
-		const _debug = this.in_debug;
 		if (message.inf_surprise != undefined) {
 			$('span#inference_brake_critic').text(message.inf_brake_critic.toFixed(2));
 			$('span#inference_obstacle').text(message.inf_brake.toFixed(2));
@@ -254,8 +253,14 @@ export var teleop_screen = {
 			el_autopilot_status.text(`${_zf_h}:${_zf_m}:${_zf_s}`);
 			el_autopilot_status.css('color', 'rgb(100, 217, 255)');
 		}
-		var display_rotation = Math.floor(message.ste * 90.0);
-		el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		el_rover_speed.text(message.vel_y.toFixed(1));
+		if (message.vel_y >= 0) {
+			var display_rotation = Math.floor(message.ste * 90.0);
+			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		} else {
+			var display_rotation = Math.floor(message.ste * -90.0 - 180);
+			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		}
 	},
 
 	_on_camera_selection: function () {
@@ -327,40 +332,42 @@ export var teleop_screen = {
 		const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
 		var show_message = false;
 		var show_button = false;
-		if (!is_connection_ok) {
-			message_box_message.text(c_msg_connection_lost);
-			message_box_message.removeClass();
-			message_box_message.addClass('error_message');
-			show_message = true;
-		} else if (controller_status == 0) {
-			message_box_message.text(c_msg_controller_err);
-			message_box_message.removeClass();
-			message_box_message.addClass('warning_message');
-			show_message = true;
-		} else if (controller_status == 2) {
-			message_box_message.text(c_msg_teleop_view_only);
-			message_box_message.removeClass();
-			message_box_message.addClass('warning_message');
-			show_message = true;
-			show_button = true;
-		}
-		if (show_message) {
-			if (show_button) {
-				button_take_control.show();
-			} else {
-				button_take_control.hide();
+		if (message_box_message != undefined) {
+			if (!is_connection_ok) {
+				message_box_message.text(c_msg_connection_lost);
+				message_box_message.removeClass();
+				message_box_message.addClass('error_message');
+				show_message = true;
+			} else if (controller_status == 0) {
+				message_box_message.text(c_msg_controller_err);
+				message_box_message.removeClass();
+				message_box_message.addClass('warning_message');
+				show_message = true;
+			} else if (controller_status == 2) {
+				message_box_message.text(c_msg_teleop_view_only);
+				message_box_message.removeClass();
+				message_box_message.addClass('warning_message');
+				show_message = true;
+				show_button = true;
 			}
-			message_box_container.show();
-		} else {
-			message_box_container.hide();
-		}
-		if (command != undefined && command.arrow_left) {
-			this._schedule_camera_cycle();
-		} else if (command != undefined && command.arrow_right) {
-			this._schedule_camera_cycle();
-		}
-		if (command != undefined && command.button_right) {
-			this._schedule_photo_snapshot_effect();
+			if (show_message) {
+				if (show_button) {
+					button_take_control.show();
+				} else {
+					button_take_control.hide();
+				}
+				message_box_container.show();
+			} else {
+				message_box_container.hide();
+			}
+			if (command != undefined && command.arrow_left) {
+				this._schedule_camera_cycle();
+			} else if (command != undefined && command.arrow_right) {
+				this._schedule_camera_cycle();
+			}
+			if (command != undefined && command.button_right) {
+				this._schedule_photo_snapshot_effect();
+			}
 		}
 	},
 
