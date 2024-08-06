@@ -4,10 +4,24 @@
   --background-color-dark_m: #121212;
   --text-color-dark_m: #ffffff;
   --VOR-color: #654279;
+  --text-color-light-p: #530D73;
+  --light-p: #8B7697;
+  --text-color-dark-g: #2B2B2B;
+  --button-color: #B8B8B8;
+  --font-weight-regular: 400;
+  --font-weight-bold: 700;
 }
 
 body {
   margin: 0;
+  background-color: var(--background-color-light_m);
+  color: var(--text-color-dark-g);
+}
+
+body .logbox{
+  font: 24px "Sora", sans-serif;
+  font-weight: var(--font-weight-regular);
+
 }
 
 .application-body {
@@ -254,43 +268,106 @@ table{
   border-collapse: collapse;
 }
 
-table#logbox td {
+table.logbox td {
+  font-size: 19px;
+  text-align: center;
   white-space: nowrap;
   margin-left: 2vh;
   margin-right: 2vh;
+  padding: 10px;
 }
 
-table#logbox tbody{
+table.logbox tbody>tr:nth-child(odd){
+  background-color: #E5E5E5;
+}
+table.logbox tbody>tr:nth-child(even){
+  background-color: #F7F7F7;
+}
+
+table.logbox th {
+  font-size: 21px;
+  padding: 15px;
+  font-weight: var(--font-weight-bold);
+  /* white-space: nowrap; */
+  
+}
+
+table.logbox tbody{
   border-collapse: collapse;
   border-bottom: 1px solid #000000;
   border-top: 1px solid #000000;
 }
 
-.content#logbox{
+#content.logbox{
   margin-left: 40px;
   margin-right: 40px;
 }
 
-.title#logbox{
-  font-size: 50;
+#title.logbox{
+  font-size: 50px;
+  font-weight: var(--font-weight-bold);
+  padding-top: 40px;
+  padding-bottom: 40px;
+  font-family: "Sora", sans-serif;
+  color: var(--text-color-light-p);
+  border-bottom: 2px solid var(--light-p);
+}
+
+#dropdown.logbox{
   margin-top: 40px;
   margin-bottom: 40px;
 }
 
-.dropdown#logbox{
-  margin-top: 40px;
-  margin-bottom: 40px;
+#undertable.logbox{
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  margin-bottom: 10px;
 }
 
-.undertable#logbox{
-  margin-top: 20px;
-  margin-bottom: 20px;
+button.logbox{
+  background-color: var(--button-color);
+  color: #FFFFFF;
+  margin: 2px;
+  min-width: 45px;
+  min-height: 45px;
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
 }
 
-.entries#logbox{
-  float: inline-start;
+button.logbox.currentBtn{
+  background-color: #E4E4E4;
+  margin: 0px;
+  color: #B8B8B8;
+  border: 2px solid #B8B8B8;
 }
 
-.pagination#logbox{
-  float: inline-end;
+button#prevBtn.logbox, button#nextBtn.logbox{
+  background: none;
+  color: #2B2B2B;
+  font-weight: var(--font-weight-regular);
+  font-size: 24px;
+}
+
+button#prevBtn.logbox.limit, button#nextBtn.logbox.limit{
+  display: none;
+}
+
+select.logbox{
+  cursor: pointer;
+  -moz-appearance:none; /* Firefox */
+  -webkit-appearance:none; /* Safari and Chrome */
+  appearance:none;
+  background-color: #898989;
+  background-image: url("data:image/svg+xml,<svg width='24' height='24' xmlns='http://www.w3.org/2000/svg'><path d='m0,6l12,12l12,-12l-24,0z'/><path fill='none' d='m0,0l24,0l0,24l-24,0l0,-24z'/></svg>");  ;
+  background-repeat: no-repeat;
+  background-size: 10px;
+  background-position-x: 90%;
+  background-position-y: 50%;
+  color: #FFFFFF;
+  font-size: 18px;
+  padding-left: 10px;
+  height: 30px;
+  min-width: 63px;
+  border-radius: 2px;
 }
