@@ -83,9 +83,19 @@ class MovementCommandSocket {
 	}
 
 	_capture(server_response) {
-		const gc_active = gamepad_controller.is_active();
-		if (CTRL_STAT.mobileIsActive) {
-			this._send(CTRL_STAT.throttleSteeringJson);
+    const gc_active = gamepad_controller.is_active();
+		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+		var current_page = localStorage.getItem('user.menu.screen');
+		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
+			this._send(CTRL_STAT.mobileCommandJSON);
+
+			// Reset all keys except throttle and steering
+			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
+				if (key !== 'throttle' && key !== 'steering') {
+					// Remove transient data
+					delete CTRL_STAT.mobileCommandJSON[key];
+				}
+			});
 		} else {
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
 			// The selected camera for ptz control can also be undefined.
