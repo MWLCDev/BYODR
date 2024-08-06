@@ -6,25 +6,185 @@
     --VOR-color: #654279;
   }
   
-  body {
-    margin: 0;
-  }
+body {
+  margin: 0;
+}
 
-  #controls_page_title {
-    color: #530D73;
-    font-family: 'Sora', sans-serif;
-    margin-bottom: 25px;
-  }
+#controls-page-title {
+  color: #530D73;
+  font-family: 'Sora', sans-serif;
+  margin-bottom: 25px;
+}
 
-  #background-image {
-    position: relative;
-    bottom: 0%;
-    background-image: url('../assets/VR - pattern tree 1.png');
-    background-size: contain;
-    background-position: right;
-    background-repeat: no-repeat;
-    z-index: -1;
-    width: 100%;
-    height: 130%;
-  }
+#background-image {
+  position: relative;
+  bottom: 0%;
+  background-image: url('../assets/VR - pattern tree 1.png');
+  background-size: contain;
+  background-position: right;
+  background-repeat: no-repeat;
+  z-index: -1;
+  width: 100%;
+  height: 130%;
+}
   
+/* General styles for all sliders within the input-sliders class */
+#input-sliders {
+  margin-top: 5%;
+  margin-left: 20px; /* Add some margin to the left to space the sliders away from the edge */
+  margin-bottom: 30px;
+}
+
+#input-sliders > div {
+  margin-bottom: 20px; /* Add margin to the bottom of each slider container for vertical spacing */
+}
+
+/* Style for each slider container */
+#input-sliders .slider-container {
+  display: flex;
+  align-items: center;
+}
+
+/* Style for the slider labels */
+#input-sliders label {
+  font-family: 'Sora', sans-serif;  /* Example font family */
+  font-size: 24px;
+  font-weight: bold;  /* Make the font bold */
+  color: #434343; /* Darker color for better readability */
+  margin-right: 15px; /* Space between the label and the slider */
+}
+
+/* Style for the slider bar */
+#input-sliders input[type="range"] {
+  width: 30%; /* Set the width of the slider bar to 30% */
+  height: 10px; /* Height of the slider bar */
+  background: #D0D0D0;
+  border-radius: 5px; /* Rounded edges for the slider bar */
+  outline: none;
+  opacity: 0.7;
+  -webkit-transition: .2s;
+  transition: opacity .2s;
+  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.5); /* Inward shadow for the hollow effect */
+  margin-right: 10px; /* Space between the slider bar and the value */
+}
+
+/* Style for the slider thumb (the ball) */
+#input-sliders input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px; /* Width of the slider ball */
+  height: 25px; /* Height of the slider ball */
+  background: #3A0751;
+  cursor: pointer;
+  border-radius: 50%; /* Make the slider thumb a circle */
+}
+
+#input-sliders input[type="range"]::-moz-range-thumb {
+  width: 25px; /* Width of the slider ball */
+  height: 25px; /* Height of the slider ball */
+  background: #3A0751;
+  cursor: pointer;
+  border-radius: 50%; /* Make the slider thumb a circle */
+}
+
+/* Additional hover effects for better UX */
+#input-sliders input[type="range"]:hover {
+  opacity: 1;
+}
+
+/* Style for focus to have better accessibility */
+#input-sliders input[type="range"]:focus {
+  outline: none; /* Remove default outline */
+  box-shadow: 0 0 5px #3A0751; /* Add a shadow effect */
+}
+
+/* Style for value display */
+.slider-value {
+  font-family: 'Sora', sans-serif;  /* Example font family */
+  font-size: 20px;
+  color: #727272;
+}
+
+
+
+/* General styles for all sliders within the relay-control-container class */
+#relay-control-container {
+  margin-left: 20px;
+}
+
+.relay-control-sliders-container {
+  display: flex;
+  align-items: center;
+}
+
+legend {
+  font-family: 'Sora', sans-serif;  /* Change font family */
+  font-size: 24px;  /* Change font size */
+  font-weight: bold;  /* Make the font bold */
+  color: #434343;  /* Change font color */
+  white-space: nowrap; /* Ensure the text stays in one line */
+}
+
+#channel-container {
+  background-color: #f0f0f0;  /* Faint gray background color */
+  padding: 15px;              /* Padding inside the container */
+  border: 1px solid #e0e0e0; 
+  border-radius: 10px;
+  margin-right: 50px;
+}
+
+.relay-channel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin: 0 10px;
+}
+
+.relay-switch {
+  position: relative;
+  display: inline-block;
+  width: 120px; /* Adjust width to match slider width */
+  height: 34px;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  background-color: #D0D0D0;
+  transition: .4s;
+  width: 100%; /* Use 100% width of the parent container */
+  height: 20px;
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5); /* Inward shadow for the hollow effect */
+  border-radius: 10px; /* Add some border radius to match the round slider */
+}
+
+.slider.round:before {
+  position: absolute;
+  content: "";
+  height: 26px;
+  width: 26px;
+  left: -2px; /* Adjust to be fully inside the slider */
+  bottom: -3px; /* Adjust to vertically center */
+  background-color: #530D73;
+  transition: .4s;
+  border-radius: 50%;
+}
+
+input:checked + .slider:before {
+  transform: translateX(100px); /* Adjust to match the slider width */
+}
+
+.on-off-labels {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 5px;
+}
+
+.toggle-label {
+  font-family: 'Noto Sans', sans-serif;  /* Different font family */
+  font-size: 20px;  /* Default font size */
+  color: #727272;  /* Change font color */
+  width: 50%;
+  text-align: center;
+}
