@@ -4,7 +4,7 @@ import { setupMobileController, assignNavButtonActions } from './mobileControlle
 import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
 import { screen_utils, teleop_screen } from './Index/index_c_screen.js';
 import { gamepad_socket } from './Index/index_e_teleop.js';
-import { updateRelayStates } from './userMenu/menu_controls.js';
+import { initDomElem } from './userMenu/menu_controls.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 
 function initializeAllNormalUIComponents() {
@@ -80,7 +80,7 @@ function updateMode(selectedLinkId) {
 function loadPageForSetting(selectedLinkId) {
 	const urlMapping = {
 		settings_link: ['/menu_settings', initializeSettings],
-		controls_link: ['/menu_controls', updateRelayStates],
+		controls_link: ['/menu_controls', initDomElem],
 		events_link: ['/menu_logbox', fetchData],
 	};
 	if (selectedLinkId in urlMapping) {
