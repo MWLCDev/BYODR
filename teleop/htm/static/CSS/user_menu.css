@@ -325,6 +325,10 @@ table.logbox tbody{
   margin-bottom: 10px;
 }
 
+table#display.logbox{
+  overflow: auto;
+}
+
 button.logbox{
   background-color: var(--button-color);
   color: #FFFFFF;
@@ -339,7 +343,7 @@ button.logbox.currentBtn{
   background-color: #E4E4E4;
   margin: 0px;
   color: #B8B8B8;
-  border: 2px solid #B8B8B8;
+  cursor: default;
 }
 
 button#prevBtn.logbox, button#nextBtn.logbox{
@@ -350,7 +354,8 @@ button#prevBtn.logbox, button#nextBtn.logbox{
 }
 
 button#prevBtn.logbox.limit, button#nextBtn.logbox.limit{
-  display: none;
+  color: #B8B8B8;
+  cursor: default;
 }
 
 select.logbox{

@@ -13,60 +13,102 @@ let pagesAmount = 1;
 export function initLogBox() {
 	fetchData();
 	getSelect();
-}
+	document.getElementById('startDots').style.display = 'none';
+	document.getElementById('firstBtn').style.display = 'none';
+	document.getElementById('prevBtn').classList.add('limit');
+	// document.getElementById('firstBtn').classList.add('currentBtn');
+	document.getElementById('pagination').addEventListener('click',(event) => {
+		const isButton = event.target.nodeName === 'BUTTON';
+		if (!isButton) {
+		  return;
+		}
+		clickButtons(event.target)
+	  })
+	}
+
 
 function getButtons() {
-	const bDots = document.getElementById('bdots');
-	bDots.style.display = 'none';
 	const buttonContainer = document.getElementById('varpag');
-	console.log(pagesAmount);
+	buttonContainer.innerHTML = ''; // Clear existing buttons
 	if (pagesAmount >= 1) {
-		for (var i = 1; i < pagesAmount && i < 3; i++) {
+		for (var i = 0; i < pagesAmount && i < 5; i++) {
 			const newBtn = document.createElement('button');
-			newBtn.id = 'nrbtn';
-			newBtn.className = 'logbox';
-			newBtn.textContent = i + 1;
-			buttonContainer.appendChild(newBtn);
-			console.log(pagesAmount);
+			newBtn.id = i-2;
+			newBtn.className = 'logbox nrbtn';
+			let buttonNr = currentPage + i - 2;
+			if (buttonNr >= 1 && buttonNr <= pagesAmount){
+				newBtn.textContent = buttonNr;
+				buttonContainer.appendChild(newBtn);
+			}
 		}
 	}
-	clickButtons(pagesAmount);
 }
 
-function clickButtons(pages) {
-	const prevBtn = document.getElementById('prevBtn');
-	const nextBtn = document.getElementById('nextBtn');
-	const firstBtn = document.getElementById('firstBtn');
-	const lastBtn = document.getElementById('lastBtn');
-
-	prevBtn.addEventListener('click', function () {
-		if (currentPage > 1) {
+function clickButtons(clickedBtn) {
+	let clickedId = clickedBtn.id
+	switch(clickedId){
+		case 'prevBtn':
+			if (currentPage > 1) {
 			currentPage--;
-		}
-		// changePage();
-	});
+			}
+			break;
+		case 'nextBtn':
+			if (currentPage < pagesAmount) {
+				currentPage++;
+			}
+			break;
+		case 'firstBtn':
+			currentPage = 1;
+			break;
+		case 'lastBtn':
+			currentPage = pagesAmount;
+			break;
+		default:
+			currentPage = Number(clickedBtn.textContent)
+			break;
+	}
 
-	nextBtn.addEventListener('click', function () {
-		console.log(currentPage, pages);
-		if (currentPage < pages) {
-			currentPage++;
-		}
-		// changePage();
-	});
+	changePage();
+}
 
-	firstBtn.addEventListener('click', function () {
-		currentPage = 1;
-		// changePage();
-	});
+function showExtraButtons(){
+	if (currentPage <= 1){
+		document.getElementById('prevBtn').classList.add('limit');
+		document.getElementById('nextBtn').classList.remove('limit');
+	}
+	else if(currentPage >= pagesAmount){
+		document.getElementById('nextBtn').classList.add('limit');
+		document.getElementById('prevBtn').classList.remove('limit');
+	}
+	else {
+		document.getElementById('nextBtn').classList.remove('limit');
+		document.getElementById('prevBtn').classList.remove('limit');
+	}
 
-	lastBtn.addEventListener('click', function () {
-		currentPage = pages;
-		// changePage();
-	});
+	if (currentPage > 3){
+		document.getElementById('startDots').style.display ='inline'
+		document.getElementById('firstBtn').style.display ='inline'
+
+	}
+	else{
+		document.getElementById('startDots').style.display = 'none'
+		document.getElementById('firstBtn').style.display ='none'
+	}
+
+	if (currentPage < pagesAmount-2){
+		document.getElementById('endDots').style.display = 'inline'
+		document.getElementById('lastBtn').style.display ='inline'
+	}
+	else{
+		document.getElementById('endDots').style.display = 'none'
+		document.getElementById('lastBtn').style.display ='none'
+	}
 }
 
 function changePage() {
-	console.log(currentPage);
+	start = (currentPage-1)*length;
+	fetchData();
+
 }
 
 function getSelect() {
@@ -74,6 +116,8 @@ function getSelect() {
 	selectElement.addEventListener('change', function () {
 		const selectedValue = selectElement.value;
 		length = Number(selectedValue);
+		start = 0;
+		currentPage = 1;
 		fetchData();
 	});
 }
@@ -97,6 +141,21 @@ function fetchData() {
 			displayNumbers(start, length, totalRecords);
 			processData(data.data, data.draw); // Ensure draw from server matches the expected draw
 			getButtons();
+			showExtraButtons();
+
+			const currentBtn = document.querySelector('.currentBtn');
+			if (currentBtn) {
+				currentBtn.classList.remove('currentBtn');
+			}
+		
+			
+
+			document.querySelectorAll('.nrbtn').forEach(function(btn){
+				if (currentPage == Number(btn.textContent)){
+					btn.classList.add('currentBtn');
+				}
+
+			})
 		})
 		.catch((error) => console.error('Error loading the data:', error));
 }
@@ -125,8 +184,6 @@ function displayNumbers(start, length, totalRecords) {
 	document.getElementById('to_nr').textContent = start + length;
 	pagesAmount = Math.ceil(totalRecords / length);
 	document.getElementById('lastBtn').textContent = pagesAmount;
-	console.log('pages amount changed to', pagesAmount);
-	console.log(totalRecords);
 }
 
 function processData(data, serverDraw) {

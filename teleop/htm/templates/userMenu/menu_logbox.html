@@ -22,8 +22,8 @@
             </select>
             <span>entries</span>
         </div>
-
-        <table id="display" class="logbox" style="width:100%">
+        <div style="width: 100vw-40px; overflow: auto;">
+        <table id="display" class="logbox">
             <thead>
                 <tr>
                     <th>ID</th>
@@ -51,6 +51,7 @@
             </tbody>
             </div>
         </table>
+        </div>
 
         <div id="undertable" class="logbox">
             <div id="entries" class="logbox">
@@ -64,12 +65,12 @@
                 </p>
             </div>
             <div id="pagination" class="logbox">
-                <button id="prevBtn" class="logbox limit">Previous</button>
-                <button class="logbox currentBtn" id="firstBtn">1</button>
-                <span id="bdots" class="logbox">...</span> 
+                <button id="prevBtn" class="logbox">Previous</button>
+                <button class="logbox nrbtn" id="firstBtn">1</button>
+                <span id="startDots" class="logbox">...</span> 
                 <span id="varpag" class="logbox"></span>
-                <span id="edots" class="logbox">...</span> 
-                <button class="logbox" id="lastBtn"></button>
+                <span id="endDots" class="logbox">...</span> 
+                <button class="logbox nrbtn" id="lastBtn"></button>
                 <button class="logbox" id="nextBtn">Next</button>
             </div>
         </div>
