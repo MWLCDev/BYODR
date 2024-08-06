@@ -6,56 +6,60 @@
 		<title>Relay Control Interface</title>
 	</head>
 	<body>
-		<div id="controlPanel">
-			<h2>Primary Relays</h2>
-			<fieldset class="channel" data-index="2">
-				<legend>Channel 3</legend>
-				<input type="radio" id="channel3_off" name="channel3" value="false" checked /> <label for="channel3_off">Off</label> <input type="radio" id="channel3_on" name="channel3" value="true" /> <label for="channel3_on">On</label>
-			</fieldset>
-			<fieldset class="channel" data-index="3">
-				<legend>Channel 4</legend>
-				<input type="radio" id="channel4_off" name="channel4" value="false" checked /> <label for="channel4_off">Off</label> <input type="radio" id="channel4_on" name="channel4" value="true" /> <label for="channel4_on">On</label>
-			</fieldset>
-		<h2 id="controls_page_title">Controls</h2>
+		<h2 id="controls-page-title">Controls</h2>
 		<hr width="100%" size="2">
-    <!-- TODO: change the class names  -->
-    <div id="mobile-controller-top-input-container">
-			<div id="dead-zone-container">
-				<label for="deadZoneWidth">Dead Zone Width:</label>
-				<input type="range" id="deadZoneWidth" name="deadZoneWidth" min="0" max="0.5" step="0.01" value="0.1" />
-			</div>
-			<div class="mobile-controller-motor-settings-container">
-				<!-- Scale input container -->
-				<div class="scale-offset-input-containers">
-					<label for="scale_input_box_ID">Max km/h:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="scale_input_box_ID" name="scale_slider" min="1" max="7" step="0.5" value="3" class="scale-offset-input-box"/>
-						<span class="scale-input-text"> </span>
-					</div>
-				</div>
+		<!-- TODO: change the class names  -->
 
-				<!-- Offset input container -->
-				<div class="scale-offset-input-containers">
-					<label for="offset_input_box_ID">Turning offset:</label>
-					<div class="scale-offset-input-box-containers">
-						<input type="range" id="offset_input_box_ID" name="offset_slider" min="-1" max="1" step="0.02" value="0" class="scale-offset-input-box"/>
-						<span class="offset-input-text"> </span>
-					</div>
+		<div id="input-sliders">
+			<label for="dead-zone-width">Dead Zone Width:</label>
+			<div class="slider-container">
+			  <input type="range" id="dead-zone-width" name="dead-zone-width" min="0" max="0.5" step="0.01" value="0.1" />
+			  <span id="dead-zone-width-value" class="slider-value">0.1</span>
+			</div>
+		
+			<label for="scale-input-box-ID">Max km/h:</label>
+			<div class="slider-container">
+			  <input type="range" id="scale-input-box" name="scale-slider" min="1" max="7" step="0.5" value="3" />
+			  <span id="scale-input-box-value" class="slider-value">3</span>
+			</div>
+		
+			<label for="offset-input-box-ID">Turning offset:</label>
+			<div class="slider-container">
+			  <input type="range" id="offset-input-box" name="offset-slider" min="-1" max="1" step="0.02" value="0" />
+			  <span id="offset-input-box-value" class="slider-value">0</span>
+			</div>
+		</div>
+
+		<div id="relay-control-container">
+			<h2>Primary Relays</h2>
+			<div class="relay-control-sliders-container">
+				<div id="channel-container">
+					<fieldset class="relay-channel" data-index="2">
+						<legend>Channel 3</legend>
+						<label class="relay-switch">
+							<input type="checkbox" id="channel3-toggle" name="channel3" />
+							<span class="slider round"></span>
+						</label>
+						<div class="on-off-labels">
+							<label for="channel3-toggle" id="channel3-label-off">OFF</label>
+							<label for="channel3-toggle" id="channel3-label-on">ON</label>
+						</div>
+					</fieldset>
+				</div>
+				<div id="channel-container">
+					<fieldset class="relay-channel" data-index="3">
+						<legend>Channel 4</legend>
+						<label class="relay-switch">
+							<input type="checkbox" id="channel4-toggle" name="channel4" />
+							<span class="slider round"></span>
+						</label>
+						<div class="on-off-labels">
+							<label for="channel4-toggle" id="channel4-label-off">OFF</label>
+							<label for="channel4-toggle" id="channel4-label-on">ON</label>
+						</div>
+					</fieldset>
 				</div>
 			</div>
-
-			<!-- Relay control container -->
-			<div id="pro-view-toggle-div">
-				<span id="pro-view-toggle-name">Pro View</span>
-				<div id="pro-view-toggle-slider"> 
-					<label class="switch">
-						<input type="checkbox" id="pro-view-toggle-button">
-						<span class="slider round"></span>
-					</label>
-					<span id="pro-view-toggle-status">Off</span>
-				</div>
-			</div>
-
 		</div>
 		<div id="background-image"></div>
 	</body>
