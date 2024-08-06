@@ -1,5 +1,5 @@
 import { initializeSettings } from './menu_settings.js';
-import { initLogbox } from './menu_logbox.js';
+import { initLogBox } from './menu_logbox.js';
 // TODO: rename this file
 var toggleBtn = document.getElementById('hamburger_menu_toggle');
 var nav = document.querySelector('.hamburger_menu_nav');
@@ -66,7 +66,7 @@ function _user_menu_route_screen(screen) {
 		case 'events_link':
 			$('a#events_link').addClass('active');
 			$('#application-content-container').load('/menu_logbox', function () {
-			initLogbox();
+				initLogBox();
 			});
 			break;
 		case 'phone_controller_link':
