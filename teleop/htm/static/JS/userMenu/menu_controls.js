@@ -57,12 +57,13 @@ export function bindSliderInputListener() {
 
 // Function to update label styles based on checkbox state
 function updateLabelStyles(checkbox, labelOn, labelOff) {
+
     if (checkbox.checked) {
-        labelOn.classList.add('bold');
-        labelOff.classList.remove('bold');
+        labelOn.style.fontWeight = 'bold';
+        labelOff.style.fontWeight = 'normal';
     } else {
-        labelOn.classList.remove('bold');
-        labelOff.classList.add('bold');
+        labelOn.style.fontWeight = 'normal';
+        labelOff.style.fontWeight = 'bold';
     }
 }
 
