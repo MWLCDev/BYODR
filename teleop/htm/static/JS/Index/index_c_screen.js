@@ -233,31 +233,26 @@ export var teleop_screen = {
 		}
 		// des_speed is the desired speed
 		// vel_y is the actual vehicle speed
-		var el_alpha_speed = $('p.alpha_speed_value');
-		var el_alpha_speed_label = $('div.alpha_speed_label');
-		var el_beta_speed_container = $('div.beta_speed');
-		var el_beta_speed = $('p.beta_speed_value');
-		if (message._is_on_autopilot) {
-			el_alpha_speed.text(message.max_speed.toFixed(1));
-			el_beta_speed.text(message.vel_y.toFixed(1));
-		} else {
-			el_alpha_speed.text(message.vel_y.toFixed(1));
-		}
+		var el_inf_speed = $('div.inf_speed');
+		var el_inf_speed_val = $('p.inf_speed_value');
+		var el_inf_speed_label = $('div.inf_speed_label');
+		var el_rover_speed = $('p.rover_speed_value');
 		var el_steering_wheel = $('img.steeringWheel');
 		var el_autopilot_status = $('.autopilot_status');
-		var str_command_ctl = message.ctl + '_' + message._has_passage;
-		if (this.command_ctl != str_command_ctl) {
-			this.command_ctl = str_command_ctl;
-			if (message._is_on_autopilot) {
-				el_alpha_speed_label.text('MAX');
-				el_beta_speed_container.show();
-			} else {
-				el_alpha_speed_label.text('km/h');
-				el_beta_speed_container.hide();
-				el_autopilot_status.text('00:00:00');
-				el_autopilot_status.css('color', 'black');
-			}
+		if (message._is_on_autopilot) {
+			el_inf_speed.show();
+			el_autopilot_status.show();
+			el_inf_speed_val.text(message.max_speed.toFixed(1));
+			el_inf_speed_label.text('MAX');
 			this._render_distance_indicators();
+		} else {
+			el_inf_speed.hide();
+			el_autopilot_status.text('00:00:00');
+			el_autopilot_status.hide();
+			$('#mobile_controller_container .current_mode_button').text('start');
+			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
+			$('#mobile_controller_container .current_mode_button').css('color', 'white');
+			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
