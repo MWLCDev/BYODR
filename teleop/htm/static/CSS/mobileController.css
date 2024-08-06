@@ -99,6 +99,13 @@
   flex-direction: column;
 }
 
+#backward_square.maneuver_square {
+  background: repeating-linear-gradient(-45deg, #ffffff, #ffffff 16px, #ccc 18px, #ccc 11px);
+  width: 100vw;
+  border: 0;
+
+}
+
 #forward_square .square_text {
   bottom: 2vh;
 }

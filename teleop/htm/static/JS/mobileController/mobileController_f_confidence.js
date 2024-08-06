@@ -3,10 +3,11 @@
  */
 class ConfidenceHandler {
 	constructor() {
-		this.confidenceWS = undefined;
+		this.confidenceWS = {};
 	}
 
 	initializeDOM() {
+		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .current_mode_text').text('map recognize');
 		$('#mobile_controller_container .current_mode_text').css('text-align', 'center');
 		$('#mobile_controller_container .steeringWheel').hide();
@@ -14,9 +15,47 @@ class ConfidenceHandler {
 		$('#mobile_controller_container .current_mode_button').text('recognize');
 		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
+		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		this.initializeConfidenceWS();
+		$('#mobile_controller_container .current_mode_button').click(function () {
+			const buttonText = $(this).text().toLowerCase();
+			if (buttonText == 'recognize') {
+				self.sendSwitchConfidenceRequest('start_confidence');
+				self.toggleButtonAppearance('start');
+			}
+			if (buttonText == 'stop') {
+				self.sendSwitchConfidenceRequest('stop_confidence');
+				self.toggleButtonAppearance('stop');
+			}
+		});
 	}
 
+	/**
+	 * Sends a command to the server via WebSocket.
+	 * @param {string} command The command to be sent to the server.
+	 */
+	sendSwitchConfidenceRequest(command) {
+		if (this.confidenceWS.websocket && this.confidenceWS.websocket.readyState === WebSocket.OPEN) {
+			this.confidenceWS.websocket.send(command);
+		} else {
+			console.error('Confidence websocket is not open. Command not sent. Attempting to reconnect...');
+			this.checkAndReconnectWebSocket();
+		}
+	}
+
+	toggleButtonAppearance(cmd) {
+		if (cmd == 'start') {
+			$('#mobile_controller_container .current_mode_button').text('stop');
+			$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
+			$('#mobile_controller_container .current_mode_button').css('border', 'none');
+		} else {
+			$('#mobile_controller_container .current_mode_button').text('recognize');
+			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
+			$('#mobile_controller_container .current_mode_button').css('color', 'white');
+			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+		}
+	}
+  
 	/**
 	 * Initializes the WebSocket connection for real-time data updates and sets up event listeners.
 	 */

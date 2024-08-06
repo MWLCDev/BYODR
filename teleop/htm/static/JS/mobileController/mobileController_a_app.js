@@ -1,5 +1,5 @@
 import { ControlSquare } from './mobileController_b_shape_square.js';
-import { setStatistics } from './mobileController_c_logic.js';
+import { setMobileCommand } from './mobileController_c_logic.js';
 import { followingNavButtonHandler } from './mobileController_f_following.js';
 import { autoNavigationNavButtonHandler } from './mobileController_f_auto_navigation.js';
 import { maneuverTrainingNavButtonHandler } from './mobileController_f_maneuver_training.js';
@@ -14,20 +14,11 @@ let backwardSquare;
 /**
  * Actions that are bonded to the navbar buttons only. They will control the switch for the features
  */
-export function assignNavButtonActions() {
-	$('.hamburger_menu_nav a#follow_link').click(() => {
-		followingNavButtonHandler.initializeDOM();
-		followingNavButtonHandler.initializeCanvas();
-	});
-	$('.hamburger_menu_nav a#autopilot_link').click(() => {
-		autoNavigationNavButtonHandler.initializeDOM();
-	});
-	$('.hamburger_menu_nav a#ai_training_link').click(() => {
-		maneuverTrainingNavButtonHandler.initializeDOM();
-	});
-	$('.hamburger_menu_nav a#map_recognition_link').click(() => {
-    confidenceNavButtonHandler.initializeDOM()
-  });
+export function assignNavButtonActions(navLink) {
+	if (navLink == 'follow_link') followingNavButtonHandler.initializeDOM();
+	else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
+	else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
+	else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();
 }
 
 export function setupMobileController() {
@@ -61,6 +52,6 @@ function resizeAllCanvases() {
 }
 
 function printNormalizedValues(x, y) {
-	setStatistics(x, y, 'auto');
+	setMobileCommand(x, y, 'auto');
 	// console.log(`X: ${x}, Y: ${y}`);
 }

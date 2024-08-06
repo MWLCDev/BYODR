@@ -18,10 +18,10 @@ class FollowingHandler {
 		$('#mobile_controller_container .middle_section').hide();
 		$('#mobile_controller_container .square').hide();
 		$('#mobile_controller_container .current_mode_button').click(function () {
-			const buttonText = $(this).text().toLowerCase();
 			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('start_following');
 			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('stop_following');
 		});
+    self.initializeCanvas()
 	}
 	initializeCanvas() {
 		this.canvas = document.getElementById('following_imageCanvas');
