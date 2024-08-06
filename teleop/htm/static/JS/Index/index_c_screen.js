@@ -1,23 +1,11 @@
 import { gamepad_controller } from './index_b_gamepad.js';
-import { dev_tools } from './index_a_utils.js';
-import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
+import { dev_tools, isMobileDevice } from './index_a_utils.js';
 
 export var screen_utils = {
-	_version: '0.55.0',
-	_arrow_images: {},
-	_wheel_images: {},
-
 	_create_image: function (url) {
 		var img = new Image(); // Make sure to declare 'img' locally
 		img.src = url;
 		return img;
-	},
-
-	_init: function () {
-		this._arrow_images.none = this._create_image('../static/assets/im_arrow_none.png?v=' + this._version);
-		this._wheel_images.black = this._create_image('../static/assets/im_wheel_black.png?v=' + this._version);
-		this._wheel_images.blue = this._create_image('../static/assets/im_wheel_blue.png?v=' + this._version);
-		this._wheel_images.red = this._create_image('../static/assets/im_wheel_red.png?v=' + this._version);
 	},
 
 	_decorate_server_message: function (message) {
