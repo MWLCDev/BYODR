@@ -180,17 +180,52 @@ class LogBox {
 		this.elements.tableBody.innerHTML = '';
 		data.forEach((row) => {
 			const tr = document.createElement('tr');
-			tr.innerHTML = row.map(this.formatCell).join('');
+			// Use an arrow function here to preserve 'this' context
+			tr.innerHTML = row.map((item, index) => this.formatCell(item, index)).join('');
 			this.elements.tableBody.appendChild(tr);
 		});
 	}
-
-	formatCell(item) {
+	/**
+	 * Formats a cell's content for display in the table.
+	 * @param {*} item - The item to be formatted.
+	 * @param {number} columnIndex - The index of the column.
+	 * @returns {string} The HTML string for the formatted cell.
+	 */
+	formatCell(item, columnIndex) {
 		if (item === 'null' || item === null) return '<td></td>';
+
+		// Check if this is the Timestamp column (assuming it's the second column, index 1)
+		if (columnIndex === 1) {
+			return `<td>${this.formatTimestamp(item)}</td>`;
+		}
+
 		if (LogBox.isStringNumber(item)) {
 			return `<td>${LogBox.roundIfMoreThanTwoDecimals(item)}</td>`;
 		}
 		return `<td>${item}</td>`;
+	}
+
+	/**
+	 * Formats a timestamp from microseconds to the desired string format.
+	 * @param {string} timestamp - The timestamp in microseconds.
+	 * @returns {string} The formatted date string.
+	 */
+	formatTimestamp(timestamp) {
+		const date = new Date(parseInt(timestamp) / 1000); // Convert microseconds to milliseconds
+
+		const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+		const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+		const dayName = days[date.getDay()];
+		const day = date.getDate();
+		const monthName = months[date.getMonth()];
+		const year = date.getFullYear();
+		const hours = date.getHours().toString().padStart(2, '0');
+		const minutes = date.getMinutes().toString().padStart(2, '0');
+		const seconds = date.getSeconds().toString().padStart(2, '0');
+		const milliseconds = date.getMilliseconds().toString().padStart(3, '0');
+
+		return `${dayName}, ${day}/${monthName}/${year}, ${hours}:${minutes}:${seconds}.${milliseconds}`;
 	}
 	/**
 	 * Updates the current button's visual state in the pagination.
