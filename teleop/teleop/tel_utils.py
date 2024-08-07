@@ -184,7 +184,7 @@ class OverviewConfidence:
 class ThrottleController:
     def __init__(self, teleop_publisher, route_store):
         self.current_throttle = 0.0
-        self.throttle_change_step = 0.05
+        self.throttle_change_step = 0.1
         self.teleop_publisher = teleop_publisher
         self.route_store = route_store
 
