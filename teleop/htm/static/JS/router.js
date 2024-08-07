@@ -4,7 +4,7 @@ import { gamepad_socket } from './Index/index_e_teleop.js';
 import { assignNavButtonActions, setupMobileController } from './mobileController/mobileController_a_app.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 import { initDomElem } from './userMenu/menu_controls.js';
-import { fetchData } from './userMenu/menu_logbox.js';
+import { LogBox } from './userMenu/menu_logbox.js';
 import { initializeSettings } from './userMenu/menu_settings.js';
 
 const initComponents = () => {
