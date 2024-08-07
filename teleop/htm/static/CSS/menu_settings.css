@@ -1,0 +1,205 @@
+:root {
+    --background-color-light_m: #ffffff;
+    --text-color-ligh_m: #000000;
+    --background-color-dark_m: #121212;
+    --text-color-dark_m: #ffffff;
+    --VOR-color: #654279;
+  }
+  
+  body {
+    margin: 0;
+  }
+  
+  #background-image {
+    position: relative;
+    bottom: 80%;
+    background-image: url('../assets/VR - pattern tree 1.png');
+    background-size: contain;
+    background-position: right;
+    background-repeat: no-repeat;
+    z-index: -1;
+    width: 100%;
+    height: 130%;
+  }
+  
+  #settings-page-elements {
+    position: relative;
+    width:max-content;
+  }
+  
+  #settings-content {
+    position:relative;
+    padding: 20px;
+  }
+  
+  fieldset {
+    border: 0;
+    padding-left: 5%;
+  }
+  
+  /* Style the legend of the fieldset */
+  legend {
+    font-family: 'Sora', sans-serif;  /* Change font family */
+    font-size: 24px;  /* Change font size */
+    font-weight: bold;  /* Make the font bold */
+    color: #333;  /* Change font color */
+    padding-right: 10px;
+    padding-bottom: 10px;
+    padding-top: 10px;
+  }
+  
+  /* Style the labels and inputs inside the fieldset */
+  fieldset label {
+    font-family: 'Noto Sans', sans-serif;  /* Different font family */
+    font-size: 20px;  /* Default font size */
+    color: #666;  /* Change font color */
+  }
+  
+  /* Style the input text of the fieldset */
+  fieldset input {
+    font-family: 'Noto Sans', sans-serif; /* Match input font family with label */
+    font-size: 16px;  /* Default font size */
+    padding: 5px;
+    margin-left: 15px;
+    border-radius: 5px; /* Rounded edges */
+    width: 40%; 
+  }
+  
+
+#settings_page_title {
+    color: #530D73;
+    font-family: 'Sora', sans-serif;  /* Example font family */
+    margin-bottom: 25px;               /* Example margin */
+  }
+  
+  #options_text {
+    font-family: 'Sora', sans-serif;  /* Example font family */
+    margin-bottom: 18px;               /* Example margin */
+  }
+  
+  #save-edit-buttons-section {
+    position: absolute;
+    width: 80px;
+    height: 100%;
+    left: 90%;
+    top: 10%;
+  }
+  
+  button {
+    width: 80px;              /* Width of the button */
+    height: 40px;              /* Height of the button */
+    border: 1px solid #530D73;  /* Border color */
+    border-radius: 8px;        /* Rounded edges */
+    font-family: 'Sora', sans-serif;       /* Font family */
+    font-size: 14px;           /* Font size */
+    font-weight: 700;          /* Makes the text thicker */
+    cursor: pointer;           /* Pointer cursor on hover */
+    transition: background-color 0.3s ease, color 0.3s ease;  /* Smooth transitions */
+    text-align: center;        /* Center-align text */
+    padding: 0px 0px;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2); /* Faint shadow */
+  }
+  
+  #edit_button {
+    position: absolute;
+    color: #530D73;             /* Text color */
+    background-color: #f0f0f0; /* Background color */
+    top: 5%;
+  }
+  
+  #submit_save_apply {
+    position: absolute;
+    color: #f0f0f0;             /* Text color */
+    background-color: #530D73; /* Background color */
+    top: 55%;
+  }
+  
+  /*////////////    Style for the pro view toggle slider    ////////////*/
+  /* The switch - the box around the slider */
+  /* slider:before - the ball inside the slider */
+  #pro-view-toggle-div {
+    position: relative;
+    font-family: 'Sora', sans-serif; /* Matching the existing font */
+    margin-left: 5%;
+    margin-top: 10%;
+    width: fit-content;
+  }
+  
+  #pro-view-toggle-div span {
+    margin: 0 10px;
+  }
+  
+  #pro-view-toggle-slider {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+  }
+  
+  /* Toggle switch styling */
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 80px; /* Increased width */
+    height: 20px; /* Decreased height for a thinner slider */
+  }
+  
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
+  
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc;
+    transition: .4s;
+    border-radius: 20px; /* Matching the height for round ends */
+    width: 80px; /* Matching the width of the switch */
+    height: 20px; /* Matching the height of the switch */
+  }
+  
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 26px; /* Keep the ball height the same */
+    width: 26px; /* Keep the ball width the same */
+    left: -2px;
+    bottom: -3px; /* Adjusted to center vertically */
+    background-color: #530D73;
+    transition: .4s;
+    border-radius: 50%;
+  }
+  
+  input:checked + .slider {
+    background-color: #8B7697;
+  }
+  
+  input:focus + .slider {
+    box-shadow: 0 0 1px #530D73;
+  }
+  
+  input:checked + .slider:before {
+    transform: translateX(60px); /* Adjusted to match the new slider width */
+  }
+  
+  /* Toggle name text */
+  #pro-view-toggle-name {
+    color: #2B2B2B;
+    font-weight: bold;
+    font-size: 24px;
+    text-align: center;
+  }
+  
+  /* Toggle status text */
+  #pro-view-toggle-status {
+    color: #530D73;
+    font-weight: bold;
+    font-size: 20px;
+    padding-left: 10px;
+  }

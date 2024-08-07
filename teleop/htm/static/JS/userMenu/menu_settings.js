@@ -1,6 +1,7 @@
 // Initialize settings content
 export function initializeSettings() {
 	fetchUserSettings();
+	switchToggleText();
 }
 
 // Fetch user settings from backend and generate form inputs
@@ -13,10 +14,15 @@ function fetchUserSettings() {
 			Object.entries(settings).forEach(([section, options]) => {
 				const fieldset = document.createElement('fieldset');
 				const legend = document.createElement('legend');
-				legend.textContent = section;
+				legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
 				fieldset.appendChild(legend);
 
 				Object.entries(options).forEach(([name, value]) => {
+
+					// Skip steering and offset fields in the 'vehicle section
+					if ((name === 'ras.driver.steering.offset' || name === 'ras.driver.motor.scale'))
+						return; // Skip this iteration
+					
 					const input = document.createElement('input');
 					// Bool values are case sensitive between js and python
 					input.type = value === 'True' || value === 'False' ? 'checkbox' : 'text';
@@ -28,7 +34,37 @@ function fetchUserSettings() {
 					}
 
 					const label = document.createElement('label');
-					label.textContent = name;
+
+					// Filtering unneeded words from the names of the text fields
+					// Replacing 'ip' with 'IP' in the camera section
+					if(section === 'camera'){
+						name = name.replace('ip', 'IP');
+					}
+
+					// Removing all mentions of 'driver', 'cc' and 'throttle' from the pilot section
+					else if(section === 'pilot'){
+						if(name.includes('driver.'))
+							name = name.replace('driver.', '');
+							if(name.includes('cc.'))
+								name = name.replace('cc.', '');
+								if(name.includes('throttle.'))
+									name = name.replace('throttle.', '');
+						if (name.includes('pid'))
+							name = name.slice(0, -1) + name.slice(-1).toUpperCase();
+					}
+
+					// Filtering the field names in vehicle
+					else{
+						if(name.includes('ras.master.uri'))
+							name = name.replace('ras.master.uri', 'Pi URI');
+						else if(name.includes('gps'))
+							name = name.replace('gps', 'GPS')
+						else if(name.includes('ras.driver.'))
+							name = name.replace('ras.driver.', '')
+					}
+					name = name.replace(/[._]/g, ' ');
+
+					label.textContent = name.charAt(0).toUpperCase() + name.slice(1) + ':';
 					label.appendChild(input);
 
 					const div = document.createElement('div');
@@ -79,20 +115,33 @@ function saveSettings() {
 		});
 }
 
+function switchToggleText(){
+	const toggleButton = document.getElementById('pro-view-toggle-button');
+	const toggleStatus = document.getElementById('pro-view-toggle-status');
+
+	toggleButton.addEventListener('change', function () {
+		if (this.checked) {
+			toggleStatus.textContent = 'On';
+		} else {
+			toggleStatus.textContent = 'Off';
+		}
+	});
+}
+
 // Set up event handlers only if the elements exist on the page
 document.addEventListener('DOMContentLoaded', () => {
-  const submitButton = document.getElementById('submit_save_apply');
-  const form = document.getElementById('form_user_options');
+	const submitButton = document.getElementById('submit_save_apply');
+	const form = document.getElementById('form_user_options');
 
-  if (submitButton) {
-      submitButton.addEventListener('click', saveSettings);
-  }
+	if (submitButton) {
+		submitButton.addEventListener('click', saveSettings);
+	}
 
-  if (form) {
-      form.addEventListener('input', () => {
-          if (submitButton) {
-              submitButton.disabled = false; // Enable save button on change
-          }
-      });
-  }
+	if (form) {
+		form.addEventListener('input', () => {
+			if (submitButton) {
+				submitButton.disabled = false; // Enable save button on change
+			}
+		});
+	}
 });

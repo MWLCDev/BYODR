@@ -1,17 +1,21 @@
-import { initializeSettings } from './userMenu/menu_settings.js';
-import { LogBox } from './userMenu/menu_logbox.js';
-import { setupMobileController, assignNavButtonActions } from './mobileController/mobileController_a_app.js';
-import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
+import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
 import { teleop_screen } from './Index/index_c_screen.js';
 import { gamepad_socket } from './Index/index_e_teleop.js';
-import { updateRelayStates } from './userMenu/menu_controls.js';
-import CTRL_STAT from './mobileController/mobileController_z_state.js';
+import { assignNavButtonActions, setupMobileController } from './mobileController/mobileController_a_app.js';
+import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
+import { initDomElem } from './userMenu/menu_controls.js';
+import { LogBox } from './userMenu/menu_logbox.js';
+import { initializeSettings } from './userMenu/menu_settings.js';
 
 const initComponents = () => {
 	try {
+		try {
 		[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
-		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
-		$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
+			$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+	} catch (error) {
+		console.log('error while init components', error);
+	}
 	} catch (error) {
 		console.log('error while init components', error);
 	}
@@ -45,6 +49,7 @@ const handleUserMenuRoute = (selectedLinkId) => {
 	CTRL_STAT.mobileIsActive = false;
 	updateModeUI(selectedLinkId);
 
+
 	CTRL_STAT.currentPage = selectedLinkId;
 	localStorage.setItem('user.menu.screen', selectedLinkId);
 
@@ -61,7 +66,7 @@ const handleUserMenuRoute = (selectedLinkId) => {
 	} else {
 		const pageMap = {
 			settings_link: ['/menu_settings', initializeSettings],
-			controls_link: ['/menu_controls', updateRelayStates],
+			controls_link: ['/menu_controls', initDomElem],
 			events_link: [
 				'/menu_logbox',
 				() => {
