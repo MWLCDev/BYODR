@@ -26,7 +26,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import DirectingUser, EndpointHandlers, GetSegmentSSID, TemplateRenderer, ThrottleController
+from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
 
 logger = logging.getLogger(__name__)
 
