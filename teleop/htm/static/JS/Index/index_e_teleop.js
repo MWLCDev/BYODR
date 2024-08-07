@@ -98,7 +98,6 @@ class MovementCommandSocket {
 			});
 		} else {
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
-			console.log(gamepad_command);
 			// The selected camera for ptz control can also be undefined.
 			gamepad_command.camera_id = -1;
 			if (teleop_screen.selected_camera == 'front') {
