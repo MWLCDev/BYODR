@@ -66,25 +66,12 @@ class FollowingHandler(web.RequestHandler):
     def initialize(self, **kwargs):
         self._fn_control = kwargs.get("fn_control")
 
-    def send_state(self):
-        self.write({"status": "success", "time": timestamp()})
-
     def post(self):
-        # Extract command as a string
         command_text = self.get_body_argument("command", default=None)
-
-        end_time = timestamp() + 1e5
-        while timestamp() < end_time:
-            command_dict = {"following": command_text}
-            # Pass the dictionary to the control function
-            self._fn_control(command_dict)
-
-        self.send_state()
-
-
-class FollowingStatusHandler(web.RequestHandler):
-    def initialize(self, **kwargs):
-        self._fn_control = kwargs.get("fn_control")
+        command_dict = {"following": command_text}
+        self._fn_control.teleop_publish_to_following(command_dict)
+        print(command_text)
+        self.write({"status": "success", "time": timestamp()})
 
     def get(self):
         following_status = self._fn_control.get_following_state()
