@@ -33,7 +33,7 @@ class FollowingApplication(Application):
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self.controller = FollowingController(model_path="./models/yolov8n.engine", user_config_args=self.get_user_config_file_contents(), event=quit_event, hz=hz)
+        self.controller = FollowingController(model_path="./models/yolov8_20240717_coco(imgsz480x640_FP16).engine", user_config_args=self.get_user_config_file_contents(), event=quit_event, hz=hz)
 
     def _check_user_config(self):
         """See if there is an available user config file, and assign it to the self var"""
