@@ -30,7 +30,7 @@ class YoloInference:
         # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
         # image size is a tuple of (h, w)
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=640, tracker="botsort.yaml")
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(480, 640), tracker="botsort.yaml")
         logger.info(f"{self.model_path} model is loaded")
 
     def get_stream_uri(self):
@@ -214,14 +214,18 @@ class FollowingController:
         self.fol_state = "inactive"
 
     def request_check(self):
-        """Fetches and processes the request from Teleop."""
+        """Checks for commands from TEL socket.
+        Broadcast the current state of FOL"""
         try:
             teleop_request = self.teleop_chatter()
             if teleop_request is not None:
                 if teleop_request.get("following") == "start_following":
-                    self._start_following()
+                    self.fol_state = "active"
                 elif teleop_request.get("following") == "stop_following":
                     self._stop_following()
+                elif teleop_request.get("following") == "show_image":
+                    self.fol_state = "show_image"
+                    self._start_following()
             self._publish_current_state()
         except Exception as e:
             logger.error(f"Exception in request_check: {e}")
@@ -230,11 +234,11 @@ class FollowingController:
     def _start_following(self):
         """Start the following process."""
         if self.run_yolo_inf is None or not self.run_yolo_inf.is_alive():
-            self.fol_state = "active"
+            self.fol_state = "show_image"
             self.command_controller.publish_command(
                 self.command_controller.current_throttle,
                 self.command_controller.current_steering,
-                source="followingActive",
+                source="followingImage",
             )
             self.yolo_inference.reset_tracking_session()
             self.stop_threads = False
@@ -251,11 +255,13 @@ class FollowingController:
             self.run_yolo_inf.join()
 
     def _publish_current_state(self):
-        """Publish the current state of following."""
+        """Keeps broadcasting the current state of following ."""
         # In case there isn't a command received from teleop_chatter and it isn't active or loading, it should send followingInactive
         if self.fol_state == "inactive":
             self.command_controller.publish_command(source="followingInactive")
-        # As the model sends when it has new data, there sin't a way for the ui to keep showing the stream box. This condition here is to cover for these gaps
+        # The model should be saving the images only, but not sending commands
+        if self.fol_state == "show_image":
+            self.command_controller.publish_command(source="followingImage")
         elif self.fol_state == "active":
             self.command_controller.publish_command(
                 throttle=self.command_controller.current_throttle,
@@ -265,10 +271,9 @@ class FollowingController:
 
     def _control_logic(self, stop):
         """Processes each frame of YOLO output with a controlled rate."""
-        frame_time = 1 / self.hz  # Calculate the time each frame should take based on the Hz rate
         try:
             for r in self.yolo_inference.results:
-                start_time = time.time()  # Record the start time of the loop iteration
+                # in case of raising the flag to stop. Terminate the thread and send that fol is ready for future commands
                 if stop():
                     logger.info("YOLO model stopped")
                     self.fol_state = "inactive"
@@ -277,9 +282,6 @@ class FollowingController:
                 self._update_control_commands(r.boxes.cpu().numpy())
                 followed_person_id = self.command_controller.followed_person_id
                 self.yolo_inference.track_and_save_image(r, followed_person_id)
-                sleep_time = frame_time - (time.time() - start_time)
-                if sleep_time > 0:
-                    time.sleep(sleep_time)  # Sleep to maintain the desired frame rate
         except Exception as e:
             logger.error(f"Exception in _control_logic: {e}")
             self.quit_event.set()
@@ -292,9 +294,17 @@ class FollowingController:
             self.command_controller.publish_command(
                 throttle=self.command_controller.current_throttle,
                 steering=self.command_controller.current_steering,
-                source="followingActive",
+                source=self.fol_state,
             )
-        else:
+        elif self.fol_state == "show_image":
+            self.command_controller.current_throttle = 0
+            self.command_controller.current_steering = 0
+            self.command_controller.publish_command(
+                throttle=self.command_controller.current_throttle,
+                steering=self.command_controller.current_steering,
+                source="followingImage",
+            )
+        elif self.fol_state == "active":
             self.command_controller.update_control_commands(boxes)
             self.command_controller.publish_command(
                 throttle=self.command_controller.current_throttle,
