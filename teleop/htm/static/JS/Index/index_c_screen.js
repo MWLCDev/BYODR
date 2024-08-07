@@ -126,7 +126,6 @@ export var teleop_screen = {
 	_last_server_message: null,
 
 	_init() {
-		console.log('init done');
 		this.controller_status = gamepad_controller.is_active();
 		this.el_viewport_container = $('div#viewport_container');
 		this.el_drive_bar = $('div#debug_drive_bar');
