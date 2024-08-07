@@ -26,7 +26,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from .server import *
-from .tel_utils import DirectingUser, EndpointHandlers, GetSegmentSSID, TemplateRenderer, ThrottleController
+from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
 
 logger = logging.getLogger(__name__)
 
@@ -198,8 +198,7 @@ def main():
                 (r"/(menu_settings)", TemplateRenderer),
                 (r"/run_get_SSID", GetSegmentSSID),
                 (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
-                (r"/switch_following", FollowingHandler, dict(fn_control=application.following_utils.teleop_publish_to_following)),
-                (r"/switch_following_status", FollowingStatusHandler, dict(fn_control=application.following_utils)),
+                (r"/fol_handler", FollowingHandler, dict(fn_control=application.following_utils)),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
                 (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),
                 (r"/api/datalog/event/v10/image", JPEGImageRequestHandler, dict(mongo_box=_mongo)),

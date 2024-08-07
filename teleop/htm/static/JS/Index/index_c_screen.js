@@ -148,16 +148,14 @@ export var teleop_screen = {
 	},
 
 	_render_distance_indicators: function () {
-		if (!isMobileDevice()) {
-			const _show = this.active_camera == 'front';
-			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
-				if (_show) {
-					_m.show();
-				} else {
-					_m.hide();
-				}
-			});
-		}
+		const _show = this.active_camera == 'front';
+		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
+			if (_show) {
+				_m.show();
+			} else {
+				_m.hide();
+			}
+		});
 	},
 
 	_select_next_camera: function () {
@@ -236,10 +234,6 @@ export var teleop_screen = {
 			el_inf_speed.hide();
 			el_autopilot_status.text('00:00:00');
 			el_autopilot_status.hide();
-			$('#mobile_controller_container .current_mode_button').text('start');
-			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-			$('#mobile_controller_container .current_mode_button').css('color', 'white');
-			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.

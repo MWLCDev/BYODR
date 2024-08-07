@@ -11,11 +11,7 @@ from datetime import datetime
 import folium
 import pandas as pd
 import requests
-import tornado.ioloop
-import tornado.web
-import user_agents  # Check in the request header if it is a phone or not
 from byodr.utils import timestamp
-from byodr.utils.ssh import Router
 
 # needs to be installed on the router
 from pysnmp.hlapi import *
@@ -183,108 +179,6 @@ class OverviewConfidence:
         if self.running:
             self.running = False
             self.record_data_thread.join()
-
-
-class ThrottleController:
-    def __init__(self, teleop_publisher, route_store):
-        self.current_throttle = 0.0
-        self.throttle_change_step = 0.05
-        self.teleop_publisher = teleop_publisher
-        self.route_store = route_store
-
-    def throttle_control(self, cmd):
-        """Function used to smooth out the received throttle from front-end. Instead of going from a full throttle of 1 to 0, it will decrease gradually by 0.05.
-
-        Args:
-            cmd JSON: The json sent from the front-end. Example `{"steering": 0.0, "throttle": 0.5, "time": 1717055030186955, "navigator": {"route": None}, "button_b": 1}`
-        """
-        # Check if there is no smoothing required for mobile inference states
-        if cmd.get("mobileInferenceState") in ["true", "auto", "train"]:
-            self.teleop_publish(cmd)
-            return
-
-        # If no throttle or steering key present in the command, reset throttle to 0
-        if "throttle" not in cmd and "steering" not in cmd:
-            self.current_throttle = 0
-            self.teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
-            return
-
-        target_throttle = float(cmd.get("throttle", 0))
-
-        if "throttle" in cmd:
-            # Smooth the throttle change
-            if abs(target_throttle - self.current_throttle) > self.throttle_change_step:
-                # Determine the direction of change
-                throttle_direction = (target_throttle - self.current_throttle) / abs(target_throttle - self.current_throttle)
-                self.current_throttle += throttle_direction * self.throttle_change_step
-                # Ensure we don't overshoot the target throttle
-                if (throttle_direction > 0 and self.current_throttle > target_throttle) or (throttle_direction < 0 and self.current_throttle < target_throttle):
-                    self.current_throttle = target_throttle
-            else:
-                self.current_throttle = target_throttle
-
-        cmd["throttle"] = self.current_throttle
-        self.teleop_publish(cmd)
-
-    def teleop_publish(self, cmd):
-        # We are the authority on route state.
-        cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        self.teleop_publisher.publish(cmd)
-
-
-class GetSegmentSSID(tornado.web.RequestHandler):
-    """Run a python script to get the SSID of current robot"""
-
-    async def get(self):
-        try:
-            # Use the IOLoop to run fetch_ssid in a thread
-            loop = tornado.ioloop.IOLoop.current()
-            router = Router()
-
-            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
-            ssid = await loop.run_in_executor(None, router.fetch_ssid)
-
-            self.write(ssid)
-        except Exception as e:
-            logger.error(f"Error fetching SSID of current robot: {e}")
-            self.set_status(500)
-            self.write("Error fetching SSID of current robot.")
-        self.finish()
-
-
-class DirectingUser(tornado.web.RequestHandler):
-    """Directing the user based on their used device"""
-
-    def get(self):
-        user_agent_str = self.request.headers.get("User-Agent")
-        user_agent = user_agents.parse(user_agent_str)
-
-        self.redirect("/nc")
-
-
-class TemplateRenderer(tornado.web.RequestHandler):
-    # Any static routes should be added here
-    _TEMPLATES = {
-        "nc": "index.html",
-        "menu_controls": "userMenu/menu_controls.html",
-        "menu_logbox": "userMenu/menu_logbox.html",
-        "menu_settings": "userMenu/menu_settings.html",
-        "mc": "mobile_controller_ui.html",
-        "normal_ui": "normal_ui.html",
-    }
-
-    def initialize(self, page_name="nc"):
-        self.page_name = page_name
-
-    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
-        if page_name is None:
-            page_name = self.page_name
-        template_name = self._TEMPLATES.get(page_name)
-        if template_name:
-            self.render(f"../htm/templates/{template_name}")
-        else:
-            self.set_status(404)
-            self.write("Page not found.")
 
 
 class EndpointHandlers:
@@ -530,8 +424,8 @@ class FollowingUtils:
         return self.following_state
 
     def set_following_state(self, new_state):
-        # if the new state is "active", which is different from the old state, then this means to start the
-        if self.following_state == "inactive" and new_state == "active":
+        # if the new state is "active", which is different from the old state, then this means to start moving the camera
+        if self.following_state != new_state and new_state == "active":
             self.camera_control.goto_preset_position(preset_id=1)
         self.following_state = new_state
         self.throttle_controller.update_following_state(new_state)
@@ -541,10 +435,11 @@ class FollowingUtils:
             ctrl = self.following_socket.get()
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
-                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image 
+                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image
                 self.throttle_controller.throttle_control(ctrl)
                 # logger.info(ctrl)
                 self._update_following_status(ctrl)
+
         except Exception as e:
             logger.error(f"Error handling control command: {e}")
 
@@ -556,6 +451,8 @@ class FollowingUtils:
             self.set_following_state("inactive")
         elif ctrl["source"] == "followingActive":
             self.set_following_state("active")
+        elif ctrl["source"] == "followingImage":
+            self.set_following_state("image")
 
     def _handle_camera_commands(self, ctrl):
         if "camera_pan" in ctrl:

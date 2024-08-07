@@ -9,9 +9,13 @@ import { initializeSettings } from './userMenu/menu_settings.js';
 
 const initComponents = () => {
 	try {
+		try {
 		[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
-		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
-		$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
+			$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+	} catch (error) {
+		console.log('error while init components', error);
+	}
 	} catch (error) {
 		console.log('error while init components', error);
 	}
@@ -45,6 +49,7 @@ const handleUserMenuRoute = (selectedLinkId) => {
 	CTRL_STAT.mobileIsActive = false;
 	updateModeUI(selectedLinkId);
 
+
 	CTRL_STAT.currentPage = selectedLinkId;
 	localStorage.setItem('user.menu.screen', selectedLinkId);
 
@@ -62,7 +67,13 @@ const handleUserMenuRoute = (selectedLinkId) => {
 		const pageMap = {
 			settings_link: ['/menu_settings', initializeSettings],
 			controls_link: ['/menu_controls', initDomElem],
-			events_link: ['/menu_logbox', fetchData],
+			events_link: [
+				'/menu_logbox',
+				() => {
+					LogBox;
+					LogBox.init();
+				},
+			],
 		};
 		const [url, callback] = pageMap[selectedLinkId] || [];
 		url && loadPage(url, callback);

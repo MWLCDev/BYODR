@@ -6,7 +6,6 @@ class FollowingHandler {
 		this.errorLogged = false; // Add this line to initialize the error flag
 		this.initialSetup();
 		this.startPolling();
-		this.currentScreen = window.localStorage.getItem('user.menu.screen');
 	}
 
 	initializeDOM() {
@@ -17,12 +16,16 @@ class FollowingHandler {
 		$('#mobile_controller_container .current_mode_text').text('Follow');
 		$('#mobile_controller_container .middle_section').hide();
 		$('#mobile_controller_container .square').hide();
+		self.sendSwitchFollowingRequest('show_image');
 		$('#mobile_controller_container .current_mode_button').click(function () {
-			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('start_following');
-			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('stop_following');
+			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('show_image');
+			else if (CTRL_STAT.followingState == 'image') self.sendSwitchFollowingRequest('start_following');
+			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('show_image');
 		});
-    self.initializeCanvas()
+		//it should send the stopping command `sendSwitchFollowingRequest("stop_following")` when i switch the pages
+		self.initializeCanvas();
 	}
+
 	initializeCanvas() {
 		this.canvas = document.getElementById('following_imageCanvas');
 		if (this.canvas) {
@@ -37,7 +40,8 @@ class FollowingHandler {
 	}
 
 	sendSwitchFollowingRequest(command) {
-		fetch('/switch_following', {
+		console.log('called with this', command);
+		fetch('/fol_handler', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
 			body: `command=${encodeURIComponent(command)}`,
@@ -47,36 +51,39 @@ class FollowingHandler {
 	}
 
 	startPolling() {
-		// TODO: should it keep pulling the state always in the background, or only when on following screen
 		setInterval(() => {
-			fetch('/switch_following_status', {
-				method: 'GET',
-				headers: { 'Content-Type': 'application/json' },
-			})
-				.then((response) => response.json())
-				.then((data) => {
-					const previousState = CTRL_STAT.followingState;
-					this.assignFollowingState(data.following_status);
-					// Only call this function if the current state changed from the received one
-					if (previousState !== CTRL_STAT.followingState) {
-						this.toggleButtonAppearance();
-					}
-					this.errorLogged = false; // Reset the error flag if request is successful
+			if (CTRL_STAT.currentPage == 'follow_link') {
+				fetch('/fol_handler', {
+					method: 'GET',
+					headers: { 'Content-Type': 'application/json' },
 				})
-				.catch((error) => {
-					if (!this.errorLogged) {
-						console.error('Error polling backend:', error);
-						this.errorLogged = true; // Set the error flag
-					}
-				});
+					.then((response) => response.json())
+					.then((data) => {
+						const previousState = CTRL_STAT.followingState;
+						this.assignFollowingState(data.following_status);
+						this.toggleButtonAppearance();
+						if (previousState !== CTRL_STAT.followingState) {
+						}
+						this.errorLogged = false;
+					})
+					.catch((error) => {
+						if (!this.errorLogged) {
+							console.error('Error polling backend:', error);
+							this.errorLogged = true;
+						}
+					});
+			}
 		}, 500);
 	}
 
 	assignFollowingState(backendCommand) {
-		// console.log(backendCommand, CTRL_STAT.followingState);
+		console.log(backendCommand, CTRL_STAT.followingState);
 		switch (backendCommand) {
 			case 'active':
 				CTRL_STAT.followingState = 'active'; // The system is actively following
+				break;
+			case 'image':
+				CTRL_STAT.followingState = 'image'; // The system is doing inference on the current stream from the camera, but not sending movement commands
 				break;
 			case 'inactive':
 				CTRL_STAT.followingState = 'inactive'; // The system is ready and not following
@@ -90,18 +97,26 @@ class FollowingHandler {
 	}
 
 	toggleButtonAppearance() {
-		if (this.currentScreen == 'follow_link') {
-			if (CTRL_STAT.followingState == 'active') {
-				// Hide the movement squares
+		if (CTRL_STAT.currentPage == 'follow_link') {
+			if (CTRL_STAT.followingState == 'image') {
 				this.resizeCanvas();
 				this.showCanvas();
+				$('#mobile_controller_container .current_mode_state').hide();
+				$('#mobile_controller_container .square').hide();
+				$('#mobile_controller_container .current_mode_button').text('start following');
+				$('#mobile_controller_container .current_mode_button').css('background-color', '#ffffff');
+				$('#mobile_controller_container .current_mode_button').css('border', '');
+			} else if (CTRL_STAT.followingState == 'active') {
+				this.resizeCanvas();
+				this.showCanvas();
+				$('#mobile_controller_container .current_mode_state').hide();
+				$('#mobile_controller_container .square').hide();
 				$('#mobile_controller_container .current_mode_button').text('stop');
 				$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
 				$('#mobile_controller_container .current_mode_button').css('border', 'none');
-				// this.toggleButton.innerText = 'Stop Following';
-				// this.toggleButton.style.backgroundColor = '#ff6347';
 			} else if (CTRL_STAT.followingState == 'inactive') {
 				$('#mobile_controller_container .square').show();
+				$('#mobile_controller_container .current_mode_state').hide();
 				$('#mobile_controller_container .current_mode_button').text('start following');
 				$('#mobile_controller_container .current_mode_button').css('background-color', '#ffffff');
 				$('#mobile_controller_container .current_mode_button').css('border', '');
@@ -122,7 +137,7 @@ class FollowingHandler {
 			this.canvas.style.display = 'block';
 			if (!this.streamActive && !this.intervalId) {
 				this.streamActive = true;
-				this.intervalId = setInterval(() => this.refreshImage(), 150); // Start streaming
+				this.intervalId = setInterval(() => this.refreshImage(), 30); // Start streaming
 			}
 		}
 	}

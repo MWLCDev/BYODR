@@ -1,6 +1,4 @@
-/**
- * Handles toggle button interactions and manages WebSocket connections for real-time data updates.
- */
+import CTRL_STAT from './mobileController_z_state.js';
 class ConfidenceHandler {
 	constructor() {
 		this.confidenceWS = {};
@@ -8,10 +6,18 @@ class ConfidenceHandler {
 
 	initializeDOM() {
 		const self = this; // Save the reference to 'this' (which is the class instance here)
+
+		$('#mobile_controller_container .current_mode_text').show();
 		$('#mobile_controller_container .current_mode_text').text('map recognize');
 		$('#mobile_controller_container .current_mode_text').css('text-align', 'center');
 		$('#mobile_controller_container .steeringWheel').hide();
 		$('#mobile_controller_container .current_mode_button').show();
+		$('#mobile_controller_container .square').children().show();
+		$('.control_symbol').css('display', 'none');
+		$('.stop_text').css('display', 'none');
+		$('#mobile_controller_container #forward_square .square_text').text('forward');
+		$('#mobile_controller_container #backward_square .square_text').text('backward');
+
 		$('#mobile_controller_container .current_mode_button').text('recognize');
 		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
@@ -19,11 +25,11 @@ class ConfidenceHandler {
 		this.initializeConfidenceWS();
 		$('#mobile_controller_container .current_mode_button').click(function () {
 			const buttonText = $(this).text().toLowerCase();
-			if (buttonText == 'recognize') {
+			if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'recognize') {
 				self.sendSwitchConfidenceRequest('start_confidence');
 				self.toggleButtonAppearance('start');
 			}
-			if (buttonText == 'stop') {
+			if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'stop') {
 				self.sendSwitchConfidenceRequest('stop_confidence');
 				self.toggleButtonAppearance('stop');
 			}
@@ -48,6 +54,7 @@ class ConfidenceHandler {
 			$('#mobile_controller_container .current_mode_button').text('stop');
 			$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
 			$('#mobile_controller_container .current_mode_button').css('border', 'none');
+			$('#mobile_controller_container .square').children().show();
 		} else {
 			$('#mobile_controller_container .current_mode_button').text('recognize');
 			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
@@ -55,7 +62,7 @@ class ConfidenceHandler {
 			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 	}
-  
+
 	/**
 	 * Initializes the WebSocket connection for real-time data updates and sets up event listeners.
 	 */
