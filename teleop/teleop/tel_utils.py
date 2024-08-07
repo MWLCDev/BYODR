@@ -530,8 +530,8 @@ class FollowingUtils:
         return self.following_state
 
     def set_following_state(self, new_state):
-        # if the new state is "active", which is different from the old state, then this means to start the
-        if self.following_state == "inactive" and new_state == "active":
+        # if the new state is "active", which is different from the old state, then this means to start moving the camera
+        if self.following_state != new_state and new_state == "active":
             self.camera_control.goto_preset_position(preset_id=1)
         self.following_state = new_state
         self.throttle_controller.update_following_state(new_state)
@@ -541,10 +541,11 @@ class FollowingUtils:
             ctrl = self.following_socket.get()
             if ctrl is not None:
                 ctrl["time"] = int(timestamp())
-                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image 
+                # TODO: add a state here that wouldn't send the throttle if it is . It should come from following, so it starts generating the image
                 self.throttle_controller.throttle_control(ctrl)
                 # logger.info(ctrl)
                 self._update_following_status(ctrl)
+
         except Exception as e:
             logger.error(f"Error handling control command: {e}")
 
@@ -556,6 +557,8 @@ class FollowingUtils:
             self.set_following_state("inactive")
         elif ctrl["source"] == "followingActive":
             self.set_following_state("active")
+        elif ctrl["source"] == "followingImage":
+            self.set_following_state("image")
 
     def _handle_camera_commands(self, ctrl):
         if "camera_pan" in ctrl:

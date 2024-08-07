@@ -2,15 +2,19 @@ import { initializeSettings } from './userMenu/menu_settings.js';
 import { fetchData } from './userMenu/menu_logbox.js';
 import { setupMobileController, assignNavButtonActions } from './mobileController/mobileController_a_app.js';
 import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
-import {  teleop_screen } from './Index/index_c_screen.js';
+import { teleop_screen } from './Index/index_c_screen.js';
 import { gamepad_socket } from './Index/index_e_teleop.js';
 import { updateRelayStates } from './userMenu/menu_controls.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js';
 
 const initComponents = () => {
-	[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
-	$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
-	$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+	try {
+		[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
+		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
+		$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+	} catch (error) {
+		console.log('error while init components', error);
+	}
 };
 /**
  * Updates the visibility of header bar sections based on device type.
@@ -40,6 +44,7 @@ const updateModeUI = (selectedLinkId) => {
 const handleUserMenuRoute = (selectedLinkId) => {
 	CTRL_STAT.mobileIsActive = false;
 	updateModeUI(selectedLinkId);
+
 	CTRL_STAT.currentPage = selectedLinkId;
 	localStorage.setItem('user.menu.screen', selectedLinkId);
 

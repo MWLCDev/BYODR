@@ -126,6 +126,7 @@ export var teleop_screen = {
 	_last_server_message: null,
 
 	_init() {
+		console.log('init done');
 		this.controller_status = gamepad_controller.is_active();
 		this.el_viewport_container = $('div#viewport_container');
 		this.el_drive_bar = $('div#debug_drive_bar');
@@ -148,16 +149,14 @@ export var teleop_screen = {
 	},
 
 	_render_distance_indicators: function () {
-		if (!isMobileDevice()) {
-			const _show = this.active_camera == 'front';
-			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
-				if (_show) {
-					_m.show();
-				} else {
-					_m.hide();
-				}
-			});
-		}
+		const _show = this.active_camera == 'front';
+		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
+			if (_show) {
+				_m.show();
+			} else {
+				_m.hide();
+			}
+		});
 	},
 
 	_select_next_camera: function () {
@@ -236,10 +235,6 @@ export var teleop_screen = {
 			el_inf_speed.hide();
 			el_autopilot_status.text('00:00:00');
 			el_autopilot_status.hide();
-			$('#mobile_controller_container .current_mode_button').text('start');
-			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-			$('#mobile_controller_container .current_mode_button').css('color', 'white');
-			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
