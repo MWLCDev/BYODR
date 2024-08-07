@@ -1,5 +1,5 @@
 import { initializeSettings } from './userMenu/menu_settings.js';
-import { fetchData } from './userMenu/menu_logbox.js';
+import { LogBox } from './userMenu/menu_logbox.js';
 import { setupMobileController, assignNavButtonActions } from './mobileController/mobileController_a_app.js';
 import { isMobileDevice, network_utils, page_utils, socket_utils, dev_tools } from './Index/index_a_utils.js';
 import { teleop_screen } from './Index/index_c_screen.js';
@@ -62,7 +62,13 @@ const handleUserMenuRoute = (selectedLinkId) => {
 		const pageMap = {
 			settings_link: ['/menu_settings', initializeSettings],
 			controls_link: ['/menu_controls', updateRelayStates],
-			events_link: ['/menu_logbox', fetchData],
+			events_link: [
+				'/menu_logbox',
+				() => {
+					LogBox;
+					LogBox.init();
+				},
+			],
 		};
 		const [url, callback] = pageMap[selectedLinkId] || [];
 		url && loadPage(url, callback);
