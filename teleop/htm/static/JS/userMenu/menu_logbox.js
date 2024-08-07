@@ -1,213 +1,222 @@
-const apiUrl = 'api/datalog/event/v10/table';
+class LogBox {
+	constructor() {
+		this.apiUrl = 'api/datalog/event/v10/table';
+		this.drawCount = 1; // Starting point in the dataset
+		this.start = 0;
+		this.length = 10; // Number of records per page. Greater length will take longer to load
+		this.orderDir = 'desc'; // Default sorting order
+		this.currentPage = 1;
+		this.pagesAmount = 1;
+		this.totalRecords = 0;
 
-// will make these values dynamic later, depending on the 45 doc and what data to show or sort
-let drawCount = 1; // Initialize draw count
-let start = 0; // Starting point in the dataset
-let length = 10; // Number of records per page. Greater length will take longer to load
-let orderDir = 'desc'; // Default sorting order
-let currentPage = 1;
-let totalRecords = 0; // {AM to MB}: There is no need to have this variable
-let pagesAmount = 1;
-//TODO: handle image showing
+		//TODO: handle image showing
+		this.elements = {
+			startDots: document.getElementById('startDots'),
+			firstBtn: document.getElementById('firstBtn'),
+			prevBtn: document.getElementById('prevBtn'),
+			nextBtn: document.getElementById('nextBtn'),
+			lastBtn: document.getElementById('lastBtn'),
+			endDots: document.getElementById('endDots'),
+			pagination: document.getElementById('pagination'),
+			varpag: document.getElementById('varpag'),
+			selectElement: document.getElementById('mySelect'),
+			tableBody: document.querySelector('.logbox tbody'),
+			fromNr: document.getElementById('from_nr'),
+			toNr: document.getElementById('to_nr'),
+			maxNr: document.getElementById('max_nr'),
+		};
+	}
 
-export function initLogBox() {
-	fetchData();
-	getSelect();
-	document.getElementById('startDots').style.display = 'none';
-	document.getElementById('firstBtn').style.display = 'none';
-	document.getElementById('prevBtn').classList.add('limit');
-	// document.getElementById('firstBtn').classList.add('currentBtn');
-	document.getElementById('pagination').addEventListener('click',(event) => {
-		const isButton = event.target.nodeName === 'BUTTON';
-		if (!isButton) {
-		  return;
+	init() {
+		this.fetchData();
+		this.setupEventListeners();
+		this.updateButtonVisibility();
+	}
+
+	setupEventListeners() {
+		this.elements.pagination.addEventListener('click', (event) => this.handlePaginationClick(event));
+		this.elements.selectElement.addEventListener('change', () => this.handleSelectChange());
+	}
+
+	handlePaginationClick(event) {
+		if (event.target.nodeName !== 'BUTTON') return;
+		this.clickButtons(event.target);
+	}
+	/**
+	 * Handles changes in the entries per page select element.
+	 */
+	handleSelectChange() {
+		this.length = Number(this.elements.selectElement.value);
+		this.start = 0;
+		this.currentPage = 1;
+		this.fetchData();
+	}
+
+	/**
+	 * Processes clicks on pagination buttons and updates the current page.
+	 * @param {HTMLButtonElement} clickedBtn - The clicked button element.
+	 */
+	clickButtons(clickedBtn) {
+		const clickedId = clickedBtn.id;
+		switch (clickedId) {
+			case 'prevBtn':
+				if (this.currentPage > 1) this.currentPage--;
+				break;
+			case 'nextBtn':
+				if (this.currentPage < this.pagesAmount) this.currentPage++;
+				break;
+			case 'firstBtn':
+				this.currentPage = 1;
+				break;
+			case 'lastBtn':
+				this.currentPage = this.pagesAmount;
+				break;
+			default:
+				this.currentPage = Number(clickedBtn.textContent);
+				break;
 		}
-		clickButtons(event.target)
-	  })
+		this.changePage();
 	}
 
+	/**
+	 * Updates the start index based on the current page and fetches new data.
+	 */
+	changePage() {
+		this.start = (this.currentPage - 1) * this.length;
+		this.fetchData();
+	}
 
-function getButtons() {
-	const buttonContainer = document.getElementById('varpag');
-	buttonContainer.innerHTML = ''; // Clear existing buttons
-	if (pagesAmount >= 1) {
-		for (var i = 0; i < pagesAmount && i < 5; i++) {
-			const newBtn = document.createElement('button');
-			newBtn.id = i-2;
-			newBtn.className = 'logbox nrbtn';
-			let buttonNr = currentPage + i - 2;
-			if (buttonNr >= 1 && buttonNr <= pagesAmount){
-				newBtn.textContent = buttonNr;
-				buttonContainer.appendChild(newBtn);
+	/**
+	 * Updates the visibility of pagination buttons based on the current page.
+	 */
+	updateButtonVisibility() {
+		const { prevBtn, nextBtn, startDots, firstBtn, endDots, lastBtn } = this.elements;
+
+		prevBtn.classList.toggle('limit', this.currentPage <= 1);
+		nextBtn.classList.toggle('limit', this.currentPage >= this.pagesAmount);
+
+		const showStartButtons = this.currentPage > 3;
+		startDots.style.display = showStartButtons ? 'inline' : 'none';
+		firstBtn.style.display = showStartButtons ? 'inline' : 'none';
+
+		const showEndButtons = this.currentPage < this.pagesAmount - 2;
+		endDots.style.display = showEndButtons ? 'inline' : 'none';
+		lastBtn.style.display = showEndButtons ? 'inline' : 'none';
+	}
+
+	/**
+	 * Generates and displays pagination buttons.
+	 */
+	getButtons() {
+		const buttonContainer = this.elements.varpag;
+		buttonContainer.innerHTML = '';
+		if (this.pagesAmount >= 1) {
+			for (let i = 0; i < 5 && i < this.pagesAmount; i++) {
+				const buttonNr = this.currentPage + i - 2;
+				if (buttonNr >= 1 && buttonNr <= this.pagesAmount) {
+					const newBtn = document.createElement('button');
+					newBtn.id = i - 2;
+					newBtn.className = 'logbox nrbtn';
+					newBtn.textContent = buttonNr;
+					buttonContainer.appendChild(newBtn);
+				}
 			}
 		}
 	}
-}
 
-function clickButtons(clickedBtn) {
-	let clickedId = clickedBtn.id
-	switch(clickedId){
-		case 'prevBtn':
-			if (currentPage > 1) {
-			currentPage--;
+	fetchData() {
+		const params = new URLSearchParams({
+			draw: this.drawCount++,
+			start: this.start,
+			length: this.length,
+			'order[0][dir]': this.orderDir,
+		});
+
+		fetch(`${this.apiUrl}?${params.toString()}`)
+			.then((response) => response.json())
+			.then((data) => this.handleFetchResponse(data))
+			.catch((error) => console.error('Error loading the data:', error));
+	}
+
+	/**
+	 * Handles the API response, updating the table and pagination.
+	 * @param {Object} data - The data returned from the API.
+	 */
+	handleFetchResponse(data) {
+		if (data.error) {
+			console.error('Error from server:', data.error);
+			return;
+		}
+		this.totalRecords = data.recordsTotal;
+		this.displayNumbers();
+		this.processData(data.data, data.draw);
+		this.getButtons();
+		this.updateButtonVisibility();
+		this.updateCurrentButton();
+	}
+
+	/**
+	 * Updates the display of record numbers and calculates total pages.
+	 */
+	displayNumbers() {
+		this.elements.maxNr.textContent = this.totalRecords;
+		this.elements.fromNr.textContent = this.start + 1;
+		this.elements.toNr.textContent = Math.min(this.start + this.length, this.totalRecords);
+		this.pagesAmount = Math.ceil(this.totalRecords / this.length);
+		this.elements.lastBtn.textContent = this.pagesAmount;
+	}
+
+	/**
+	 * Processes and displays the fetched data in the table.
+	 * @param {Array} data - The array of data to be displayed.
+	 * @param {number} serverDraw - The draw count from the server.
+	 */
+	processData(data, serverDraw) {
+		if (serverDraw !== this.drawCount - 1) {
+			console.warn('Received out of sync data');
+			return;
+		}
+
+		this.elements.tableBody.innerHTML = '';
+		data.forEach((row) => {
+			const tr = document.createElement('tr');
+			tr.innerHTML = row.map(this.formatCell).join('');
+			this.elements.tableBody.appendChild(tr);
+		});
+	}
+
+	formatCell(item) {
+		if (item === 'null' || item === null) return '<td></td>';
+		if (LogBox.isStringNumber(item)) {
+			return `<td>${LogBox.roundIfMoreThanTwoDecimals(item)}</td>`;
+		}
+		return `<td>${item}</td>`;
+	}
+	/**
+	 * Updates the current button's visual state in the pagination.
+	 */
+	updateCurrentButton() {
+		const currentBtn = document.querySelector('.currentBtn');
+		if (currentBtn) currentBtn.classList.remove('currentBtn');
+
+		document.querySelectorAll('.nrbtn').forEach((btn) => {
+			if (this.currentPage == Number(btn.textContent)) {
+				btn.classList.add('currentBtn');
 			}
-			break;
-		case 'nextBtn':
-			if (currentPage < pagesAmount) {
-				currentPage++;
-			}
-			break;
-		case 'firstBtn':
-			currentPage = 1;
-			break;
-		case 'lastBtn':
-			currentPage = pagesAmount;
-			break;
-		default:
-			currentPage = Number(clickedBtn.textContent)
-			break;
+		});
 	}
 
-	changePage();
-}
-
-function showExtraButtons(){
-	if (currentPage <= 1){
-		document.getElementById('prevBtn').classList.add('limit');
-		document.getElementById('nextBtn').classList.remove('limit');
-	}
-	else if(currentPage >= pagesAmount){
-		document.getElementById('nextBtn').classList.add('limit');
-		document.getElementById('prevBtn').classList.remove('limit');
-	}
-	else {
-		document.getElementById('nextBtn').classList.remove('limit');
-		document.getElementById('prevBtn').classList.remove('limit');
+	static isStringNumber(str) {
+		return !isNaN(Number(str));
 	}
 
-	if (currentPage > 3){
-		document.getElementById('startDots').style.display ='inline'
-		document.getElementById('firstBtn').style.display ='inline'
-
-	}
-	else{
-		document.getElementById('startDots').style.display = 'none'
-		document.getElementById('firstBtn').style.display ='none'
-	}
-
-	if (currentPage < pagesAmount-2){
-		document.getElementById('endDots').style.display = 'inline'
-		document.getElementById('lastBtn').style.display ='inline'
-	}
-	else{
-		document.getElementById('endDots').style.display = 'none'
-		document.getElementById('lastBtn').style.display ='none'
+	static roundIfMoreThanTwoDecimals(number) {
+		const [integerPart, decimalPart] = number.toString().split('.');
+		if (decimalPart && decimalPart.length > 3) {
+			return parseFloat(number).toFixed(3);
+		}
+		return number;
 	}
 }
 
-function changePage() {
-	start = (currentPage-1)*length;
-	fetchData();
-
-}
-
-function getSelect() {
-	const selectElement = document.getElementById('mySelect');
-	selectElement.addEventListener('change', function () {
-		const selectedValue = selectElement.value;
-		length = Number(selectedValue);
-		start = 0;
-		currentPage = 1;
-		fetchData();
-	});
-}
-
-function fetchData() {
-	const params = new URLSearchParams({
-		draw: drawCount++, // Increment and send current draw count
-		start: start,
-		length: length,
-		'order[0][dir]': orderDir,
-	}); // Include ordering parameters
-
-	fetch(`${apiUrl}?${params.toString()}`)
-		.then((response) => response.json())
-		.then((data) => {
-			if (data.error) {
-				console.error('Error from server:', data.error);
-				return;
-			}
-			totalRecords = data.recordsTotal;
-			displayNumbers(start, length, totalRecords);
-			processData(data.data, data.draw); // Ensure draw from server matches the expected draw
-			getButtons();
-			showExtraButtons();
-
-			const currentBtn = document.querySelector('.currentBtn');
-			if (currentBtn) {
-				currentBtn.classList.remove('currentBtn');
-			}
-		
-			
-
-			document.querySelectorAll('.nrbtn').forEach(function(btn){
-				if (currentPage == Number(btn.textContent)){
-					btn.classList.add('currentBtn');
-				}
-
-			})
-		})
-		.catch((error) => console.error('Error loading the data:', error));
-}
-
-function isStringNumber(str) {
-	return !isNaN(Number(str));
-}
-
-function roundIfMoreThanTwoDecimals(number) {
-	// Convert the number to a string and split it by the decimal point
-	let [integerPart, decimalPart] = number.toString().split('.');
-
-	// Check if there is a decimal part and if its length is greater than 2
-	if (decimalPart && decimalPart.length > 3) {
-		// Round the number to 2 decimal places
-		return parseFloat(number).toFixed(3);
-	}
-
-	// Return the original number if it has 2 or fewer decimal places
-	return number;
-}
-
-function displayNumbers(start, length, totalRecords) {
-	document.getElementById('max_nr').textContent = totalRecords;
-	document.getElementById('from_nr').textContent = start;
-	document.getElementById('to_nr').textContent = start + length;
-	pagesAmount = Math.ceil(totalRecords / length);
-	document.getElementById('lastBtn').textContent = pagesAmount;
-}
-
-function processData(data, serverDraw) {
-	if (serverDraw !== drawCount - 1) {
-		console.warn('Received out of sync data');
-		return; // Handling out of sync response.
-	}
-
-	const tableBody = document.querySelector('.logbox tbody');
-	tableBody.innerHTML = ''; // Clear existing rows
-	data.forEach((row) => {
-		const tr = document.createElement('tr');
-		tr.innerHTML = row
-			.map((item, index) => {
-				// Handling 'null' and numeric conversions explicitly for proper display
-
-				if (item === 'null' || item === null) return '<td></td>'; // Render empty cell for null values
-				if (isStringNumber(item) == true) {
-					return `<td>${roundIfMoreThanTwoDecimals(item)}</td>`; // Format numbers
-				}
-				return `<td>${item}</td>`; // Default rendering
-			})
-			.join('');
-
-		tableBody.appendChild(tr);
-	});
-}
+export { LogBox };
