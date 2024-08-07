@@ -3,9 +3,19 @@
 	<head>
 		<meta charset="UTF-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Document</title>
+		<title>Relay Control Interface</title>
 	</head>
 	<body>
-		<h1>menu controls</h1>
+		<div id="controlPanel">
+			<h2>Primary Relays</h2>
+			<fieldset class="channel" data-index="2">
+				<legend>Channel 3</legend>
+				<input type="radio" id="channel3_off" name="channel3" value="false" checked /> <label for="channel3_off">Off</label> <input type="radio" id="channel3_on" name="channel3" value="true" /> <label for="channel3_on">On</label>
+			</fieldset>
+			<fieldset class="channel" data-index="3">
+				<legend>Channel 4</legend>
+				<input type="radio" id="channel4_off" name="channel4" value="false" checked /> <label for="channel4_off">Off</label> <input type="radio" id="channel4_on" name="channel4" value="true" /> <label for="channel4_on">On</label>
+			</fieldset>
+		</div>
 	</body>
 </html>

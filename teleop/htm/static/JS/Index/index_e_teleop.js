@@ -1,8 +1,9 @@
 import { screen_utils, teleop_screen } from './index_c_screen.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { socket_utils } from './index_a_utils.js';
+import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
-class RealServerSocket {
+class LoggerServerSocket {
 	constructor() {
 		this.server_message_listeners = [];
 	}
@@ -64,7 +65,7 @@ class RealServerSocket {
 	}
 }
 
-class RealGamepadSocket {
+class MovementCommandSocket {
 	constructor() {
 		// noop.
 		//
@@ -74,32 +75,48 @@ class RealGamepadSocket {
 			this.socket.send(JSON.stringify(command));
 		}
 	}
+
 	_request_take_over_control() {
 		var command = {};
 		command._operator = 'force';
 		this._send(command);
 	}
+
 	_capture(server_response) {
-		const gc_active = gamepad_controller.is_active();
-		var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
-		// The selected camera for ptz control can also be undefined.
-		gamepad_command.camera_id = -1;
-		if (teleop_screen.selected_camera == 'front') {
-			gamepad_command.camera_id = 0;
-		} else if (teleop_screen.selected_camera == 'rear') {
-			gamepad_command.camera_id = 1;
+    const gc_active = gamepad_controller.is_active();
+		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+		var current_page = localStorage.getItem('user.menu.screen');
+		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
+			this._send(CTRL_STAT.mobileCommandJSON);
+
+			// Reset all keys except throttle and steering
+			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
+				if (key !== 'throttle' && key !== 'steering') {
+					// Remove transient data
+					delete CTRL_STAT.mobileCommandJSON[key];
+				}
+			});
+		} else {
+			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
+			console.log(gamepad_command);
+			// The selected camera for ptz control can also be undefined.
+			gamepad_command.camera_id = -1;
+			if (teleop_screen.selected_camera == 'front') {
+				gamepad_command.camera_id = 0;
+			} else if (teleop_screen.selected_camera == 'rear') {
+				gamepad_command.camera_id = 1;
+			}
+			this._send(gamepad_command);
+			//E.g { steering - throttle - pan - tilt - camera_id}
+			teleop_screen.controller_update(gamepad_command);
 		}
-		this._send(gamepad_command);
 		if (server_response != undefined && server_response.control == 'operator') {
 			teleop_screen.controller_status = gc_active;
 		} else if (server_response != undefined) {
 			teleop_screen.controller_status = 2;
 		}
-		//gamepad_command is where the commands from the controller are stored.if there are buttons are pressed, they will be added to this JSON object
-		//steering - throttle - pan - tilt - camera_id
-		// console.log(gamepad_command)
-		teleop_screen.controller_update(gamepad_command);
 	}
+
 	_start_socket() {
 		const _instance = this;
 		if (_instance.socket == undefined) {
@@ -134,6 +151,7 @@ class RealGamepadSocket {
 			});
 		}
 	}
+
 	_stop_socket() {
 		const _instance = this;
 		if (_instance.socket != undefined) {
@@ -146,9 +164,8 @@ class RealGamepadSocket {
 	}
 }
 
-// In development mode there is no use of a backend.
-export const server_socket = new RealServerSocket();
-const gamepad_socket = new RealGamepadSocket();
+export const server_socket = new LoggerServerSocket();
+export const gamepad_socket = new MovementCommandSocket();
 
 export function teleop_start_all() {
 	gamepad_controller.reset();
@@ -158,13 +175,10 @@ export function teleop_start_all() {
 
 export function teleop_stop_all() {
 	server_socket._stop_socket();
-	gamepad_socket._stop_socket();
+	// gamepad_socket._stop_socket(); // Because following will work with the mobile's screen closed
 	gamepad_controller.reset();
 }
 
 server_socket.add_server_message_listener(function (message) {
 	teleop_screen._server_message(message);
-});
-$('input#message_box_button_take_control').click(function () {
-	gamepad_socket._request_take_over_control();
 });

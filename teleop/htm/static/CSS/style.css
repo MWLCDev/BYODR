@@ -1,3 +1,11 @@
+@font-face {
+  font-family: 'Sora';
+  src: url('../assets/Sora-VariableFont_wght.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+
 :root {
   --background-color-light_m: #ffffff;
   --text-color-ligh_m: #000000;
@@ -15,9 +23,13 @@
 html,
 body {
   height: 100%;
-  background: #f7f7f7;
   color: #333;
-  font-family: 'Arial', sans-serif;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-family: "Sora", Arial, sans-serif;
+  overflow: hidden;
 }
 
 /* Overlay when sidebar is active */
@@ -29,7 +41,8 @@ body {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  /* background: rgba(0, 0, 0, 0.5); */
+  /* add a little dark opacity for it */
   z-index: 2;
   /* Below the sidebar and above the content */
 }
@@ -47,24 +60,69 @@ body {
 
 /* Top Layer: Logo and Hamburger Menu */
 #header_bar {
+  width: 100vw;
   padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
   border-bottom: 2px solid var(--VOR-color);
-  /* border-bottom-left-radius: 10px; */
+}
+
+#header_bar .left_section,
+#header_bar .middle_section,
+#header_bar .right_section {
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+#header_bar .left_section {
+  justify-content: flex-start;
+  padding-left: 42px;
+}
+
+#header_bar .middle_section {
+  flex: 2;
+  justify-content: center;
+}
+
+#header_bar .right_section {
+  justify-content: flex-end;
+}
+
+#header_bar .middle_content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+#header_bar .left_section .rover_speed {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 1vw;
 }
 
 #VOR_center_logo {
   height: 30px;
   display: block;
-  margin: 0 auto;
+}
+
+#current_seg_name {
+  font-size: 0.8rem;
+  color: #8b7597;
+}
+
+/* Adjust the right section image */
+#header_bar .right_section img {
+  margin-left: auto;
+  /* Push the image to the right */
 }
 
 
 /* Second Layer: Advanced View */
 #debug_drive_bar {
-  display: none;
+  display: block;
   padding: 10px;
   width: 100%;
   border-bottom: 2px solid var(--VOR-color);
@@ -92,23 +150,47 @@ body {
 
 /* Third Layer: Stream Quality and Options */
 #horizontal_bar {
-  display: flex;
-  justify-content: space-around;
-  align-items: center;
   width: 100%;
-  padding: 10px 0;
-}
-
-.flex-container {
+  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100%;
-  padding: 10px;
+}
+
+#horizontal_bar .left_section,
+#horizontal_bar .middle_section,
+#horizontal_bar .right_section {
+  flex: 1;
+}
+
+.left_section {
+  display: flex;
+  align-items: center;
+}
+
+.middle_section {
+  gap: 20px;
+}
+
+.middle_section,
+.right_section {
+  display: inline-flex;
+  align-items: center;
+  align-content: center;
+  justify-content: center;
+}
+
+.right_section {
+  justify-content: flex-end;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 20px;
 }
 
 .stream_quality p {
   margin-bottom: 5px;
+  width: 30%;
 }
 
 .caret {
@@ -122,32 +204,28 @@ body {
   /* Default color, with option to override */
 }
 
-
-.left_section {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
+.autopilot_status {
+  display: none;
 }
 
-.middle_section,
-.right_section {
-  /* flex: 1; */
-  display: inline-flex;
+.inf_speed {
+  display: none;
+  /* display: flex; */
+  justify-content: center;
   align-items: center;
-}
-
-.right_section {
-  justify-content: flex-end;
-  display: flex;
+  align-content: center;
   flex-direction: column;
-  align-items: center;
-  padding: 0 20px;
 }
 
 .stream_quality {
   display: flex;
   align-items: center;
   padding: 0 0 0 2rem;
+  align-content: center;
+  justify-content: flex-start;
+  width: min-content;
+  padding-right: 1rem;
+
 }
 
 #mjpeg_stream_controls {
@@ -199,15 +277,11 @@ body {
   /* Prevents the arrow from being clickable */
 }
 
-#horizontal_bar {
-  width: 100%;
-}
 
 button {
   transition: background-color 0.3s ease;
   width: auto;
   padding: 10px 20px;
-  background-color: #007bff;
   color: white;
   border: none;
   padding: 8px 16px;
@@ -216,7 +290,6 @@ button {
   border-radius: 4px;
   transition: background-color 0.3s;
 }
-
 
 
 #confidence_button_normal_controller {
@@ -236,7 +309,7 @@ button {
   flex-direction: column;
 }
 
-.speed_value p {
+.inf_speed_value {
   font-weight: bold;
 }
 
@@ -248,29 +321,39 @@ button {
 }
 
 .right_section button {
-  background-color: #28a745;
   color: white;
   border: none;
-  padding: 10px 20px;
   border-radius: 4px;
   cursor: pointer;
 }
 
-.right_section button:hover {
+/* .right_section button:hover {
   background-color: #218838;
-}
+} */
 
 /* Fourth Layer: Camera Stream View  */
+#viewport_container {
+  position: relative;
+  flex: 1;
+  /* take remaining space */
+  width: 100%;
+  /* take full width of the parent */
+  display: flex;
+  flex-direction: column;
+  /* align children vertically */
+  overflow: hidden;
+}
+
 #viewport_canvas {
   width: 100% !important;
   height: 100% !important;
+  position: absolute;
 }
-
 
 #control_bar {
   position: absolute;
   bottom: 10px;
-  right: 20px;
+  right: 2vw;
   border-radius: 8px;
   padding: 10px;
   display: flex;
@@ -300,13 +383,6 @@ button {
   right: 0;
 }
 
-#viewport_container {
-  position: relative;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  overflow: hidden;
-}
 
 #message_box_container {
   position: absolute;
@@ -327,7 +403,7 @@ button {
 
 #message_box_button_take_control {
   height: 100%;
-  font-size: 18;
+  font-size: 1rem;
   text-align: center;
   color: var(--text-color-dark_m);
   background-color: var(--VOR-color);
@@ -359,94 +435,58 @@ div.overlay_distance {
   visibility: visible;
   text-align: center;
   color: rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  color: rgba(255, 255, 120, 0.99);
+  border-bottom: 2px solid rgba(255, 255, 120, 0.99)
 }
 
 #overlay_image {
   margin: 5px 0 0 5px;
   border-radius: 5px;
+  width: 320px;
+  height: 240px;
+  display: none;
+}
+
+#overlay_distance_markers {
+  position: absolute;
+  top: 0;
+  width: 100%;
+  height: 100%;
 }
 
 #overlay_center_distance0 {
   width: 360px;
   left: calc(50vw - 180px);
+  bottom: 52%;
 }
 
 #overlay_center_distance1 {
   width: 600px;
   left: calc(50vw - 300px);
+  bottom: 25%;
 }
 
 #overlay_left_marker0 {
   width: 40px;
   left: 0;
+  bottom: 45%;
 }
 
 #overlay_left_marker1 {
   width: 35px;
   left: 0;
+  bottom: 34%;
 }
 
 #overlay_right_marker0 {
   width: 40px;
   right: 0;
+  bottom: 45%;
 }
 
 #overlay_right_marker1 {
   width: 35px;
   right: 0;
-}
-
-
-
-@media (max-width: 768px) {
-
-  .left_section,
-  .middle_section,
-  .right_section {
-    width: 100%;
-  }
-
-  .left_section {
-    flex-direction: column;
-  }
-
-  .speed_display,
-  .stream_quality {
-    width: 100%;
-  }
-
-  #horizontal_bar {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .left_section,
-  .middle_section,
-  .right_section {
-    width: 100%;
-    margin: 10px 0;
-  }
-
-  .flex-container,
-  #hamburger_menu_toggle,
-  #control_bar,
-  #debug_drive_bar {
-    flex-direction: column;
-  }
-
-  #hamburger_menu_toggle {
-    margin-bottom: 10px;
-  }
-
-  #stream_links a,
-  button {
-    width: 100%;
-    margin: 5px 0;
-  }
-
-  #header_bar,
-  #horizontal_bar {
-    flex-direction: column;
-    align-items: center;
-  }
+  bottom: 34%;
 }

@@ -13,13 +13,15 @@ from io import open
 import cv2
 import numpy as np
 import tornado
+import tornado.ioloop
+import tornado.web
 from byodr.utils import timestamp
+from byodr.utils.ssh import Router
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
-from tornado.gen import coroutine
 
-from .tel_utils import *
+from .tel_utils import OverviewConfidence
 
 logger = logging.getLogger(__name__)
 
@@ -29,58 +31,53 @@ import tornado.websocket
 latest_message = {}
 
 
-class MobileControllerCommands(tornado.websocket.WebSocketHandler):
-    """Get the command from mobile controller"""
+class LatestImageHandler(tornado.web.RequestHandler):
+    def initialize(self, path):
+        self.image_save_path = path
 
-    operators = set()  # Keep track of the current operator
+    def get(self):
+        self.set_header("Content-Type", "image/jpeg")
+        self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+        self.set_header("Pragma", "no-cache")
+        self.set_header("Expires", "0")
+        try:
+            # Fetch all jpg files directly, assuming the folder contains only images
+            image_files = [f for f in os.listdir(self.image_save_path) if f.endswith(".jpg")]
+            # Get full paths
+            full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
 
-    def _is_operator(self):
-        return self in self.operators
+            # Sort files by creation time
+            full_paths.sort(key=os.path.getctime, reverse=True)
 
-    # noinspection PyAttributeOutsideInit
-    def initialize(self, **kwargs):  # Initializes the WebSocket handler
+            if full_paths:
+                # Open the most recent file
+                with open(full_paths[0], "rb") as img:
+                    self.write(img.read())
+            else:
+                self.write("No images available.")
+
+        except Exception as e:
+            self.write(f"Error fetching the latest image: {str(e)}")
+            self.set_status(500)  # Internal Server Error
+
+        finally:
+            self.finish()
+
+
+class FollowingHandler(web.RequestHandler):
+    def initialize(self, **kwargs):
         self._fn_control = kwargs.get("fn_control")
 
-    def check_origin(self, origin):
-        return True
+    def post(self):
+        command_text = self.get_body_argument("command", default=None)
+        command_dict = {"following": command_text}
+        self._fn_control.teleop_publish_to_following(command_dict)
+        print(command_text)
+        self.write({"status": "success", "time": timestamp()})
 
-    def data_received(self, chunk):
-        pass
-
-    def open(self, *args, **kwargs):
-        self.operators.clear()  # Clear any previous operators
-        self.operators.add(self)  # Make the current one operator
-        logger.info("Mobile operator {} connected.".format(self.request.remote_ip))
-
-    def on_close(self):
-        if self._is_operator():
-            self.operators.clear()
-            logger.info("Mobile operator {} disconnected.".format(self.request.remote_ip))
-        else:
-            logger.info("Mobile viewer {} disconnected.".format(self.request.remote_ip))
-
-    def on_message(self, mobileCommand):
-        try:
-            msg = json.loads(mobileCommand)
-            _response = json.dumps(dict(control="viewer"))
-            if self._is_operator():
-                _response = json.dumps(dict(control="operator"))
-                msg["time"] = timestamp()  # add timestamp to the sent command
-                self._fn_control(msg)
-            else:  # This block might not be needed if every user is always an operator
-                if msg.get("_operator") == "force":
-                    self.operators.clear()
-                    self.operators.add(self)
-                    logger.info("Mobile viewer {} took over control and is now operator.".format(self.request.remote_ip))
-
-            # Attempt to send a message
-            self.write_message(_response)
-        except tornado.websocket.WebSocketClosedError:
-            logger.error("Attempt to send a message on a closed WebSocket.")
-            # Immediately return from the method to avoid further actions
-            return
-        except Exception as e:
-            logger.error("Error in on_message: {}".format(str(e)))
+    def get(self):
+        following_status = self._fn_control.get_following_state()
+        self.write({"status": "success", "following_status": following_status})
 
 
 class ControlServerSocket(websocket.WebSocketHandler):
@@ -105,20 +102,16 @@ class ControlServerSocket(websocket.WebSocketHandler):
         pass
 
     def open(self, *args, **kwargs):
-        if not self._has_operators():
-            self.operators.add(self)
-            logger.info("Operator {} connected.".format(self.request.remote_ip))
-        elif self._is_operator():
-            logger.info("Operator {} reconnected.".format(self.request.remote_ip))
-        else:
-            logger.info("Viewer {} connected.".format(self.request.remote_ip))
+        self.operators.clear()  # Clear any previous operators
+        self.operators.add(self)  # Make the current one operator
+        logger.info("Operator {} connected.".format(self.request.remote_ip))
 
     def on_close(self):
         if self._is_operator():
             self.operators.clear()
-            logger.info("Operator {} disconnected.".format(self.request.remote_ip))
-        else:
-            logger.info("Viewer {} disconnected.".format(self.request.remote_ip))
+        #     logger.info("Operator {} disconnected.".format(self.request.remote_ip))
+        # else:
+        #     logger.info("Viewer {} disconnected.".format(self.request.remote_ip))
 
     def on_message(self, json_message):
         msg = json.loads(json_message)
@@ -475,3 +468,55 @@ class JSONNavigationHandler(JSONRequestHandler):
         elif action in ("close", "toggle"):
             self._store.close()
         self.write(json.dumps(dict(message="ok")))
+
+
+class GetSegmentSSID(tornado.web.RequestHandler):
+    """Run a python script to get the SSID of current robot"""
+
+    async def get(self):
+        try:
+            # Use the IOLoop to run fetch_ssid in a thread
+            loop = tornado.ioloop.IOLoop.current()
+            router = Router()
+
+            # name of python function to run, ip of the router, ip of SSH, username, password, command to get the SSID
+            ssid = await loop.run_in_executor(None, router.fetch_ssid)
+
+            self.write(ssid)
+        except Exception as e:
+            logger.error(f"Error fetching SSID of current robot: {e}")
+            self.set_status(500)
+            self.write("Error fetching SSID of current robot.")
+        self.finish()
+
+
+class DirectingUser(tornado.web.RequestHandler):
+    """Directing the user based on their used device"""
+
+    def get(self):
+        self.redirect("/nc")
+
+
+class TemplateRenderer(tornado.web.RequestHandler):
+    # Any static routes should be added here
+    _TEMPLATES = {
+        "nc": "index.html",
+        "menu_controls": "userMenu/menu_controls.html",
+        "menu_logbox": "userMenu/menu_logbox.html",
+        "menu_settings": "userMenu/menu_settings.html",
+        "mc": "mobile_controller_ui.html",
+        "normal_ui": "normal_ui.html",
+    }
+
+    def initialize(self, page_name="nc"):
+        self.page_name = page_name
+
+    def get(self, page_name=None):  # Default to "nc" if no page_name is provided
+        if page_name is None:
+            page_name = self.page_name
+        template_name = self._TEMPLATES.get(page_name)
+        if template_name:
+            self.render(f"../htm/templates/{template_name}")
+        else:
+            self.set_status(404)
+            self.write("Page not found.")

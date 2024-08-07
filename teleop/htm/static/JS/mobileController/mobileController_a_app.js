@@ -1,111 +1,57 @@
-import { InferenceToggleButton } from "./mobileController_b_shape_Inference.js"
-import { bottomTriangle, topTriangle } from "./mobileController_b_shape_triangle.js"
-import { detectTriangle, getSavedDeadZoneWidth, handleDotMove, handleTriangleMove, initializeWS, saveDeadZoneWidth, sendJSONCommand } from "./mobileController_c_logic.js"
-import { cursorFollowingDot } from "./mobileController_b_shape_dot.js";
-import { MotorDataInput } from "./mobileController_e_scale_offset_input.js";
-import { ToggleButtonHandler } from "./mobileController_b_shape_confidence.js"
+import { ControlSquare } from './mobileController_b_shape_square.js';
+import { setMobileCommand } from './mobileController_c_logic.js';
+import { followingNavButtonHandler } from './mobileController_f_following.js';
+import { autoNavigationNavButtonHandler } from './mobileController_f_auto_navigation.js';
+import { maneuverTrainingNavButtonHandler } from './mobileController_f_maneuver_training.js';
+import { confidenceNavButtonHandler } from './mobileController_f_confidence.js';
 
-import { app, changeTrianglesColor, redraw } from "./mobileController_d_pixi.js"
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
-// Initialize sending commands only once, instead of calling it each time we touch the triangles
-sendJSONCommand();
-MotorDataInput.showInputElements();
-let intervalId;
-let inferenceToggleButton
+// Declare these variables at the module level so they are accessible in both functions
+let forwardSquare;
+let backwardSquare;
 
-window.addEventListener('load', () => {
-  initializeWS()
-  inferenceToggleButton = new InferenceToggleButton("inference_toggle_button")
-  changeTrianglesColor(0x000000)
-  new ToggleButtonHandler('confidenceToggleButton')
-  let deadZoneSlider = document.getElementById('deadZoneWidth');
-  deadZoneSlider.value = getSavedDeadZoneWidth(); // Initialize slider with saved value
-});
-
-// Dead zone width slider input event listener
-document.getElementById('deadZoneWidth').addEventListener('input', function () {
-  let value = this.value;
-  // Save the new dead zone width to local storage after handling the dot move
-  saveDeadZoneWidth(value);
-});
-
-window.addEventListener('resize', () => {
-  app.renderer.resize(window.innerWidth, window.innerHeight);
-  topTriangle.updateDimensions();
-  bottomTriangle.updateDimensions();
-  redraw();
-});
-
-app.view.addEventListener('touchstart', (event) => {
-  CTRL_STAT.initialYOffset = event.touches[0].clientY - window.innerHeight / 2; // Calculate the initial Y offset
-  detectTriangle(event.touches[0].clientX, event.touches[0].clientY);
-  //if condition to make sure it will move only if the user clicks inside one of the two triangles
-  if (CTRL_STAT.detectedTriangle !== 'none') {
-    switch (CTRL_STAT.stateErrors) {
-      case "controlError":
-        console.error("Another user has connected. Refresh the page to take control back");
-        break;
-      case "connectionError":
-        console.error("Connection lost with the robot. Please reconnect");
-        break;
-      default:
-        document.getElementById("mobile-controller-top-input-container").style.display = "none";
-        document.getElementById("mobile-controller-bottom-input-container").style.display = "none";
-        startOperating(event)
-        app.view.addEventListener('touchmove', onTouchMove);
-        break;
-    }
-  } else {
-    console.error('Clicked outside the triangles. click inside one of the two triangles to start.');
-  }
-});
-
-
-function startOperating(event) {
-  cursorFollowingDot.show()
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
-  handleTriangleMove(event.touches[0].clientY, inferenceToggleButton);
-  if (inferenceToggleButton.getInferenceState == "train") {
-    document.getElementById('inference_options_container').style.display = 'none';
-  }
+/**
+ * Actions that are bonded to the navbar buttons only. They will control the switch for the features
+ */
+export function assignNavButtonActions(navLink) {
+	if (navLink == 'follow_link') followingNavButtonHandler.initializeDOM();
+	else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
+	else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
+	else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();
 }
 
-function onTouchMove(event) {
-  event.preventDefault(); // Prevent scrolling while moving the triangles
-  if (inferenceToggleButton.getInferenceState == "train") {
-    document.getElementById('inference_options_container').style.display = 'none';
-  }
-  // Update the dot's position
-  handleDotMove(event.touches[0].clientX, event.touches[0].clientY, inferenceToggleButton.getInferenceState);
+export function setupMobileController() {
+	const mobileUI = document.getElementById('mobile_controller_container');
+	if (mobileUI) {
+		CTRL_STAT.state = true;
+		// Check if the mobile UI container exists
+		const forwardSquareElem = mobileUI.querySelector('#forward_square');
+		const backwardSquareElem = mobileUI.querySelector('#backward_square');
+
+		// Initialize the ControlSquare instances
+		forwardSquare = new ControlSquare(forwardSquareElem, backwardSquareElem);
+		backwardSquare = new ControlSquare(backwardSquareElem, forwardSquareElem);
+
+		// Set the callback for each ControlSquare instance
+		forwardSquare.setValueUpdateCallback(printNormalizedValues);
+		backwardSquare.setValueUpdateCallback(printNormalizedValues);
+
+		// Handle resizing
+		window.addEventListener('resize', resizeAllCanvases);
+		resizeAllCanvases();
+	}
 }
 
+function resizeAllCanvases() {
+	// Check if the squares canvas are initialized before calling methods on them
+	if (forwardSquare && backwardSquare) {
+		forwardSquare.resizeCanvas();
+		backwardSquare.resizeCanvas();
+	}
+}
 
-app.view.addEventListener('touchend', () => {
-  //So it call the redraw function on the triangles or dot which may not have moved (due to user clicking outside the triangles)
-  if (CTRL_STAT.detectedTriangle !== 'none') {
-    if (inferenceToggleButton.getInferenceState != "true") {
-      document.getElementById("mobile-controller-top-input-container").style.display = "flex";
-      document.getElementById("mobile-controller-bottom-input-container").style.display = "flex";
-
-      redraw(); // Reset triangles to their original position
-
-      CTRL_STAT.selectedTriangle = null; // Reset the selected triangle
-      app.view.removeEventListener('touchmove', onTouchMove); //remove the connection to save CPU
-      CTRL_STAT.throttleSteeringJson = { steering: 0, throttle: 0 }; // send the stopping signal for the motors
-      // so it doesn't show the div when in inference mode
-      if (inferenceToggleButton.getInferenceState == "false") {
-        document.getElementById('toggle_button_container').style.display = 'flex';
-      }
-      if (inferenceToggleButton.getInferenceState == "train") {
-        document.getElementById('inference_options_container').style.display = 'flex';
-        redraw(undefined, true, false, true)
-      }
-      cursorFollowingDot.hide()
-      clearTimeout(intervalId);
-    }
-
-    // Making the text boxes show the current data that exist on the robot
-    MotorDataInput.showInputElements();
-  }
-});
+function printNormalizedValues(x, y) {
+	setMobileCommand(x, y, 'auto');
+	// console.log(`X: ${x}, Y: ${y}`);
+}

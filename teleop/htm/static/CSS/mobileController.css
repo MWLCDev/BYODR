@@ -1,150 +1,196 @@
-body,
-html {
-  margin: 0;
-  padding: 0;
+@font-face {
+  font-family: 'Sora';
+  src: url('../assets/Sora-VariableFont_wght.ttf') format('truetype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+:root {
+  --background-color-light_m: #ffffff;
+  --text-color-ligh_m: #000000;
+  --background-color-dark_m: #121212;
+  --text-color-dark_m: #ffffff;
+  --VOR-color: #654279;
+}
+
+
+#mobile_controller_container {
+  display: flex;
   width: 100%;
   height: 100%;
-  overflow: hidden;
-  /* This will prevent scrollbar from appearing */
+  flex-direction: column;
+  align-items: center;
+  align-content: space-between;
+  justify-content: flex-start;
+  gap: 1%;
+  /* it is proportional to the height of .square */
 }
 
-canvas {
-  display: block;
-}
-
-#mobile-controller-top-input-container {
-  position: fixed;
-  width: 100%;
+#mobile_controller_container #horizontal_bar {
   display: flex;
   align-items: center;
+  border-bottom: 1px solid var(--VOR-color);
+  width: 100%;
+  padding: 1rem;
   justify-content: center;
-  flex-direction: column;
-  margin: 1vh 0;
+  align-content: center;
+  flex-direction: row;
+  flex-wrap: nowrap;
 }
 
-#dead-zone-container {
-  margin: 1vh 0;
-}
-
-input[type=range] {
-  -webkit-appearance: none;
-  width: 70%;
-  margin: 10px 0;
-}
-
-input[type=range]::-webkit-slider-runnable-track {
-  width: 100%;
-  height: 8px;
-  background: #ddd;
-  border: none;
-  border-radius: 3px;
-}
-
-input[type=range]::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  border: none;
-  height: 16px;
-  width: 16px;
-  border-radius: 50%;
-  background: #555;
-  margin-top: -4px;
-}
-
-/* Adjusted styles for the container and option buttons to center them horizontally at the bottom of the page */
-.mobile_controller_button_container {
-  position: fixed;
-  bottom: 2vw;
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 10px;
-  z-index: 1000;
+#mobile_controller_container #horizontal_bar .left_section,
+#mobile_controller_container #horizontal_bar .middle_section,
+#mobile_controller_container #horizontal_bar .right_section {
+  flex: 1;
   display: flex;
-  flex-direction: column;
   align-items: center;
 }
 
-.mobile_option_button {
-  display: flex;
-  margin: 0 5px;
-  width: 10vh;
-  height: 10vh;
-  background-color: #67b96a;
-  color: white;
-  border: none;
-  border-radius: 50%;
+#mobile_controller_container #horizontal_bar .left_section {
+  flex: 2;
+  justify-content: flex-start;
+  padding-left: 13px;
+}
+
+#mobile_controller_container #horizontal_bar .middle_section {
+  justify-content: center;
+}
+
+#mobile_controller_container #horizontal_bar .right_section {
+  flex: 2;
+  align-content: flex-end;
+  flex-direction: row;
+}
+
+
+#mobile_controller_container #horizontal_bar .current_mode_text {
+  text-transform: uppercase;
+  color: var(--VOR-color);
+}
+
+#mobile_controller_container .right_section .current_mode_button {
+  display: none;
+  border-radius: 20px;
   cursor: pointer;
-  justify-content: center;
-  align-items: center;
-}
-
-#inference_auto_speed {
-  display: none;
-  text-align: center;
-  width: 100%;
-  font-size: large;
-  margin-bottom: 10px;
-}
-
-#toggle_button_container {
-  display: flex;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: center;
+  outline: none;
+  transition: background-color 0.3s, transform 0.2s;
+  color: #451c58;
+  border: 2px solid;
+  cursor: pointer;
+  font-weight: bold;
+  border-radius: 12px;
+  box-shadow: 4px 6px 8px #d0d0d0;
+  text-transform: uppercase;
   width: 100%;
 }
 
-#inference_options_container {
-  display: none;
-  flex-direction: row-reverse;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-}
-
-.mobile_view_container {
-  display: flex;
-  flex-direction: column;
+.square {
+  width: 90vw;
+  max-width: 1000px;
+  height: 35vh;
+  height: 45%;
   position: relative;
-}
-
-.mobile-controller-motor-settings-container {
+  border: 0.5rem solid;
+  border-color: #f6f6f6;
+  border-radius: 1rem;
   display: flex;
+  align-items: center;
+  justify-content: center;
   flex-direction: column;
-  align-items: left;
-  top: 20px;
 }
 
-.scale-offset-input-containers {
-  font-size: 14px;
-  display: flex;
-  align-items: center;
-  margin-left: 10px;
+#backward_square.maneuver_square {
+  background: repeating-linear-gradient(-45deg, #ffffff, #ffffff 16px, #ccc 18px, #ccc 11px);
+  width: 100vw;
+  border: 0;
+
 }
 
-.scale-offset-input-containers label {
-  width: 110px;
+#forward_square .square_text {
+  bottom: 2vh;
 }
 
-.scale-offset-input-box-containers {
-  display: flex;
-  align-items: center;
+#backward_square .square_text {
+  top: 2vh;
 }
 
-.scale-input-text,
-.offset-input-text {
-    width: 60px;
-    margin-left: 15px;
-    display: inline-block;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
+.square_text {
+  display: block;
+  position: absolute;
+  width: 100%;
+  text-align: center;
+  font-size: 1rem;
+  pointer-events: none;
+  /* Prevents text from blocking canvas interaction */
+  color: #8b7597;
+  font-weight: bold;
+  text-transform: uppercase;
 }
 
-.scale-offset-confirm-text {
-  font-size: 14px;
-  margin-left: 10px;
-}
-
-.hidden {
+.stop_text {
   display: none;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  position: absolute;
+  width: 80%;
+  text-align: center;
+  font-size: 1rem;
+  pointer-events: none;
+  color: #ff0000;
+  font-weight: bold;
+  text-transform: uppercase;
+}
+
+.control_symbol {
+  display: none;
+  justify-content: center;
+  align-items: center;
+  position: absolute;
+  width: 40vw;
+  height: 40vw;
+  background-color: #FFFFFF;
+  /* Light background */
+  border-radius: 50%;
+  border: 14px solid #d0d0d0;
+  /* Light border */
+  color: #d0d0d0;
+  /* Light symbol color */
+  font-size: 9rem;
+  font-weight: bold;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
+  /* Smooth transition for background, border, and color */
+}
+
+.control_symbol:active {
+  background-color: #555;
+  /* Darker background */
+  border-color: #333;
+  /* Darker border */
+  color: #fff;
+  /* White symbol color for better contrast */
+}
+
+#mobile_controller_container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+canvas#following_imageCanvas {
+  display: none;
+  /* Initially hidden */
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  border: 3px solid #7a6087;
+  max-width: 640px;
+  border-radius: 11px;
+  max-height: 480px;
+  aspect-ratio: 4 / 3;
 }

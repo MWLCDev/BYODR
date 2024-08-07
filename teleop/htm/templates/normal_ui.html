@@ -18,7 +18,7 @@
 </div>
 
 <!-- Third Layer: Stream Quality and Options -->
-<div id="horizontal_bar" class="flex-container">
+<div id="horizontal_bar">
 	<!-- Dashboard & Speed Section (Left Section) -->
 	<div id="dashboard" class="left_section">
 		<div class="stream_quality">
@@ -39,33 +39,42 @@
 		</div>
 
 		<div class="speed_display">
-			<div id="alpha_speed" class="speed_value">
-				<p id="alpha_speed_value">0</p>
-				<div id="alpha_speed_label">km/h</div>
-			</div>
-			<div id="beta_speed" class="speed_value">
-				<p id="beta_speed_value">0</p>
-				<div id="beta_speed_label">km/h</div>
+			<div class="rover_speed speed_value">
+				<p class="rover_speed_value">0</p>
+				<div class="rover_speed_label">km/h</div>
 			</div>
 		</div>
 	</div>
 
 	<!-- Middle Section -->
-	<div class="middle_section hidden">
-		<!-- Placeholder for future content -->
+	<div class="middle_section">
+		<p class="current_mode_text">manual drive</p>
+		<img src="../static/assets/manual_mode.png" class="steeringWheel deep_purple current_mode_img" />
+		<div class="inf_speed speed_value">
+			<p class="inf_speed_value">0</p>
+			<div class="inf_speed_label"></div>
+		</div>
 	</div>
-
 	<!-- Right Section -->
 	<div class="right_section">
-		<button id="confidence_button_normal_controller">Map recognition</button>
+		<!--Empty placeholder  -->
 	</div>
 </div>
 
 <!-- Fourth Layer: Camera Stream View -->
 <div id="viewport_container">
-	<canvas id="viewport_canvas" width="640" height="480"></canvas>
+	<!-- Where the main stream is shown -->
+	<canvas id="viewport_canvas"></canvas>
+	<!-- Message box container -->
+	<div id="message_box_container">
+		<input id="message_box_button_take_control" type="button" value="Take over control" />
+		<div id="message_box_message"></div>
+	</div>
 	<div id="overlay_image_container">
-		<img id="overlay_image" width="320" height="240" />
+		<!-- overlay_image => Where to show the magnified non-selected camera stream  -->
+		<img id="overlay_image" />
+	</div>
+	<div id="overlay_distance_markers">
 		<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
 		<div id="overlay_center_distance1" class="overlay_distance">0.5</div>
 		<div id="overlay_left_marker0" class="overlay_distance">0.5</div>
@@ -83,32 +92,9 @@
 		</div>
 	</div>
 
-	<!-- Message box container -->
-	<div id="message_box_container">
-		<input id="message_box_button_take_control" type="button" value="Take over control" />
-		<div id="message_box_message"></div>
-	</div>
 	<!-- Displayed at the bottom left -->
 	<div id="geo_data">
 		<p>Lat <span id="navigation_geo_lat"></span></p>
 		<p>Lon <span id="navigation_geo_long"></span></p>
 	</div>
 </div>
-
-<script type="module" src="../static/JS/Index/index_a_utils.js"></script>
-<script type="module" src="../static/JS/Index/index_video_hlp.js"></script>
-<script type="module" src="../static/JS/Index/index_video_mjpeg.js"></script>
-<script type="module" src="../static/JS/Index/index_b_gamepad.js"></script>
-<script type="module" src="../static/JS/Index/index_c_screen.js"></script>
-<script type="module" src="../static/JS/Index/index_d_navigator.js"></script>
-<script type="module" src="../static/JS/Index/index_e_teleop.js"></script>
-<script type="module" src="../static/JS/Index/index.js"></script>
-<script type="module" src="../static/JS/mobileController/mobileController_b_shape_confidence.js"></script>
-<script type="module">
-	import { ToggleButtonHandler } from '../static/JS/mobileController/mobileController_b_shape_confidence.js';
-	window.addEventListener('load', () => {
-		new ToggleButtonHandler('confidence_button_normal_controller');
-	});
-</script>
-<script type="module" src="../static/JS/http-live-player.js"></script>
-<script type="module" src="../static/JS/performance-polyfill.js"></script>
