@@ -3,32 +3,23 @@
 <link rel="stylesheet" type="text/css" href="../static/CSS/menu_settings.css" />
 
 <div id="advanced_settings_container">
-	<div id="settings-page-elements">
-		<div id="settings-content">
-			<h2 id="settings_page_title">Advanced Settings</h2>
-			<hr width="100%" size="2" />
-			<h3 id="options_text">Options</h3>
-			<form id="form_user_options">
-				<!-- User options will be populated here -->
-			</form>
-		</div>
+	<h1 class="title">Advanced Settings</h1>
+	<button class="button" id="edit_button">Edit</button>
+	<form id="form_user_options">
+		<!-- User options will be populated here -->
+	</form>
+	<button class="button" id="submit_save_apply" disabled>SAVE</button>
 
-		<!-- Pro View Toggle Section -->
-		<div id="pro-view-toggle-div">
-			<span id="pro-view-toggle-name">Pro View</span>
-			<div id="pro-view-toggle-slider">
-				<label class="switch">
-					<input type="checkbox" id="pro-view-toggle-button" />
-					<span class="slider round"></span>
-				</label>
-				<span id="pro-view-toggle-status">Off</span>
-			</div>
+	<!-- Pro View Toggle Section -->
+	<div id="pro-view-toggle-div">
+		<span id="pro-view-toggle-name">Pro View</span>
+		<div id="pro-view-toggle-slider">
+			<label class="switch">
+				<input type="checkbox" id="pro-view-toggle-button" />
+				<span class="slider round"></span>
+			</label>
+			<span id="pro-view-toggle-status">Off</span>
 		</div>
-	</div>
-
-	<div id="save-edit-buttons-section">
-		<button id="edit_button">Edit</button>
-		<button id="submit_save_apply" disabled>SAVE</button>
 	</div>
 
 	<div id="background-image"></div>

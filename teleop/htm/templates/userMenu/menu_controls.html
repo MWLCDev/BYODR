@@ -1,69 +1,62 @@
-<!DOCTYPE html>
-<html lang="en">
-	<head>
-		<meta charset="UTF-8" />
-		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-		<title>Relay Control Interface</title>
-	</head>
-	<body>
-		<h2 id="controls-page-title">Controls</h2>
-		<hr width="100%" size="2" />
-		<!-- TODO: change the class names  -->
+<link rel="stylesheet" type="text/css" href="../static/CSS/menu_controls.css" />
 
-		<div id="input-sliders">
-			<label for="dead-zone-width">Touch area width:</label>
-			<div class="slider-container">
-				<input type="range" id="dead-zone-width" name="dead-zone-width" min="0" max="0.5" step="0.01" value="0.1" />
-				<span id="dead-zone-width-value" class="slider-value">0.1</span>
-			</div>
+<div id="controls_settings_container">
+	<h1 class="title">Controls</h1>
+	<!-- TODO: change the class names  -->
 
-			<label for="scale-input-box-ID">Max km/h:</label>
-			<div class="slider-container">
-				<input type="range" id="scale-input-box" name="scale-slider" min="1" max="7" step="0.5" value="3" />
-				<span id="scale-input-box-value" class="slider-value">3</span>
-			</div>
-
-			<label for="offset-input-box-ID">Turning offset:</label>
-			<div class="slider-container">
-				<input type="range" id="offset-input-box" name="offset-slider" min="-1" max="1" step="0.02" value="0" />
-				<span id="offset-input-box-value" class="slider-value">0</span>
-			</div>
+	<div id="input-sliders">
+		<label for="dead-zone-width">Touch area width:</label>
+		<div class="slider-container">
+			<input type="range" id="dead-zone-width" name="dead-zone-width" min="0" max="0.5" step="0.01" value="0.1" />
+			<span id="dead-zone-width-value" class="slider-value">0.1</span>
 		</div>
 
-		<div id="relay-control-container">
-			<h2>Primary Relays</h2>
-			<div class="relay-control-sliders-container">
-				<div id="channel-container">
-					<fieldset class="relay-channel" data-index="2">
-						<legend>Channel 3</legend>
-						<label class="relay-switch">
-							<input type="checkbox" id="channel3-toggle" name="channel3" />
-							<span class="slider round"></span>
-						</label>
-						<div class="on-off-labels">
-							<label for="channel3-toggle" id="channel3-label-off">OFF</label>
-							<label for="channel3-toggle" id="channel3-label-on">ON</label>
-						</div>
-					</fieldset>
-				</div>
-				<div id="channel-container">
-					<fieldset class="relay-channel" data-index="3">
-						<legend>Channel 4</legend>
-						<label class="relay-switch">
-							<input type="checkbox" id="channel4-toggle" name="channel4" />
-							<span class="slider round"></span>
-						</label>
-						<div class="on-off-labels">
-							<label for="channel4-toggle" id="channel4-label-off">OFF</label>
-							<label for="channel4-toggle" id="channel4-label-on">ON</label>
-						</div>
-					</fieldset>
-				</div>
-			</div>
+		<label for="scale-input-box-ID">Max km/h:</label>
+		<div class="slider-container">
+			<input type="range" id="scale-input-box" name="scale-slider" min="1" max="7" step="0.5" value="3" />
+			<span id="scale-input-box-value" class="slider-value">3</span>
 		</div>
 
-		<button id="save-button" disabled>SAVE</button>
+		<label for="offset-input-box-ID">Turning offset:</label>
+		<div class="slider-container">
+			<input type="range" id="offset-input-box" name="offset-slider" min="-1" max="1" step="0.02" value="0" />
+			<span id="offset-input-box-value" class="slider-value">0</span>
+		</div>
+	</div>
 
-		<div id="background-image"></div>
-	</body>
-</html>
+	<div id="relay-control-container">
+		<h2>Primary Relays</h2>
+		<div class="relay-control-sliders-container">
+			<div id="channel-container">
+				<fieldset class="relay-channel" data-index="2">
+					<legend>Channel 3</legend>
+					<label class="relay-switch">
+						<input type="checkbox" id="channel3-toggle" name="channel3" />
+						<span class="slider round"></span>
+					</label>
+					<div class="on-off-labels">
+						<label for="channel3-toggle" id="channel3-label-off">OFF</label>
+						<label for="channel3-toggle" id="channel3-label-on">ON</label>
+					</div>
+				</fieldset>
+			</div>
+			<div id="channel-container">
+				<fieldset class="relay-channel" data-index="3">
+					<legend>Channel 4</legend>
+					<label class="relay-switch">
+						<input type="checkbox" id="channel4-toggle" name="channel4" />
+						<span class="slider round"></span>
+					</label>
+					<div class="on-off-labels">
+						<label for="channel4-toggle" id="channel4-label-off">OFF</label>
+						<label for="channel4-toggle" id="channel4-label-on">ON</label>
+					</div>
+				</fieldset>
+			</div>
+		</div>
+	</div>
+
+	<button id="save-button" disabled>SAVE</button>
+
+	<div id="background-image"></div>
+</div>

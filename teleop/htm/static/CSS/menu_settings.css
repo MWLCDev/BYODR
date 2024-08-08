@@ -1,31 +1,27 @@
-:root {
-  --background-color-light_m: #ffffff;
-  --text-color-ligh_m: #000000;
-  --background-color-dark_m: #121212;
-  --text-color-dark_m: #ffffff;
-  --VOR-color: #654279;
+.button {
+  width: 80px;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  text-align: center;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
-body {
-  margin: 0;
+#edit_button {
+  color: #530D73;
+  background-color: #f0f0f0;
+  margin-left: auto;
 }
 
-#advanced_settings_container #background-image {
-  position: relative;
-  bottom: 80%;
-  background-image: url('../assets/VR - pattern tree 1.png');
-  background-size: contain;
-  background-position: right;
-  background-repeat: no-repeat;
-  z-index: -1;
-  width: 100%;
-  height: 130%;
+#form_user_options {
+  margin-left: 2vw;
 }
 
-#advanced_settings_container #settings-page-elements {
-  position: relative;
-  width: max-content;
+#form_user_options div {
+  margin: 3px 0;
 }
+
 
 #settings-content {
   position: relative;
@@ -39,13 +35,9 @@ fieldset {
 
 /* Style the legend of the fieldset */
 legend {
-  /* Change font family */
   font-size: 24px;
-  /* Change font size */
   font-weight: bold;
-  /* Make the font bold */
   color: #333;
-  /* Change font color */
   padding-right: 10px;
   padding-bottom: 10px;
   padding-top: 10px;
@@ -58,60 +50,21 @@ fieldset label {
 }
 
 /* Style the input text of the fieldset */
-fieldset input {
+fieldset input[type=text] {
+  background-color: #E7E7E7;
   font-size: 16px;
   padding: 5px;
   margin-left: 15px;
   border-radius: 5px;
   width: 40%;
-}
-
-
-#settings_page_title {
-  color: #530D73;
-  margin-bottom: 25px;
-}
-
-#options_text {
-  margin-bottom: 18px;
-}
-
-#save-edit-buttons-section {
-  position: absolute;
-  width: 80px;
-  height: 100%;
-  left: 90%;
-  top: 10%;
-}
-
-button {
-  width: 80px;
-  height: 40px;
-  border: 1px solid #530D73;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  text-align: center;
-  padding: 0px 0px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-}
-
-#edit_button {
-  position: absolute;
-  color: #530D73;
-  /* Text color */
-  background-color: #f0f0f0;
-  /* Background color */
-  top: 5%;
+  border: 0;
+  box-shadow: inset 0px 0px 7px rgba(0, 0, 0, 0.2);
 }
 
 #submit_save_apply {
-  position: absolute;
   color: #f0f0f0;
   background-color: #530D73;
-  top: 55%;
+  margin-left: auto;
 }
 
 /*////////////    Style for the pro view toggle slider    ////////////*/
@@ -119,9 +72,6 @@ button {
 /* slider:before - the ball inside the slider */
 #pro-view-toggle-div {
   position: relative;
-  /* Matching the existing font */
-  margin-left: 5%;
-  margin-top: 10%;
   width: fit-content;
 }
 
@@ -204,4 +154,17 @@ input:checked+.slider:before {
   font-weight: bold;
   font-size: 20px;
   padding-left: 10px;
+}
+
+
+#background-image {
+  position: relative;
+  bottom: 80%;
+  background-image: url('../assets/VR - pattern tree 1.png');
+  background-size: contain;
+  background-position: right;
+  background-repeat: no-repeat;
+  z-index: -1;
+  width: 100%;
+  height: 130%;
 }

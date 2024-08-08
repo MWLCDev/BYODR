@@ -1,71 +1,69 @@
 <link rel="stylesheet" type="text/css" href="../static/CSS/menu_logbox.css" />
 
 <div id="logbox_container">
-	<div id="content">
-		<div>
-			<h1 class="logbox" id="title">Training Events</h1>
+	<h1 class="title">Training Events</h1>
+
+	<div id="dropdown">
+		<label for="entries_nr">Show</label>
+		<select id="mySelect">
+			<option value="10">10</option>
+			<option value="25">25</option>
+			<option value="50">50</option>
+			<option value="100">100</option>
+		</select>
+		<span>entries</span>
+	</div>
+
+	<div class="table_container">
+		<table id="display">
+			<thead>
+				<tr>
+					<th>ID</th>
+					<th>Timestamp</th>
+					<th>Status</th>
+					<th>Mode</th>
+					<th>Max Speed</th>
+					<th>Desired Speed</th>
+					<th>Velocity</th>
+					<th>Steer</th>
+					<th>Throttle</th>
+					<th>Steer Intervention</th>
+					<th>Speed Intervention</th>
+					<th>Latitude</th>
+					<th>Longitude</th>
+					<th>AP Steer</th>
+					<th>AP Brake</th>
+					<th>AP Steer Confidence</th>
+					<th>AP Brake Confidence</th>
+				</tr>
+			</thead>
+			<tbody id="table_order">
+				<!-- Dynamic content will be loaded here -->
+			</tbody>
+		</table>
+	</div>
+
+	<div id="under_table">
+		<div id="total_rows_number">
+			<p>
+				Showing
+				<span id="from_nr">1</span>
+				to
+				<span id="to_nr">10</span>
+				of
+				<span id="max_nr">10</span>
+				entries
+			</p>
 		</div>
 
-		<div id="dropdown">
-			<label for="entries_nr">Show</label>
-			<select id="mySelect">
-				<option value="10">10</option>
-				<option value="25">25</option>
-				<option value="50">50</option>
-				<option value="100">100</option>
-			</select>
-			<span>entries</span>
-		</div>
-		<div style="width: calc(100vw - 40px); overflow: auto">
-			<table id="display">
-				<thead>
-					<tr>
-						<th>ID</th>
-						<th>Timestamp</th>
-						<th>Status</th>
-						<th>Mode</th>
-						<th>Max Speed</th>
-						<th>Desired Speed</th>
-						<th>Velocity</th>
-						<th>Steer</th>
-						<th>Throttle</th>
-						<th>Steer Intervention</th>
-						<th>Speed Intervention</th>
-						<th>Latitude</th>
-						<th>Longitude</th>
-						<th>AP Steer</th>
-						<th>AP Brake</th>
-						<th>AP Steer Confidence</th>
-						<th>AP Brake Confidence</th>
-					</tr>
-				</thead>
-				<tbody id="table_order">
-					<!-- Dynamic content will be loaded here -->
-				</tbody>
-			</table>
-		</div>
-
-		<div id="under_table">
-			<div id="entries">
-				<p>
-					Showing
-					<span id="from_nr">1</span>
-					to
-					<span id="to_nr">10</span>
-					of
-					<span id="max_nr">10</span>
-					entries
-				</p>
-			</div>
-			<div id="pagination">
-				<button id="prevBtn">Previous</button>
-				<button class="logbox nrbtn" id="first_btn">1</button>
-				<span id="startDots">...</span>
-				<span id="varpag"></span>
-				<span id="endDots">...</span>
-				<button class="logbox nrbtn" id="last_btn"></button>
-				<button id="nextBtn">Next</button>
-			</div>
+		<div id="pagination">
+			<button id="prevBtn">Previous</button>
+			<button class="logbox nrbtn" id="first_btn">1</button>
+			<span id="startDots">...</span>
+			<span id="varpag"></span>
+			<span id="endDots">...</span>
+			<button class="logbox nrbtn" id="last_btn"></button>
+			<button id="nextBtn">Next</button>
 		</div>
 	</div>
 </div>

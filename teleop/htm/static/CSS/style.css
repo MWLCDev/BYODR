@@ -7,11 +7,16 @@
 
 
 :root {
-  --background-color-light_m: #ffffff;
-  --text-color-ligh_m: #000000;
-  --background-color-dark_m: #121212;
-  --text-color-dark_m: #ffffff;
+  --background_color_light_mode: #ffffff;
+  --text_color_ligh_mode: #000000;
+  --background_color_dark_mode: #121212;
+  --text_color_dark_mode: #ffffff;
   --VOR-color: #654279;
+  --VOR-light-color: #AFA2B4;
+  --text-color-light-p: #530D73;
+  --light-p: #8B7697;
+  --text-color-dark-g: #2B2B2B;
+  --button-color: #B8B8B8;
 }
 
 * {
@@ -31,6 +36,32 @@ body {
   font-family: "Sora", Arial, sans-serif;
   overflow: hidden;
 }
+
+#logbox_container,
+#advanced_settings_container {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  width: 90vw;
+  margin: 0 auto;
+}
+
+#advanced_settings_container .title,
+#controls_settings_container .title,
+#logbox_container .title {
+  font-size: 50px;
+  font-weight: bold;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  color: var(--text-color-light-p);
+  border-bottom: 2px solid #694978;
+  color: #530D73;
+  margin-bottom: 25px;
+  width: 100%;
+}
+
 
 /* Overlay when sidebar is active */
 #normal_ui::before {
@@ -65,7 +96,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 2px solid var(--VOR-color);
+  border-bottom: 2px solid var(--VOR-light-color);
 }
 
 #header_bar .left_section,
@@ -125,7 +156,7 @@ body {
   display: block;
   padding: 10px;
   width: 100%;
-  border-bottom: 2px solid var(--VOR-color);
+  border-bottom: 2px solid var(--VOR-light-color);
 }
 
 #debug_drive_values {
@@ -405,7 +436,7 @@ button {
   height: 100%;
   font-size: 1rem;
   text-align: center;
-  color: var(--text-color-dark_m);
+  color: var(--text_color_dark_mode);
   background-color: var(--VOR-color);
 }
 

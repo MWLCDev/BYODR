@@ -1,5 +1,16 @@
-/* Start for logbox settings style */
-table {
+body {
+  overflow: auto;
+  /* to make the table scrollable  */
+}
+
+.table_container {
+  overflow-x: auto;
+  width: 100%;
+}
+
+table#display {
+  overflow: auto;
+  width: 100%;
   border-collapse: collapse;
 }
 
@@ -23,7 +34,7 @@ table tbody>tr:nth-child(even) {
 table th {
   font-size: 21px;
   padding: 15px;
-  font-weight: var(--font-weight-bold);
+  font-weight: bold;
 }
 
 table tbody {
@@ -32,36 +43,6 @@ table tbody {
   border-top: 1px solid #000000;
 }
 
-#content {
-  margin-left: 40px;
-  margin-right: 40px;
-}
-
-#title {
-  font-size: 50px;
-  font-weight: var(--font-weight-bold);
-  padding-top: 40px;
-  padding-bottom: 40px;
-  font-family: "Sora", sans-serif;
-  color: var(--text-color-light-p);
-  border-bottom: 2px solid var(--light-p);
-}
-
-#dropdown {
-  margin-top: 40px;
-  margin-bottom: 40px;
-}
-
-#under_table {
-  display: flex;
-  justify-content: space-between;
-  margin-top: 10px;
-  margin-bottom: 10px;
-}
-
-table#display {
-  overflow: auto;
-}
 
 button {
   background-color: var(--button-color);
@@ -70,7 +51,7 @@ button {
   min-width: 45px;
   min-height: 45px;
   font-size: 15px;
-  font-weight: var(--font-weight-bold);
+  font-weight: bold;
   border-radius: 1rem;
 }
 
@@ -85,7 +66,7 @@ button#prevBtn,
 button#nextBtn {
   background: none;
   color: #2B2B2B;
-  font-weight: var(--font-weight-regular);
+  font-weight: 400;
   font-size: 1rem;
 }
 
@@ -93,6 +74,13 @@ button#prevBtn.limit,
 button#nextBtn.limit {
   color: #B8B8B8;
   cursor: default;
+}
+
+#under_table {
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  flex-direction: row;
 }
 
 select {
