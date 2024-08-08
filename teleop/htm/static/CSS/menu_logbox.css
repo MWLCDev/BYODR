@@ -1,0 +1,117 @@
+/* Start for logbox settings style */
+table {
+  border-collapse: collapse;
+}
+
+table td {
+  font-size: 19px;
+  text-align: center;
+  white-space: nowrap;
+  margin-left: 2vh;
+  margin-right: 2vh;
+  padding: 10px;
+}
+
+table tbody>tr:nth-child(odd) {
+  background-color: #E5E5E5;
+}
+
+table tbody>tr:nth-child(even) {
+  background-color: #F7F7F7;
+}
+
+table th {
+  font-size: 21px;
+  padding: 15px;
+  font-weight: var(--font-weight-bold);
+}
+
+table tbody {
+  border-collapse: collapse;
+  border-bottom: 1px solid #000000;
+  border-top: 1px solid #000000;
+}
+
+#content {
+  margin-left: 40px;
+  margin-right: 40px;
+}
+
+#title {
+  font-size: 50px;
+  font-weight: var(--font-weight-bold);
+  padding-top: 40px;
+  padding-bottom: 40px;
+  font-family: "Sora", sans-serif;
+  color: var(--text-color-light-p);
+  border-bottom: 2px solid var(--light-p);
+}
+
+#dropdown {
+  margin-top: 40px;
+  margin-bottom: 40px;
+}
+
+#under_table {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+  margin-bottom: 10px;
+}
+
+table#display {
+  overflow: auto;
+}
+
+button {
+  background-color: var(--button-color);
+  color: #FFFFFF;
+  margin: 2px;
+  min-width: 45px;
+  min-height: 45px;
+  font-size: 15px;
+  font-weight: var(--font-weight-bold);
+  border-radius: 1rem;
+}
+
+button.currentBtn {
+  background-color: #E4E4E4;
+  margin: 0px;
+  color: #B8B8B8;
+  cursor: default;
+}
+
+button#prevBtn,
+button#nextBtn {
+  background: none;
+  color: #2B2B2B;
+  font-weight: var(--font-weight-regular);
+  font-size: 1rem;
+}
+
+button#prevBtn.limit,
+button#nextBtn.limit {
+  color: #B8B8B8;
+  cursor: default;
+}
+
+select {
+  cursor: pointer;
+  -moz-appearance: none;
+  /* Firefox */
+  -webkit-appearance: none;
+  /* Safari and Chrome */
+  appearance: none;
+  background-color: #898989;
+  background-image: url("data:image/svg+xml,<svg width='24' height='24' xmlns='http://www.w3.org/2000/svg'><path d='m0,6l12,12l12,-12l-24,0z'/><path fill='none' d='m0,0l24,0l0,24l-24,0l0,-24z'/></svg>");
+  background-repeat: no-repeat;
+  background-size: 10px;
+  background-position-x: 90%;
+  background-position-y: 50%;
+  color: #FFFFFF;
+  font-size: 18px;
+  padding-left: 10px;
+  height: 30px;
+  min-width: 63px;
+  border-radius: 2px;
+}

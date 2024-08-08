@@ -99,7 +99,6 @@ class DataTableRequestHandler(web.RequestHandler):
                 data.append(self._view(**next(cursor)))
             except StopIteration:
                 break
-
         blob = dict(draw=draw, recordsTotal=c_total, recordsFiltered=c_total, data=data)
         # Include the error property when errors occur.
         message = json.dumps(blob)

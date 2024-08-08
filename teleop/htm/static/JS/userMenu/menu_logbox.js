@@ -12,15 +12,15 @@ class LogBox {
 		//TODO: handle image showing
 		this.elements = {
 			startDots: document.getElementById('startDots'),
-			firstBtn: document.getElementById('firstBtn'),
+			first_btn: document.getElementById('first_btn'),
 			prevBtn: document.getElementById('prevBtn'),
 			nextBtn: document.getElementById('nextBtn'),
-			lastBtn: document.getElementById('lastBtn'),
+			last_btn: document.getElementById('last_btn'),
 			endDots: document.getElementById('endDots'),
 			pagination: document.getElementById('pagination'),
 			varpag: document.getElementById('varpag'),
 			selectElement: document.getElementById('mySelect'),
-			tableBody: document.querySelector('.logbox tbody'),
+			tableBody: document.getElementById('table_order'),
 			fromNr: document.getElementById('from_nr'),
 			toNr: document.getElementById('to_nr'),
 			maxNr: document.getElementById('max_nr'),
@@ -65,10 +65,10 @@ class LogBox {
 			case 'nextBtn':
 				if (this.currentPage < this.pagesAmount) this.currentPage++;
 				break;
-			case 'firstBtn':
+			case 'first_btn':
 				this.currentPage = 1;
 				break;
-			case 'lastBtn':
+			case 'last_btn':
 				this.currentPage = this.pagesAmount;
 				break;
 			default:
@@ -90,18 +90,18 @@ class LogBox {
 	 * Updates the visibility of pagination buttons based on the current page.
 	 */
 	updateButtonVisibility() {
-		const { prevBtn, nextBtn, startDots, firstBtn, endDots, lastBtn } = this.elements;
+		const { prevBtn, nextBtn, startDots, first_btn, endDots, last_btn } = this.elements;
 
 		prevBtn.classList.toggle('limit', this.currentPage <= 1);
 		nextBtn.classList.toggle('limit', this.currentPage >= this.pagesAmount);
 
 		const showStartButtons = this.currentPage > 3;
 		startDots.style.display = showStartButtons ? 'inline' : 'none';
-		firstBtn.style.display = showStartButtons ? 'inline' : 'none';
+		first_btn.style.display = showStartButtons ? 'inline' : 'none';
 
 		const showEndButtons = this.currentPage < this.pagesAmount - 2;
 		endDots.style.display = showEndButtons ? 'inline' : 'none';
-		lastBtn.style.display = showEndButtons ? 'inline' : 'none';
+		last_btn.style.display = showEndButtons ? 'inline' : 'none';
 	}
 
 	/**
@@ -159,11 +159,15 @@ class LogBox {
 	 * Updates the display of record numbers and calculates total pages.
 	 */
 	displayNumbers() {
-		this.elements.maxNr.textContent = this.totalRecords;
-		this.elements.fromNr.textContent = this.start + 1;
-		this.elements.toNr.textContent = Math.min(this.start + this.length, this.totalRecords);
-		this.pagesAmount = Math.ceil(this.totalRecords / this.length);
-		this.elements.lastBtn.textContent = this.pagesAmount;
+		try {
+			this.elements.maxNr.textContent = this.totalRecords;
+			this.elements.fromNr.textContent = this.start + 1;
+			this.elements.toNr.textContent = Math.min(this.start + this.length, this.totalRecords);
+			this.pagesAmount = Math.ceil(this.totalRecords / this.length);
+			this.elements.last_btn.textContent = this.pagesAmount;
+		} catch (error) {
+			console.log('cannot display the numbers');
+		}
 	}
 
 	/**
@@ -172,18 +176,22 @@ class LogBox {
 	 * @param {number} serverDraw - The draw count from the server.
 	 */
 	processData(data, serverDraw) {
-		if (serverDraw !== this.drawCount - 1) {
-			console.warn('Received out of sync data');
-			return;
-		}
+		try {
+			if (serverDraw !== this.drawCount - 1) {
+				console.warn('Received out of sync data');
+				return;
+			}
 
-		this.elements.tableBody.innerHTML = '';
-		data.forEach((row) => {
-			const tr = document.createElement('tr');
-			// Use an arrow function here to preserve 'this' context
-			tr.innerHTML = row.map((item, index) => this.formatCell(item, index)).join('');
-			this.elements.tableBody.appendChild(tr);
-		});
+			this.elements.tableBody.innerHTML = '';
+			data.forEach((row) => {
+				const tr = document.createElement('tr');
+				// Use an arrow function here to preserve 'this' context
+				tr.innerHTML = row.map((item, index) => this.formatCell(item, index)).join('');
+				this.elements.tableBody.appendChild(tr);
+			});
+		} catch (error) {
+			console.error("Couldn't process server data", error);
+		}
 	}
 	/**
 	 * Formats a cell's content for display in the table.
