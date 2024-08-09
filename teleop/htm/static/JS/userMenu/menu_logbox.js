@@ -25,6 +25,7 @@ class LogBox {
 			toNr: document.getElementById('to_nr'),
 			maxNr: document.getElementById('max_nr'),
 		};
+		this.init();
 	}
 
 	init() {
