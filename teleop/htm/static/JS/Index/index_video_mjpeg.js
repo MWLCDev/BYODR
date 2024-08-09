@@ -190,20 +190,15 @@ var mjpeg_page_controller = {
 	camera_init_listeners: [],
 	camera_image_listeners: [],
 	el_preview_image: null,
-	el_overlay_image: null,
 	expand_camera_icon: null,
-	overlay_image_container: null,
 
 	init: function (cameras) {
 		this.cameras = cameras;
 		this.apply_limits();
 		this.refresh_page_values();
 		this.el_preview_image = $('img#mjpeg_camera_preview_image');
-		this.el_overlay_image = $('img#overlay_image');
 		this.expand_camera_icon = $('img#expand_camera_icon');
-		this.overlay_image_container = $('div#overlay_image_container');
 		this.expand_camera_icon.css({ cursor: 'zoom-in' });
-		this.overlay_image_container.invisible();
 		this.set_camera_framerates(teleop_screen.active_camera);
 		$('#caret_down').click(function () {
 			mjpeg_page_controller.decrease_quality();
@@ -223,32 +218,24 @@ var mjpeg_page_controller = {
 				// Show the other camera in preview.
 				if (position != teleop_screen.active_camera) {
 					mjpeg_page_controller.el_preview_image.attr('src', _blob);
-					mjpeg_page_controller.el_overlay_image.attr('src', _blob);
 				}
 			}
 		);
 		this.expand_camera_icon.click(function () {
 			const _instance = mjpeg_page_controller;
-			const _visible = _instance.overlay_image_container.is_visible();
-			if (_visible) {
-				const _state = _instance.el_overlay_image.width() < 480 ? 'small' : 'medium';
-				switch (_state) {
-					case 'small':
-						_instance.el_overlay_image.width(480);
-						_instance.el_overlay_image.height(320);
-						_instance.el_overlay_image.css({ opacity: 0.5 });
-						_instance.expand_camera_icon.css({ cursor: 'zoom-out' });
-						break;
-					default:
-						_instance.el_overlay_image.width(320);
-						_instance.el_overlay_image.height(240);
-						_instance.el_overlay_image.css({ opacity: 1 });
-						_instance.overlay_image_container.invisible();
-						_instance.expand_camera_icon.css({ cursor: 'zoom-in' });
-				}
-			} else {
-				_instance.overlay_image_container.visible();
-				_instance.expand_camera_icon.css({ cursor: 'zoom-in' });
+			const _state = _instance.el_preview_image.width() < 480 ? 'small' : 'medium';
+			switch (_state) {
+				case 'small':
+					_instance.el_preview_image.width(480);
+					_instance.el_preview_image.height(320);
+					_instance.el_preview_image.css({ opacity: 0.5 });
+					_instance.expand_camera_icon.css({ cursor: 'zoom-out' });
+					break;
+				default:
+					_instance.el_preview_image.width(320);
+					_instance.el_preview_image.height(240);
+					_instance.el_preview_image.css({ opacity: 1 });
+					_instance.expand_camera_icon.css({ cursor: 'zoom-in' });
 			}
 			// Reset the framerate.
 			_instance.set_camera_framerates(teleop_screen.active_camera);
@@ -297,16 +284,15 @@ var mjpeg_page_controller = {
 	set_camera_framerates: function (position) {
 		// The camera rates depend on visibility on the main screen and on the overlay div.
 		const _mjpeg = page_utils.get_stream_type() == 'mjpeg';
-		const overlay_visible = this.overlay_image_container.is_visible();
 		const _front_camera = this.cameras[0];
 		const _rear_camera = this.cameras[1];
 		if (_mjpeg) {
-			_front_camera.set_rate(position == 'front' || overlay_visible ? 'fast' : 'slow');
-			_rear_camera.set_rate(position == 'rear' || overlay_visible ? 'fast' : 'slow');
-		} else {
-			_front_camera.set_rate(position == 'front' ? 'off' : overlay_visible ? 'fast' : 'slow');
-			_rear_camera.set_rate(position == 'rear' ? 'off' : overlay_visible ? 'fast' : 'slow');
-		}
+      _front_camera.set_rate(position == 'front' ? 'fast' : 'slow');
+      _rear_camera.set_rate(position == 'rear' ? 'fast' : 'slow');
+  } else {
+      _front_camera.set_rate(position == 'front' ? 'off' : 'slow');
+      _rear_camera.set_rate(position == 'rear' ? 'off' : 'slow');
+  }
 	},
 };
 

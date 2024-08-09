@@ -132,6 +132,7 @@ export var teleop_screen = {
 		this.el_drive_values = $('div#debug_drive_values');
 		this.el_pilot_bar = $('div#pilot_drive_values');
 		this.el_message_box_container = $('div#message_box_container');
+		this.overlay_image = $('img#overlay_image');
 		this.el_message_box_message = this.el_message_box_container.find('div#message_box_message');
 		this.el_button_take_control = this.el_message_box_container.find('input#message_box_button_take_control');
 		this.overlay_center_markers = [$('div#overlay_center_distance0'), $('div#overlay_center_distance1')];
@@ -261,14 +262,13 @@ export var teleop_screen = {
 		const _active = this.active_camera;
 		const _selected = this.selected_camera;
 		const viewport_container = this.el_viewport_container;
-		const overlay_image = $('img#overlay_image');
 
 		viewport_container.removeClass('selected');
-		overlay_image.removeClass('selected');
+		this.overlay_image.removeClass('selected');
 		if (_selected == _active) {
 			viewport_container.addClass('selected');
 		} else if (_selected != undefined) {
-			overlay_image.addClass('selected');
+			this.overlay_image.addClass('selected');
 		}
 	},
 
