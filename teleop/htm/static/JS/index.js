@@ -16,6 +16,17 @@ if (typeof document.hidden !== 'undefined') {
 	visibilityChange = 'webkitvisibilitychange';
 }
 
+export function showHelp() {
+	$('.showMessageButton').click(function () {
+		$('.messageContainer').removeClass('hidden').hide().fadeIn(500);
+	});
+
+	document.querySelector('.close-btn').addEventListener('click', function () {
+		const box = document.querySelector('.messageContainer');
+		box.style.display = 'none';
+	});
+}
+
 function setupNavigationBar() {
 	var toggleBtn = document.getElementById('hamburger_menu_toggle');
 	var nav = document.querySelector('.hamburger_menu_nav');
@@ -77,10 +88,11 @@ window.addEventListener('load', function () {
 	if (!dev_tools.is_develop()) {
 		window.history.pushState({}, '', '/');
 	}
-  
+
 	document.addEventListener(visibilityChange, handleVisibilityChange, false);
 	window.addEventListener('focus', start_all_handlers);
 	window.addEventListener('blur', stop_all_handlers);
+	start_all_handlers();
 	navigator_start_all();
 	teleop_start_all();
 });

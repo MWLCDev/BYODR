@@ -6,6 +6,7 @@ import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stand
 import { initDomElem } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
 import { initializeSettings } from './userMenu/menu_settings.js';
+import { showHelp } from './index.js';
 
 const initComponents = () => {
 	try {
@@ -13,6 +14,7 @@ const initComponents = () => {
 			[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
 			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 			$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+			showHelp();
 		} catch (error) {
 			console.log('error while init components', error);
 		}
@@ -69,8 +71,8 @@ const handleUserMenuRoute = (selectedLinkId) => {
 			events_link: [
 				'/menu_logbox',
 				() => {
-					var logbox = new LogBox;
-          logbox.init();
+					var logbox = new LogBox();
+					logbox.init();
 				},
 			],
 		};
