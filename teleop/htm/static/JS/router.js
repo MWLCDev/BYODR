@@ -1,31 +1,15 @@
-import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
-import { teleop_screen } from './Index/index_c_screen.js';
-import { gamepad_socket } from './Index/index_e_teleop.js';
-import { assignNavButtonActions, setupMobileController } from './mobileController/mobileController_a_app.js';
+import { initComponents, showHelp } from './index.js';
+import { isMobileDevice } from './Index/index_a_utils.js';
+import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 import { initDomElem } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
 import { initializeSettings } from './userMenu/menu_settings.js';
-import { showHelp } from './index.js';
 
-const initComponents = () => {
-	try {
-		try {
-			[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
-			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
-			$('input#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
-			showHelp();
-		} catch (error) {
-			console.log('error while init components', error);
-		}
-	} catch (error) {
-		console.log('error while init components', error);
-	}
-};
 /**
  * Updates the visibility of header bar sections based on device type.
  */
-const updateHeaderBar = () => {
+export const updateHeaderBar = () => {
 	const sections = ['left_section', 'right_section'];
 	sections.forEach((section) => $(`#header_bar .${section}`)[isMobileDevice() ? 'show' : 'hide']());
 };
@@ -47,7 +31,7 @@ const updateModeUI = (selectedLinkId) => {
 	$('.current_mode_img').attr('src', activeImageSrc);
 };
 
-const handleUserMenuRoute = (selectedLinkId) => {
+export const handleUserMenuRoute = (selectedLinkId) => {
 	CTRL_STAT.mobileIsActive = false;
 	updateModeUI(selectedLinkId);
 
@@ -60,21 +44,24 @@ const handleUserMenuRoute = (selectedLinkId) => {
 		const currentPage = $('main#application-content').data('current-page');
 
 		if (currentPage === '/normal_ui' || currentPage === '/mc') {
-			selectedLinkId === 'normal_ui_link' ? loadContentBasedOnDevice() : null;
+			if (selectedLinkId === 'normal_ui_link') {
+				loadContentBasedOnDevice();
+			}
 		} else {
-			loadPage(targetPage, () => (selectedLinkId === 'normal_ui_link' ? loadContentBasedOnDevice() : null));
+			loadPage(targetPage, () => {
+				if (selectedLinkId === 'normal_ui_link') {
+					loadContentBasedOnDevice();
+				} else {
+					// Call the appropriate callback based on the device
+					isMobileDevice() ? mcCallback() : normalUICallback();
+				}
+			});
 		}
 	} else {
 		const pageMap = {
 			settings_link: ['/menu_settings', initializeSettings],
 			controls_link: ['/menu_controls', initDomElem],
-			events_link: [
-				'/menu_logbox',
-				() => {
-					var logbox = new LogBox();
-					logbox.init();
-				},
-			],
+			events_link: ['/menu_logbox', new LogBox()],
 		};
 		const [url, callback] = pageMap[selectedLinkId] || [];
 		url && loadPage(url, callback);
@@ -84,24 +71,13 @@ const handleUserMenuRoute = (selectedLinkId) => {
 const loadContentBasedOnDevice = () => {
 	const url = isMobileDevice() ? '/mc' : '/normal_ui';
 	loadPage(url, () => {
-		initComponents();
-		isMobileDevice() && setupMobileController();
+		initComponents(); //as It is used between both UIs
+		if (isMobileDevice()) {
+			setupMobileController();
+		} else {
+			showHelp(); // Call the mobile callback
+			// normalUICallback(); // Call the normal UI callback
+		}
 		CTRL_STAT.mobileIsActive = isMobileDevice();
 	});
 };
-
-document.addEventListener('DOMContentLoaded', () => {
-	// ['events_link', 'phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	$('.hamburger_menu_nav a').on('click', function () {
-		handleUserMenuRoute(this.id);
-		assignNavButtonActions(this.id);
-	});
-
-	network_utils
-		.getSSID()
-		.then((ssid) => $('#header_bar #current_seg_name').text(ssid))
-		.catch((error) => console.error('Failed to fetch SSID:', error));
-
-	updateHeaderBar();
-	handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
-});
