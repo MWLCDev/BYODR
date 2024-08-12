@@ -2,9 +2,9 @@ import { initComponents, showHelp } from './index.js';
 import { isMobileDevice } from './Index/index_a_utils.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
-import { initDomElem } from './userMenu/menu_controls.js';
+import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
-import { initializeSettings } from './userMenu/menu_settings.js';
+import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 /**
  * Updates the visibility of header bar sections based on device type.
@@ -20,7 +20,7 @@ export const updateHeaderBar = () => {
  * @param {Function} [callback] - Optional callback to execute after loading the page.
  */
 const loadPage = (url, callback) => {
-	const container = $('main#application-content');
+	const container = $('main#application_content');
 	container.empty().load(url, callback).data('current-page', url);
 };
 
@@ -37,11 +37,12 @@ export const handleUserMenuRoute = (selectedLinkId) => {
 
 	CTRL_STAT.currentPage = selectedLinkId;
 	localStorage.setItem('user.menu.screen', selectedLinkId);
+	// localStorage.setItem('user.menu.screen', 'normal_ui_link'); // DEBUGGING
 
 	const modeSwitchingPages = ['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
 	if (modeSwitchingPages.includes(selectedLinkId)) {
 		const targetPage = isMobileDevice() ? '/mc' : '/normal_ui';
-		const currentPage = $('main#application-content').data('current-page');
+		const currentPage = $('main#application_content').data('current-page');
 
 		if (currentPage === '/normal_ui' || currentPage === '/mc') {
 			if (selectedLinkId === 'normal_ui_link') {
@@ -59,9 +60,9 @@ export const handleUserMenuRoute = (selectedLinkId) => {
 		}
 	} else {
 		const pageMap = {
-			settings_link: ['/menu_settings', initializeSettings],
-			controls_link: ['/menu_controls', initDomElem],
-			events_link: ['/menu_logbox', new LogBox()],
+			settings_link: ['/menu_settings', () => new UserSettingsManager()],
+			controls_link: ['/menu_controls', () => new ControlSettings()],
+			events_link: ['/menu_logbox', () => new LogBox()],
 		};
 		const [url, callback] = pageMap[selectedLinkId] || [];
 		url && loadPage(url, callback);

@@ -1,147 +1,169 @@
-// Initialize settings content
-export function initializeSettings() {
-	fetchUserSettings();
-	switchToggleText();
-}
+class UserSettingsManager {
+	constructor() {
+		this.form = document.getElementById('form_user_options');
+		this.editButton = document.getElementById('edit_button');
+		this.saveButton = document.getElementById('submit_save_apply');
+		this.toggleButton = document.getElementById('pro-view-toggle-button');
+		this.toggleStatus = document.getElementById('pro-view-toggle-status');
+		this.fetchUserSettings();
+		this.disableFormInputs();
+		this.init();
+	}
 
-// Fetch user settings from backend and generate form inputs
-function fetchUserSettings() {
-	fetch('/teleop/user/options')
-		.then((response) => response.json())
-		.then((settings) => {
-			const form = document.getElementById('form_user_options');
-			form.innerHTML = ''; // Clear existing form content
-			Object.entries(settings).forEach(([section, options]) => {
-				const fieldset = document.createElement('fieldset');
-				const legend = document.createElement('legend');
-				legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-				fieldset.appendChild(legend);
+	init() {
+		if (this.editButton) {
+			this.editButton.addEventListener('click', () => this.enableEditMode());
+		}
 
-				Object.entries(options).forEach(([name, value]) => {
+		if (this.saveButton) {
+			this.saveButton.addEventListener('click', () => this.saveSettings());
+		}
 
-					// Skip steering and offset fields in the 'vehicle section
-					if ((name === 'ras.driver.steering.offset' || name === 'ras.driver.motor.scale'))
-						return; // Skip this iteration
-					
-					const input = document.createElement('input');
-					// Bool values are case sensitive between js and python
-					input.type = value === 'True' || value === 'False' ? 'checkbox' : 'text';
-					input.name = name;
-					if (value === 'True' || value === 'False') {
-						input.checked = value === 'true';
-					} else {
-						input.value = value;
-					}
+		this.form.addEventListener('input', () => {
+			if (this.saveButton) {
+				this.saveButton.disabled = false;
+			}
+		});
 
-					const label = document.createElement('label');
+		if (this.toggleButton) {
+			this.switchToggleText();
+		}
 
-					// Filtering unneeded words from the names of the text fields
-					// Replacing 'ip' with 'IP' in the camera section
-					if(section === 'camera'){
-						name = name.replace('ip', 'IP');
-					}
+		this.saveButton.style.display = 'none';
+	}
 
-					// Removing all mentions of 'driver', 'cc' and 'throttle' from the pilot section
-					else if(section === 'pilot'){
-						if(name.includes('driver.'))
-							name = name.replace('driver.', '');
-							if(name.includes('cc.'))
-								name = name.replace('cc.', '');
-								if(name.includes('throttle.'))
-									name = name.replace('throttle.', '');
-						if (name.includes('pid'))
-							name = name.slice(0, -1) + name.slice(-1).toUpperCase();
-					}
+	fetchUserSettings() {
+		console.log('Fetching settings');
+		fetch('/teleop/user/options')
+			.then((response) => response.json())
+			.then((settings) => {
+				console.log(settings);
+				this.populateForm(settings);
+			})
+			.catch((error) => alert('Error fetching settings: ' + error.message));
+	}
+	populateForm(settings) {
+		this.form.innerHTML = '';
+		Object.entries(settings).forEach(([section, options]) => {
+			const fieldset = document.createElement('fieldset');
+			const legend = document.createElement('legend');
+			legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
+			fieldset.appendChild(legend);
 
-					// Filtering the field names in vehicle
-					else{
-						if(name.includes('ras.master.uri'))
-							name = name.replace('ras.master.uri', 'Pi URI');
-						else if(name.includes('gps'))
-							name = name.replace('gps', 'GPS')
-						else if(name.includes('ras.driver.'))
-							name = name.replace('ras.driver.', '')
-					}
-					name = name.replace(/[._]/g, ' ');
+			Object.entries(options).forEach(([name, value]) => {
+				// Skip specific fields as they are already in the relay settings menu
+				if (section === 'vehicle' && (name === 'ras.driver.steering.offset' || name === 'ras.driver.motor.scale')) return;
 
-					label.textContent = name.charAt(0).toUpperCase() + name.slice(1) + ':';
-					label.appendChild(input);
+				const input = document.createElement('input');
+				input.type = value === 'true' || value === 'false' ? 'checkbox' : 'text';
+				input.name = this.filterFieldName(section, name); // Use the transformed name
+				input.dataset.originalKey = name; // Store the original key without applying filters
+				input.dataset.section = section; // Store the section name in dataset
+				input.disabled = true; // Initially disable input fields
 
-					const div = document.createElement('div');
-					div.appendChild(label);
-					fieldset.appendChild(div);
-				});
+				if (value === 'true' || value === 'false') {
+					input.checked = value === 'true';
+				} else {
+					input.value = value;
+				}
 
-				form.appendChild(fieldset);
+				const displayName = this.filterFieldName(section, name);
+
+				const label = document.createElement('label');
+				label.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1) + ':';
+				label.appendChild(input);
+
+				const div = document.createElement('div');
+				div.appendChild(label);
+				fieldset.appendChild(div);
 			});
-			document.getElementById('submit_save_apply').disabled = true; // Disable save button initially
+
+			this.form.appendChild(fieldset);
 		});
-}
-
-// Save settings to backend
-function saveSettings() {
-	const inputs = document.querySelectorAll('#form_user_options input');
-	const settings = Array.from(inputs).reduce((acc, input) => {
-		const isChanged = input.type === 'checkbox' ? input.checked.toString() !== input.defaultChecked.toString() : input.value !== input.defaultValue;
-		if (isChanged) {
-			acc[input.name] = input.type === 'checkbox' ? input.checked : input.value;
-		}
-		return acc;
-	}, {});
-
-	if (Object.keys(settings).length === 0) {
-		alert('No changes to save.');
-		return;
 	}
 
-	fetch('/teleop/user/options', {
-		method: 'POST',
-		headers: {
-			'Content-Type': 'application/json',
-		},
-		body: JSON.stringify(settings),
-	})
-		.then((response) => {
-			if (response.ok) {
-				alert('Settings saved successfully.');
-				document.getElementById('submit_save_apply').disabled = true; // Disable button after successful save
-				fetchUserSettings(); // Refresh settings form
-			} else {
-				throw new Error('Failed to save settings');
+	filterFieldName(section, name) {
+		if (section === 'camera') {
+			name = name.replace('ip', 'IP');
+		} else if (section === 'pilot') {
+			name = name.replace('driver.', '').replace('cc.', '').replace('throttle.', '');
+			if (name.includes('pid')) name = name.slice(0, -1) + name.slice(-1).toUpperCase();
+		} else if (section === 'vehicle') {
+			if (name.includes('ras.master.uri')) name = name.replace('ras.master.uri', 'Pi URI');
+			else if (name.includes('gps')) name = name.replace('gps', 'GPS');
+			else if (name.includes('ras.driver.')) name = name.replace('ras.driver.', '');
+		}
+		return name.replace(/[._]/g, ' ');
+	}
+
+	saveSettings() {
+		const sections = {}; // Hold the structured settings
+
+		const inputs = this.form.querySelectorAll('input');
+
+		// Iterate through the inputs and organize them by section
+		inputs.forEach((input) => {
+			const originalKey = input.dataset.originalKey;
+			const section = input.dataset.section;
+
+			if (!sections[section]) {
+				sections[section] = []; // Initialize the section as an array if it doesn't exist
 			}
+
+			// Convert the value to a string before saving it. This is how the backend expects them
+			const value = input.type === 'checkbox' ? String(input.checked) : String(input.value);
+
+			// Save the key-value pair as an array (tuple-like) in the correct section
+			sections[section].push([originalKey, value]);
+		});
+
+		console.log(sections);
+		fetch('/teleop/user/options', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(sections),
 		})
-		.catch((error) => {
-			alert('Error saving settings: ' + error.message);
-		});
-}
-
-function switchToggleText(){
-	const toggleButton = document.getElementById('pro-view-toggle-button');
-	const toggleStatus = document.getElementById('pro-view-toggle-status');
-
-	toggleButton.addEventListener('change', function () {
-		if (this.checked) {
-			toggleStatus.textContent = 'On';
-		} else {
-			toggleStatus.textContent = 'Off';
-		}
-	});
-}
-
-// Set up event handlers only if the elements exist on the page
-document.addEventListener('DOMContentLoaded', () => {
-	const submitButton = document.getElementById('submit_save_apply');
-	const form = document.getElementById('form_user_options');
-
-	if (submitButton) {
-		submitButton.addEventListener('click', saveSettings);
+			.then((response) => {
+				if (response.ok) {
+					alert('Settings saved successfully.');
+					this.disableFormInputs();
+					this.editButton.style.display = 'block';
+					this.saveButton.style.display = 'none';
+				} else {
+					throw new Error('Failed to save settings');
+				}
+			})
+			.catch((error) => {
+				alert('Error saving settings: ' + error.message);
+			});
 	}
 
-	if (form) {
-		form.addEventListener('input', () => {
-			if (submitButton) {
-				submitButton.disabled = false; // Enable save button on change
-			}
+	// Handle Pro View toggle switch text
+	switchToggleText() {
+		this.toggleButton.addEventListener('change', () => {
+			this.toggleStatus.textContent = this.toggleButton.checked ? 'On' : 'Off';
 		});
 	}
-});
+
+	enableEditMode() {
+		this.enableFormInputs();
+		this.editButton.style.display = 'none';
+		this.saveButton.style.display = 'block';
+		this.saveButton.disabled = true; // Disable save button initially until changes are made
+	}
+
+	disableFormInputs() {
+		const inputs = this.form.querySelectorAll('input');
+		inputs.forEach((input) => (input.disabled = true));
+	}
+
+	enableFormInputs() {
+		const inputs = this.form.querySelectorAll('input');
+		inputs.forEach((input) => (input.disabled = false));
+	}
+}
+
+// Initialize the UserSettingsManager class
+export { UserSettingsManager };
