@@ -10,7 +10,6 @@
 
 #edit_button {
   color: #530D73;
-  background-color: #f0f0f0;
   margin-left: auto;
 }
 
@@ -37,16 +36,9 @@ fieldset {
 legend {
   font-size: 24px;
   font-weight: bold;
-  color: #333;
   padding-right: 10px;
   padding-bottom: 10px;
   padding-top: 10px;
-}
-
-/* Style the labels and inputs inside the fieldset */
-fieldset label {
-  font-size: 20px;
-  color: #666;
 }
 
 /* Style the input text of the fieldset */
@@ -109,7 +101,6 @@ fieldset input[type=text] {
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: #ccc;
   transition: .4s;
   border-radius: 20px;
   width: 80px;

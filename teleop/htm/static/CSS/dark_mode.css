@@ -1,0 +1,17 @@
+body.dark-mode {
+  background-color: var(--background_color_dark_mode);
+  color: var(--text_color_dark_mode);
+}
+
+body.dark-mode .caret {
+  color: var(--text_color_dark_mode);
+}
+
+body.dark-mode #hamburger_menu_toggle .bar {
+  background-color: var(--background_color_light_mode);
+}
+
+body.dark-mode #video_stream_type {
+  background-color: var(--background_color_light_mode);
+  color: var(--text_color_light_mode);
+}

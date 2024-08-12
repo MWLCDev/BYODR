@@ -8,12 +8,11 @@
 
 :root {
   --background_color_light_mode: #ffffff;
-  --text_color_ligh_mode: #000000;
+  --text_color_light_mode: #000000;
   --background_color_dark_mode: #121212;
   --text_color_dark_mode: #ffffff;
   --VOR-color: #654279;
   --VOR-light-color: #AFA2B4;
-  --text-color-light-p: #530D73;
   --light-p: #8B7697;
   --text-color-dark-g: #2B2B2B;
   --button-color: #B8B8B8;
@@ -28,13 +27,14 @@
 html,
 body {
   height: 100%;
-  color: #333;
+  color: var(--text_color_light_mode);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   font-family: "Sora", Arial, sans-serif;
   overflow: hidden;
+  background-color: var(--background_color_light_mode)
 }
 
 #logbox_container,
@@ -55,9 +55,8 @@ body {
   font-weight: bold;
   padding-top: 40px;
   padding-bottom: 40px;
-  color: var(--text-color-light-p);
+  color: var(--VOR-color);
   border-bottom: 2px solid #694978;
-  color: #530D73;
   margin-bottom: 25px;
   width: 100%;
 }
@@ -169,7 +168,6 @@ body {
 
 #debug_drive_values p {
   font-size: 1rem;
-  color: #555;
   display: inline-block;
   margin-right: 20px;
   font-weight: 200;
@@ -227,12 +225,9 @@ body {
 .caret {
   cursor: pointer;
   font-size: 20px;
-  /* Adjust size of the arrow */
   display: inline-block;
   transition: color 0.3s;
-  /* Smooth transition for color change */
-  color: var(--caret-color, #000);
-  /* Default color, with option to override */
+  color: var(--text_color_light_mode);
 }
 
 .autopilot_status {
@@ -275,10 +270,10 @@ body {
 }
 
 #video_stream_type {
+  color: var(--text_color_dark_mode);
   padding: 8px 16px;
   margin: 0 5px;
-  background-color: #868686;
-  color: white;
+  background-color: var(--background_color_dark_mode);
   border: none;
   border-radius: 4px;
   cursor: pointer;
@@ -287,20 +282,13 @@ body {
   -moz-appearance: none;
   appearance: none;
   /* Necessary to remove default dropdown arrow */
-}
-
-#video_stream_type:hover {
-  background-color: #0056b3;
-}
-
-#video_stream_type {
   position: relative;
 }
+
 
 #video_stream_type::after {
   content: '\25BC';
   /* Unicode for down arrow */
-  color: white;
   position: absolute;
   right: 10px;
   top: calc(50% - 0.5em);
@@ -321,16 +309,6 @@ button {
   transition: background-color 0.3s;
 }
 
-
-#confidence_button_normal_controller {
-  background-color: var(--VOR-color);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
-  border-radius: 4px;
-  cursor: pointer;
-}
 
 .speed_value {
   display: flex;
@@ -362,7 +340,7 @@ button {
   transition: opacity 0.5s ease-in-out;
 }
 
-.messageContainer {
+.message_container {
   position: fixed;
   top: 50%;
   left: 50%;
@@ -376,7 +354,7 @@ button {
   z-index: 1000;
 }
 
-.messageContainer img {
+.message_container img {
   width: 100%;
   height: auto;
   margin-bottom: 20px;
@@ -389,7 +367,6 @@ button {
 }
 
 .message {
-  color: #333;
   font-size: 16px;
   margin: 0;
 }
@@ -411,7 +388,6 @@ button {
   font-size: 16px;
   cursor: pointer;
   background-color: #007BFF;
-  color: white;
   border: none;
   border-radius: 5px;
 }
@@ -490,7 +466,6 @@ button {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #f7f7f7;
   width: 100%;
 }
 
@@ -498,13 +473,16 @@ button {
   height: 100%;
   font-size: 1rem;
   text-align: center;
-  color: var(--text_color_dark_mode);
   background-color: var(--VOR-color);
 }
 
+#message_box_message {
+  color: var(--text_color_dark_mode);
+}
 
 #geo_data {
   background: rgba(255, 255, 255, 0.8);
+  color: var(--text_color_light_mode);
   padding: 5px 10px;
   border-radius: 5px;
   font-size: 14px;
@@ -527,10 +505,11 @@ div.overlay_distance {
   position: absolute;
   visibility: visible;
   text-align: center;
-  color: rgba(0, 0, 0, 0.5);
   pointer-events: none;
   color: rgba(255, 255, 120, 0.99);
-  border-bottom: 2px solid rgba(255, 255, 120, 0.99)
+  border-bottom: 2px solid rgba(255, 255, 120, 0.99);
+  pointer-events: none;
+
 }
 
 #overlay_image {

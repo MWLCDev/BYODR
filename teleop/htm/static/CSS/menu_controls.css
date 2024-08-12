@@ -13,7 +13,7 @@
   font-weight: bold;
   padding-top: 40px;
   padding-bottom: 40px;
-  color: var(--text-color-light-p);
+  color: var(--VOR-color);
   border-bottom: 2px solid var(--light-p);
 }
 

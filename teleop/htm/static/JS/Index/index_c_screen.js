@@ -1,5 +1,88 @@
+import { dev_tools } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
-import { dev_tools, isMobileDevice } from './index_a_utils.js';
+
+class ThemeManager {
+	constructor() {
+		this.darkModeCheckbox = document.querySelector('#nav_dark_mode_toggle_container input[type="checkbox"]');
+		this.body = document.body;
+		this.init();
+	}
+
+	init() {
+		this.loadSavedState();
+		this.addEventListeners();
+	}
+
+	loadSavedState() {
+		const isDarkMode = localStorage.getItem('darkMode') === 'enabled';
+		this.darkModeCheckbox.checked = isDarkMode;
+		this.setTheme(isDarkMode);
+	}
+
+	addEventListeners() {
+		this.darkModeCheckbox.addEventListener('change', () => this.toggleTheme());
+	}
+
+	toggleTheme() {
+		const isDarkMode = this.darkModeCheckbox.checked;
+		this.setTheme(isDarkMode);
+		localStorage.setItem('darkMode', isDarkMode ? 'enabled' : 'disabled');
+	}
+
+	setTheme(isDarkMode) {
+		this.body.classList.toggle('dark-mode', isDarkMode); //Add dark mode to body only
+		this.updateLogo(isDarkMode);
+	}
+
+	updateLogo(isDarkMode) {
+		const logo = document.querySelector('#header_bar #VOR_center_logo');
+		const logoSrc = isDarkMode ? '../static/assets/VOR_Logo_light.png' : '../static/assets/VOR_Logo_dark.png';
+		logo.setAttribute('src', logoSrc);
+	}
+}
+
+class NavigationManager {
+	constructor() {
+		this.toggleBtn = document.getElementById('hamburger_menu_toggle');
+		this.nav = document.querySelector('.hamburger_menu_nav');
+		this.userMenu = document.getElementById('application_content');
+		this.headerBar = document.getElementById('header_bar');
+		this.navLinks = document.querySelectorAll('.hamburger_menu_nav a');
+		this.init();
+	}
+
+	init() {
+		this.addEventListeners();
+	}
+
+	addEventListeners() {
+		this.toggleBtn.addEventListener('click', () => this.toggleSidebar());
+		this.navLinks.forEach((link) => {
+			link.addEventListener('click', () => this.toggleSidebar());
+		});
+		document.addEventListener('click', (event) => this.handleOutsideClick(event));
+	}
+
+	toggleSidebar() {
+		this.nav.classList.toggle('active');
+		this.toggleBtn.classList.toggle('active');
+		this.userMenu.classList.toggle('expanded');
+		this.headerBar.classList.toggle('expanded');
+	}
+
+	handleOutsideClick(event) {
+		const isClickInsideNav = this.nav.contains(event.target);
+		const isClickToggleBtn = this.toggleBtn.contains(event.target);
+		if (!isClickInsideNav && !isClickToggleBtn && this.nav.classList.contains('active')) {
+			this.toggleSidebar();
+		}
+	}
+}
+
+export function setupNavigationBar() {
+	new NavigationManager();
+	new ThemeManager();
+}
 
 export var screen_utils = {
 	_create_image: function (url) {

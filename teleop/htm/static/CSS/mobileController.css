@@ -50,9 +50,9 @@
 }
 
 
-#mobile_controller_container #horizontal_bar .current_mode_text {
+#horizontal_bar .current_mode_text {
   text-transform: uppercase;
-  color: var(--VOR-color);
+  /* color: var(--VOR-color); */
 }
 
 #mobile_controller_container .right_section .current_mode_button {
