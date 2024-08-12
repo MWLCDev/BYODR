@@ -9,7 +9,7 @@ class AutoNavigationHandler {
 		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .steeringWheel').hide();
 		$('#mobile_controller_container .current_mode_button').show();
-		$('#mobile_controller_container .current_mode_text').hide();
+		$('.current_mode_text').hide();
 		$('#mobile_controller_container .trail_canvas').hide();
 		$('.rover_speed').css('display', 'flex');
 		$('.control_symbol').css('display', 'flex');

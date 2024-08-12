@@ -7,9 +7,9 @@ class ConfidenceHandler {
 	initializeDOM() {
 		const self = this; // Save the reference to 'this' (which is the class instance here)
 
-		$('#mobile_controller_container .current_mode_text').show();
-		$('#mobile_controller_container .current_mode_text').text('map recognize');
-		$('#mobile_controller_container .current_mode_text').css('text-align', 'center');
+		$('.current_mode_text').show();
+		$('.current_mode_text').text('map recognize');
+		$('.current_mode_text').css('text-align', 'center');
 		$('#mobile_controller_container .steeringWheel').hide();
 		$('#mobile_controller_container .current_mode_button').show();
 		$('#mobile_controller_container .square').children().show();

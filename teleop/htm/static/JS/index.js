@@ -1,5 +1,5 @@
 import { dev_tools, page_utils, socket_utils, network_utils } from './Index/index_a_utils.js';
-import { teleop_screen } from './Index/index_c_screen.js';
+import { teleop_screen, setupNavigationBar } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { gamepad_socket, teleop_start_all } from './Index/index_e_teleop.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
@@ -16,53 +16,30 @@ function initComponents() {
 		console.error('Error while initializing components:', error);
 	}
 }
+
 function showHelp() {
 	$('.showMessageButton').click(function () {
-		$('.messageContainer').removeClass('hidden').hide().fadeIn(500);
-		$('#application-content').addClass('expanded');
-		$('#header_bar').addClass('expanded');
+		$('.message_container').removeClass('hidden').hide().fadeIn(500);
+		closeMessageContainer();
 	});
 
 	document.querySelector('.close-btn').addEventListener('click', function () {
+		$('.message_container').hide();
 		closeMessageContainer();
 	});
 
 	// Function to close the message container
 	function closeMessageContainer() {
-		$('.messageContainer').hide();
-		$('#application-content').removeClass('expanded');
-		$('#header_bar').removeClass('expanded');
+		$('#application_content').toggleClass('expanded');
+		$('#header_bar').toggleClass('expanded');
 	}
 
 	// Event listener for clicks outside the message container
 	$(document).mouseup(function (e) {
-		var container = $('.messageContainer');
-		if (!container.is(e.target) && container.has(e.target).length === 0) {
+		var container = $('.message_container');
+		if (container.is(':visible') && !container.is(e.target) && container.has(e.target).length === 0) {
+			$('.message_container').hide();
 			closeMessageContainer();
-		}
-	});
-}
-
-function setupNavigationBar() {
-	const toggleBtn = $('#hamburger_menu_toggle');
-	const nav = $('.hamburger_menu_nav');
-	const userMenu = $('#application-content');
-	const headerBar = $('#header_bar');
-
-	const toggleSidebar = () => {
-		nav.toggleClass('active');
-		toggleBtn.toggleClass('active');
-		userMenu.toggleClass('expanded');
-		headerBar.toggleClass('expanded');
-	};
-
-	toggleBtn.click(toggleSidebar);
-
-	nav.find('a').click(toggleSidebar);
-
-	$(document).click((event) => {
-		if (!nav.is(event.target) && !toggleBtn.is(event.target) && nav.hasClass('active')) {
-			toggleSidebar();
 		}
 	});
 }
@@ -89,20 +66,24 @@ function handleVisibilityChange() {
 	}
 }
 
+function showSSID() {
+	network_utils
+		.getSSID()
+		.then((ssid) => $('#header_bar #current_seg_name').text(ssid))
+		.catch((error) => console.error('Failed to fetch SSID:', error));
+}
+
 $(window).on('load', () => {
+	setupNavigationBar();
+	updateHeaderBar();
+	showSSID();
+
 	$('.hamburger_menu_nav a').click(function () {
 		handleUserMenuRoute(this.id);
 		assignNavButtonActions(this.id);
 	});
 
-	network_utils
-		.getSSID()
-		.then((ssid) => $('#header_bar #current_seg_name').text(ssid))
-		.catch((error) => console.error('Failed to fetch SSID:', error));
-
-	updateHeaderBar();
 	handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
-	setupNavigationBar();
 
 	if (!dev_tools.is_develop()) {
 		window.history.pushState({}, '', '/');

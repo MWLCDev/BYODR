@@ -1,7 +1,7 @@
-import { screen_utils, teleop_screen } from './index_c_screen.js';
-import { gamepad_controller } from './index_b_gamepad.js';
-import { socket_utils } from './index_a_utils.js';
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
+import { socket_utils } from './index_a_utils.js';
+import { gamepad_controller } from './index_b_gamepad.js';
+import { screen_utils, teleop_screen } from './index_c_screen.js';
 
 class LoggerServerSocket {
 	constructor() {

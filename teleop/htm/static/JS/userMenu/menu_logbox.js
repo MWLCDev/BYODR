@@ -167,7 +167,7 @@ class LogBox {
 			this.pagesAmount = Math.ceil(this.totalRecords / this.length);
 			this.elements.last_btn.textContent = this.pagesAmount;
 		} catch (error) {
-			console.log('cannot display the numbers');
+			console.error('cannot display the numbers: ', error);
 		}
 	}
 
