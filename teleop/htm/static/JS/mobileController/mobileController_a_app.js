@@ -1,9 +1,5 @@
 import { ControlSquare } from './mobileController_b_shape_square.js';
 import { setMobileCommand } from './mobileController_c_logic.js';
-import { followingNavButtonHandler } from './mobileController_f_following.js';
-import { autoNavigationNavButtonHandler } from './mobileController_f_auto_navigation.js';
-import { maneuverTrainingNavButtonHandler } from './mobileController_f_maneuver_training.js';
-import { confidenceNavButtonHandler } from './mobileController_f_confidence.js';
 
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
@@ -11,15 +7,6 @@ import CTRL_STAT from './mobileController_z_state.js'; // Stands for control sta
 let forwardSquare;
 let backwardSquare;
 
-/**
- * Actions that are bonded to the navbar buttons only. They will control the switch for the features
- */
-export function assignNavButtonActions(navLink) {
-	if (navLink == 'follow_link') followingNavButtonHandler.initializeDOM();
-	else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
-	else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
-	else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();
-}
 
 export function setupMobileController() {
 	const mobileUI = document.getElementById('mobile_controller_container');

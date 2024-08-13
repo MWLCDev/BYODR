@@ -1,11 +1,10 @@
-import { dev_tools, page_utils, socket_utils, network_utils } from './Index/index_a_utils.js';
+import { dev_tools, page_utils, socket_utils, network_utils, isMobileDevice } from './Index/index_a_utils.js';
 import { teleop_screen, setupNavigationBar } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { gamepad_socket, teleop_start_all } from './Index/index_e_teleop.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
 import { mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
-import { assignNavButtonActions } from './mobileController/mobileController_a_app.js';
-import { handleUserMenuRoute, updateHeaderBar } from './router.js';
+import { Router } from './router.js';
 
 function initComponents() {
 	try {
@@ -23,7 +22,7 @@ function showHelp() {
 		closeMessageContainer();
 	});
 
-	document.querySelector('.close-btn').addEventListener('click', function () {
+	document.querySelector('.close_btn').addEventListener('click', function () {
 		$('.message_container').hide();
 		closeMessageContainer();
 	});
@@ -74,20 +73,13 @@ function showSSID() {
 }
 
 $(window).on('load', () => {
-	setupNavigationBar();
-	updateHeaderBar();
 	showSSID();
+	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
 
-	$('.hamburger_menu_nav a').click(function () {
-		handleUserMenuRoute(this.id);
-		assignNavButtonActions(this.id);
-	});
+	let helpMessageManager = setupNavigationBar();
+	const router = new Router(helpMessageManager);
 
-	handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
-
-	if (!dev_tools.is_develop()) {
-		window.history.pushState({}, '', '/');
-	}
+	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
 
 	document.addEventListener('visibilitychange', handleVisibilityChange, false);
 	$(window).on('focus', start_all_handlers);

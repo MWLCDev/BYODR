@@ -33,11 +33,9 @@ class UserSettingsManager {
 	}
 
 	fetchUserSettings() {
-		console.log('Fetching settings');
 		fetch('/teleop/user/options')
 			.then((response) => response.json())
 			.then((settings) => {
-				console.log(settings);
 				this.populateForm(settings);
 			})
 			.catch((error) => alert('Error fetching settings: ' + error.message));
@@ -117,7 +115,6 @@ class UserSettingsManager {
 			sections[section].push([originalKey, value]);
 		});
 
-		console.log(sections);
 		fetch('/teleop/user/options', {
 			method: 'POST',
 			headers: {

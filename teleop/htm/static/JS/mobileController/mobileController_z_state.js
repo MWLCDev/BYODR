@@ -15,6 +15,7 @@ class MobileControllerState {
 	get mobileIsActive() {
 		return this.#mobileIsActive;
 	}
+  
 	set currentPage(value) {
 		this.#currentPage = value;
 	}

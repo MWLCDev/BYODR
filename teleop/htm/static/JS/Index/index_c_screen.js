@@ -79,9 +79,67 @@ class NavigationManager {
 	}
 }
 
+class HelpMessageManager {
+	constructor() {
+		this.help_message_img = $('.message_container img');
+		this.help_message_grid = document.querySelector('.help_message_grid');
+		this.manualModeMessages();
+	}
+
+	manualModeMessages() {
+		const messages = [
+			'Drive forward: Press 14 slowly down',
+			'Drive backwards: Press 1 slowly down',
+			'Steering: Move 7 around',
+			'Camera to drive position: Press 6',
+			'Switch between cameras: Press 10 or 11',
+			'Move selected camera around: Move 8 around',
+			'Switch to autopilot mode: Press 3',
+			'Capture the current frame with the front camera: Press 13',
+			//TODO: see if more styles will be added
+		];
+		this.updateMessages(messages, true);
+	}
+
+	// Method to set alternate messages
+	trainingModeMessages() {
+		const messages = [
+			'Quick acceleration: Double tap 14',
+			'Quick reverse: Double tap 1',
+			'Sharp turn: Rotate 7 quickly',
+			// Add more alternate messages as needed
+		];
+		this.updateMessages(messages, true);
+	}
+
+	connectPhoneMessage() {
+		console.log('ignited');
+		const messages = ['1-open setting menu', '2- Add new wifi network', '3-Add username of the segment you see on the top', '4-In the password field, write the password that was sent in your email'];
+		this.updateMessages(messages, false);
+	}
+
+	// Private method to update the message grid
+	updateMessages(messages, show_help_img) {
+		if (show_help_img) {
+			this.help_message_img.show();
+		} else {
+			this.help_message_img.hide();
+		}
+		this.help_message_grid.innerHTML = '';
+		messages.forEach((msg) => {
+			const p = document.createElement('p');
+			p.className = 'message';
+			p.textContent = msg;
+			this.help_message_grid.appendChild(p);
+		});
+	}
+}
+
 export function setupNavigationBar() {
 	new NavigationManager();
 	new ThemeManager();
+	let helpMessageManager = new HelpMessageManager();
+	return helpMessageManager;
 }
 
 export var screen_utils = {

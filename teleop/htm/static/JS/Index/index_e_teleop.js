@@ -3,6 +3,7 @@ import { socket_utils } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { screen_utils, teleop_screen } from './index_c_screen.js';
 
+
 class LoggerServerSocket {
 	constructor() {
 		this.server_message_listeners = [];
@@ -83,7 +84,7 @@ class MovementCommandSocket {
 	}
 
 	_capture(server_response) {
-    const gc_active = gamepad_controller.is_active();
+		const gc_active = gamepad_controller.is_active();
 		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
 		var current_page = localStorage.getItem('user.menu.screen');
 		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
