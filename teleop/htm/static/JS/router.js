@@ -18,6 +18,13 @@ export class Router {
 			this.handleUserMenuRoute(event.target.id);
 			this.assignNavButtonActions(event.target.id);
 		});
+		this.mode_to_nav_link = {
+			normal_ui_link: 'manual drive',
+			ai_training_link: 'ai training',
+			autopilot_link: 'autopilot',
+			map_recognition_link: 'map recognition',
+			follow_link: 'follow',
+		};
 	}
 
 	updateHeaderBar() {
@@ -41,12 +48,27 @@ export class Router {
 			return;
 		}
 
+		if (isMobileDevice()) {
+			$('#header_bar .left_section').show();
+			$('#header_bar .right_section').show();
+			if (('settings_link', 'controls_link', 'events_link').includes(selectedLinkId)) {
+				$('#header_bar .left_section').hide();
+				$('#header_bar .right_section').hide();
+			}
+		} else {
+			$('#header_bar .left_section').hide();
+			$('#header_bar .right_section').hide();
+		}
+
 		$('.hamburger_menu_nav a').removeClass('active');
 		$(`#${selectedLinkId}`).addClass('active');
 
-		const activeImageSrc = $(`#${selectedLinkId} img`).attr('src');
-		if (activeImageSrc) {
-			$('.current_mode_img').attr('src', activeImageSrc);
+		const activeNavLinkImageSrc = $(`#${selectedLinkId} img`).attr('src');
+		if (activeNavLinkImageSrc) {
+			$('.current_mode_img').attr('src', activeNavLinkImageSrc);
+			console.log(selectedLinkId);
+			console.log(this.mode_to_nav_link[selectedLinkId]);
+			$('.current_mode_text').text(this.mode_to_nav_link[selectedLinkId]);
 		} else {
 			console.error('No image found for ID:', selectedLinkId);
 		}

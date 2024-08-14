@@ -13,8 +13,6 @@ class ManeuverTrainingHandler {
 		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
 		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
-
-		$('.current_mode_text').text('ai training');
 		$('#mobile_controller_container #backward_square').addClass('maneuver_square');
 		$('#mobile_controller_container .current_mode_button').click(function () {
 			const buttonText = $(this).text().toLowerCase();

@@ -97,9 +97,7 @@ class MovementCommandSocket {
 					delete CTRL_STAT.mobileCommandJSON[key];
 				}
 			});
-			console.log('in mobile ui socket');
 		} else {
-			console.log('in normal ui socket');
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
 			// The selected camera for ptz control can also be undefined.
 			gamepad_command.camera_id = -1;

@@ -14,7 +14,6 @@ class FollowingHandler {
 		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .current_mode_button').show();
 		$('#mobile_controller_container .current_mode_button').text('start following');
-		$('.current_mode_text').text('Follow');
 		$('#mobile_controller_container .middle_section').hide();
 		$('#mobile_controller_container .square').hide();
 		self.sendSwitchFollowingRequest('show_image');

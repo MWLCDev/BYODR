@@ -534,12 +534,12 @@ export var teleop_screen = {
 	},
 
 	message_box_update: function () {
-		console.log(CTRL_STAT.currentPage);
-		if (CTRL_STAT.currentPage == 'follow_link') {
+		if (CTRL_STAT.currentPage == 'follow_link' && this.el_message_box_message != undefined) {
 			this.el_message_box_message.text(this.c_msg_teleop_follow);
 			console.log('in follow mode');
 		}
 	},
+
 	//TODO: why it assigns the already init vars to consts?
 	controller_update: function (command) {
 		try {
