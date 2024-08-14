@@ -1,5 +1,5 @@
-import { initComponents, showHelp } from './index.js';
 import { isMobileDevice } from './Index/index_a_utils.js';
+import { teleop_screen } from './Index/index_c_screen.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { autoNavigationNavButtonHandler } from './mobileController/mobileController_f_auto_navigation.js';
 import { confidenceNavButtonHandler } from './mobileController/mobileController_f_confidence.js';
@@ -11,12 +11,12 @@ import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 export class Router {
-	constructor(helpMessageManager) {
+	constructor(helpMessageManager, messageContainerManager) {
 		this.helpMessageManager = helpMessageManager;
-
-		$('.hamburger_menu_nav a').click(function () {
-			router.handleUserMenuRoute(this.id);
-			router.assignNavButtonActions(this.id);
+		this.messageContainerManager = messageContainerManager;
+		$('.hamburger_menu_nav a').click((event) => {
+			this.handleUserMenuRoute(event.target.id);
+			this.assignNavButtonActions(event.target.id);
 		});
 	}
 
@@ -36,10 +36,20 @@ export class Router {
 	}
 
 	updateModeUI(selectedLinkId) {
+		if (!selectedLinkId) {
+			console.error('Invalid ID provided for updateModeUI:', selectedLinkId);
+			return;
+		}
+
 		$('.hamburger_menu_nav a').removeClass('active');
 		$(`#${selectedLinkId}`).addClass('active');
+
 		const activeImageSrc = $(`#${selectedLinkId} img`).attr('src');
-		$('.current_mode_img').attr('src', activeImageSrc);
+		if (activeImageSrc) {
+			$('.current_mode_img').attr('src', activeImageSrc);
+		} else {
+			console.error('No image found for ID:', selectedLinkId);
+		}
 	}
 
 	handleUserMenuRoute(selectedLinkId) {
@@ -65,7 +75,7 @@ export class Router {
 					} else {
 						// Call the appropriate callback based on the device
 
-						isMobileDevice() ? this.mcCallback() : this.normalUICallback();
+						isMobileDevice() ? setupMobileController() : showHelp();
 					}
 				});
 			}
@@ -83,12 +93,12 @@ export class Router {
 	loadContentBasedOnDevice() {
 		const url = isMobileDevice() ? '/mc' : '/normal_ui';
 		this.loadPage(url, () => {
-			initComponents();
 			if (isMobileDevice()) {
 				setupMobileController();
 			} else {
-				showHelp();
-				// normalUICallback(); // Call the normal UI callback
+				this.messageContainerManager.initEventHandlers();
+				teleop_screen.set_normal_ui_elements();
+				teleop_screen._init();
 			}
 			CTRL_STAT.mobileIsActive = isMobileDevice();
 		});
@@ -103,7 +113,8 @@ export class Router {
 		else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();
 		else if (navLink == 'phone_controller_link') {
 			this.helpMessageManager.connectPhoneMessage();
-			$('.showMessageButton').click();
+			$('.message_container').removeClass('hidden').hide().fadeIn(500);
+			closeMessageContainer();
 			console.log('clicked');
 		}
 	}

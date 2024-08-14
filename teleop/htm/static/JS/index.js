@@ -8,39 +8,13 @@ import { Router } from './router.js';
 
 function initComponents() {
 	try {
-		[teleop_screen, socket_utils, dev_tools, page_utils].forEach((component) => component._init());
+		[socket_utils, dev_tools, page_utils].forEach((component) => component._init());
+		//need to set set_normal_ui_elements and init of teleop screen, only when on the normal ui screen
 		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 		$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 	} catch (error) {
 		console.error('Error while initializing components:', error);
 	}
-}
-
-function showHelp() {
-	$('.showMessageButton').click(function () {
-		$('.message_container').removeClass('hidden').hide().fadeIn(500);
-		closeMessageContainer();
-	});
-
-	document.querySelector('.close_btn').addEventListener('click', function () {
-		$('.message_container').hide();
-		closeMessageContainer();
-	});
-
-	// Function to close the message container
-	function closeMessageContainer() {
-		$('#application_content').toggleClass('expanded');
-		$('#header_bar').toggleClass('expanded');
-	}
-
-	// Event listener for clicks outside the message container
-	$(document).mouseup(function (e) {
-		var container = $('.message_container');
-		if (container.is(':visible') && !container.is(e.target) && container.has(e.target).length === 0) {
-			$('.message_container').hide();
-			closeMessageContainer();
-		}
-	});
 }
 
 function start_all_handlers() {
@@ -73,11 +47,10 @@ function showSSID() {
 }
 
 $(window).on('load', () => {
-	showSSID();
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
+	let { helpMessageManager, messageContainerManager } = setupNavigationBar();
 
-	let helpMessageManager = setupNavigationBar();
-	const router = new Router(helpMessageManager);
+	const router = new Router(helpMessageManager, messageContainerManager);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
 
@@ -85,9 +58,9 @@ $(window).on('load', () => {
 	$(window).on('focus', start_all_handlers);
 	$(window).on('blur', stop_all_handlers);
 
+	showSSID();
+	initComponents();
 	start_all_handlers();
 	navigator_start_all();
 	teleop_start_all();
 });
-
-export { initComponents, showHelp };

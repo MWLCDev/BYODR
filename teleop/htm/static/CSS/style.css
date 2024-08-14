@@ -369,6 +369,8 @@ button {
 .message {
   font-size: 16px;
   margin: 0;
+  color: black;
+
 }
 
 .close_btn {
@@ -377,6 +379,7 @@ button {
   right: 10px;
   cursor: pointer;
   font-size: 18px;
+  color: black;
 }
 
 .show-button {
@@ -471,9 +474,14 @@ button {
 
 #message_box_button_take_control {
   height: 100%;
-  font-size: 1rem;
   text-align: center;
   background-color: var(--VOR-color);
+  color: white;
+  padding: 0.5rem 0.2rem;
+  border-radius: 10px;
+  text-transform: uppercase;
+  font-weight: 700;
+  display: none;
 }
 
 #message_box_message {
@@ -505,7 +513,6 @@ div.overlay_distance {
   position: absolute;
   visibility: visible;
   text-align: center;
-  pointer-events: none;
   color: rgba(255, 255, 120, 0.99);
   border-bottom: 2px solid rgba(255, 255, 120, 0.99);
   pointer-events: none;

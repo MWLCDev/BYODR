@@ -135,11 +135,64 @@ class HelpMessageManager {
 	}
 }
 
+class MessageContainerManager {
+	constructor(helpMessageManager) {
+		this.helpMessageManager = helpMessageManager;
+	}
+
+	// Set up event handlers
+	initEventHandlers() {
+		try {
+			$('.showMessageButton').click(() => {
+				this.helpMessageManager.manualModeMessages();
+				this.toggleMessageContainer();
+			});
+
+			document.querySelector('.close_btn').addEventListener('click', () => {
+				this.hideMessageContainer();
+			});
+
+			$(document).mouseup((e) => {
+				this.onClickOutside(e);
+			});
+		} catch (error) {
+			console.error('Error while init: ', error);
+		}
+	}
+
+	// Toggle the visibility of the message container
+	toggleMessageContainer() {
+		$('.message_container').removeClass('hidden').hide().fadeIn(500);
+		this.toggleApplicationContent();
+	}
+
+	// Hide the message container
+	hideMessageContainer() {
+		$('.message_container').hide();
+		this.toggleApplicationContent();
+	}
+
+	// Toggle the application content and header bar expansion
+	toggleApplicationContent() {
+		$('#application_content').toggleClass('expanded');
+		$('#header_bar').toggleClass('expanded');
+	}
+
+	// Handle click outside the message container to close it
+	onClickOutside(e) {
+		var container = $('.message_container');
+		if (container.is(':visible') && !container.is(e.target) && container.has(e.target).length === 0) {
+			this.hideMessageContainer();
+		}
+	}
+}
+
 export function setupNavigationBar() {
 	new NavigationManager();
 	new ThemeManager();
 	let helpMessageManager = new HelpMessageManager();
-	return helpMessageManager;
+	let messageContainerManager = new MessageContainerManager(helpMessageManager);
+	return { helpMessageManager, messageContainerManager };
 }
 
 export var screen_utils = {
@@ -240,14 +293,6 @@ var path_renderer = {
 };
 
 export var teleop_screen = {
-	el_viewport_container: null,
-	el_drive_bar: null,
-	el_drive_values: null,
-	el_pilot_bar: null,
-	el_message_box: null,
-	overlay_center_markers: null,
-	overlay_left_markers: null,
-	overlay_right_markers: null,
 	command_turn: null,
 	command_ctl: null,
 	server_message_listeners: [],
@@ -266,27 +311,60 @@ export var teleop_screen = {
 	_photo_snapshot_timer: null,
 	_last_server_message: null,
 
+	set_normal_ui_elements: function () {
+		try {
+			// Check each DOM element
+			const elements = {
+				viewport_container: $('div#viewport_container'),
+				debug_drive_bar: $('div#debug_drive_bar'),
+				debug_drive_values: $('div#debug_drive_values'),
+				// pilot_drive_values: $('div#pilot_drive_values'),
+				message_box_container: $('div#message_box_container'),
+				overlay_image: $('img#overlay_image'),
+				overlay_center_distance0: $('div#overlay_center_distance0'),
+				overlay_center_distance1: $('div#overlay_center_distance1'),
+				overlay_left_marker0: $('div#overlay_left_marker0'),
+				overlay_left_marker1: $('div#overlay_left_marker1'),
+				overlay_right_marker0: $('div#overlay_right_marker0'),
+				overlay_right_marker1: $('div#overlay_right_marker1'),
+			};
+
+			// Check if each element exists
+			for (const [name, element] of Object.entries(elements)) {
+				if (element.length === 0) {
+					console.error(`Element not found: ${name}`);
+				}
+			}
+
+			// Assign elements to class properties
+			this.el_viewport_container = elements['viewport_container'];
+			this.el_drive_bar = elements['debug_drive_bar'];
+			this.el_drive_values = elements['debug_drive_values'];
+			// this.el_pilot_bar = elements['pilot_drive_values'];
+			this.el_message_box_container = elements['message_box_container'];
+			this.overlay_image = elements['overlay_image'];
+			this.el_message_box_message = this.el_message_box_container.find('div#message_box_message');
+			this.el_button_take_control = this.el_message_box_container.find('input#message_box_button_take_control');
+			this.overlay_center_markers = [elements['overlay_center_distance0'], elements['overlay_center_distance1']];
+			this.overlay_left_markers = [elements['overlay_left_marker0'], elements['overlay_left_marker1']];
+			this.overlay_right_markers = [elements['overlay_right_marker0'], elements['overlay_right_marker1']];
+		} catch (error) {
+			console.error('Error in teleop_screen.set_normal_ui_elements():', error);
+		}
+	},
+
 	_init() {
-		this.controller_status = gamepad_controller.is_active();
-		this.el_viewport_container = $('div#viewport_container');
-		this.el_drive_bar = $('div#debug_drive_bar');
-		this.el_drive_values = $('div#debug_drive_values');
-		this.el_pilot_bar = $('div#pilot_drive_values');
-		this.el_message_box_container = $('div#message_box_container');
-		this.overlay_image = $('img#overlay_image');
-		this.el_message_box_message = this.el_message_box_container.find('div#message_box_message');
-		this.el_button_take_control = this.el_message_box_container.find('input#message_box_button_take_control');
-		this.overlay_center_markers = [$('div#overlay_center_distance0'), $('div#overlay_center_distance1')];
-		this.overlay_left_markers = [$('div#overlay_left_marker0'), $('div#overlay_left_marker1')];
-		this.overlay_right_markers = [$('div#overlay_right_marker0'), $('div#overlay_right_marker1')];
-		this.add_camera_selection_listener(function () {
-			teleop_screen._on_camera_selection();
-		});
-		this._select_camera('rear');
-		this.toggle_debug_values(true);
-		this.el_pilot_bar.click(function () {
-			teleop_screen.toggle_debug_values();
-		});
+		try {
+			//normal ui related
+			this.controller_status = gamepad_controller.is_active();
+			this.add_camera_selection_listener(function () {
+				teleop_screen._on_camera_selection();
+			});
+			this._select_camera('rear');
+			// this.toggle_debug_values(true);
+		} catch (error) {
+			console.error('Error in teleop_screen._init():', error);
+		}
 	},
 
 	_render_distance_indicators: function () {
@@ -402,12 +480,10 @@ export var teleop_screen = {
 	_on_camera_selection: function () {
 		const _active = this.active_camera;
 		const _selected = this.selected_camera;
-		const viewport_container = this.el_viewport_container;
-
-		viewport_container.removeClass('selected');
+		this.el_viewport_container.removeClass('selected');
 		this.overlay_image.removeClass('selected');
 		if (_selected == _active) {
-			viewport_container.addClass('selected');
+			this.el_viewport_container.addClass('selected');
 		} else if (_selected != undefined) {
 			this.overlay_image.addClass('selected');
 		}
@@ -417,15 +493,14 @@ export var teleop_screen = {
 		this._debug_values_listeners.push(cb);
 	},
 
+	//TODO: function to show and hide pilot's data. Not needed as pilot values are shown be default and advanced view only controls them
 	toggle_debug_values: function (show) {
 		if (show == undefined) {
 			show = !this.in_debug;
 		}
 		if (show) {
-			this.el_drive_bar.show();
 			this.el_pilot_bar.css({ cursor: 'zoom-out' });
 		} else {
-			// this.el_drive_bar.hide();
 			this.el_pilot_bar.css({ cursor: 'zoom-in' });
 		}
 		this.in_debug = show ? 1 : 0;
@@ -455,6 +530,7 @@ export var teleop_screen = {
 			cb();
 		});
 	},
+
 	//TODO: why it assigns the already init vars to consts?
 	controller_update: function (command) {
 		const message_box_container = this.el_message_box_container;
@@ -505,11 +581,15 @@ export var teleop_screen = {
 			}
 		}
 	},
-
+	/**
+	 * Used by the two stream quality classes (mjpeg and h264) to set the width of the canvas where they will stream the video on
+	 */
 	on_canvas_init: function (width, height) {
 		$('span#debug_screen_dimension').text(width + 'x' + height);
 	},
-
+	/**
+	 * Update the canvas with the new image. Used by the two stream quality classes
+	 */
 	canvas_update: function (ctx) {
 		const message = this._last_server_message;
 		const _ap = message != undefined && message._is_on_autopilot;

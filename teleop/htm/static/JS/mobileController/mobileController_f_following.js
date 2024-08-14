@@ -77,7 +77,7 @@ class FollowingHandler {
 	}
 
 	assignFollowingState(backendCommand) {
-		console.log(backendCommand, CTRL_STAT.followingState);
+		// console.log(backendCommand, CTRL_STAT.followingState);
 		switch (backendCommand) {
 			case 'active':
 				CTRL_STAT.followingState = 'active'; // The system is actively following
