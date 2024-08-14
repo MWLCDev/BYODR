@@ -37,6 +37,11 @@ body {
   background-color: var(--background_color_light_mode)
 }
 
+.hidden {
+  display: none;
+}
+
+
 #logbox_container,
 #advanced_settings_container {
   display: flex;
@@ -228,10 +233,6 @@ body {
   display: inline-block;
   transition: color 0.3s;
   color: var(--text_color_light_mode);
-}
-
-.autopilot_status {
-  display: none;
 }
 
 .inf_speed {
@@ -466,10 +467,11 @@ button {
   border-bottom-left-radius: 10px;
   border-bottom-right-radius: 10px;
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   align-items: center;
   justify-content: center;
   width: 100%;
+  gap: 10px;
 }
 
 #message_box_button_take_control {

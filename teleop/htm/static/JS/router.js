@@ -11,9 +11,10 @@ import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 export class Router {
-	constructor(helpMessageManager, messageContainerManager) {
+	constructor(helpMessageManager, messageContainerManager, advancedThemeManager) {
 		this.helpMessageManager = helpMessageManager;
 		this.messageContainerManager = messageContainerManager;
+		this.advancedThemeManager = advancedThemeManager;
 		$('.hamburger_menu_nav a').click((event) => {
 			this.handleUserMenuRoute(event.target.id);
 			this.assignNavButtonActions(event.target.id);
@@ -66,8 +67,6 @@ export class Router {
 		const activeNavLinkImageSrc = $(`#${selectedLinkId} img`).attr('src');
 		if (activeNavLinkImageSrc) {
 			$('.current_mode_img').attr('src', activeNavLinkImageSrc);
-			console.log(selectedLinkId);
-			console.log(this.mode_to_nav_link[selectedLinkId]);
 			$('.current_mode_text').text(this.mode_to_nav_link[selectedLinkId]);
 		} else {
 			console.error('No image found for ID:', selectedLinkId);
@@ -102,7 +101,13 @@ export class Router {
 			}
 		} else {
 			const pageMap = {
-				settings_link: ['/menu_settings', () => new UserSettingsManager()],
+				settings_link: [
+					'/menu_settings',
+					() => {
+						new UserSettingsManager();
+						this.advancedThemeManager.bindActions();
+					},
+				],
 				controls_link: ['/menu_controls', () => new ControlSettings()],
 				events_link: ['/menu_logbox', () => new LogBox()],
 			};

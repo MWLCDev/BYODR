@@ -3,8 +3,6 @@ class UserSettingsManager {
 		this.form = document.getElementById('form_user_options');
 		this.editButton = document.getElementById('edit_button');
 		this.saveButton = document.getElementById('submit_save_apply');
-		this.toggleButton = document.getElementById('pro-view-toggle-button');
-		this.toggleStatus = document.getElementById('pro-view-toggle-status');
 		this.fetchUserSettings();
 		this.disableFormInputs();
 		this.init();
@@ -24,10 +22,6 @@ class UserSettingsManager {
 				this.saveButton.disabled = false;
 			}
 		});
-
-		if (this.toggleButton) {
-			this.switchToggleText();
-		}
 
 		this.saveButton.style.display = 'none';
 	}
@@ -135,13 +129,6 @@ class UserSettingsManager {
 			.catch((error) => {
 				alert('Error saving settings: ' + error.message);
 			});
-	}
-
-	// Handle Pro View toggle switch text
-	switchToggleText() {
-		this.toggleButton.addEventListener('change', () => {
-			this.toggleStatus.textContent = this.toggleButton.checked ? 'On' : 'Off';
-		});
 	}
 
 	enableEditMode() {

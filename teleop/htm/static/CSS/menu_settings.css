@@ -105,6 +105,7 @@ fieldset input[type=text] {
   border-radius: 20px;
   width: 80px;
   height: 20px;
+  background-color: #D0D0D0;
 }
 
 .slider:before {

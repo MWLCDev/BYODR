@@ -136,7 +136,6 @@ class ConfidenceHandler(websocket.WebSocketHandler):
         self.vehicle = vehicle_s
 
     def open(self):
-        self.start_time = time.clock()
         logger.info("Confidence websocket connection opened.")
         self.runner = OverviewConfidence(self.inference, self.vehicle)
         self.write_message("Connection established.")

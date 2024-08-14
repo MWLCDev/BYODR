@@ -47,9 +47,9 @@ function showSSID() {
 
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	let { helpMessageManager, messageContainerManager } = setupNavigationBar();
+	let { helpMessageManager, messageContainerManager,advancedThemeManager } = setupNavigationBar();
 
-	const router = new Router(helpMessageManager, messageContainerManager);
+	const router = new Router(helpMessageManager, messageContainerManager,advancedThemeManager);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link');
 

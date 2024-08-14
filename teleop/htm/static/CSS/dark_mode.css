@@ -15,3 +15,8 @@ body.dark-mode #video_stream_type {
   background-color: var(--background_color_light_mode);
   color: var(--text_color_light_mode);
 }
+
+
+body.advanced-mode .advanced_view {
+  display: none !important ;
+}

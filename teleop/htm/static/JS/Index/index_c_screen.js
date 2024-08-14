@@ -2,7 +2,7 @@ import { dev_tools } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
-class ThemeManager {
+class DarkThemeManager {
 	constructor() {
 		this.darkModeCheckbox = document.querySelector('#nav_dark_mode_toggle_container input[type="checkbox"]');
 		this.body = document.body;
@@ -39,6 +39,54 @@ class ThemeManager {
 		const logo = document.querySelector('#header_bar #VOR_center_logo');
 		const logoSrc = isDarkMode ? '../static/assets/VOR_Logo_light.png' : '../static/assets/VOR_Logo_dark.png';
 		logo.setAttribute('src', logoSrc);
+	}
+}
+
+class AdvancedThemeManager {
+	constructor() {
+		this.body = document.body;
+		this.isAdvancedMode = true;
+		this.loadAdvancedThemeSavedState();
+		this.setAdvancedTheme();
+	}
+
+	bindActions() {
+		this.advancedModeCheckBox = document.getElementById('pro-view-toggle-button');
+		this.toggleStatus = $('#pro-view-toggle-status');
+		this.addEventListeners();
+		this.toggleAdvancedTheme();
+	}
+
+	loadAdvancedThemeSavedState() {
+		this.isAdvancedMode = localStorage.getItem('advancedMode');
+	}
+
+	addEventListeners() {
+		this.advancedModeCheckBox.addEventListener('change', () => {
+			this.isAdvancedMode = this.advancedModeCheckBox.checked;
+			this.toggleAdvancedTheme();
+		});
+	}
+
+	toggleAdvancedTheme() {
+		this.changeToggleUI();
+		this.setAdvancedTheme();
+		localStorage.setItem('advancedMode', this.isAdvancedMode ? true : false);
+	}
+
+	changeToggleUI() {
+		if (this.isAdvancedMode) {
+			this.toggleStatus.text('on');
+			this.advancedModeCheckBox.checked = true;
+		} else {
+			this.toggleStatus.text('off');
+			this.advancedModeCheckBox.checked = false;
+		}
+		this.setAdvancedTheme();
+	}
+
+	setAdvancedTheme() {
+		this.body.classList.toggle('advanced-mode', this.isAdvancedMode); //Add dark mode to body only
 	}
 }
 
@@ -190,10 +238,11 @@ class MessageContainerManager {
 
 export function setupNavigationBar() {
 	new NavigationManager();
-	new ThemeManager();
+	new DarkThemeManager();
+	let advancedThemeManager = new AdvancedThemeManager();
 	let helpMessageManager = new HelpMessageManager();
 	let messageContainerManager = new MessageContainerManager(helpMessageManager);
-	return { helpMessageManager, messageContainerManager };
+	return { helpMessageManager, messageContainerManager, advancedThemeManager };
 }
 
 export var screen_utils = {
@@ -553,41 +602,42 @@ export var teleop_screen = {
 			const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
 			var show_message = false;
 			var show_button = false;
-
-			if (!is_connection_ok) {
-				message_box_message.text(c_msg_connection_lost);
-				message_box_message.removeClass();
-				message_box_message.addClass('error_message');
-				show_message = true;
-			} else if (controller_status == 0) {
-				message_box_message.text(c_msg_controller_err);
-				message_box_message.removeClass();
-				message_box_message.addClass('warning_message');
-				show_message = true;
-			} else if (controller_status == 2) {
-				message_box_message.text(c_msg_teleop_view_only);
-				message_box_message.removeClass();
-				message_box_message.addClass('warning_message');
-				show_message = true;
-				show_button = true;
-			}
-			if (show_message) {
-				if (show_button) {
-					button_take_control.show();
-				} else {
-					button_take_control.hide();
+			if (message_box_message != undefined) {
+				if (!is_connection_ok) {
+					message_box_message.text(c_msg_connection_lost);
+					message_box_message.removeClass();
+					message_box_message.addClass('error_message');
+					show_message = true;
+				} else if (controller_status == 0) {
+					message_box_message.text(c_msg_controller_err);
+					message_box_message.removeClass();
+					message_box_message.addClass('warning_message');
+					show_message = true;
+				} else if (controller_status == 2) {
+					message_box_message.text(c_msg_teleop_view_only);
+					message_box_message.removeClass();
+					message_box_message.addClass('warning_message');
+					show_message = true;
+					show_button = true;
 				}
-				message_box_container.show();
-			} else {
-				message_box_container.hide();
-			}
-			if (command != undefined && command.arrow_left) {
-				this._schedule_camera_cycle();
-			} else if (command != undefined && command.arrow_right) {
-				this._schedule_camera_cycle();
-			}
-			if (command != undefined && command.button_right) {
-				this._schedule_photo_snapshot_effect();
+				if (show_message) {
+					if (show_button) {
+						button_take_control.show();
+					} else {
+						button_take_control.hide();
+					}
+					message_box_container.show();
+				} else {
+					message_box_container.hide();
+				}
+				if (command != undefined && command.arrow_left) {
+					this._schedule_camera_cycle();
+				} else if (command != undefined && command.arrow_right) {
+					this._schedule_camera_cycle();
+				}
+				if (command != undefined && command.button_right) {
+					this._schedule_photo_snapshot_effect();
+				}
 			}
 		} catch (error) {
 			console.error('Error in controller_update: ', error);
