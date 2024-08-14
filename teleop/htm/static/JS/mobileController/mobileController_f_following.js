@@ -9,6 +9,7 @@ class FollowingHandler {
 	}
 
 	initializeDOM() {
+		console.log('in mobile');
 		// $("#mobile_controller_container .current_mode_state").text('Loading...')
 		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .current_mode_button').show();
@@ -31,7 +32,7 @@ class FollowingHandler {
 		if (this.canvas) {
 			this.ctx = this.canvas.getContext('2d');
 		} else {
-			setTimeout(initializeDOM, 500); // Retry after 500ms
+			setTimeout(() => this.initializeCanvas(), 500); // Retry after 500ms using arrow function
 		}
 	}
 

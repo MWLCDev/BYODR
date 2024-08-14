@@ -74,8 +74,7 @@ export class Router {
 						this.loadContentBasedOnDevice();
 					} else {
 						// Call the appropriate callback based on the device
-
-						isMobileDevice() ? setupMobileController() : showHelp();
+						this.callbackBasedOnDevice();
 					}
 				});
 			}
@@ -93,21 +92,24 @@ export class Router {
 	loadContentBasedOnDevice() {
 		const url = isMobileDevice() ? '/mc' : '/normal_ui';
 		this.loadPage(url, () => {
-			if (isMobileDevice()) {
-				setupMobileController();
-			} else {
-				this.messageContainerManager.initEventHandlers();
-				teleop_screen.set_normal_ui_elements();
-				teleop_screen._init();
-			}
+			this.callbackBasedOnDevice();
 			CTRL_STAT.mobileIsActive = isMobileDevice();
 		});
+	}
+	callbackBasedOnDevice() {
+		if (isMobileDevice()) {
+			setupMobileController();
+		} else {
+			this.messageContainerManager.initEventHandlers();
+			teleop_screen.set_normal_ui_elements();
+			teleop_screen._init();
+		}
 	}
 	/**
 	 * Actions that are bonded to the navbar buttons only. They will control the switch for the features
 	 */
 	assignNavButtonActions(navLink) {
-		if (navLink == 'follow_link') followingNavButtonHandler.initializeDOM();
+		if (navLink == 'follow_link' && isMobileDevice()) followingNavButtonHandler.initializeDOM();
 		else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
 		else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
 		else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();

@@ -3,7 +3,6 @@ import { socket_utils } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { screen_utils, teleop_screen } from './index_c_screen.js';
 
-
 class LoggerServerSocket {
 	constructor() {
 		this.server_message_listeners = [];
@@ -89,6 +88,7 @@ class MovementCommandSocket {
 		var current_page = localStorage.getItem('user.menu.screen');
 		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
 			this._send(CTRL_STAT.mobileCommandJSON);
+			teleop_screen.message_box_update();
 
 			// Reset all keys except throttle and steering
 			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
@@ -97,7 +97,9 @@ class MovementCommandSocket {
 					delete CTRL_STAT.mobileCommandJSON[key];
 				}
 			});
+			console.log('in mobile ui socket');
 		} else {
+			console.log('in normal ui socket');
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
 			// The selected camera for ptz control can also be undefined.
 			gamepad_command.camera_id = -1;

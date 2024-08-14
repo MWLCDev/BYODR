@@ -9,7 +9,6 @@ import { Router } from './router.js';
 function initComponents() {
 	try {
 		[socket_utils, dev_tools, page_utils].forEach((component) => component._init());
-		//need to set set_normal_ui_elements and init of teleop screen, only when on the normal ui screen
 		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 		$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 	} catch (error) {
@@ -52,7 +51,7 @@ $(window).on('load', () => {
 
 	const router = new Router(helpMessageManager, messageContainerManager);
 
-	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'settings_link');
+	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link');
 
 	document.addEventListener('visibilitychange', handleVisibilityChange, false);
 	$(window).on('focus', start_all_handlers);

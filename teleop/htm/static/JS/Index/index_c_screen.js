@@ -1,5 +1,6 @@
 import { dev_tools } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
+import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
 class ThemeManager {
 	constructor() {
@@ -302,6 +303,7 @@ export var teleop_screen = {
 	c_msg_connection_lost: 'Connection lost - please wait or refresh the page.',
 	c_msg_controller_err: 'Controller not detected - please press a button on the device.',
 	c_msg_teleop_view_only: 'Another user is in control - you can remain as viewer or take over.',
+	c_msg_teleop_follow: 'Use your phone to activate the Following mode and stay nearby the robot.',
 	active_camera: 'front', // The active camera is rendered on the main display.
 	_debug_values_listeners: [],
 	camera_activation_listeners: [],
@@ -531,19 +533,27 @@ export var teleop_screen = {
 		});
 	},
 
+	message_box_update: function () {
+		console.log(CTRL_STAT.currentPage);
+		if (CTRL_STAT.currentPage == 'follow_link') {
+			this.el_message_box_message.text(this.c_msg_teleop_follow);
+			console.log('in follow mode');
+		}
+	},
 	//TODO: why it assigns the already init vars to consts?
 	controller_update: function (command) {
-		const message_box_container = this.el_message_box_container;
-		const message_box_message = this.el_message_box_message;
-		const button_take_control = this.el_button_take_control;
-		const is_connection_ok = this.is_connection_ok;
-		const controller_status = this.controller_status;
-		const c_msg_connection_lost = this.c_msg_connection_lost;
-		const c_msg_controller_err = this.c_msg_controller_err;
-		const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
-		var show_message = false;
-		var show_button = false;
-		if (message_box_message != undefined) {
+		try {
+			const message_box_container = this.el_message_box_container;
+			const message_box_message = this.el_message_box_message;
+			const button_take_control = this.el_button_take_control;
+			const is_connection_ok = this.is_connection_ok;
+			const controller_status = this.controller_status;
+			const c_msg_connection_lost = this.c_msg_connection_lost;
+			const c_msg_controller_err = this.c_msg_controller_err;
+			const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
+			var show_message = false;
+			var show_button = false;
+
 			if (!is_connection_ok) {
 				message_box_message.text(c_msg_connection_lost);
 				message_box_message.removeClass();
@@ -579,6 +589,8 @@ export var teleop_screen = {
 			if (command != undefined && command.button_right) {
 				this._schedule_photo_snapshot_effect();
 			}
+		} catch (error) {
+			console.error('Error in controller_update: ', error);
 		}
 	},
 	/**
