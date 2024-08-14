@@ -1,14 +1,15 @@
-import { dev_tools, page_utils, socket_utils, network_utils, isMobileDevice } from './Index/index_a_utils.js';
-import { teleop_screen, setupNavigationBar } from './Index/index_c_screen.js';
+import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
+import { setupNavigationBar } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { gamepad_socket, teleop_start_all } from './Index/index_e_teleop.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
-import { mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
+import { mjpeg_start_all, mjpeg_stop_all, init_mjpeg } from './Index/index_video_mjpeg.js';
 import { Router } from './router.js';
 
 function initComponents() {
 	try {
 		[socket_utils, dev_tools, page_utils].forEach((component) => component._init());
+    init_mjpeg()
 		$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 		$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 	} catch (error) {
@@ -47,9 +48,8 @@ function showSSID() {
 
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	let { helpMessageManager, messageContainerManager,advancedThemeManager } = setupNavigationBar();
-
-	const router = new Router(helpMessageManager, messageContainerManager,advancedThemeManager);
+	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupNavigationBar();
+	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link');
 

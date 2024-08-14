@@ -183,7 +183,8 @@ class RealCameraController {
 // One for each camera.
 var front_camera_frame_controller = new MJPEGFrameController();
 var rear_camera_frame_controller = new MJPEGFrameController();
-
+var mjpeg_rear_camera;
+var mjpeg_front_camera;
 // Accessed outside of this module.
 var mjpeg_page_controller = {
 	store: new MJPEGControlLocalStorage(),
@@ -287,12 +288,12 @@ var mjpeg_page_controller = {
 		const _front_camera = this.cameras[0];
 		const _rear_camera = this.cameras[1];
 		if (_mjpeg) {
-      _front_camera.set_rate(position == 'front' ? 'fast' : 'slow');
-      _rear_camera.set_rate(position == 'rear' ? 'fast' : 'slow');
-  } else {
-      _front_camera.set_rate(position == 'front' ? 'off' : 'slow');
-      _rear_camera.set_rate(position == 'rear' ? 'off' : 'slow');
-  }
+			_front_camera.set_rate(position == 'front' ? 'fast' : 'slow');
+			_rear_camera.set_rate(position == 'rear' ? 'fast' : 'slow');
+		} else {
+			_front_camera.set_rate(position == 'front' ? 'off' : 'slow');
+			_rear_camera.set_rate(position == 'rear' ? 'off' : 'slow');
+		}
 	},
 };
 
@@ -313,9 +314,6 @@ var mjpeg_front_camera_consumer = function (_blob) {
 		$('span#front_camera_framerate').text(front_camera_frame_controller.get_actual_fps().toFixed(0));
 	}
 };
-
-var mjpeg_rear_camera = new RealCameraController('rear', rear_camera_frame_controller, mjpeg_rear_camera_consumer);
-var mjpeg_front_camera = new RealCameraController('front', front_camera_frame_controller, mjpeg_front_camera_consumer);
 
 export function mjpeg_start_all() {
 	if (mjpeg_rear_camera != undefined) {
@@ -381,6 +379,8 @@ function findCanvasAndExecute() {
 	}
 }
 
-window.addEventListener('load', function () {
+export function init_mjpeg() {
+	mjpeg_rear_camera = new RealCameraController('rear', rear_camera_frame_controller, mjpeg_rear_camera_consumer);
+	mjpeg_front_camera = new RealCameraController('front', front_camera_frame_controller, mjpeg_front_camera_consumer);
 	setTimeout(findCanvasAndExecute, 500); // Initial delay to ensure all scripts have a chance to run
-});
+}
