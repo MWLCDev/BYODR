@@ -131,7 +131,7 @@ class OverviewConfidence:
         m.save(file_path)
         with open(file_path, "r") as file:
             content = file.read()
-        offline_dep = self.use_local_files(content)  # Ensure this method is defined to handle local file dependencies
+        offline_dep = self.use_local_files(content)  # Handle local file dependencies
 
         with open(file_path, "w") as file:
             file.write(offline_dep)

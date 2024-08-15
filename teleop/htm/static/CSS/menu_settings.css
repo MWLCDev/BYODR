@@ -1,16 +1,16 @@
 .button {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: 80px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
   border-radius: 8px;
   font-weight: 700;
-  cursor: pointer;
-  transition: background-color 0.3s ease, color 0.3s ease;
   text-align: center;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
 }
 
 #edit_button {
-  color: #530D73;
   margin-left: auto;
+  color: #530D73;
 }
 
 #form_user_options {
@@ -28,35 +28,35 @@
 }
 
 fieldset {
-  border: 0;
   padding-left: 5%;
+  border: 0;
 }
 
 /* Style the legend of the fieldset */
 legend {
-  font-size: 24px;
-  font-weight: bold;
+  padding-top: 10px;
   padding-right: 10px;
   padding-bottom: 10px;
-  padding-top: 10px;
+  font-size: 24px;
+  font-weight: bold;
 }
 
 /* Style the input text of the fieldset */
 fieldset input[type=text] {
-  background-color: #E7E7E7;
-  font-size: 16px;
-  padding: 5px;
-  margin-left: 15px;
-  border-radius: 5px;
-  width: 40%;
-  border: 0;
   box-shadow: inset 0px 0px 7px rgba(0, 0, 0, 0.2);
+  width: 40%;
+  margin-left: 15px;
+  padding: 5px;
+  background-color: #E7E7E7;
+  border: 0;
+  border-radius: 5px;
+  font-size: 16px;
 }
 
 #submit_save_apply {
-  color: #f0f0f0;
-  background-color: #530D73;
   margin-left: auto;
+  background-color: #530D73;
+  color: #f0f0f0;
 }
 
 /*////////////    Style for the pro view toggle slider    ////////////*/
@@ -72,20 +72,18 @@ fieldset input[type=text] {
 }
 
 #pro-view-toggle-slider {
-  margin-top: 10px;
   display: flex;
-  align-items: center;
   flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
 }
 
 /* Toggle switch styling */
 .switch {
-  position: relative;
   display: inline-block;
+  position: relative;
   width: 80px;
-  /* Increased width */
   height: 20px;
-  /* Decreased height for a thinner slider */
 }
 
 .switch input {
@@ -96,27 +94,27 @@ fieldset input[type=text] {
 
 .slider {
   position: absolute;
-  cursor: pointer;
   top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  transition: .4s;
-  border-radius: 20px;
   width: 80px;
   height: 20px;
+  transition: .4s;
   background-color: #D0D0D0;
+  cursor: pointer;
+  border-radius: 20px;
 }
 
 .slider:before {
-  position: absolute;
   content: "";
-  height: 26px;
-  width: 26px;
-  left: -2px;
+  position: absolute;
   bottom: -3px;
-  background-color: #530D73;
+  left: -2px;
+  width: 26px;
+  height: 26px;
   transition: .4s;
+  background-color: #530D73;
   border-radius: 50%;
 }
 
@@ -134,29 +132,29 @@ input:checked+.slider:before {
 
 /* Toggle name text */
 #pro-view-toggle-name {
-  color: #2B2B2B;
-  font-weight: bold;
   font-size: 24px;
+  font-weight: bold;
+  color: #2B2B2B;
   text-align: center;
 }
 
 /* Toggle status text */
 #pro-view-toggle-status {
-  color: #530D73;
-  font-weight: bold;
-  font-size: 20px;
   padding-left: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #530D73;
 }
 
 
 #background-image {
   position: relative;
-  bottom: 80%;
-  background-image: url('../assets/VR - pattern tree 1.png');
-  background-size: contain;
-  background-position: right;
-  background-repeat: no-repeat;
   z-index: -1;
+  bottom: 80%;
   width: 100%;
   height: 130%;
+  background-image: url('../assets/VR - pattern tree 1.png');
+  background-repeat: no-repeat;
+  background-position: right;
+  background-size: contain;
 }

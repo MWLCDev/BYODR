@@ -650,7 +650,7 @@ export var teleop_screen = {
 		$('span#debug_screen_dimension').text(width + 'x' + height);
 	},
 	/**
-	 * Update the canvas with the new image. Used by the two stream quality classes
+	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes
 	 */
 	canvas_update: function (ctx) {
 		const message = this._last_server_message;

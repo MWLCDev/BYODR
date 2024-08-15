@@ -1,8 +1,8 @@
 @font-face {
-  font-family: 'Sora';
   src: url('../assets/Sora-VariableFont_wght.ttf') format('truetype');
-  font-weight: normal;
+  font-family: 'Sora';
   font-style: normal;
+  font-weight: normal;
 }
 
 
@@ -19,22 +19,22 @@
 }
 
 * {
+  box-sizing: border-box;
   margin: 0;
   padding: 0;
-  box-sizing: border-box;
 }
 
 html,
 body {
-  height: 100%;
-  color: var(--text_color_light_mode);
   display: flex;
   flex-direction: column;
-  align-items: center;
   justify-content: center;
-  font-family: "Sora", Arial, sans-serif;
+  align-items: center;
   overflow: hidden;
-  background-color: var(--background_color_light_mode)
+  height: 100%;
+  background-color: var(--background_color_light_mode);
+  font-family: "Sora", Arial, sans-serif;
+  color: var(--text_color_light_mode);
 }
 
 .hidden {
@@ -46,8 +46,8 @@ body {
 #advanced_settings_container {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
   justify-content: flex-start;
+  align-items: flex-start;
   gap: 0.5rem;
   width: 90vw;
   margin: 0 auto;
@@ -56,30 +56,28 @@ body {
 #advanced_settings_container .title,
 #controls_settings_container .title,
 #logbox_container .title {
-  font-size: 50px;
-  font-weight: bold;
+  width: 100%;
+  margin-bottom: 25px;
   padding-top: 40px;
   padding-bottom: 40px;
-  color: var(--VOR-color);
   border-bottom: 2px solid #694978;
-  margin-bottom: 25px;
-  width: 100%;
+  font-size: 50px;
+  font-weight: bold;
+  color: var(--VOR-color);
 }
 
 
 /* Overlay when sidebar is active */
 #normal_ui::before {
+  /* background: rgba(0, 0, 0, 0.5); */
   content: '';
   display: none;
   position: fixed;
+  z-index: 2;
   top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
-  /* background: rgba(0, 0, 0, 0.5); */
-  /* add a little dark opacity for it */
-  z-index: 2;
-  /* Below the sidebar and above the content */
 }
 
 /* Apply the blur effect to the content when sidebar is active */
@@ -89,26 +87,25 @@ body {
 
 #normal_ui.expanded {
   filter: blur(5px);
-  /* Adjust blur intensity as desired */
 }
 
 
 /* Top Layer: Logo and Hamburger Menu */
 #header_bar {
-  width: 100vw;
-  padding: 10px 20px;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100vw;
+  padding: 10px 20px;
   border-bottom: 2px solid var(--VOR-light-color);
 }
 
 #header_bar .left_section,
 #header_bar .middle_section,
 #header_bar .right_section {
-  flex: 1;
   display: flex;
   align-items: center;
+  flex: 1;
 }
 
 #header_bar .left_section {
@@ -117,8 +114,8 @@ body {
 }
 
 #header_bar .middle_section {
-  flex: 2;
   justify-content: center;
+  flex: 2;
 }
 
 #header_bar .right_section {
@@ -139,8 +136,8 @@ body {
 }
 
 #VOR_center_logo {
-  height: 30px;
   display: block;
+  height: 30px;
 }
 
 #current_seg_name {
@@ -151,30 +148,29 @@ body {
 /* Adjust the right section image */
 #header_bar .right_section img {
   margin-left: auto;
-  /* Push the image to the right */
 }
 
 
 /* Second Layer: Advanced View */
 #debug_drive_bar {
   display: block;
-  padding: 10px;
   width: 100%;
+  padding: 10px;
   border-bottom: 2px solid var(--VOR-light-color);
 }
 
 #debug_drive_values {
   display: flex;
   flex-direction: row;
+  flex-wrap: wrap;
   justify-content: center;
   align-items: center;
-  flex-wrap: wrap;
 }
 
 #debug_drive_values p {
-  font-size: 1rem;
   display: inline-block;
   margin-right: 20px;
+  font-size: 1rem;
   font-weight: 200;
 }
 
@@ -184,11 +180,11 @@ body {
 
 /* Third Layer: Stream Quality and Options */
 #horizontal_bar {
-  width: 100%;
-  padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  width: 100%;
+  padding: 1rem;
 }
 
 #horizontal_bar .left_section,
@@ -209,113 +205,107 @@ body {
 .middle_section,
 .right_section {
   display: inline-flex;
+  justify-content: center;
   align-items: center;
   align-content: center;
-  justify-content: center;
 }
 
 .right_section {
-  justify-content: flex-end;
   display: flex;
   flex-direction: column;
+  justify-content: flex-end;
   align-items: flex-end;
   padding: 0 20px;
 }
 
 .stream_quality p {
-  margin-bottom: 5px;
   width: 30%;
+  margin-bottom: 5px;
 }
 
 .caret {
-  cursor: pointer;
-  font-size: 20px;
   display: inline-block;
   transition: color 0.3s;
+  cursor: pointer;
+  font-size: 20px;
   color: var(--text_color_light_mode);
 }
 
 .inf_speed {
-  display: none;
   /* display: flex; */
+  display: none;
+  flex-direction: column;
   justify-content: center;
   align-items: center;
   align-content: center;
-  flex-direction: column;
 }
 
 .stream_quality {
   display: flex;
-  align-items: center;
-  padding: 0 0 0 2rem;
-  align-content: center;
   justify-content: flex-start;
+  align-items: center;
+  align-content: center;
   width: min-content;
+  padding: 0 0 0 2rem;
   padding-right: 1rem;
-
 }
 
 #mjpeg_stream_controls {
   display: flex;
-  align-items: center;
-  justify-content: center;
   flex-direction: column;
+  justify-content: center;
+  align-items: center;
   margin: 0 0.5rem;
 }
 
 #stream_quality_dropdown {
   display: flex;
   flex-direction: row;
-  align-items: center;
   justify-content: center;
+  align-items: center;
 }
 
 #video_stream_type {
-  color: var(--text_color_dark_mode);
-  padding: 8px 16px;
-  margin: 0 5px;
-  background-color: var(--background_color_dark_mode);
-  border: none;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: background-color 0.3s;
   -webkit-appearance: none;
   -moz-appearance: none;
   appearance: none;
-  /* Necessary to remove default dropdown arrow */
   position: relative;
+  margin: 0 5px;
+  padding: 8px 16px;
+  transition: background-color 0.3s;
+  background-color: var(--background_color_dark_mode);
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  color: var(--text_color_dark_mode);
 }
 
 
 #video_stream_type::after {
-  content: '\25BC';
-  /* Unicode for down arrow */
-  position: absolute;
-  right: 10px;
-  top: calc(50% - 0.5em);
   pointer-events: none;
-  /* Prevents the arrow from being clickable */
+  content: '\25BC';
+  position: absolute;
+  top: calc(50% - 0.5em);
+  right: 10px;
 }
 
 
 button {
-  transition: background-color 0.3s ease;
   width: auto;
   padding: 10px 20px;
-  border: none;
-  padding: 8px 16px;
-  font-size: 14px;
+  transition: background-color 0.3s ease;
   cursor: pointer;
+  border: none;
   border-radius: 4px;
-  transition: background-color 0.3s;
+  font-size: 14px;
 }
 
 
 .speed_value {
   display: flex;
-  align-items: center;
-  justify-content: start;
   flex-direction: column;
+  justify-content: start;
+  align-items: center;
 }
 
 .inf_speed_value {
@@ -324,15 +314,15 @@ button {
 
 .speed_display {
   display: flex;
-  align-items: center;
   justify-content: start;
+  align-items: center;
   margin-right: 20px;
 }
 
 .right_section button {
+  cursor: pointer;
   border: none;
   border-radius: 4px;
-  cursor: pointer;
 }
 
 .hidden {
@@ -342,17 +332,17 @@ button {
 }
 
 .message_container {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   position: fixed;
+  z-index: 1000;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  background: white;
-  padding: 20px;
-  border-radius: 8px;
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
   width: 50vw;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
   text-align: center;
-  z-index: 1000;
 }
 
 .message_container img {
@@ -368,10 +358,9 @@ button {
 }
 
 .message {
-  font-size: 16px;
   margin: 0;
+  font-size: 16px;
   color: black;
-
 }
 
 .close_btn {
@@ -389,58 +378,51 @@ button {
   left: 50%;
   transform: translate(-50%, -50%);
   padding: 10px 20px;
-  font-size: 16px;
-  cursor: pointer;
   background-color: #007BFF;
+  cursor: pointer;
   border: none;
   border-radius: 5px;
+  font-size: 16px;
 }
 
 .fade-in {
   animation: fadeIn 1s;
 }
 
-/* .right_section button:hover {
-  background-color: #218838;
-} */
-
 /* Fourth Layer: Camera Stream View  */
 #viewport_container {
-  position: relative;
-  flex: 1;
-  /* take remaining space */
-  width: 100%;
-  /* take full width of the parent */
   display: flex;
   flex-direction: column;
-  /* align children vertically */
+  flex: 1;
+  position: relative;
   overflow: hidden;
+  width: 100%;
 }
 
 #viewport_canvas {
+  position: absolute;
   width: 100% !important;
   height: 100% !important;
-  position: absolute;
 }
 
 #control_bar {
-  position: absolute;
-  bottom: 10px;
-  right: 2vw;
-  border-radius: 8px;
-  padding: 10px;
   display: flex;
   flex-direction: column;
-  align-items: flex-end;
-  z-index: 99;
-  align-content: center;
   justify-content: flex-end;
+  align-items: flex-end;
+  align-content: center;
+  position: absolute;
+  z-index: 99;
+  bottom: 10px;
+  right: 2vw;
+  padding: 10px;
+  border-radius: 8px;
 }
 
 .preview_img {
   height: auto;
-  border-radius: 5px;
   margin: 5px 0;
+  border-radius: 5px;
 }
 
 #overlay_control_container {
@@ -449,41 +431,41 @@ button {
 }
 
 #overlay_control_container #expand_camera_icon {
-  cursor: pointer;
+  right: 0;
   width: 20px;
   height: 20px;
   margin: 5px;
-  right: 0;
+  cursor: pointer;
 }
 
 
 #message_box_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  gap: 10px;
   position: absolute;
   top: 0;
   left: 50%;
   transform: translate(-50%, 0);
-  background-color: rgba(0, 0, 0, 0.75);
-  padding: 20px;
-  border-bottom-left-radius: 10px;
-  border-bottom-right-radius: 10px;
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: center;
   width: 100%;
-  gap: 10px;
+  padding: 20px;
+  background-color: rgba(0, 0, 0, 0.75);
+  border-bottom-right-radius: 10px;
+  border-bottom-left-radius: 10px;
 }
 
 #message_box_button_take_control {
-  height: 100%;
-  text-align: center;
-  background-color: var(--VOR-color);
-  color: white;
-  padding: 0.5rem 0.2rem;
-  border-radius: 10px;
-  text-transform: uppercase;
-  font-weight: 700;
   display: none;
+  height: 100%;
+  padding: 0.5rem 0.2rem;
+  background-color: var(--VOR-color);
+  border-radius: 10px;
+  font-weight: 700;
+  color: white;
+  text-align: center;
+  text-transform: uppercase;
 }
 
 #message_box_message {
@@ -491,15 +473,15 @@ button {
 }
 
 #geo_data {
-  background: rgba(255, 255, 255, 0.8);
-  color: var(--text_color_light_mode);
-  padding: 5px 10px;
-  border-radius: 5px;
-  font-size: 14px;
+  display: flex;
   position: absolute;
   bottom: 2.5rem;
   left: 2rem;
-  display: flex
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 5px;
+  font-size: 14px;
+  color: var(--text_color_light_mode);
 }
 
 #geo_data p:nth-child(2) {
@@ -512,21 +494,20 @@ button {
 }
 
 div.overlay_distance {
+  pointer-events: none;
   position: absolute;
   visibility: visible;
-  text-align: center;
-  color: rgba(255, 255, 120, 0.99);
   border-bottom: 2px solid rgba(255, 255, 120, 0.99);
-  pointer-events: none;
-
+  color: rgba(255, 255, 120, 0.99);
+  text-align: center;
 }
 
 #overlay_image {
-  margin: 5px 0 0 5px;
-  border-radius: 5px;
+  display: none;
   width: 320px;
   height: 240px;
-  display: none;
+  margin: 5px 0 0 5px;
+  border-radius: 5px;
 }
 
 #overlay_distance_markers {
@@ -537,37 +518,37 @@ div.overlay_distance {
 }
 
 #overlay_center_distance0 {
-  width: 360px;
-  left: calc(50vw - 180px);
   bottom: 52%;
+  left: calc(50vw - 180px);
+  width: 360px;
 }
 
 #overlay_center_distance1 {
-  width: 600px;
-  left: calc(50vw - 300px);
   bottom: 25%;
+  left: calc(50vw - 300px);
+  width: 600px;
 }
 
 #overlay_left_marker0 {
-  width: 40px;
-  left: 0;
   bottom: 45%;
+  left: 0;
+  width: 40px;
 }
 
 #overlay_left_marker1 {
-  width: 35px;
-  left: 0;
   bottom: 34%;
+  left: 0;
+  width: 35px;
 }
 
 #overlay_right_marker0 {
-  width: 40px;
-  right: 0;
   bottom: 45%;
+  right: 0;
+  width: 40px;
 }
 
 #overlay_right_marker1 {
-  width: 35px;
-  right: 0;
   bottom: 34%;
+  right: 0;
+  width: 35px;
 }

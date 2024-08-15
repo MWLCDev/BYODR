@@ -140,16 +140,13 @@ class ConfidenceHandler(websocket.WebSocketHandler):
         self.runner = OverviewConfidence(self.inference, self.vehicle)
         self.write_message("Connection established.")
 
-    def send_loading_message(self):
-        self.write_message("loading")
-
     def on_message(self, message):
-        if message == "Start overview confidence":
+        if message == "start_confidence":
             self.runner.start()
             self.write_message("Received start")
-        elif message == "Stop overview confidence":
+        elif message == "stop_confidence":
             self.write_message("Received stopping command")
-            self.send_loading_message()
+            self.write_message("loading")
             self.runner.stop()
             self.runner.process_data()
             self.write_message(self.runner.map_name)

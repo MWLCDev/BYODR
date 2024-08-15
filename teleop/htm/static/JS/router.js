@@ -74,7 +74,6 @@ export class Router {
 	}
 
 	handleUserMenuRoute(selectedLinkId) {
-		CTRL_STAT.mobileIsActive = false;
 		this.updateModeUI(selectedLinkId);
 
 		CTRL_STAT.currentPage = selectedLinkId;
@@ -118,10 +117,7 @@ export class Router {
 
 	loadContentBasedOnDevice() {
 		const url = isMobileDevice() ? '/mc' : '/normal_ui';
-		this.loadPage(url, () => {
-			this.callbackBasedOnDevice();
-			CTRL_STAT.mobileIsActive = isMobileDevice();
-		});
+		this.loadPage(url, () => this.callbackBasedOnDevice());
 	}
 	callbackBasedOnDevice() {
 		if (isMobileDevice()) {
@@ -144,7 +140,6 @@ export class Router {
 			this.helpMessageManager.connectPhoneMessage();
 			$('.message_container').removeClass('hidden').hide().fadeIn(500);
 			closeMessageContainer();
-			console.log('clicked');
 		}
 	}
 }

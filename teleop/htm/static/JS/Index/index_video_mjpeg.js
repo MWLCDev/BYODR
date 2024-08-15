@@ -143,7 +143,7 @@ class RealCameraController {
 					return ws.attempt_reconnect;
 				};
 				ws.onopen = function () {
-					console.log('MJPEG ' + _instance.camera_position + ' camera connection established.');
+					// console.log('MJPEG ' + _instance.camera_position + ' camera connection established.');
 					//_instance.capture();
 				};
 				ws.onclose = function () {

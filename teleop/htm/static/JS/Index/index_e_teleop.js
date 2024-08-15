@@ -1,5 +1,5 @@
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
-import { socket_utils } from './index_a_utils.js';
+import { socket_utils,isMobileDevice } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { screen_utils, teleop_screen } from './index_c_screen.js';
 
@@ -86,7 +86,7 @@ class MovementCommandSocket {
 		const gc_active = gamepad_controller.is_active();
 		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
 		var current_page = localStorage.getItem('user.menu.screen');
-		if (CTRL_STAT.mobileIsActive || modeSwitchingPages.includes(current_page)) {
+		if (isMobileDevice() || modeSwitchingPages.includes(current_page)) {
 			this._send(CTRL_STAT.mobileCommandJSON);
 			teleop_screen.message_box_update();
 
