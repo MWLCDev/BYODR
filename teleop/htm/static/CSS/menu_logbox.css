@@ -1,6 +1,5 @@
 body {
   overflow: auto;
-  /* to make the table scrollable  */
 }
 
 .table_container {
@@ -9,18 +8,18 @@ body {
 }
 
 table#display {
+  border-collapse: collapse;
   overflow: auto;
   width: 100%;
-  border-collapse: collapse;
 }
 
 table td {
+  margin-right: 2vh;
+  margin-left: 2vh;
+  padding: 10px;
   font-size: 19px;
   text-align: center;
   white-space: nowrap;
-  margin-left: 2vh;
-  margin-right: 2vh;
-  padding: 10px;
 }
 
 table tbody>tr:nth-child(odd) {
@@ -32,74 +31,90 @@ table tbody>tr:nth-child(even) {
 }
 
 table th {
-  font-size: 21px;
   padding: 15px;
+  font-size: 21px;
   font-weight: bold;
 }
 
 table tbody {
   border-collapse: collapse;
-  border-bottom: 1px solid #000000;
   border-top: 1px solid #000000;
+  border-bottom: 1px solid #000000;
 }
 
 
 button {
-  background-color: var(--button-color);
-  color: #FFFFFF;
-  margin: 2px;
   min-width: 45px;
   min-height: 45px;
+  margin: 2px;
+  background-color: var(--button-color);
+  border-radius: 1rem;
   font-size: 15px;
   font-weight: bold;
-  border-radius: 1rem;
+  color: #FFFFFF;
 }
 
 button.currentBtn {
-  background-color: #E4E4E4;
   margin: 0px;
-  color: #B8B8B8;
+  background-color: #E4E4E4;
   cursor: default;
+  color: #B8B8B8;
 }
 
 button#prevBtn,
 button#nextBtn {
   background: none;
-  color: #2B2B2B;
-  font-weight: 400;
   font-size: 1rem;
+  font-weight: 400;
+  color: #2B2B2B;
 }
 
 button#prevBtn.limit,
 button#nextBtn.limit {
-  color: #B8B8B8;
   cursor: default;
+  color: #B8B8B8;
 }
 
 #under_table {
   display: flex;
-  width: 100%;
-  justify-content: space-between;
   flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
 }
 
-select {
-  cursor: pointer;
+#total_rows_number p {
+  white-space: nowrap;
+}
+
+#pagination {
+  white-space: nowrap;
+}
+
+#mySelect {
   -moz-appearance: none;
-  /* Firefox */
   -webkit-appearance: none;
-  /* Safari and Chrome */
   appearance: none;
+  min-width: 63px;
+  height: 30px;
+  padding-left: 10px;
   background-color: #898989;
   background-image: url("data:image/svg+xml,<svg width='24' height='24' xmlns='http://www.w3.org/2000/svg'><path d='m0,6l12,12l12,-12l-24,0z'/><path fill='none' d='m0,0l24,0l0,24l-24,0l0,-24z'/></svg>");
   background-repeat: no-repeat;
-  background-size: 10px;
   background-position-x: 90%;
   background-position-y: 50%;
-  color: #FFFFFF;
-  font-size: 18px;
-  padding-left: 10px;
-  height: 30px;
-  min-width: 63px;
+  background-size: 10px;
+  cursor: pointer;
   border-radius: 2px;
+  font-size: 18px;
+  color: #FFFFFF;
+}
+
+@media (max-width: 768px) {
+  #under_table {
+    flex-direction: column;
+    align-items: center;
+    align-content: center;
+    gap: 10px;
+  }
+
 }

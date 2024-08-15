@@ -26,15 +26,18 @@
 
 html,
 body {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  overflow: hidden;
   height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
   background-color: var(--background_color_light_mode);
   font-family: "Sora", Arial, sans-serif;
   color: var(--text_color_light_mode);
+}
+
+body {
+  display: flex;
+  flex-direction: column;
 }
 
 .hidden {
@@ -43,6 +46,7 @@ body {
 
 
 #logbox_container,
+#controls_settings_container,
 #advanced_settings_container {
   display: flex;
   flex-direction: column;
@@ -69,7 +73,6 @@ body {
 
 /* Overlay when sidebar is active */
 #normal_ui::before {
-  /* background: rgba(0, 0, 0, 0.5); */
   content: '';
   display: none;
   position: fixed;
@@ -91,13 +94,17 @@ body {
 
 
 /* Top Layer: Logo and Hamburger Menu */
+
 #header_bar {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  width: 100vw;
+  width: 100%;
   padding: 10px 20px;
   border-bottom: 2px solid var(--VOR-light-color);
+  box-sizing: border-box;
+  min-height: 60px;
+  /* Adjust this value as needed */
 }
 
 #header_bar .left_section,
@@ -232,7 +239,6 @@ body {
 }
 
 .inf_speed {
-  /* display: flex; */
   display: none;
   flex-direction: column;
   justify-content: center;
@@ -296,7 +302,7 @@ body {
   transition: background-color 0.3s ease;
   cursor: pointer;
   border: none;
-  border-radius: 4px;
+  border-radius: 1rem;
   font-size: 14px;
 }
 
