@@ -192,7 +192,7 @@ class MessageContainerManager {
 	// Set up event handlers
 	initEventHandlers() {
 		try {
-			$('.showMessageButton').click(() => {
+			$('.toggle_help_message').click(() => {
 				this.helpMessageManager.manualModeMessages();
 				this.toggleMessageContainer();
 			});

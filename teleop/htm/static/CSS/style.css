@@ -290,7 +290,7 @@ body {
 }
 
 
-button {
+.toggle_help_message {
   width: auto;
   padding: 10px 20px;
   transition: background-color 0.3s ease;
