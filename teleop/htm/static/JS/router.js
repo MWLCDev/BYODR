@@ -48,11 +48,10 @@ export class Router {
 			console.error('Invalid ID provided for updateModeUI:', selectedLinkId);
 			return;
 		}
-
 		if (isMobileDevice()) {
 			$('#header_bar .left_section').show();
 			$('#header_bar .right_section').show();
-			if (('settings_link', 'controls_link', 'events_link').includes(selectedLinkId)) {
+			if (['settings_link', 'controls_link', 'events_link'].includes(selectedLinkId)) {
 				$('#header_bar .left_section').hide();
 				$('#header_bar .right_section').hide();
 			}
