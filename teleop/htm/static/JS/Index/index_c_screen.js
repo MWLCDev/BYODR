@@ -60,7 +60,6 @@ class AdvancedThemeManager {
   loadAdvancedThemeSavedState() {
     const savedState = localStorage.getItem('advancedMode');
     this.isAdvancedMode = savedState === 'true';
-    console.log(this.isAdvancedMode);
 }
 
 	addEventListeners() {
@@ -88,7 +87,6 @@ class AdvancedThemeManager {
 	}
 
 	setAdvancedTheme() {
-		console.log(this.isAdvancedMode);
 		if (this.isAdvancedMode) {
 			$('body').addClass('advanced-mode'); //Add dark mode to body only
 		} else {
@@ -243,7 +241,7 @@ class MessageContainerManager {
 	}
 }
 
-export function setupNavigationBar() {
+export function setupThemeManagers() {
 	new NavigationManager();
 	new DarkThemeManager();
 	let advancedThemeManager = new AdvancedThemeManager();

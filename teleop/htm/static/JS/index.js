@@ -1,5 +1,5 @@
 import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
-import { setupNavigationBar } from './Index/index_c_screen.js';
+import { setupThemeManagers } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { gamepad_socket, teleop_start_all } from './Index/index_e_teleop.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
@@ -48,7 +48,7 @@ function showSSID() {
 
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupNavigationBar();
+	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupThemeManagers();
 	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link');
