@@ -57,9 +57,11 @@ class AdvancedThemeManager {
 		this.toggleAdvancedTheme();
 	}
 
-	loadAdvancedThemeSavedState() {
-		this.isAdvancedMode = localStorage.getItem('advancedMode');
-	}
+  loadAdvancedThemeSavedState() {
+    const savedState = localStorage.getItem('advancedMode');
+    this.isAdvancedMode = savedState === 'true';
+    console.log(this.isAdvancedMode);
+}
 
 	addEventListeners() {
 		this.advancedModeCheckBox.addEventListener('change', () => {
@@ -71,7 +73,7 @@ class AdvancedThemeManager {
 	toggleAdvancedTheme() {
 		this.changeToggleUI();
 		this.setAdvancedTheme();
-		localStorage.setItem('advancedMode', this.isAdvancedMode ? true : false);
+		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
 	changeToggleUI() {
@@ -86,7 +88,12 @@ class AdvancedThemeManager {
 	}
 
 	setAdvancedTheme() {
-		this.body.classList.toggle('advanced-mode', this.isAdvancedMode); //Add dark mode to body only
+		console.log(this.isAdvancedMode);
+		if (this.isAdvancedMode) {
+			$('body').addClass('advanced-mode'); //Add dark mode to body only
+		} else {
+			$('body').removeClass('advanced-mode'); //Add dark mode to body only
+		}
 	}
 }
 
