@@ -1,56 +1,100 @@
 class ControlSettings {
 	constructor() {
-		this.initDomElem();
+		this.scaleInput = $('#scale_input');
+		this.offsetInput = $('#offset_input');
+		this.deadZoneInput = $('#dead_zone_input');
+
+		this.scaleInputText = $('#scale_input_value');
+		this.offsetInputText = $('#offset_input_value');
+		this.deadZoneInputText = $('#dead_zone_width_value');
+
+		this.initDomElements();
 	}
 
-	initDomElem() {
+	initDomElements() {
+		this.fetchRoverData();
+		this.bindSliderInputListeners();
+		this.bindBoldTextListeners();
 		this.updateRelayStates();
-		this.bindSliderInputListener();
-		this.bindBoldTextListener();
 	}
 
-	// Function to fetch and update relay states from the backend
+	bindSliderInputListeners() {
+		// Bindings for scale and offset inputs
+		this.scaleInput.on('input', () => {
+			this.scaleInputText.text(this.scaleInput.val());
+		});
+		this.offsetInput.on('input', () => {
+			this.offsetInputText.text(this.offsetInput.val());
+		});
+
+		// Binding for dead zone input
+		this.deadZoneInput.on('input', () => {
+			this.deadZoneInputText.text(this.deadZoneInput.val());
+		});
+
+		// Post data on 'change' event
+		this.scaleInput
+			.add(this.offsetInput)
+			.add(this.deadZoneInput)
+			.on('change', () => {
+				this.sendDataToBackend();
+			});
+	}
+
+	fetchRoverData() {
+		$.get('/teleop/user/options')
+			.done((data) => {
+				this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
+				this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
+				this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
+			})
+			.fail((error) => console.error('Error fetching data:', error));
+	}
+
+	sendDataToBackend() {
+		let data = {
+			vehicle: [
+				['ras.driver.motor.scale', this.scaleInput.val()],
+				['ras.driver.steering.offset', this.offsetInput.val()],
+				['ras.driver.deadzone.width', this.deadZoneInput.val()],
+			].filter((setting) => setting[1] !== ''),
+		};
+
+		$.ajax({
+			url: '/teleop/user/options',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(data),
+			error: (error) => console.error('Error:', error),
+		});
+	}
+
 	updateRelayStates() {
-		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`, (response) => {
-			const states = response['states'];
-			$('.channel').each(function () {
-				const index = $(this).data('index');
-				const state = states[index] === true;
-				$(this).find(`input[value="${state}"]`).prop('checked', true);
-			});
-		});
+		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`)
+			.done((response) => {
+				$('.channel').each(function () {
+					const index = $(this).data('index');
+					const state = response.states[index] === true;
+					$(this).find(`input[value="${state}"]`).prop('checked', state);
+				});
+			})
+			.fail((error) => console.error('Error updating relay states:', error));
 	}
 
-	// Function to send the current state of a relay to the backend
-	saveChannelState(channel, value) {
-		const command = { channel: channel, action: value ? 'on' : 'off' };
-		$.post(
-			`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`,
-			JSON.stringify(command),
-			(response) => {
-				// Optionally handle response
-				this.updateRelayStates(); // Refresh states after change
-			},
-			'json'
-		);
+	bindBoldTextListeners() {
+		// General function to bind and update label styles
+		const bindAndUpdate = (toggle, labelOn, labelOff) => {
+			toggle
+				.on('change', () => {
+					this.updateLabelStyles(toggle[0], labelOn[0], labelOff[0]);
+				})
+				.trigger('change');
+		};
+
+		bindAndUpdate($('#channel3-toggle'), $('#channel3-label-on'), $('#channel3-label-off'));
+		bindAndUpdate($('#channel4-toggle'), $('#channel4-label-on'), $('#channel4-label-off'));
 	}
 
-	// Function to update the displayed value next to the sliders
-	updateSliderValue(slider) {
-		const valueSpan = document.getElementById(slider.id + '-value');
-		valueSpan.textContent = slider.value;
-	}
-
-	bindSliderInputListener() {
-		// Add event listeners to all sliders to update their displayed values on input
-		document.querySelectorAll('#input-sliders input[type="range"]').forEach((slider) => {
-			slider.addEventListener('input', () => {
-				this.updateSliderValue(slider);
-			});
-		});
-	}
-
-	// Function to update label styles based on checkbox state
 	updateLabelStyles(checkbox, labelOn, labelOff) {
 		if (checkbox.checked) {
 			labelOn.style.fontWeight = 'bold';
@@ -59,31 +103,6 @@ class ControlSettings {
 			labelOn.style.fontWeight = 'normal';
 			labelOff.style.fontWeight = 'bold';
 		}
-	}
-
-	bindBoldTextListener() {
-		// Get elements for channel 3
-		const channel3Toggle = document.getElementById('channel3-toggle');
-		const channel3LabelOn = document.getElementById('channel3-label-on');
-		const channel3LabelOff = document.getElementById('channel3-label-off');
-
-		// Get elements for channel 4
-		const channel4Toggle = document.getElementById('channel4-toggle');
-		const channel4LabelOn = document.getElementById('channel4-label-on');
-		const channel4LabelOff = document.getElementById('channel4-label-off');
-
-		// Add event listeners to update label styles on change
-		channel3Toggle.addEventListener('change', () => {
-			this.updateLabelStyles(channel3Toggle, channel3LabelOn, channel3LabelOff);
-		});
-
-		channel4Toggle.addEventListener('change', () => {
-			this.updateLabelStyles(channel4Toggle, channel4LabelOn, channel4LabelOff);
-		});
-
-		// Initial update to set the correct styles based on the initial state
-		this.updateLabelStyles(channel3Toggle, channel3LabelOn, channel3LabelOff);
-		this.updateLabelStyles(channel4Toggle, channel4LabelOn, channel4LabelOff);
 	}
 }
 
