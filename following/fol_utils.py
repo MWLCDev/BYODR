@@ -65,7 +65,7 @@ class YoloInference:
                 text_w, text_h = text_size[0], text_size[1]
 
                 # background rectangle for text
-                cv2.rectangle(img, (text_x, text_y - text_h), (text_x + text_w, text_y), (255, 0, 255), -1)
+                cv2.rectangle(img, (text_x, text_y - text_h), (text_x + text_w, text_y), (182, 77, 180), -1)  # The chosen colour in Figma
 
                 # text on the background
                 cv2.putText(img, label, (text_x, text_y - 2), font, font_scale, (255, 255, 255), thickness)
