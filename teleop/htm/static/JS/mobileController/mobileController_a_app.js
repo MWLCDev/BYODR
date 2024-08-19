@@ -1,6 +1,4 @@
 import { ControlSquare } from './mobileController_b_shape_square.js';
-import { setMobileCommand } from './mobileController_c_logic.js';
-
 import CTRL_STAT from './mobileController_z_state.js'; // Stands for control state
 
 // Declare these variables at the module level so they are accessible in both functions
@@ -20,9 +18,6 @@ export function setupMobileController() {
 		forwardSquare = new ControlSquare(forwardSquareElem, backwardSquareElem);
 		backwardSquare = new ControlSquare(backwardSquareElem, forwardSquareElem);
 
-		// Set the callback for each ControlSquare instance
-		forwardSquare.setValueUpdateCallback(printNormalizedValues);
-		backwardSquare.setValueUpdateCallback(printNormalizedValues);
 
 		// Handle resizing
 		window.addEventListener('resize', resizeAllCanvases);
@@ -36,9 +31,4 @@ function resizeAllCanvases() {
 		forwardSquare.resizeCanvas();
 		backwardSquare.resizeCanvas();
 	}
-}
-
-function printNormalizedValues(x, y) {
-	setMobileCommand(x, y, 'auto');
-	// console.log(`X: ${x}, Y: ${y}`);
 }

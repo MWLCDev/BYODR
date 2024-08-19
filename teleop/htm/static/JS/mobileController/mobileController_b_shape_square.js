@@ -1,4 +1,5 @@
 import CTRL_STAT from './mobileController_z_state.js';
+import { setMobileCommand } from './mobileController_c_logic.js';
 
 class ControlSquare {
 	constructor(element, otherSquare) {
@@ -15,6 +16,7 @@ class ControlSquare {
 		this.otherDirectionText = otherSquare.querySelector('.square_text');
 
 		this.isDrawing = false;
+    this.isTransitioning = false;  // Flag to detect if a transition between squares is occurring
 		this.initX = 0;
 		this.initY = 0;
 		this.lastX = 0;
@@ -30,6 +32,7 @@ class ControlSquare {
 	}
 
 	updateCoordinates(x, y, clientRect) {
+    if (this.isTransitioning) return;  // Stop updating coordinates if transitioning
 		x -= clientRect.left;
 		y -= clientRect.top;
 
@@ -61,14 +64,10 @@ class ControlSquare {
 		}
 
 		// Optionally call a callback function if set
-		if (this.valueUpdateCallback) {
-			this.valueUpdateCallback(normalizedX.toFixed(3), normalizedY.toFixed(3));
-		}
+
+		setMobileCommand(Number(normalizedX.toFixed(3)), Number(normalizedY.toFixed(3)), 'auto');
 	}
 
-	setValueUpdateCallback(callback) {
-		this.valueUpdateCallback = callback;
-	}
 
 	switchCanvasDisplay(command) {
 		this.canvas.style.display = command;
@@ -149,28 +148,63 @@ class ControlSquare {
 			this.otherDirectionText.style.display = 'block';
 		}
 	}
+
 	handleTouchEvent(e) {
 		e.preventDefault();
-		if (e.type === 'touchstart') {
-			this.isDrawing = true;
-			const touch = e.touches[0];
-			this.initX = touch.clientX - this.canvas.getBoundingClientRect().left; // Set initial X
-			this.initY = touch.clientY - this.canvas.getBoundingClientRect().top; // Set initial Y
-			this.showOtherSquare(true);
-		} else if (e.type === 'touchmove') {
-			if (!this.isDrawing) return;
-			const touch = e.touches[0];
-			const rect = this.canvas.getBoundingClientRect();
-			if (touch.clientY < rect.top || touch.clientY > rect.bottom) {
-				if (this.square !== this.otherSquare) {
-					alert('Moved from one square to the other!');
-				}
-			}
+
+		switch (e.type) {
+			case 'touchstart':
+				this.startDrawing(e.touches[0]);
+				break;
+			case 'touchmove':
+				if (!this.isDrawing) return;
+				this.handleTouchMove(e.touches[0]);
+				break;
+			case 'touchend':
+			case 'touchcancel':
+				this.stopDrawing();
+				break;
 		}
-		const touch = e.touches[0];
+	}
+
+	startDrawing(touch) {
+    this.isTransitioning = false;  
+		this.isDrawing = true;
+		const rect = this.canvas.getBoundingClientRect();
+		this.initX = touch.clientX - rect.left; // Set initial X
+		this.initY = touch.clientY - rect.top; // Set initial Y
+		this.showOtherSquare(true);
+	}
+
+	handleTouchMove(touch) {
 		const x = touch.clientX;
 		const y = touch.clientY;
-		this.updateCoordinates(x, y, this.canvas.getBoundingClientRect());
+		const currentRect = this.canvas.getBoundingClientRect();
+		const otherRect = this.otherCanvas.getBoundingClientRect();
+
+		if (this.detectSquareTransition(y, currentRect, otherRect)) {
+			this.triggerSquareTransitionAlert();
+		}
+
+		this.updateCoordinates(x, y, currentRect);
+	}
+
+	detectSquareTransition(y, currentRect, otherRect) {
+		if (this.square.id === 'forward_square' && y > currentRect.bottom && y < otherRect.bottom && y > otherRect.top) {
+			return true;
+		}
+
+		if (this.square.id === 'backward_square' && y < currentRect.top && y > otherRect.top && y < otherRect.bottom) {
+			return true;
+		}
+
+		return false;
+	}
+
+	triggerSquareTransitionAlert() {
+    this.isTransitioning = true;  
+		console.log(`Moved from ${this.square.id === 'forward_square' ? 'forward' : 'backward'} square to ${this.square.id === 'forward_square' ? 'backward' : 'forward'} square!`);
+		setMobileCommand('force_stop', 'force_stop');
 	}
 
 	stopDrawing() {

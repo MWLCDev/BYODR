@@ -240,19 +240,22 @@ class ThrottleController:
 
     def _should_process_command(self, cmd, current_time):
         """Checks if the command should be processed based on throttle and steering values and current source."""
-        if self.current_source is None or self.current_source == cmd.get("source"):
-            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
-                self.current_source = cmd.get("source")
-                self.last_command_time = current_time
-                return True
-            if self.current_source == cmd.get("source"):
-                self.last_command_time = current_time
-                return True
-        else:
-            if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
-                self.current_source = cmd.get("source")
-                self.last_command_time = current_time
-                return True
+        try:
+            if self.current_source is None or self.current_source == cmd.get("source"):
+                if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                    self.current_source = cmd.get("source")
+                    self.last_command_time = current_time
+                    return True
+                if self.current_source == cmd.get("source"):
+                    self.last_command_time = current_time
+                    return True
+            else:
+                if cmd.get("throttle", 0) != 0 or cmd.get("steering", 0) != 0:
+                    self.current_source = cmd.get("source")
+                    self.last_command_time = current_time
+                    return True
+        except Exception as e:
+            logger.error("Error processing commands: ", e)
         return False
 
     def _process_command(self, cmd):
@@ -261,7 +264,7 @@ class ThrottleController:
             self._teleop_publish(cmd)
             return
 
-        if "throttle" not in cmd and "steering" not in cmd:
+        if cmd.get("throttle") in ["force_stop"]:
             self.current_throttle = 0
             self._teleop_publish({"steering": 0.0, "throttle": 0, "time": timestamp(), "navigator": {"route": None}, "button_b": 1})
             return

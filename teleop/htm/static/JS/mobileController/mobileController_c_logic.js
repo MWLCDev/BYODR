@@ -1,10 +1,16 @@
 import CTRL_STAT from './mobileController_z_state.js';
-// Function to set throttle and steering
 
 function setMobileCommand(x, y) {
-	// Always set throttle and steering explicitly
-	CTRL_STAT.mobileCommandJSON.throttle = Number(y);
-	CTRL_STAT.mobileCommandJSON.steering = Number(x);
+	if (typeof x === 'number' && typeof y === 'number') {
+		CTRL_STAT.mobileCommandJSON.throttle = Number(y);
+		CTRL_STAT.mobileCommandJSON.steering = Number(x);
+		console.log('a number ');
+	} else if (typeof x === 'string' && typeof y === 'string') {
+		CTRL_STAT.mobileCommandJSON.throttle = y;
+		CTRL_STAT.mobileCommandJSON.steering = x;
+	} else {
+		console.error('Invalid types for setMobileCommand:', { x, y });
+	}
 }
 
 // Function to add any additional data
