@@ -7,25 +7,30 @@ class FollowingHandler {
 		this.initialSetup();
 		this.startPolling();
 	}
-
-	initializeDOM() {
-		console.log('in mobile');
-		// $("#mobile_controller_container .current_mode_state").text('Loading...')
-		const self = this; // Save the reference to 'this' (which is the class instance here)
-		$('#mobile_controller_container .current_mode_button').show();
-		$('#mobile_controller_container .current_mode_button').text('start following');
-		$('#mobile_controller_container .middle_section').hide();
-		$('#mobile_controller_container .square').hide();
-		self.sendSwitchFollowingRequest('show_image');
-		$('#mobile_controller_container .current_mode_button').click(function () {
-			if (CTRL_STAT.followingState == 'inactive') self.sendSwitchFollowingRequest('show_image');
-			else if (CTRL_STAT.followingState == 'image') self.sendSwitchFollowingRequest('start_following');
-			else if (CTRL_STAT.followingState == 'active') self.sendSwitchFollowingRequest('show_image');
-		});
-		//it should send the stopping command `sendSwitchFollowingRequest("stop_following")` when i switch the pages
-		self.initializeCanvas();
-	}
-
+  
+  initializeDOM() {
+    // $("#mobile_controller_container .current_mode_state").text('Loading...')
+    $('#mobile_controller_container .current_mode_button').show();
+    $('#mobile_controller_container .current_mode_button').text('start following');
+    $('#mobile_controller_container .middle_section').hide();
+    $('#mobile_controller_container .square').hide();
+  
+    this.sendSwitchFollowingRequest('show_image');
+  
+    $('#mobile_controller_container .current_mode_button').click(() => {
+      if (CTRL_STAT.followingState === 'inactive') {
+        this.sendSwitchFollowingRequest('show_image');
+      } else if (CTRL_STAT.followingState === 'image') {
+        this.sendSwitchFollowingRequest('start_following');
+      } else if (CTRL_STAT.followingState === 'active') {
+        this.sendSwitchFollowingRequest('show_image');
+      }
+    });
+  
+    // It should send the stopping command `sendSwitchFollowingRequest("stop_following")` when I switch the pages
+    this.initializeCanvas();
+  }
+  
 	initializeCanvas() {
 		this.canvas = document.getElementById('following_imageCanvas');
 		if (this.canvas) {

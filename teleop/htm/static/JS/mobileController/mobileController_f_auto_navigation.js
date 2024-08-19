@@ -6,7 +6,6 @@ class AutoNavigationHandler {
 
 	initializeDOM() {
 		//TODO: it should hide the canvas but keep the squares visible
-		const self = this; // Save the reference to 'this' (which is the class instance here)
 		$('#mobile_controller_container .steeringWheel').hide();
 		$('#mobile_controller_container .current_mode_button').show();
 		$('#mobile_controller_container .current_mode_text').hide();
@@ -22,13 +21,13 @@ class AutoNavigationHandler {
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
 		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 
-		$('#mobile_controller_container .current_mode_button').click(function () {
+		$('#mobile_controller_container .current_mode_button').click(() => {
 			const buttonText = $(this).text().toLowerCase();
-			if (CTRL_STAT.currentPage == 'autopilot_link' && buttonText == 'start') {
-				self.startAutoNavigation();
+			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') {
+				this.startAutoNavigation();
 			}
-			if (CTRL_STAT.currentPage == 'autopilot_link' && buttonText == 'stop') {
-				self.stopAutoNavigation();
+			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') {
+				this.stopAutoNavigation();
 			}
 		});
 

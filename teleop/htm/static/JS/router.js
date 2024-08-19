@@ -72,7 +72,6 @@ export class Router {
 		}
 	}
 	handleUserMenuRoute(selectedLinkId) {
-		console.log(selectedLinkId);
 		this.updateModeUI(selectedLinkId);
 
 		CTRL_STAT.currentPage = selectedLinkId;
