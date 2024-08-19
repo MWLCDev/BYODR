@@ -181,8 +181,12 @@ body {
   font-weight: 200;
 }
 
-#debug_drive_values p span {
+#debug_drive_values p span,
+#mjpeg_quality_val {
   font-weight: bold;
+  display: inline-block; /* Ensures the width is respected */
+  width: 3ch; /* Reserves space for exactly three digits */
+  text-align: center; /* Centers the text within the span */
 }
 
 /* Third Layer: Stream Quality and Options */
