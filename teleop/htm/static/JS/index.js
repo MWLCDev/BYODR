@@ -51,7 +51,7 @@ $(window).on('load', () => {
 	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupThemeManagers();
 	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager);
 
-	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link');
+	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link'); // Need to have a default value for the homepage
 
 	document.addEventListener('visibilitychange', handleVisibilityChange, false);
 	$(window).on('focus', start_all_handlers);

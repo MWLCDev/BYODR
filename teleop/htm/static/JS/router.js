@@ -71,8 +71,8 @@ export class Router {
 			console.error('No image found for ID:', selectedLinkId);
 		}
 	}
-
 	handleUserMenuRoute(selectedLinkId) {
+		console.log(selectedLinkId);
 		this.updateModeUI(selectedLinkId);
 
 		CTRL_STAT.currentPage = selectedLinkId;
@@ -86,6 +86,8 @@ export class Router {
 			if (currentPage === '/normal_ui' || currentPage === '/mc') {
 				if (selectedLinkId === 'normal_ui_link') {
 					this.loadContentBasedOnDevice();
+					// Run the callback after loading the content
+					this.assignNavButtonActions(selectedLinkId);
 				}
 			} else {
 				this.loadPage(targetPage, () => {
@@ -95,6 +97,8 @@ export class Router {
 						// Call the appropriate callback based on the device
 						this.callbackBasedOnDevice();
 					}
+					// Run the callback after the page has been loaded
+					this.assignNavButtonActions(selectedLinkId);
 				});
 			}
 		} else {
@@ -110,7 +114,13 @@ export class Router {
 				events_link: ['/menu_logbox', () => new LogBox()],
 			};
 			const [url, callback] = pageMap[selectedLinkId] || [];
-			url && this.loadPage(url, callback);
+			if (url) {
+				this.loadPage(url, () => {
+					if (callback) callback();
+					// Run the callback after the page has been loaded
+					this.assignNavButtonActions(selectedLinkId);
+				});
+			}
 		}
 	}
 
@@ -118,6 +128,7 @@ export class Router {
 		const url = isMobileDevice() ? '/mc' : '/normal_ui';
 		this.loadPage(url, () => this.callbackBasedOnDevice());
 	}
+
 	callbackBasedOnDevice() {
 		if (isMobileDevice()) {
 			setupMobileController();
@@ -127,6 +138,7 @@ export class Router {
 			teleop_screen._init();
 		}
 	}
+
 	/**
 	 * Actions that are bonded to the navbar buttons only. They will control the switch for the features
 	 */
