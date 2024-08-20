@@ -178,7 +178,6 @@ export var page_utils = {
 	},
 
 	set_stream_type: function (stream_type) {
-		window.localStorage.setItem('video.stream.type', stream_type);
-		console.log(stream_type);
+		window.localStorage.setItem('video.stream.type', stream_type.toLowerCase());
 	},
 };
