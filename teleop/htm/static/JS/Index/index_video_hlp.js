@@ -22,13 +22,13 @@ if (page_utils.get_stream_type() == 'h264') {
 
 	var canvas_controller = {
 		el_parent: null,
-		el_canvas_id: 'viewport_canvas',
 		el_canvas: null,
 		context_2d: null,
 
 		init: function (el_parent) {
 			this.el_parent = el_parent;
 		},
+
 		replace: function (canvas) {
 			if (this.el_canvas != undefined) {
 				this.el_canvas.remove();
@@ -37,13 +37,16 @@ if (page_utils.get_stream_type() == 'h264') {
 			this.el_canvas = canvas;
 			this.el_parent.appendChild(this.el_canvas);
 		},
+
 		create: function () {
-			canvas = document.getElementById(this.el_canvas_id);
-			// The canvas dimensions are set by the player.
-			// canvas = document.createElement("canvas");
-			// canvas.id = this.el_canvas_id;
-			// canvas.style.cssText = 'width: 100% !important; height: 100% !important;';
-			return canvas;
+			let canvas = document.getElementById('viewport_canvas');
+			if (canvas) {
+				return canvas;
+			} else {
+				setTimeout(() => {
+					this.create();
+				}, 500);
+			}
 		},
 	};
 
@@ -55,6 +58,7 @@ if (page_utils.get_stream_type() == 'h264') {
 			const port = camera_position == 'front' ? 9001 : 9002;
 			const ws_protocol = document.location.protocol === 'https:' ? 'wss://' : 'ws://';
 			const uri = ws_protocol + document.location.hostname + ':' + port;
+			console.log(uri);
 			this.socket = new CameraSocketResumer(uri, 100);
 			// The webgl context does not have a 2d rendering context.
 			this.wsavc = new WSAvcPlayer(canvas_controller.create(), 'yuv', this.socket);
@@ -102,8 +106,8 @@ export function h264_stop_all() {
 
 if (!dev_tools.is_develop()) {
 	$('#video_stream_type').change(function () {
-		var selectedStreamType = $(this).val(); // Get the selected option value
-		page_utils.set_stream_type(selectedStreamType); // Set the stream type
-		location.reload(); // Reload the page
+		var selectedStreamType = $(this).val();
+		page_utils.set_stream_type(selectedStreamType);
+		location.reload();
 	});
 }

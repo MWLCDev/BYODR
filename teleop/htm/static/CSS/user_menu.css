@@ -8,8 +8,9 @@
 }
 
 /* TODO: make same id name as in normal_UI */
-/* Overlay when sidebar is active */
+/* Overlay when blurred*/
 #application_content::before,
+#hamburger_menu_toggle::before,
 #header_bar::before {
   content: '';
   display: none;
@@ -22,13 +23,15 @@
   /* Below the sidebar and above the content */
 }
 
-/* Apply the blur effect to the content when sidebar is active */
+/* Apply the blur effect to the content  */
 #application_content.expanded::before,
+#hamburger_menu_toggle.expanded::before,
 #header_bar.expanded::before {
   display: block;
 }
 
 #application_content.expanded,
+#hamburger_menu_toggle.expanded,
 #header_bar.expanded {
   filter: blur(5px);
   /* Adjust blur intensity as desired */

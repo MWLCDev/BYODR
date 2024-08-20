@@ -46,7 +46,6 @@ class RealNavigatorController {
 	}
 }
 
-// In development mode there is no use of a backend.
 const navigator_controller = new RealNavigatorController();
 
 export function navigator_start_all() {

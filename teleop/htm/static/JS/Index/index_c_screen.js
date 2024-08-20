@@ -1,6 +1,8 @@
-import { dev_tools } from './index_a_utils.js';
-import { gamepad_controller } from './index_b_gamepad.js';
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
+
+import { dev_tools, page_utils } from './index_a_utils.js';
+import { gamepad_controller } from './index_b_gamepad.js';
+import { gamepad_socket } from './index_e_teleop.js';
 
 class DarkThemeManager {
 	constructor() {
@@ -57,10 +59,10 @@ class AdvancedThemeManager {
 		this.toggleAdvancedTheme();
 	}
 
-  loadAdvancedThemeSavedState() {
-    const savedState = localStorage.getItem('advancedMode');
-    this.isAdvancedMode = savedState === 'true';
-}
+	loadAdvancedThemeSavedState() {
+		const savedState = localStorage.getItem('advancedMode');
+		this.isAdvancedMode = savedState === 'true';
+	}
 
 	addEventListeners() {
 		this.advancedModeCheckBox.addEventListener('change', () => {
@@ -72,7 +74,7 @@ class AdvancedThemeManager {
 	toggleAdvancedTheme() {
 		this.changeToggleUI();
 		this.setAdvancedTheme();
-    console.log(this.isAdvancedMode.toString())
+		console.log(this.isAdvancedMode.toString());
 		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
@@ -89,9 +91,9 @@ class AdvancedThemeManager {
 
 	setAdvancedTheme() {
 		if (this.isAdvancedMode) {
-      $('body').removeClass('advanced-mode'); 
-    } else {
-			$('body').addClass('advanced-mode'); 
+			$('body').removeClass('advanced-mode');
+		} else {
+			$('body').addClass('advanced-mode');
 		}
 	}
 }
@@ -189,7 +191,6 @@ class HelpMessageManager {
 		});
 	}
 }
-
 class MessageContainerManager {
 	constructor(helpMessageManager) {
 		this.helpMessageManager = helpMessageManager;
@@ -221,15 +222,18 @@ class MessageContainerManager {
 		this.toggleApplicationContent();
 	}
 
-	// Hide the message container
+	// Hide the message container with a fade-out effect
 	hideMessageContainer() {
-		$('.message_container').hide();
+		$('.message_container').fadeOut(500, () => {
+			$('.message_container').addClass('hidden');
+		});
 		this.toggleApplicationContent();
 	}
 
 	// Toggle the application content and header bar expansion
 	toggleApplicationContent() {
 		$('#application_content').toggleClass('expanded');
+		$('#hamburger_menu_toggle').toggleClass('expanded');
 		$('#header_bar').toggleClass('expanded');
 	}
 
@@ -419,6 +423,8 @@ export var teleop_screen = {
 			});
 			this._select_camera('rear');
 			// this.toggle_debug_values(true);
+			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
+			$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 		} catch (error) {
 			console.error('Error in teleop_screen._init():', error);
 		}

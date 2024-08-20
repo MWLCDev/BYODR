@@ -34,6 +34,7 @@ class UserSettingsManager {
 			})
 			.catch((error) => alert('Error fetching settings: ' + error.message));
 	}
+  
 	populateForm(settings) {
 		this.form.innerHTML = '';
 		Object.entries(settings).forEach(([section, options]) => {
