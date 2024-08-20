@@ -74,7 +74,6 @@ class AdvancedThemeManager {
 	toggleAdvancedTheme() {
 		this.changeToggleUI();
 		this.setAdvancedTheme();
-		console.log(this.isAdvancedMode.toString());
 		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
@@ -135,12 +134,14 @@ class NavigationManager {
 		}
 	}
 }
-
 class HelpMessageManager {
 	constructor() {
 		this.help_message_img = $('.message_container img');
 		this.help_message_grid = document.querySelector('.help_message_grid');
 		this.manualModeMessages();
+		$(document).mouseup((e) => {
+			this.onClickOutside(e);
+		});
 	}
 
 	manualModeMessages() {
@@ -158,21 +159,39 @@ class HelpMessageManager {
 		this.updateMessages(messages, true);
 	}
 
-	// Method to set alternate messages
-	trainingModeMessages() {
-		const messages = [
-			'Quick acceleration: Double tap 14',
-			'Quick reverse: Double tap 1',
-			'Sharp turn: Rotate 7 quickly',
-			// Add more alternate messages as needed
-		];
-		this.updateMessages(messages, true);
+	connectPhoneMessage() {
+		const messages = ['1-open setting menu', '2- Add new wifi network', '3-Add username of the segment you see on the top', '4-In the password field, write the password that was sent in your email'];
+
+		// First update the messages and then show the message container
+		this.updateMessages(messages, false);
+		this.showMessageContainer();
 	}
 
-	connectPhoneMessage() {
-		console.log('ignited');
-		const messages = ['1-open setting menu', '2- Add new wifi network', '3-Add username of the segment you see on the top', '4-In the password field, write the password that was sent in your email'];
-		this.updateMessages(messages, false);
+	// Explicitly set application content state instead of toggling
+	expandApplicationContent() {
+		$('#application_content').addClass('expanded');
+		$('#hamburger_menu_toggle').addClass('expanded');
+		$('#header_bar').addClass('expanded');
+	}
+
+	collapseApplicationContent() {
+		$('#application_content').removeClass('expanded');
+		$('#hamburger_menu_toggle').removeClass('expanded');
+		$('#header_bar').removeClass('expanded');
+	}
+	// Add a new method to ensure consistent handling of showing the container
+	showMessageContainer() {
+		const container = $('.message_container');
+		container.removeClass('hidden').fadeIn(500);
+		this.expandApplicationContent(); // Ensure the application content is expanded when showing
+	}
+
+	hideMessageContainer() {
+		const container = $('.message_container');
+		container.fadeOut(500, () => {
+			container.addClass('hidden');
+			this.collapseApplicationContent(); // Collapse content when the container is hidden
+		});
 	}
 
 	// Private method to update the message grid
@@ -190,7 +209,16 @@ class HelpMessageManager {
 			this.help_message_grid.appendChild(p);
 		});
 	}
+
+	// Handle click outside the message container to close it
+	onClickOutside(e) {
+		var container = $('.message_container');
+		if (container.is(':visible') && !container.is(e.target) && container.has(e.target).length === 0) {
+			this.hideMessageContainer();
+		}
+	}
 }
+
 class MessageContainerManager {
 	constructor(helpMessageManager) {
 		this.helpMessageManager = helpMessageManager;
