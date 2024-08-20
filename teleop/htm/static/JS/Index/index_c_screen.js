@@ -72,6 +72,7 @@ class AdvancedThemeManager {
 	toggleAdvancedTheme() {
 		this.changeToggleUI();
 		this.setAdvancedTheme();
+    console.log(this.isAdvancedMode.toString())
 		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
@@ -88,9 +89,9 @@ class AdvancedThemeManager {
 
 	setAdvancedTheme() {
 		if (this.isAdvancedMode) {
-			$('body').addClass('advanced-mode'); //Add dark mode to body only
-		} else {
-			$('body').removeClass('advanced-mode'); //Add dark mode to body only
+      $('body').removeClass('advanced-mode'); 
+    } else {
+			$('body').addClass('advanced-mode'); 
 		}
 	}
 }
