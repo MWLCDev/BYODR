@@ -1,5 +1,5 @@
 import { isMobileDevice } from './Index/index_a_utils.js';
-import {  teleop_screen } from './Index/index_c_screen.js';
+import { teleop_screen } from './Index/index_c_screen.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { autoNavigationNavButtonHandler } from './mobileController/mobileController_f_auto_navigation.js';
 import { confidenceNavButtonHandler } from './mobileController/mobileController_f_confidence.js';
@@ -11,11 +11,12 @@ import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 export class Router {
-	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers) {
+	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers,stop_all_handlers) {
 		this.helpMessageManager = helpMessageManager;
 		this.messageContainerManager = messageContainerManager;
 		this.advancedThemeManager = advancedThemeManager;
 		this.start_all_handlers = start_all_handlers;
+		this.stop_all_handlers = stop_all_handlers;
 		$('.hamburger_menu_nav a').click((event) => {
 			this.handleUserMenuRoute(event.target.id);
 			this.assignNavButtonActions(event.target.id);
@@ -41,7 +42,17 @@ export class Router {
 	 */
 	loadPage(url, callback) {
 		const container = $('main#application_content');
-		container.empty().load(url, callback).data('current-page', url);
+		container
+			.empty()
+			.load(url, function (response, status, xhr) {
+				if (status == 'success') {
+					console.log('Page loaded successfully, initializing content');
+					callback();
+				} else {
+					console.error('Failed to load the page:', xhr.status);
+				}
+			})
+			.data('current-page', url);
 	}
 
 	updateModeUI(selectedLinkId) {
@@ -72,61 +83,99 @@ export class Router {
 			console.error('No image found for ID:', selectedLinkId);
 		}
 	}
+  handleUserMenuRoute(selectedLinkId) {
+    console.log(`Handling route change to: ${selectedLinkId}`);
+    this.updateModeUI(selectedLinkId);
 
-	handleUserMenuRoute(selectedLinkId) {
-		this.updateModeUI(selectedLinkId);
+    CTRL_STAT.currentPage = selectedLinkId;
+    localStorage.setItem('user.menu.screen', selectedLinkId);
 
-		CTRL_STAT.currentPage = selectedLinkId;
-		localStorage.setItem('user.menu.screen', selectedLinkId);
+    const modeSwitchingPages = ['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+    if (modeSwitchingPages.includes(selectedLinkId)) {
+        console.log(`Switching to mode: ${selectedLinkId}`);
+        const targetPage = isMobileDevice() ? '/mc' : '/normal_ui';
+        const currentPage = $('main#application_content').data('current-page');
 
-		const modeSwitchingPages = ['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
-		if (modeSwitchingPages.includes(selectedLinkId)) {
-			const targetPage = isMobileDevice() ? '/mc' : '/normal_ui';
-			const currentPage = $('main#application_content').data('current-page');
+        if (currentPage === '/normal_ui' || currentPage === '/mc') {
+            if (selectedLinkId === 'normal_ui_link') {
+                console.log('Already on normal_ui, reloading content');
+                this.loadContentBasedOnDevice();
+                this.assignNavButtonActions(selectedLinkId);
+            }
+        } else {
+            console.log(`Loading page: ${targetPage}`);
+            this.loadPage(targetPage, () => {
+                if (selectedLinkId === 'normal_ui_link') {
+                    console.log('Normal UI loaded, setting up elements');
+                    teleop_screen.set_normal_ui_elements();
+                    teleop_screen._init();
+                    console.log('Calling start_all_handlers after UI setup');
+                    this.start_all_handlers();
+                } else {
+                    this.callbackBasedOnDevice();
+                }
+                this.assignNavButtonActions(selectedLinkId);
 
-			if (currentPage === '/normal_ui' || currentPage === '/mc') {
-				if (selectedLinkId === 'normal_ui_link') {
-					this.loadContentBasedOnDevice();
-					// Run the callback after loading the content
-					this.assignNavButtonActions(selectedLinkId);
-				}
-			} else {
-				this.loadPage(targetPage, () => {
-					if (selectedLinkId === 'normal_ui_link') {
-						this.loadContentBasedOnDevice();
-					} else {
-						// Call the appropriate callback based on the device
-						this.callbackBasedOnDevice();
-					}
-					// Run the callback after the page has been loaded
-					this.assignNavButtonActions(selectedLinkId);
-				});
-			}
-		} else {
-			const pageMap = {
-				settings_link: [
-					'/menu_settings',
-					() => {
-						new UserSettingsManager();
-						this.advancedThemeManager.bindActions();
-					},
-				],
-				controls_link: ['/menu_controls', () => new ControlSettings()],
-				events_link: ['/menu_logbox', () => new LogBox()],
-			};
-			const [url, callback] = pageMap[selectedLinkId] || [];
-			if (url) {
-				this.loadPage(url, () => {
-					if (callback) callback();
-					// Run the callback after the page has been loaded
-					this.assignNavButtonActions(selectedLinkId);
-				});
-			}
-		}
-	}
+                if (selectedLinkId === 'normal_ui_link') {
+                    console.log('Forcibly restarting handlers');
+                    this.stop_all_handlers(); // Ensure handlers are stopped first
+
+                    setTimeout(() => {
+                        this.start_all_handlers(); // Then start them again
+                        this.checkAndReinitializeStreams();
+                    }, 1000); // Slight delay before restarting handlers
+                }
+            });
+        }
+    } else {
+        console.log(`Loading non-mode page: ${selectedLinkId}`);
+        const pageMap = {
+            settings_link: [
+                '/menu_settings',
+                () => {
+                    new UserSettingsManager();
+                    this.advancedThemeManager.bindActions();
+                },
+            ],
+            controls_link: ['/menu_controls', () => new ControlSettings()],
+            events_link: ['/menu_logbox', () => new LogBox()],
+        };
+        const [url, callback] = pageMap[selectedLinkId] || [];
+        if (url) {
+            this.loadPage(url, () => {
+                if (callback) callback();
+                this.assignNavButtonActions(selectedLinkId);
+            });
+        }
+    }
+}
+
+  checkAndReinitializeStreams() {
+    console.log('Checking and reinitializing streams');
+
+    const canvas = document.getElementById('viewport_canvas');
+
+    if (!canvas || canvas.width === 0 || canvas.height === 0) {
+        console.log('Canvas not fully initialized, waiting for reinitialization');
+        setTimeout(() => {
+            this.checkAndReinitializeStreams(); // Re-check after a short delay
+        }, 500); 
+    } else {
+        console.log('Canvas found and ready, reinitializing streams');
+        this.reinitializeStreams();
+    }
+}
+
+reinitializeStreams() {
+    console.log('Reinitializing streams on canvas');
+    teleop_screen.set_normal_ui_elements(); 
+    teleop_screen._init(); 
+    this.start_all_handlers(); 
+}
 
 	loadContentBasedOnDevice() {
 		const url = isMobileDevice() ? '/mc' : '/normal_ui';
+		console.log(`Loading content for device: ${url}`);
 		this.loadPage(url, () => this.callbackBasedOnDevice());
 	}
 
