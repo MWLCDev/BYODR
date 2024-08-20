@@ -34,7 +34,7 @@ class UserSettingsManager {
 			})
 			.catch((error) => alert('Error fetching settings: ' + error.message));
 	}
-  
+
 	populateForm(settings) {
 		this.form.innerHTML = '';
 		Object.entries(settings).forEach(([section, options]) => {
@@ -44,9 +44,10 @@ class UserSettingsManager {
 			fieldset.appendChild(legend);
 
 			Object.entries(options).forEach(([name, value]) => {
-				// Skip specific fields as they are already in the relay settings menu
-				if (section === 'vehicle' && (name === 'ras.driver.steering.offset' || name === 'ras.driver.motor.scale')) return;
-
+				// Skip specific fields as they are already in the relay settings menu (menu_control.js)
+				if (section === 'vehicle' && ['ras.driver.steering.offset', 'ras.driver.motor.scale', 'ras.driver.deadzone.width'].includes(name)) {
+					return;
+				}
 				const input = document.createElement('input');
 				input.type = value === 'true' || value === 'false' ? 'checkbox' : 'text';
 				input.name = this.filterFieldName(section, name); // Use the transformed name

@@ -360,6 +360,7 @@ var mjpeg_rear_camera_consumer = function (_blob) {
 		console.error('Error setting rear camera consumer:', error);
 	}
 };
+
 var mjpeg_front_camera_consumer = function (_blob) {
 	try {
 		if (typeof _blob == 'string') {
@@ -374,13 +375,10 @@ var mjpeg_front_camera_consumer = function (_blob) {
 };
 
 export function mjpeg_start_all() {
-	console.log('MJPEG start_all called');
 	if (mjpeg_rear_camera != undefined) {
-		console.log('Starting rear camera MJPEG stream');
 		mjpeg_rear_camera.start_socket();
 	}
 	if (mjpeg_front_camera != undefined) {
-		console.log('Starting front camera MJPEG stream');
 		mjpeg_front_camera.start_socket();
 	}
 }

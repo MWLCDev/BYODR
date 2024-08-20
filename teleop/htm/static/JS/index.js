@@ -16,42 +16,29 @@ function initComponents() {
 		console.error('Error while initializing components:', error);
 	}
 }
-let handlersRunning = false;
+
 function start_all_handlers() {
-	console.log('Attempting to start all handlers');
-	if (!handlersRunning) {
-		console.log('Handlers not running, starting now');
-		try {
+	try {
+		if (CTRL_STAT.currentPage == 'normal_ui_link') {
 			mjpeg_start_all();
 			h264_start_all();
-			handlersRunning = true;
-			console.log('All handlers started successfully');
-		} catch (error) {
-			console.error('Error starting handlers:', error);
 		}
-	} else {
-		handlersRunning = false;
-		start_all_handlers();
-		console.log('Handlers already running. Will force restart');
+	} catch (error) {
+		console.error('Error starting handlers:', error);
 	}
 }
 
 function stop_all_handlers() {
-	console.log('Attempting to stop all handlers');
-	if (handlersRunning) {
-		console.log('Handlers running, stopping now');
-		try {
+	try {
+		if (CTRL_STAT.currentPage == 'normal_ui_link') {
 			mjpeg_stop_all();
 			h264_stop_all();
-			handlersRunning = false;
-			console.log('All handlers stopped successfully');
-		} catch (error) {
-			console.error('Error stopping handlers:', error);
 		}
-	} else {
-		console.log('Handlers not running, skipping stop');
+	} catch (error) {
+		console.error('Error stopping handlers:', error);
 	}
 }
+
 function handleVisibilityChange() {
 	if (CTRL_STAT.currentPage == 'normal_ui_link') {
 		if (document.hidden) {
@@ -72,7 +59,7 @@ function showSSID() {
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
 	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupThemeManagers();
-	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers, stop_all_handlers);
+	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link'); // Need to have a default value for the homepage
 
