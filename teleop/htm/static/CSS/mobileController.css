@@ -51,7 +51,7 @@
   text-transform: uppercase;
 }
 
-#mobile_controller_container .right_section .current_mode_button {
+.current_mode_button {
   outline: none;
   box-shadow: 4px 6px 8px #d0d0d0;
   display: none;

@@ -8,6 +8,14 @@
 }
 
 /* TODO: make same id name as in normal_UI */
+/* Apply transitions to the blur effect */
+#application_content,
+#hamburger_menu_toggle,
+#header_bar {
+  transition: filter 0.5s ease;
+}
+
+
 /* Overlay when blurred*/
 #application_content::before,
 #hamburger_menu_toggle::before,
@@ -20,7 +28,15 @@
   right: 0;
   bottom: 0;
   z-index: 2;
+  transition: display 0.5s ease;
   /* Below the sidebar and above the content */
+}
+
+#application_content.expanded,
+#hamburger_menu_toggle.expanded,
+#header_bar.expanded {
+  filter: blur(5px);
+  /* Adjust blur intensity as desired */
 }
 
 /* Apply the blur effect to the content  */
@@ -30,12 +46,6 @@
   display: block;
 }
 
-#application_content.expanded,
-#hamburger_menu_toggle.expanded,
-#header_bar.expanded {
-  filter: blur(5px);
-  /* Adjust blur intensity as desired */
-}
 
 .nav_logo {
   width: 30px;

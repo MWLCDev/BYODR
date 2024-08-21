@@ -163,9 +163,12 @@ body {
 #debug_drive_values p span,
 #mjpeg_quality_val {
   font-weight: bold;
-  display: inline-block; /* Ensures the width is respected */
-  width: 3ch; /* Reserves space for exactly three digits */
-  text-align: center; /* Centers the text within the span */
+  display: inline-block;
+  /* Ensures the width is respected */
+  width: 3ch;
+  /* Reserves space for exactly three digits */
+  text-align: center;
+  /* Centers the text within the span */
 }
 
 /* Third Layer: Stream Quality and Options */
@@ -387,6 +390,18 @@ body {
   position: relative;
   overflow: hidden;
   width: 100%;
+}
+
+#top_layer_iframe {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
+  display: none;
+  border: none;
+  background-color: rgba(255, 255, 255, 0.9);
 }
 
 #viewport_canvas {

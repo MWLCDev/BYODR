@@ -8,23 +8,23 @@ class ConfidenceHandler {
 		$('.current_mode_text').show();
 		$('.current_mode_text').css('text-align', 'center');
 		$('#mobile_controller_container .steeringWheel').hide();
-		$('#mobile_controller_container .current_mode_button').show();
+		$(' .current_mode_button').show();
 		$('#mobile_controller_container .square').children().show();
 		$('.control_symbol').css('display', 'none');
 		$('.stop_text').css('display', 'none');
 		$('#mobile_controller_container #forward_square .square_text').text('forward');
 		$('#mobile_controller_container #backward_square .square_text').text('backward');
 
-		$('#mobile_controller_container .current_mode_button').text('recognize');
-		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-		$('#mobile_controller_container .current_mode_button').css('color', 'white');
-		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+		$('.current_mode_button').text('recognize');
+		$('.current_mode_button').css('background-color', '#451c58');
+		$('.current_mode_button').css('color', 'white');
+		$('.current_mode_button').css('box-shadow', 'none');
 		this.initializeConfidenceWS();
 		this.bindButtonAction();
 	}
 
 	bindButtonAction() {
-		$('#mobile_controller_container .current_mode_button').click((event) => {
+		$('.current_mode_button').click((event) => {
 			const buttonText = $(event.target).text().toLowerCase();
 			if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'recognize') {
         this.sendSwitchConfidenceRequest('start_confidence');
@@ -35,7 +35,7 @@ class ConfidenceHandler {
 			} else if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'return') {
 				$('#mobile_controller_container #backward_square').show();
 				$('#mobile_controller_container #forward_square').show();
-				$('#map_frame').hide();
+				$('#map_frame, #top_layer_iframe').hide();
 				this.toggleButtonAppearance('start');
 			}
 		});
@@ -58,25 +58,25 @@ class ConfidenceHandler {
 
 	toggleButtonAppearance(cmd) {
 		if (cmd == 'start') {
-			$('#mobile_controller_container .current_mode_button').text('recognize');
-			$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-			$('#mobile_controller_container .current_mode_button').css('color', 'white');
-			$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+			$('.current_mode_button').text('recognize');
+			$('.current_mode_button').css('background-color', '#451c58');
+			$('.current_mode_button').css('color', 'white');
+			$('.current_mode_button').css('box-shadow', 'none');
 		} else if (cmd == 'stop') {
-			$('#mobile_controller_container .current_mode_button').text('stop');
-			$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
-			$('#mobile_controller_container .current_mode_button').css('border', 'none');
+			$('.current_mode_button').text('stop');
+			$('.current_mode_button').css('background-color', '#f41e52');
+			$('.current_mode_button').css('border', 'none');
 			$('#mobile_controller_container .square').children().show();
 			$('.stop_text, .control_symbol').hide();
 		} else if (cmd == 'return') {
-			$('#mobile_controller_container .current_mode_button').text('return');
-			$('#mobile_controller_container .current_mode_button').css('background-color', '#ffffff');
-			$('#mobile_controller_container .current_mode_button').css('color', '#451c58');
-			$('#mobile_controller_container .current_mode_button').css('border', '');
+			$('.current_mode_button').text('return');
+			$('.current_mode_button').css('background-color', '#ffffff');
+			$('.current_mode_button').css('color', '#451c58');
+			$('.current_mode_button').css('border', '');
 		} else if (cmd == 'show_result') {
-			$('#mobile_controller_container .current_mode_button').show();
-			$('#mobile_controller_container .current_mode_button').text('Show result');
-			$('#mobile_controller_container .current_mode_button').css('border', 'none');
+			$('.current_mode_button').show();
+			$('.current_mode_button').text('Show result');
+			$('.current_mode_button').css('border', 'none');
 		}
 	}
 
@@ -114,9 +114,17 @@ class ConfidenceHandler {
 		}
 	}
 
-	loadMapIntoIframe(url) {
-		$('#map_frame').attr('src', `${this.currentURL}/overview_confidence/${url}`).show();
-	}
+
+  loadMapIntoIframe(url) {
+    const iframeSelector = '#map_frame, #top_layer_iframe';
+
+    // Set the source of the iframe
+    $(iframeSelector).attr('src', `${this.currentURL}/overview_confidence/${url}`);
+
+    // Fade in the iframe when the content is ready to display
+    $(iframeSelector).fadeIn(500); // 500ms for the fade-in effect
+}
+
 	/**
 	 * Updates the button's appearance based on the received WebSocket message.
 	 * @param {string} message The message received from the WebSocket.
@@ -124,18 +132,18 @@ class ConfidenceHandler {
 	updateButtonState(message) {
 		// console.log(message);
 		if (message === 'loading') {
-			$('#mobile_controller_container .current_mode_state').text('Loading...');
-			$('#mobile_controller_container .current_mode_state').css('color', '#FF8A00');
-			$('#mobile_controller_container .current_mode_button').hide();
+			$('.current_mode_state').text('Loading...');
+			$('.current_mode_state').css('color', '#FF8A00');
+			$('.current_mode_button').hide();
 		} else if (message.endsWith('.html')) {
 			// Extract the filename from the message
 			const filename = message.match(/[\w-]+\.html$/)[0];
-			$('#mobile_controller_container .current_mode_state').hide();
+			$('.current_mode_state').hide();
 			$('#mobile_controller_container #backward_square').hide();
 			$('#mobile_controller_container #forward_square').hide();
 			this.toggleButtonAppearance('show_result');
 
-			$('#mobile_controller_container .current_mode_button')
+			$('.current_mode_button')
 				.off('click')
 				.click(() => {
 					// This will load the HTML content into the `forward_square` div without redirecting
