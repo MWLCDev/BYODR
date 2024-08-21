@@ -259,6 +259,7 @@ class ThrottleController:
         return False
 
     def _process_command(self, cmd):
+        # print(cmd)
         """Processes a command from the queue, smoothing the throttle changes if necessary."""
         if cmd.get("mobileInferenceState") in ["true", "auto", "train"] or cmd.get("source") in ["followingActive"]:
             self._teleop_publish(cmd)

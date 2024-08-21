@@ -391,6 +391,7 @@ export var teleop_screen = {
 	c_msg_controller_err: 'Controller not detected - please press a button on the device.',
 	c_msg_teleop_view_only: 'Another user is in control - you can remain as viewer or take over.',
 	c_msg_teleop_follow: 'Use your phone to activate the Following mode and stay nearby the robot.',
+	c_msg_teleop_confidence_overview: 'Use your phone to activate the Following mode and stay nearby the robot.',
 	active_camera: 'front', // The active camera is rendered on the main display.
 	_debug_values_listeners: [],
 	camera_activation_listeners: [],
@@ -625,7 +626,9 @@ export var teleop_screen = {
 	message_box_update: function () {
 		if (CTRL_STAT.currentPage == 'follow_link' && this.el_message_box_message != undefined) {
 			this.el_message_box_message.text(this.c_msg_teleop_follow);
-			console.log('in follow mode');
+		}else if (CTRL_STAT.currentPage == 'map_recognition_link' && this.el_message_box_message != undefined) {
+			this.el_message_box_message.text(this.c_msg_teleop_confidence_overview);
+      //TODO: need to work more on the visuals of this part
 		}
 	},
 
@@ -684,11 +687,12 @@ export var teleop_screen = {
 		}
 	},
 	/**
-	 * Used by the two stream quality classes (mjpeg and h264) to set the width of the canvas where they will stream the video on
+	 * Used by the two stream quality classes (mjpeg and h264) to show the width of the stream on the debug (advanced) bar
 	 */
 	on_canvas_init: function (width, height) {
 		$('span#debug_screen_dimension').text(width + 'x' + height);
 	},
+  
 	/**
 	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes
 	 */

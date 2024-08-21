@@ -288,7 +288,6 @@ var mjpeg_page_controller = {
 	},
 
 	refresh_page_values: function () {
-		console.log(this.get_max_quality());
 		$('span#mjpeg_quality_val').text(this.get_max_quality());
 	},
 	add_camera_listener: function (cb_init, cb_image) {

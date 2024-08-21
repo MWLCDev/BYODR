@@ -16,7 +16,7 @@ class ControlSquare {
 		this.otherDirectionText = otherSquare.querySelector('.square_text');
 
 		this.isDrawing = false;
-    this.isTransitioning = false;  // Flag to detect if a transition between squares is occurring
+		this.isTransitioning = false; // Flag to detect if a transition between squares is occurring
 		this.initX = 0;
 		this.initY = 0;
 		this.lastX = 0;
@@ -32,7 +32,7 @@ class ControlSquare {
 	}
 
 	updateCoordinates(x, y, clientRect) {
-    if (this.isTransitioning) return;  // Stop updating coordinates if transitioning
+		if (this.isTransitioning) return; // Stop updating coordinates if transitioning
 		x -= clientRect.left;
 		y -= clientRect.top;
 
@@ -67,7 +67,6 @@ class ControlSquare {
 
 		setMobileCommand(Number(normalizedX.toFixed(3)), Number(normalizedY.toFixed(3)), 'auto');
 	}
-
 
 	switchCanvasDisplay(command) {
 		this.canvas.style.display = command;
@@ -168,7 +167,7 @@ class ControlSquare {
 	}
 
 	startDrawing(touch) {
-    this.isTransitioning = false;  
+		this.isTransitioning = false;
 		this.isDrawing = true;
 		const rect = this.canvas.getBoundingClientRect();
 		this.initX = touch.clientX - rect.left; // Set initial X
@@ -202,8 +201,8 @@ class ControlSquare {
 	}
 
 	triggerSquareTransitionAlert() {
-    this.isTransitioning = true;  
-		console.log(`Moved from ${this.square.id === 'forward_square' ? 'forward' : 'backward'} square to ${this.square.id === 'forward_square' ? 'backward' : 'forward'} square!`);
+		this.isTransitioning = true;
+		// console.log(`Moved from ${this.square.id === 'forward_square' ? 'forward' : 'backward'} square to ${this.square.id === 'forward_square' ? 'backward' : 'forward'} square!`); //DEBUGGING
 		setMobileCommand('force_stop', 'force_stop');
 	}
 

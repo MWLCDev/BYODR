@@ -1,5 +1,5 @@
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
-import { socket_utils,isMobileDevice } from './index_a_utils.js';
+import { socket_utils, isMobileDevice } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { screen_utils, teleop_screen } from './index_c_screen.js';
 
@@ -66,10 +66,7 @@ class LoggerServerSocket {
 }
 
 class MovementCommandSocket {
-	constructor() {
-		// noop.
-		//
-	}
+	constructor() {}
 	_send(command) {
 		if (this.socket != undefined && this.socket.readyState == 1) {
 			this.socket.send(JSON.stringify(command));
@@ -92,7 +89,7 @@ class MovementCommandSocket {
 
 			// Reset all keys except throttle and steering
 			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
-				if (key !== 'throttle' && key !== 'steering') {
+				if (key !== 'throttle' && key !== 'steering' && key !== 'button_b') {
 					// Remove transient data
 					delete CTRL_STAT.mobileCommandJSON[key];
 				}
