@@ -4,7 +4,7 @@ function setMobileCommand(x, y) {
 	if (typeof x === 'number' && typeof y === 'number') {
 		CTRL_STAT.mobileCommandJSON.throttle = Number(y);
 		CTRL_STAT.mobileCommandJSON.steering = Number(x);
-		console.log('a number ');
+		CTRL_STAT.mobileCommandJSON.button_b = '1';
 	} else if (typeof x === 'string' && typeof y === 'string') {
 		CTRL_STAT.mobileCommandJSON.throttle = y;
 		CTRL_STAT.mobileCommandJSON.steering = x;
