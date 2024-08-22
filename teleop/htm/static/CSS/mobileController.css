@@ -46,7 +46,6 @@
 
 
 #horizontal_bar .current_mode_text {
-  /* color: var(--VOR-color); */
   text-transform: uppercase;
 }
 
@@ -63,13 +62,13 @@
   color: #451c58;
   text-transform: uppercase;
 }
-#mobile_controller_container #main_view{
+
+#mobile_controller_container #main_view {
   display: flex;
   flex-direction: column;
   gap: 1%;
   width: 100%;
   height: 100%;
-
 }
 
 .square {
@@ -80,7 +79,6 @@
   position: relative;
   width: 100%;
   max-width: 1000px;
-  /*It is proportional with the height of header*/
   height: 50%;
   border: 0.5rem solid;
   border-color: #f6f6f6;
@@ -128,23 +126,50 @@
   text-transform: uppercase;
 }
 
+
 .control_symbol {
-  display: none;
-  justify-content: center;
-  align-items: center;
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
+  border: 14px solid #d0d0d0;
+  box-shadow: inset 1px 1px 3px #fff;
   width: 40vw;
   height: 40vw;
-  transition: background-color 0.3s, border-color 0.3s, color 0.3s;
-  background-color: #FFFFFF;
-  border: 14px solid #d0d0d0;
-  border-radius: 50%;
-  font-size: 9rem;
-  font-weight: bold;
-  color: #d0d0d0;
+  border-radius: 100%;
+  position: relative;
+  display: none;
+  vertical-align: middle;
+  background: #fff;
+}
+
+.control_symbol:before,
+.control_symbol:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+
+.control_symbol.plus:before,
+.control_symbol.plus:after {
+  background: #d0d0d0;
+}
+
+.control_symbol.plus:before {
+  height: 4vw;
+  margin: auto 7vw;
+}
+
+.control_symbol.plus:after {
+  width: 4vw;
+  margin: 7vw auto;
+}
+
+.control_symbol.minus:before {
+  background: #d0d0d0;
+  margin: auto 7vw;
+  height: 4vw;
+  box-shadow: 0px 1px 1px #ffffff9e;
 }
 
 .control_symbol:active {
@@ -175,18 +200,18 @@ canvas#following_imageCanvas {
 
 canvas#following_imageCanvas.map_view {
   display: block;
-  height: 85%;
   bottom: 0;
   transform: translate(-50%, -0%);
   width: 100vw;
+  height: 85%;
 }
 
 #map_frame {
+  display: none;
+  z-index: 9999;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 9999;
-  display: none;
   border: none;
 }
