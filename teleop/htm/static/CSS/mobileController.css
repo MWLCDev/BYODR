@@ -4,7 +4,6 @@
   justify-content: flex-start;
   align-items: center;
   align-content: space-between;
-  gap: 1%;
   width: 100%;
   height: 100%;
 }
@@ -64,6 +63,14 @@
   color: #451c58;
   text-transform: uppercase;
 }
+#mobile_controller_container #main_view{
+  display: flex;
+  flex-direction: column;
+  gap: 1%;
+  width: 100%;
+  height: 100%;
+
+}
 
 .square {
   display: flex;
@@ -71,17 +78,17 @@
   justify-content: center;
   align-items: center;
   position: relative;
-  width: 90vw;
+  width: 100%;
   max-width: 1000px;
   /*It is proportional with the height of header*/
-  height: 42vh;
+  height: 50%;
   border: 0.5rem solid;
   border-color: #f6f6f6;
   border-radius: 1rem;
 }
 
 #backward_square.maneuver_square {
-  width: 100vw;
+  width: 100%;
   background: repeating-linear-gradient(-45deg, #ffffff, #ffffff 16px, #ccc 18px, #ccc 11px);
   border: 0;
 }
@@ -175,9 +182,11 @@ canvas#following_imageCanvas.map_view {
 }
 
 #map_frame {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 9999;
   display: none;
-  position: fixed;
-  height: 85%;
-  bottom: 0;
-  width: 100vw;
+  border: none;
 }

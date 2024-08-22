@@ -13,24 +13,27 @@
 		</div>
 		<div class="right_section">
 			<button class="current_mode_button">START FOLLOWING</button>
-      <!-- The text inside `current mode button` is just a place holder. It will change with each mode -->
+			<!-- The text inside `current mode button` is just a place holder. It will change with each mode -->
 			<p class="current_mode_state"></p>
 		</div>
 	</div>
 
-	<div id="forward_square" class="square">
-		<canvas class="trail_canvas"></canvas>
-		<div class="square_text">forward</div>
-		<span class="stop_text">drag your finger to this area to force the robot to stop</span>
-		<div class="control_symbol">+</div>
-	</div>
+	<div id="main_view">
+		<iframe id="map_frame"></iframe>
 
-	<div id="backward_square" class="square">
-		<canvas class="trail_canvas"></canvas>
-		<div class="square_text">backward</div>
-		<span class="stop_text">drag your finger to this area to force the robot to stop</span>
-		<div class="control_symbol">-</div>
+		<div id="forward_square" class="square">
+			<canvas class="trail_canvas"></canvas>
+			<div class="square_text">forward</div>
+			<span class="stop_text">drag your finger to this area to force the robot to stop</span>
+			<div class="control_symbol">+</div>
+		</div>
+
+		<div id="backward_square" class="square">
+			<canvas class="trail_canvas"></canvas>
+			<div class="square_text">backward</div>
+			<span class="stop_text">drag your finger to this area to force the robot to stop</span>
+			<div class="control_symbol">-</div>
+		</div>
+		<canvas id="following_imageCanvas"></canvas>
 	</div>
-	<canvas id="following_imageCanvas"></canvas>
-	<iframe id="map_frame"></iframe>
 </div>
