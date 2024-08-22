@@ -21,15 +21,19 @@ class AutoNavigationHandler {
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
 		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 
-		$('#mobile_controller_container .current_mode_button').click(() => {
-			const buttonText = $(this).text().toLowerCase();
-			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') {
-				this.startAutoNavigation();
-			}
-			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') {
-				this.stopAutoNavigation();
-			}
-		});
+		$('#mobile_controller_container .current_mode_button').click((event) => {
+      const buttonText = $(event.target).text().toLowerCase();
+      console.log('clicked');
+      console.log(CTRL_STAT.currentPage, buttonText);
+      if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') {
+          console.log('Start');
+          this.startAutoNavigation();
+      }
+      if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') {
+          this.stopAutoNavigation();
+      }
+  });
+  
 
 		document.querySelectorAll('.control_symbol').forEach((item) => {
 			item.addEventListener('touchstart', (event) => {
