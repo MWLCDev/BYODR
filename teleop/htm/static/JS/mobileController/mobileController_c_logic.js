@@ -13,14 +13,17 @@ function setMobileCommand(x, y) {
 	}
 }
 
-// Function to add any additional data
-function addDataToMobileCommand(dataPairs) {
-	for (let key in dataPairs) {
-		if (dataPairs.hasOwnProperty(key) && dataPairs[key] !== '' && dataPairs[key] !== null && dataPairs[key] !== undefined) {
-			let value = isNaN(dataPairs[key]) ? dataPairs[key] : Number(dataPairs[key]);
-			CTRL_STAT.mobileCommandJSON[key] = value;
-		}
-	}
+function addDataToMobileCommand(newData) {
+  console.log(newData)
+  // Iterate through the keys of the new data
+  Object.keys(newData).forEach((key) => {
+      // Only add the key if it doesn't already exist in mobileCommandJSON
+      if (!CTRL_STAT.mobileCommandJSON.hasOwnProperty(key)) {
+          CTRL_STAT.mobileCommandJSON[key] = newData[key];
+      }
+  });
 }
+
+
 
 export { setMobileCommand, addDataToMobileCommand };
