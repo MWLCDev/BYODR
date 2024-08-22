@@ -46,17 +46,10 @@ class AutoNavigationHandler {
 
 	startAutoNavigation() {
 		addDataToMobileCommand({ button_y: 1 });
-		$('#mobile_controller_container .current_mode_button').text('stop');
-		$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
-		$('#mobile_controller_container .current_mode_button').css('border', 'none');
 	}
 
 	stopAutoNavigation() {
 		addDataToMobileCommand({ button_b: 1 });
-		$('#mobile_controller_container .current_mode_button').text('start');
-		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-		$('#mobile_controller_container .current_mode_button').css('color', 'white');
-		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 	}
 
 	/**

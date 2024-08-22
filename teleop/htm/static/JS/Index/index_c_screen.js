@@ -461,13 +461,15 @@ export var teleop_screen = {
 
 	_render_distance_indicators: function () {
 		const _show = this.active_camera == 'front';
-		[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
-			if (_show) {
-				_m.show();
-			} else {
-				_m.hide();
-			}
-		});
+		if (!isMobileDevice()) {
+			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
+				if (_show) {
+					_m.show();
+				} else {
+					_m.hide();
+				}
+			});
+		}
 	},
 
 	_select_next_camera: function () {
@@ -542,10 +544,17 @@ export var teleop_screen = {
 			el_inf_speed_val.text(message.max_speed.toFixed(1));
 			el_inf_speed_label.text('MAX');
 			this._render_distance_indicators();
+      $('#mobile_controller_container .current_mode_button').text('stop');
+      $('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
+      $('#mobile_controller_container .current_mode_button').css('border', 'none');
 		} else {
 			el_inf_speed.hide();
 			el_autopilot_status.text('00:00:00');
 			el_autopilot_status.hide();
+      $('#mobile_controller_container .current_mode_button').text('start');
+      $('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
+      $('#mobile_controller_container .current_mode_button').css('color', 'white');
+      $('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
@@ -626,9 +635,9 @@ export var teleop_screen = {
 	message_box_update: function () {
 		if (CTRL_STAT.currentPage == 'follow_link' && this.el_message_box_message != undefined) {
 			this.el_message_box_message.text(this.c_msg_teleop_follow);
-		}else if (CTRL_STAT.currentPage == 'map_recognition_link' && this.el_message_box_message != undefined) {
+		} else if (CTRL_STAT.currentPage == 'map_recognition_link' && this.el_message_box_message != undefined) {
 			this.el_message_box_message.text(this.c_msg_teleop_confidence_overview);
-      //TODO: need to work more on the visuals of this part
+			//TODO: need to work more on the visuals of this part
 		}
 	},
 
@@ -692,7 +701,7 @@ export var teleop_screen = {
 	on_canvas_init: function (width, height) {
 		$('span#debug_screen_dimension').text(width + 'x' + height);
 	},
-  
+
 	/**
 	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes
 	 */
