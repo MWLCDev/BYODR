@@ -20,20 +20,19 @@ class AutoNavigationHandler {
 		$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
 		$('#mobile_controller_container .current_mode_button').css('color', 'white');
 		$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
-
+		this.bindButtonAction();
+	}
+	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click((event) => {
-      const buttonText = $(event.target).text().toLowerCase();
-      console.log('clicked');
-      console.log(CTRL_STAT.currentPage, buttonText);
-      if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') {
-          console.log('Start');
-          this.startAutoNavigation();
-      }
-      if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') {
-          this.stopAutoNavigation();
-      }
-  });
-  
+			const buttonText = $(event.target).text().toLowerCase();
+			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') {
+				console.log('Start');
+				this.startAutoNavigation();
+			}
+			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') {
+				this.stopAutoNavigation();
+			}
+		});
 
 		document.querySelectorAll('.control_symbol').forEach((item) => {
 			item.addEventListener('touchstart', (event) => {
@@ -47,7 +46,6 @@ class AutoNavigationHandler {
 			});
 		});
 	}
-
 	startAutoNavigation() {
 		addDataToMobileCommand({ button_y: 1 });
 	}

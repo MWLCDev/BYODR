@@ -136,15 +136,17 @@ class ControlSquare {
 		fade(); // Start the fade-out animation
 	}
 
-	showOtherSquare(cmd) {
-		if (cmd) {
-			this.otherSquare.style.borderColor = 'red';
-			this.otherStopText.style.display = 'block';
-			this.otherDirectionText.style.display = 'none';
-		} else {
-			this.otherSquare.style.borderColor = '#f6f6f6';
-			this.otherStopText.style.display = 'none';
-			this.otherDirectionText.style.display = 'block';
+	showOtherSquare(show) {
+		if (CTRL_STAT.currentPage !== 'ai_training_link') {
+			if (show) {
+				this.otherSquare.style.borderColor = 'red';
+				this.otherStopText.style.display = 'block';
+				this.otherDirectionText.style.display = 'none';
+			} else {
+				this.otherSquare.style.borderColor = '#f6f6f6';
+				this.otherStopText.style.display = 'none';
+				this.otherDirectionText.style.display = 'block';
+			}
 		}
 	}
 

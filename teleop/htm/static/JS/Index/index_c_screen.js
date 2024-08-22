@@ -1,6 +1,6 @@
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
 
-import { dev_tools, page_utils } from './index_a_utils.js';
+import { dev_tools, isMobileDevice, page_utils } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
 import { gamepad_socket } from './index_e_teleop.js';
 
@@ -544,17 +544,12 @@ export var teleop_screen = {
 			el_inf_speed_val.text(message.max_speed.toFixed(1));
 			el_inf_speed_label.text('MAX');
 			this._render_distance_indicators();
-      $('#mobile_controller_container .current_mode_button').text('stop');
-      $('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
-      $('#mobile_controller_container .current_mode_button').css('border', 'none');
+      this.control_current_mode_btn_mc(true)
 		} else {
 			el_inf_speed.hide();
 			el_autopilot_status.text('00:00:00');
 			el_autopilot_status.hide();
-      $('#mobile_controller_container .current_mode_button').text('start');
-      $('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-      $('#mobile_controller_container .current_mode_button').css('color', 'white');
-      $('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+      this.control_current_mode_btn_mc(false)
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
@@ -577,7 +572,20 @@ export var teleop_screen = {
 			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
 		}
 	},
-
+	control_current_mode_btn_mc: function (active) {
+		if (CTRL_STAT.currentPage == 'autopilot_link') {
+			if (active) {
+				$('#mobile_controller_container .current_mode_button').text('stop');
+				$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
+				$('#mobile_controller_container .current_mode_button').css('border', 'none');
+			} else {
+				$('#mobile_controller_container .current_mode_button').text('start');
+				$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
+				$('#mobile_controller_container .current_mode_button').css('color', 'white');
+				$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+			}
+		}
+	},
 	_on_camera_selection: function () {
 		const _active = this.active_camera;
 		const _selected = this.selected_camera;

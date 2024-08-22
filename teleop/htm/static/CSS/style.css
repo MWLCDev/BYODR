@@ -315,7 +315,6 @@ body {
 .right_section button {
   cursor: pointer;
   border: none;
-  border-radius: 4px;
 }
 
 .hidden {
