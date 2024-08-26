@@ -30,6 +30,10 @@ import tornado.websocket
 
 latest_message = {}
 
+import os
+import time
+import fcntl
+
 
 class LatestImageHandler(tornado.web.RequestHandler):
     def initialize(self, path):
@@ -40,9 +44,11 @@ class LatestImageHandler(tornado.web.RequestHandler):
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         self.set_header("Pragma", "no-cache")
         self.set_header("Expires", "0")
+
         try:
             # Fetch all jpg files directly, assuming the folder contains only images
             image_files = [f for f in os.listdir(self.image_save_path) if f.endswith(".jpg")]
+
             # Get full paths
             full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
 
@@ -50,16 +56,25 @@ class LatestImageHandler(tornado.web.RequestHandler):
             full_paths.sort(key=os.path.getctime, reverse=True)
 
             if full_paths:
-                # Open the most recent file
-                with open(full_paths[0], "rb") as img:
-                    self.write(img.read())
+                latest_image = full_paths[0]
+
+                # Wait for the file to be completely written
+                while True:
+                    try:
+                        with open(latest_image, "rb") as img:
+                            # Lock the file while reading to ensure no other process writes to it
+                            fcntl.flock(img, fcntl.LOCK_SH)
+                            self.write(img.read())
+                            fcntl.flock(img, fcntl.LOCK_UN)
+                        break
+                    except IOError:
+                        # Wait briefly before retrying
+                        time.sleep(0.01)
             else:
                 self.write("No images available.")
-
         except Exception as e:
             self.write(f"Error fetching the latest image: {str(e)}")
             self.set_status(500)  # Internal Server Error
-
         finally:
             self.finish()
 
