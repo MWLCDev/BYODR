@@ -31,8 +31,7 @@ class ControlSquare {
 		$.get('/teleop/user/options')
 			.done((data) => {
 				// Assume the fetched value is a fraction of the canvas width
-				this.deadZoneWidth = data.vehicle['ras.driver.deadzone.width'] * this.canvas.width;
-				console.log(`Dead zone width updated to: ${this.deadZoneWidth}px based on canvas width from ${data.vehicle['ras.driver.deadzone.width']}.`);
+				this.deadZoneWidth = data.vehicle['ras.driver.deadzone.width'];
 			})
 			.fail((error) => {
 				console.error('Error fetching data:', error);
@@ -73,8 +72,8 @@ class ControlSquare {
 	 */
 	applyDeadZone(x) {
 		// Calculate the start and end of the dead zone based on the fetched width
-		const deadZoneStart = this.initX - this.deadZoneWidth / 2;
-		const deadZoneEnd = this.initX + this.deadZoneWidth / 2;
+		const deadZoneStart = this.initX - (this.deadZoneWidth * this.canvas.width) / 2;
+		const deadZoneEnd = this.initX + (this.deadZoneWidth * this.canvas.width) / 2;
 
 		// Enforce dead zone rules
 		if (x >= deadZoneStart && x <= deadZoneEnd) {
@@ -117,30 +116,34 @@ class ControlSquare {
 	}
 
 	drawPin(x, y) {
-		this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
+		try {
+			this.context.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
-		// Draw the line from initial point to current point
-		this.context.beginPath();
-		this.context.moveTo(this.initX, this.initY);
-		this.context.lineTo(x, y);
-		this.context.strokeStyle = '#451c58';
-		this.context.lineWidth = 4;
-		this.context.stroke();
+			// Draw the line from initial point to current point
+			this.context.beginPath();
+			this.context.moveTo(this.initX, this.initY);
+			this.context.lineTo(x, y);
+			this.context.strokeStyle = '#451c58';
+			this.context.lineWidth = 4;
+			this.context.stroke();
 
-		// Draw the pin with the shadow at the current location
-		this.context.shadowBlur = 10;
-		this.context.shadowColor = 'rgba(0, 0, 0, 0.5)';
-		this.context.shadowOffsetX = 0;
-		this.context.shadowOffsetY = 5;
-		this.context.fillStyle = '#694978';
-		this.context.beginPath();
-		this.context.arc(x, y, 10, 0, Math.PI * 2);
-		this.context.fill();
-		this.lastX = x;
-		this.lastY = y;
-		// Reset shadow for any other drawing
-		this.context.shadowBlur = 0;
-		this.context.shadowColor = 'transparent';
+			// Draw the pin with the shadow at the current location
+			this.context.shadowBlur = 10;
+			this.context.shadowColor = 'rgba(0, 0, 0, 0.5)';
+			this.context.shadowOffsetX = 0;
+			this.context.shadowOffsetY = 5;
+			this.context.fillStyle = '#694978';
+			this.context.beginPath();
+			this.context.arc(x, y, this.deadZoneWidth * 100, 0, Math.PI * 2);
+			this.context.fill();
+			this.lastX = x;
+			this.lastY = y;
+			// Reset shadow for any other drawing
+			this.context.shadowBlur = 0;
+			this.context.shadowColor = 'transparent';
+		} catch (error) {
+			console.error('Error while drawing the pin:', error);
+		}
 	}
 
 	fadeOutDrawing() {
@@ -164,7 +167,7 @@ class ControlSquare {
 			this.context.shadowOffsetY = 5;
 			this.context.fillStyle = '#694978';
 			this.context.beginPath();
-			this.context.arc(this.lastX, this.lastY, 10, 0, Math.PI * 2);
+			this.context.arc(this.lastX, this.lastY, this.deadZoneWidth * 100, 0, Math.PI * 2);
 			this.context.fill();
 			this.context.shadowBlur = 0;
 			this.context.shadowColor = 'transparent';
