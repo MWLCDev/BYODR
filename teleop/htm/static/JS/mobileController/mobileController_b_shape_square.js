@@ -22,8 +22,23 @@ class ControlSquare {
 		this.lastX = 0;
 		this.lastY = 0;
 		this.lastTime = Date.now();
-
+		this.deadZoneWidth = 0;
 		this.initEventListeners();
+		this.fetchDeadZone();
+	}
+
+	fetchDeadZone() {
+		$.get('/teleop/user/options')
+			.done((data) => {
+				// Assume the fetched value is a fraction of the canvas width
+				this.deadZoneWidth = data.vehicle['ras.driver.deadzone.width'] * this.canvas.width;
+				console.log(`Dead zone width updated to: ${this.deadZoneWidth}px based on canvas width from ${data.vehicle['ras.driver.deadzone.width']}.`);
+			})
+			.fail((error) => {
+				console.error('Error fetching data:', error);
+				// Set a default dead zone width as a fallback
+				this.deadZoneWidth = this.canvas.width / 4;
+			});
 	}
 
 	resizeCanvas() {
@@ -44,13 +59,43 @@ class ControlSquare {
 		x = Math.max(minX, Math.min(x, maxX));
 		y = Math.max(minY, Math.min(y, maxY));
 
+		// Apply dead zone rules
+		x = this.applyDeadZone(x);
+
 		this.drawPin(x, y);
-		// Calculate normalized X
+		this.normalizeSpeedAndThrottle(x, y);
+	}
+
+	/**
+	 * Applies dead zone constraints to the x-coordinate.
+	 * @param {number} x - The current x-coordinate adjusted for the canvas offset
+	 * @returns {number} - The x-coordinate adjusted for the dead zone
+	 */
+	applyDeadZone(x) {
+		// Calculate the start and end of the dead zone based on the fetched width
+		const deadZoneStart = this.initX - this.deadZoneWidth / 2;
+		const deadZoneEnd = this.initX + this.deadZoneWidth / 2;
+
+		// Enforce dead zone rules
+		if (x >= deadZoneStart && x <= deadZoneEnd) {
+			return this.initX; // Clamp x to the initial touch x within the dead zone
+		}
+		return x;
+	}
+
+	/**
+	 * Normalize steering and throttle to the canvas size.
+	 * Max steering is third of the canvas's width.
+	 * Max throttle is fifth of the canvas's height
+	 * @param {Int} x steering
+	 * @param {Int} y throttle
+	 */
+	normalizeSpeedAndThrottle(x, y) {
+		// Calculate normalized X based on the canvas width
 		let normalizedX = (x - this.initX) / (this.canvas.width / 3);
 		normalizedX = Math.max(-1, Math.min(normalizedX, 1));
 
 		// Calculate and adjust normalized Y based on whether the control is 'forward' or 'backward'
-		// the value should increase if the ball moves upwards on the y-axis for the forward triangle, and vice-verse for the backwards one.
 		let deltaY = this.square.id === 'backward_square' ? y - this.initY : this.initY - y;
 		let scaleFactor = this.canvas.height / 5;
 		let normalizedY = deltaY / scaleFactor;
@@ -63,8 +108,7 @@ class ControlSquare {
 			normalizedY = Math.max(0, Math.min(normalizedY, 1));
 		}
 
-		// Optionally call a callback function if set
-
+		// Send throttle and steering for the pin
 		setMobileCommand(Number(normalizedX.toFixed(3)), Number(normalizedY.toFixed(3)), 'auto');
 	}
 
