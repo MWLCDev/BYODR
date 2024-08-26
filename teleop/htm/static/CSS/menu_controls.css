@@ -31,7 +31,6 @@
   margin-right: 15px;
   font-size: 24px;
   font-weight: bold;
-  color: #434343;
 }
 
 .custom-slider {
@@ -68,7 +67,6 @@
 
 .slider_value {
   font-size: 20px;
-  color: #727272;
 }
 
 
@@ -93,13 +91,11 @@ legend {
   margin-bottom: 1rem;
   font-size: 24px;
   font-weight: bold;
-  color: #434343;
   white-space: nowrap;
 }
 
 #channel-container {
   padding: 15px;
-  background-color: #f0f0f0;
   border: 1px solid #e0e0e0;
   border-radius: 10px;
 }
@@ -116,7 +112,7 @@ legend {
 .relay-switch {
   display: inline-block;
   position: relative;
-  width: 120px;
+  width: 100%;
   height: 34px;
 }
 
@@ -125,7 +121,7 @@ legend {
   height: 0;
 }
 
-.slider {
+#relay-control-container .slider {
   box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
   position: absolute;
   width: 100%;
@@ -136,11 +132,17 @@ legend {
   border-radius: 10px;
 }
 
-.slider.round:before {
+#relay-control-container input:checked+.slider {
+  background-color: #8B44A8;
+  /* or any color you prefer */
+}
+
+#relay-control-container .slider.round:before {
   content: "";
   position: absolute;
   bottom: -3px;
-  left: -2px;
+  left: 0;
+  /* Start at the exact left edge */
   width: 26px;
   height: 26px;
   transition: .4s;
@@ -148,8 +150,9 @@ legend {
   border-radius: 50%;
 }
 
-input:checked+.slider:before {
-  transform: translateX(100px);
+#relay-control-container input:checked+.slider.round:before {
+  transform: translateX(120px);
+  /* Adjust translateX to stop at the right edge */
 }
 
 .on-off-labels {
@@ -167,20 +170,9 @@ input:checked+.slider:before {
   text-align: center;
 }
 
-#save-button {
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-  top: 55%;
-  left: 90%;
-  width: 80px;
-  height: 40px;
-  padding: 0px 0px;
-  transition: background-color 0.3s ease, color 0.3s ease;
-  background-color: #530D73;
-  cursor: pointer;
-  border: 1px solid #530D73;
-  border-radius: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: #f0f0f0;
-  text-align: center;
+@media (max-width: 768px) {
+  #relay-control-container {
+    margin-left: 0;
+  }
+
 }

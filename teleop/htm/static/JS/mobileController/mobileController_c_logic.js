@@ -11,19 +11,18 @@ function setMobileCommand(x, y) {
 	} else {
 		console.error('Invalid types for setMobileCommand:', { x, y });
 	}
+	console.log(x, y);
 }
 
 function addDataToMobileCommand(newData) {
-  console.log(newData)
-  // Iterate through the keys of the new data
-  Object.keys(newData).forEach((key) => {
-      // Only add the key if it doesn't already exist in mobileCommandJSON
-      if (!CTRL_STAT.mobileCommandJSON.hasOwnProperty(key)) {
-          CTRL_STAT.mobileCommandJSON[key] = newData[key];
-      }
-  });
+	console.log(newData);
+	// Iterate through the keys of the new data
+	Object.keys(newData).forEach((key) => {
+		// Only add the key if it doesn't already exist in mobileCommandJSON
+		if (!CTRL_STAT.mobileCommandJSON.hasOwnProperty(key)) {
+			CTRL_STAT.mobileCommandJSON[key] = newData[key];
+		}
+	});
 }
-
-
 
 export { setMobileCommand, addDataToMobileCommand };

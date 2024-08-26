@@ -20,15 +20,15 @@ class ControlSettings {
 
 	bindSliderInputListeners() {
 		// Bindings for scale and offset inputs
-		this.scaleInput.on('input', () => {
+		this.scaleInput.on('input touchmove', () => {
 			this.scaleInputText.text(this.scaleInput.val());
 		});
-		this.offsetInput.on('input', () => {
+		this.offsetInput.on('input touchmove', () => {
 			this.offsetInputText.text(this.offsetInput.val());
 		});
 
 		// Binding for dead zone input
-		this.deadZoneInput.on('input', () => {
+		this.deadZoneInput.on('input touchmove', () => {
 			this.deadZoneInputText.text(this.deadZoneInput.val());
 		});
 
@@ -36,7 +36,7 @@ class ControlSettings {
 		this.scaleInput
 			.add(this.offsetInput)
 			.add(this.deadZoneInput)
-			.on('change', () => {
+			.on('change touchend', () => {
 				this.sendDataToBackend();
 			});
 	}

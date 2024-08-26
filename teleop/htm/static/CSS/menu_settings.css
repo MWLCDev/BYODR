@@ -83,20 +83,20 @@ fieldset input[type=text] {
 }
 
 /* Toggle switch styling */
-.switch {
+#pro-view-toggle-div .switch {
   display: inline-block;
   position: relative;
   width: 80px;
   height: 20px;
 }
 
-.switch input {
+#pro-view-toggle-div .switch input {
   opacity: 0;
   width: 0;
   height: 0;
 }
 
-.slider {
+#pro-view-toggle-div .slider {
   position: absolute;
   top: 0;
   bottom: 0;
@@ -110,7 +110,7 @@ fieldset input[type=text] {
   border-radius: 20px;
 }
 
-.slider:before {
+#pro-view-toggle-div .slider:before {
   content: "";
   position: absolute;
   bottom: -3px;
@@ -122,15 +122,15 @@ fieldset input[type=text] {
   border-radius: 50%;
 }
 
-input:checked+.slider {
+#pro-view-toggle-div input:checked+.slider {
   background-color: #8B7697;
 }
 
-input:focus+.slider {
+#pro-view-toggle-div input:focus+.slider {
   box-shadow: 0 0 1px #530D73;
 }
 
-input:checked+.slider:before {
+#pro-view-toggle-div input:checked+.slider:before {
   transform: translateX(60px);
 }
 

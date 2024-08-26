@@ -84,7 +84,6 @@ class MovementCommandSocket {
 		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
 		var current_page = localStorage.getItem('user.menu.screen');
 		if (isMobileDevice() || modeSwitchingPages.includes(current_page)) {
-      console.log(CTRL_STAT.mobileCommandJSON)
 			this._send(CTRL_STAT.mobileCommandJSON);
 			teleop_screen.message_box_update();
 
