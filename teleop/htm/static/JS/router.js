@@ -156,6 +156,10 @@ export class Router {
 	 * Actions that are bonded to the navbar buttons only. They will control the switch for the features
 	 */
 	assignNavButtonActions(navLink) {
+		//TODO: should add a filter here to remove all the styles related to the lat mode and reset them to the default values. So the new mode would only add its new styles on DOM.
+		$('#mobile_controller_container #backward_square').removeClass('maneuver_square');
+		$('#mobile_controller_container  .trail_canvas').show();
+		$('#map_frame').hide();
 		if (navLink == 'follow_link' && isMobileDevice()) followingNavButtonHandler.initializeDOM();
 		else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
 		else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
