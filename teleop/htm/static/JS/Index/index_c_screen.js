@@ -104,10 +104,8 @@ class NavigationManager {
 		this.userMenu = document.getElementById('application_content');
 		this.headerBar = document.getElementById('header_bar');
 		this.navLinks = document.querySelectorAll('.hamburger_menu_nav a');
-		this.init();
-	}
 
-	init() {
+		this.setNavHeight(); // Set initial height
 		this.addEventListeners();
 	}
 
@@ -117,6 +115,11 @@ class NavigationManager {
 			link.addEventListener('click', () => this.toggleSidebar());
 		});
 		document.addEventListener('click', (event) => this.handleOutsideClick(event));
+		window.addEventListener('resize', () => this.setNavHeight()); // Resize listener
+	}
+
+	setNavHeight() {
+		this.nav.style.height = `${window.innerHeight}px`;
 	}
 
 	toggleSidebar() {
@@ -134,6 +137,7 @@ class NavigationManager {
 		}
 	}
 }
+
 class HelpMessageManager {
 	constructor() {
 		this.help_message_img = $('.message_container img');
@@ -544,12 +548,12 @@ export var teleop_screen = {
 			el_inf_speed_val.text(message.max_speed.toFixed(1));
 			el_inf_speed_label.text('MAX');
 			this._render_distance_indicators();
-      this.control_current_mode_btn_mc(true)
+			this.control_current_mode_btn_mc(true);
 		} else {
 			el_inf_speed.hide();
 			el_autopilot_status.text('00:00:00');
 			el_autopilot_status.hide();
-      this.control_current_mode_btn_mc(false)
+			this.control_current_mode_btn_mc(false);
 		}
 		if (message._is_on_autopilot && message.ctl_activation > 0) {
 			// Convert the time from milliseconds to seconds.
