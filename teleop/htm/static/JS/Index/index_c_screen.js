@@ -306,15 +306,17 @@ export var screen_utils = {
 	},
 };
 
-var path_renderer = {
-	_init: function () {
-		const _instance = this;
-	},
+class PathRenderer {
+	// Method to render a trapezoid shape
+	_renderTrapezoid(ctx, positions, fill = 'rgba(100, 217, 255, 0.3)') {
+		if (!ctx || !positions || positions.length !== 4) {
+			console.error('Invalid parameters passed to _renderTrapezoid');
+			return;
+		}
 
-	_render_trapezoid: function (ctx, positions, fill) {
 		ctx.lineWidth = 0.5;
 		ctx.strokeStyle = 'rgb(255, 255, 255)';
-		ctx.fillStyle = 'rgba(100, 217, 255, 0.3)';
+		ctx.fillStyle = fill;
 		ctx.beginPath();
 		ctx.moveTo(positions[0][0], positions[0][1]);
 		ctx.lineTo(positions[1][0], positions[1][1]);
@@ -323,66 +325,83 @@ var path_renderer = {
 		ctx.closePath();
 		ctx.stroke();
 		ctx.fill();
-	},
+	}
 
-	_get_constants: function () {
-		switch (dev_tools._vehicle) {
-			case 'rover1':
-				return [400 / 640, 120 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 65 / 640, 2 / 480];
-			default:
-				return [400 / 640, 74 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 80 / 640, 2 / 480];
+	// Method to get constants based on the vehicle type
+	_getConstants() {
+		const constants = {
+			default: [400 / 640, 74 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 80 / 640, 2 / 480],
+			rover1: [400 / 640, 120 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 65 / 640, 2 / 480],
+		};
+
+		return constants[dev_tools._vehicle] || constants.default;
+	}
+
+	// Method to render the path
+	renderPath(ctx, path) {
+		if (!ctx || !path || !Array.isArray(path)) {
+			console.error('Invalid parameters passed to renderPath');
+			return;
 		}
-	},
 
-	_render_path: function (ctx, path) {
 		const canvas = ctx.canvas;
-		const _constants = this._get_constants();
-		const tz_width = _constants[0] * canvas.width;
-		const tz_height = _constants[1] * canvas.height;
-		const gap = _constants[2] * canvas.width;
-		const cut = _constants[3] * canvas.height;
-		const taper = _constants[4];
-		const height_shrink = _constants[5];
-		const gap_shrink = _constants[6];
-		const cut_shrink = _constants[7];
-		const w_steering = _constants[8] * canvas.width;
-		const h_steering = _constants[9] * canvas.height;
+		const [tzWidthFactor, tzHeightFactor, gapFactor, cutFactor, taper, heightShrink, gapShrink, cutShrink, wSteeringFactor, hSteeringFactor] = this._getConstants(); // Corrected the method call here
+
+		// Calculating dimensions based on canvas size
+		const tzWidth = tzWidthFactor * canvas.width;
+		const tzHeight = tzHeightFactor * canvas.height;
+		const gap = gapFactor * canvas.width;
+		const cut = cutFactor * canvas.height;
+		const wSteering = wSteeringFactor * canvas.width;
+		const hSteering = hSteeringFactor * canvas.height;
 
 		// Start from the middle of the base of the trapezoid.
-		var a_x = canvas.width / 2 - tz_width / 2;
-		var a_y = canvas.height - gap;
-		var b_x = a_x + tz_width;
-		var b_y = a_y;
-		var idx = 0;
 
-		path.forEach(function (element) {
+		let baseAx = canvas.width / 2 - tzWidth / 2;
+		let baseAy = canvas.height - gap;
+		let baseBx = baseAx + tzWidth;
+		let baseBy = baseAy;
+		let idx = 0;
+
+		path.forEach((steeringValue) => {
+			// Calculate width of the base and offsets for the next step
 			// Start in the lower left corner and draw counter clockwise.
-			var w_base = b_x - a_x;
-			var w_off = (w_base - w_base * taper) / 2;
-			var v_height = tz_height * height_shrink ** idx;
-			steer_dx = w_steering * element;
-			steer_dy = h_steering * element;
-			var c_x = b_x - w_off + steer_dx;
-			var c_y = b_y - v_height + (element > 0 ? steer_dy : 0);
-			var d_x = a_x + w_off + steer_dx;
-			var d_y = a_y - v_height - (element < 0 ? steer_dy : 0);
-			path_renderer._render_trapezoid(ctx, [
-				[a_x, a_y],
-				[b_x, b_y],
-				[c_x, c_y],
-				[d_x, d_y],
+
+			const baseWidth = baseBx - baseAx;
+			const offsetWidth = (baseWidth - baseWidth * taper) / 2;
+			const height = tzHeight * Math.pow(heightShrink, idx);
+			const steerDx = wSteering * steeringValue;
+			const steerDy = hSteering * steeringValue;
+
+			// Calculate the coordinates for the trapezoid
+			const cx = baseBx - offsetWidth + steerDx;
+			const cy = baseBy - height + (steeringValue > 0 ? steerDy : 0);
+			const dx = baseAx + offsetWidth + steerDx;
+			const dy = baseAy - height - (steeringValue < 0 ? steerDy : 0);
+
+			// Render the trapezoid
+			this._renderTrapezoid(ctx, [
+				[baseAx, baseAy],
+				[baseBx, baseBy],
+				[cx, cy],
+				[dx, dy],
 			]);
+
+			// Update the base coordinates for the next step
 			// The next step starts from the top of the previous with gap.
-			var c_shrink = 0.5 * cut * cut_shrink ** idx;
-			var g_shrink = gap * gap_shrink ** idx;
-			a_x = d_x + c_shrink;
-			a_y = d_y - g_shrink;
-			b_x = c_x - c_shrink;
-			b_y = c_y - g_shrink;
+
+			const cutShrinked = 0.5 * cut * Math.pow(cutShrink, idx);
+			const gapShrinked = gap * Math.pow(gapShrink, idx);
+
+			baseAx = dx + cutShrinked;
+			baseAy = dy - gapShrinked;
+			baseBx = cx - cutShrinked;
+			baseBy = cy - gapShrinked;
+
 			idx++;
 		});
-	},
-};
+	}
+}
 
 export var teleop_screen = {
 	command_turn: null,
@@ -449,13 +468,14 @@ export var teleop_screen = {
 
 	_init() {
 		try {
+			this.path_renderer = new PathRenderer();
+
 			//normal ui related
 			this.controller_status = gamepad_controller.is_active();
 			this.add_camera_selection_listener(function () {
 				teleop_screen._on_camera_selection();
 			});
 			this._select_camera('rear');
-			// this.toggle_debug_values(true);
 			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 			$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 		} catch (error) {
@@ -606,23 +626,6 @@ export var teleop_screen = {
 		this._debug_values_listeners.push(cb);
 	},
 
-	//TODO: function to show and hide pilot's data. Not needed as pilot values are shown be default and advanced view only controls them
-	toggle_debug_values: function (show) {
-		if (show == undefined) {
-			show = !this.in_debug;
-		}
-		if (show) {
-			this.el_pilot_bar.css({ cursor: 'zoom-out' });
-		} else {
-			this.el_pilot_bar.css({ cursor: 'zoom-in' });
-		}
-		this.in_debug = show ? 1 : 0;
-		this._render_distance_indicators();
-		this._debug_values_listeners.forEach(function (cb) {
-			cb(show);
-		});
-	},
-
 	add_camera_activation_listener: function (cb) {
 		this.camera_activation_listeners.push(cb);
 	},
@@ -718,10 +721,14 @@ export var teleop_screen = {
 	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes
 	 */
 	canvas_update: function (ctx) {
-		const message = this._last_server_message;
-		const _ap = message != undefined && message._is_on_autopilot;
-		if (_ap && this.active_camera == 'front' && this.in_debug) {
-			path_renderer._render_path(ctx, message.nav_path);
+		try {
+			const message = this._last_server_message;
+			const _ap = message != undefined && message._is_on_autopilot;
+			if (_ap && this.active_camera == 'front') {
+				this.path_renderer.renderPath(ctx, message.nav_path);
+			}
+		} catch (error) {
+			console.error('Error while rendering autopilot path: ', error);
 		}
 	},
 };
