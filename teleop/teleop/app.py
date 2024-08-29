@@ -141,7 +141,7 @@ def main():
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
-    _mongo = MongoLogBox(MongoClient())
+    _mongo = MongoLogBox()
     _mongo.ensure_indexes()
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
@@ -185,7 +185,7 @@ def main():
         main_app = web.Application(
             [
                 # Landing page
-                (r"/", DirectingUser),
+                (r"/", TemplateRenderer),
                 # Navigate to normal controller page
                 (r"/(nc)", TemplateRenderer),
                 # Navigate to user menu settings page
