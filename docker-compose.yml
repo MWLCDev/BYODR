@@ -101,6 +101,8 @@ services:
     restart: always
     command: ['sh', '-c', 'python3 -m teleop.app --name teleop --routes /sessions/routes']
     network_mode: host
+    depends_on:
+      - mongodb
     environment:
       LD_PRELOAD: libgomp.so.1
     volumes:
