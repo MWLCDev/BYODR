@@ -26,14 +26,14 @@ def _interrupt():
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 
-
+ 
 class FollowingApplication(Application):
     def __init__(self, event, hz, config_dir=os.getcwd()):
         super(FollowingApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
-        self.controller = FollowingController(model_path="./models/yolov8_n_20240722(480*640_FB16).engine", user_config_args=self.get_user_config_file_contents(), event=quit_event, hz=hz)
+        self.controller = FollowingController(model_path="./models/yolov8n_d_20240722(256*320_FB16).engine", user_config_args=self.get_user_config_file_contents(), event=quit_event, hz=hz)
 
     def _check_user_config(self):
         """See if there is an available user config file, and assign it to the self var"""

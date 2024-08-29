@@ -30,7 +30,7 @@ class YoloInference:
         # The persist=True argument tells the tracker that the current image or frame is the next in a sequence and to expect tracks from the previous image in the current image.
         # Streaming mode is beneficial for processing videos or live streams as it creates a generator of results instead of loading all frames into memory.
         # image size is a tuple of (h, w)
-        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=False, imgsz=(480, 640), tracker="botsort.yaml")
+        self.results = self.model.track(source=stream_uri, classes=0, stream=True, conf=0.35, persist=True, verbose=True, imgsz=(256, 320), tracker="botsort.yaml")
         logger.info(f"{self.model_path} model is loaded")
 
     def get_stream_uri(self):
@@ -272,6 +272,7 @@ class FollowingController:
     def _control_logic(self, stop):
         """Processes each frame of YOLO output with a controlled rate."""
         try:
+            # print(self.yolo_inference.results)
             for r in self.yolo_inference.results:
                 # in case of raising the flag to stop. Terminate the thread and send that fol is ready for future commands
                 if stop():
@@ -280,6 +281,7 @@ class FollowingController:
                     self.command_controller.publish_command(source="followingReady")
                     break
                 self._update_control_commands(r.boxes.cpu().numpy())
+                # logger.info(r.speed["preprocess"]+r.speed["inference"]+r.speed["postprocess"])
                 followed_person_id = self.command_controller.followed_person_id
                 self.yolo_inference.track_and_save_image(r, followed_person_id)
         except Exception as e:
