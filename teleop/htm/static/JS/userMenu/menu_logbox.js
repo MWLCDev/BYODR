@@ -9,7 +9,7 @@ class LogBox {
 		this.pagesAmount = 1;
 		this.totalRecords = 0;
 
-		//TODO: handle image showing
+		this._data_map = {};
 		this.elements = {
 			startDots: document.getElementById('startDots'),
 			first_btn: document.getElementById('first_btn'),
@@ -43,6 +43,7 @@ class LogBox {
 		if (event.target.nodeName !== 'BUTTON') return;
 		this.clickButtons(event.target);
 	}
+
 	/**
 	 * Handles changes in the entries per page select element.
 	 */
@@ -105,26 +106,6 @@ class LogBox {
 		last_btn.style.display = showEndButtons ? 'inline' : 'none';
 	}
 
-	/**
-	 * Generates and displays pagination buttons.
-	 */
-	getButtons() {
-		const buttonContainer = this.elements.varpag;
-		buttonContainer.innerHTML = '';
-		if (this.pagesAmount >= 1) {
-			for (let i = 0; i < 5 && i < this.pagesAmount; i++) {
-				const buttonNr = this.currentPage + i - 2;
-				if (buttonNr >= 1 && buttonNr <= this.pagesAmount) {
-					const newBtn = document.createElement('button');
-					newBtn.id = i - 2;
-					newBtn.className = 'logbox nrbtn';
-					newBtn.textContent = buttonNr;
-					buttonContainer.appendChild(newBtn);
-				}
-			}
-		}
-	}
-
 	fetchData() {
 		const params = new URLSearchParams({
 			draw: this.drawCount++,
@@ -150,7 +131,7 @@ class LogBox {
 		}
 		this.totalRecords = data.recordsTotal;
 		this.displayNumbers();
-		this.processData(data.data, data.draw);
+		this.createImgData(data.data); // Call the data processing method
 		this.getButtons();
 		this.updateButtonVisibility();
 		this.updateCurrentButton();
@@ -172,6 +153,76 @@ class LogBox {
 	}
 
 	/**
+	 * Create object with all returned img details
+	 */
+	createImgData(data) {
+		var _map = {};
+		data.forEach((row) => {
+			const object_id = row[0]; // ID
+			const img_exists = row[2];
+			const user_steer = row[8];
+			const ap_steer = row[15];
+			_map[object_id] = [img_exists, user_steer, ap_steer];
+		});
+		this._data_map = _map; // Save the map
+		this.processData(data, this.drawCount - 1); // Proceed to processing the data for the table
+	}
+
+	/**
+	 * Generates and displays pagination buttons.
+	 */
+	getButtons() {
+		const buttonContainer = this.elements.varpag;
+		buttonContainer.innerHTML = '';
+		if (this.pagesAmount >= 1) {
+			for (let i = 0; i < 5 && i < this.pagesAmount; i++) {
+				const buttonNr = this.currentPage + i - 2;
+				if (buttonNr >= 1 && buttonNr <= this.pagesAmount) {
+					const newBtn = document.createElement('button');
+					newBtn.id = i - 2;
+					newBtn.className = 'logbox nrbtn';
+					newBtn.textContent = buttonNr;
+					buttonContainer.appendChild(newBtn);
+				}
+			}
+		}
+	}
+
+	createImageTag(objectId) {
+		const row = this._data_map[objectId];
+		const exists = row == undefined ? 0 : row[0];
+		if (exists) {
+			const imageUrl = `api/datalog/event/v10/image?object_id=${objectId}`;
+			this.loadImageOnCanvas(objectId, imageUrl);
+			return `<canvas id="canvas_${objectId}" width="200" height="80"></canvas>`;
+		} else {
+			return `No image available`;
+		}
+	}
+
+	loadImageOnCanvas(objectId, imageUrl) {
+		const img = new Image();
+		img.onload = () => {
+			const canvas = document.getElementById(`canvas_${objectId}`);
+			const ctx = canvas.getContext('2d');
+
+			// Draw rounded rectangle as a clipping path
+			this.drawRoundedRect(ctx, 0, 0, canvas.width, canvas.height, 10); // 10 is the radius for the rounded corners
+			ctx.clip(); // Clip to the rounded rectangle path
+
+			// Draw the image within the rounded rectangle
+			ctx.drawImage(img, 0, 0, 200, 80);
+
+			const row = this._data_map[objectId];
+			const value1 = parseFloat(row[1]);
+			const value2 = parseFloat(row[2]);
+			this.drawOnCanvas(ctx, '#fff', 100 + 98 * value1, 80);
+			this.drawOnCanvas(ctx, '#0937b5', 100 + 98 * value2, 80);
+		};
+		img.src = imageUrl;
+	}
+
+	/**
 	 * Processes and displays the fetched data in the table.
 	 * @param {Array} data - The array of data to be displayed.
 	 * @param {number} serverDraw - The draw count from the server.
@@ -186,14 +237,16 @@ class LogBox {
 			this.elements.tableBody.innerHTML = '';
 			data.forEach((row) => {
 				const tr = document.createElement('tr');
-				// Use an arrow function here to preserve 'this' context
-				tr.innerHTML = row.map((item, index) => this.formatCell(item, index)).join('');
+				// Filter out `img_exists` column
+				const filteredRow = row.filter((item, index) => index !== 2);
+				tr.innerHTML = filteredRow.map((item, index) => this.formatCell(item, index)).join('');
 				this.elements.tableBody.appendChild(tr);
 			});
 		} catch (error) {
 			console.error("Couldn't process server data", error);
 		}
 	}
+
 	/**
 	 * Formats a cell's content for display in the table.
 	 * @param {*} item - The item to be formatted.
@@ -203,15 +256,27 @@ class LogBox {
 	formatCell(item, columnIndex) {
 		if (item === 'null' || item === null) return '<td></td>';
 
-		// Check if this is the Timestamp column (assuming it's the second column, index 1)
-		if (columnIndex === 1) {
-			return `<td>${this.formatTimestamp(item)}</td>`;
+		switch (columnIndex) {
+			case 0: // ID or frame column
+				return `<td>${this.createImageTag(item)}</td>`;
+			case 1: // Timestamp
+				return `<td>${this.formatTimestamp(item)}</td>`;
+			case 3: // Driver type
+				return `<td>${this.driverStr(item)}</td>`;
 		}
 
-		if (LogBox.isStringNumber(item)) {
-			return `<td>${LogBox.roundIfMoreThanTwoDecimals(item)}</td>`;
+		if (this.isStringNumber(item)) {
+			return `<td>${this.roundIfMoreThanTwoDecimals(item)}</td>`;
 		}
+
 		return `<td>${item}</td>`;
+	}
+  
+	/**
+	 * Translate the driver's number to a string
+	 */
+	driverStr(x) {
+		return x == 1 ? 'Teleop' : x == 2 ? 'ap' : '';
 	}
 
 	/**
@@ -236,6 +301,7 @@ class LogBox {
 
 		return `${dayName}, ${day}/${monthName}/${year}, ${hours}:${minutes}:${seconds}.${milliseconds}`;
 	}
+
 	/**
 	 * Updates the current button's visual state in the pagination.
 	 */
@@ -250,11 +316,33 @@ class LogBox {
 		});
 	}
 
-	static isStringNumber(str) {
+	isStringNumber(str) {
 		return !isNaN(Number(str));
 	}
 
-	static roundIfMoreThanTwoDecimals(number) {
+	drawRoundedRect(ctx, x, y, width, height, radius) {
+		ctx.beginPath();
+		ctx.moveTo(x + radius, y);
+		ctx.lineTo(x + width - radius, y);
+		ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+		ctx.lineTo(x + width, y + height - radius);
+		ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+		ctx.lineTo(x + radius, y + height);
+		ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+		ctx.lineTo(x, y + radius);
+		ctx.quadraticCurveTo(x, y, x + radius, y);
+		ctx.closePath();
+	}
+
+	drawOnCanvas(ctx, color, x, y) {
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		ctx.moveTo(x, 0);
+		ctx.lineTo(x, y);
+		ctx.stroke();
+	}
+
+	roundIfMoreThanTwoDecimals(number) {
 		const [integerPart, decimalPart] = number.toString().split('.');
 		if (decimalPart && decimalPart.length > 3) {
 			return parseFloat(number).toFixed(3);
