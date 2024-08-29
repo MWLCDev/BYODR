@@ -501,13 +501,6 @@ class GetSegmentSSID(tornado.web.RequestHandler):
         self.finish()
 
 
-class DirectingUser(tornado.web.RequestHandler):
-    """Directing the user based on their used device"""
-
-    def get(self):
-        self.redirect("/nc")
-
-
 class TemplateRenderer(tornado.web.RequestHandler):
     # Any static routes should be added here
     _TEMPLATES = {
