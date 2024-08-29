@@ -442,6 +442,13 @@ body {
   cursor: pointer;
 }
 
+#viewport_container.selected {
+  border: 1px solid cyan;
+}
+
+#mjpeg_camera_preview_image.selected {
+  border: 2px solid cyan;
+}
 
 #message_box_container {
   display: flex;
@@ -504,14 +511,6 @@ div.overlay_distance {
   border-bottom: 2px solid rgba(255, 255, 120, 0.99);
   color: rgba(255, 255, 120, 0.99);
   text-align: center;
-}
-
-#overlay_image {
-  display: none;
-  width: 320px;
-  height: 240px;
-  margin: 5px 0 0 5px;
-  border-radius: 5px;
 }
 
 #overlay_distance_markers {

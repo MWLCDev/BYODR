@@ -433,7 +433,7 @@ export var teleop_screen = {
 				debug_drive_values: $('div#debug_drive_values'),
 				// pilot_drive_values: $('div#pilot_drive_values'),
 				message_box_container: $('div#message_box_container'),
-				overlay_image: $('img#overlay_image'),
+				overlay_image: $('img#mjpeg_camera_preview_image'),
 				overlay_center_distance0: $('div#overlay_center_distance0'),
 				overlay_center_distance1: $('div#overlay_center_distance1'),
 				overlay_left_marker0: $('div#overlay_left_marker0'),
@@ -652,11 +652,10 @@ export var teleop_screen = {
 			this.el_message_box_message.text(this.c_msg_teleop_follow);
 		} else if (CTRL_STAT.currentPage == 'map_recognition_link' && this.el_message_box_message != undefined) {
 			this.el_message_box_message.text(this.c_msg_teleop_confidence_overview);
-			//TODO: need to work more on the visuals of this part
 		}
 	},
 
-	//TODO: why it assigns the already init vars to consts?
+	//Why it assigns the already init vars to consts?
 	controller_update: function (command) {
 		try {
 			const message_box_container = this.el_message_box_container;
