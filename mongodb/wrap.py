@@ -1,42 +1,62 @@
-#!/usr/bin/env python
-from __future__ import absolute_import
-
-import logging
 import os
 import subprocess
+import time
 
-logger = logging.getLogger(__name__)
+# Environment variables for MongoDB credentials
+mongo_user = os.getenv("MONGO_INITDB_ROOT_USERNAME", "admin")
+mongo_pass = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "robot")
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+
+# Function to start MongoDB
+def start_mongo(auth=False):
+    try:
+        # Start MongoDB with or without authentication
+        command = ["mongod", "--bind_ip_all"]
+        if auth:
+            command.append("--auth")
+        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        print(f"MongoDB started {'with' if auth else 'without'} authentication.")
+        return process
+    except Exception as e:
+        print(f"Failed to start MongoDB: {e}")
+        return None
 
 
-def main():
-    pw_file = os.path.join(os.path.sep, "config", "mongo-root")
-    if not os.path.exists(pw_file):
-        # Change the file mode of current process, to ensure the file is created without any permissions for group or others
-        os.umask(0)
-        # Creates the file with write permission only for the owner (0o600 means read/write permissions for owner, and no permissions for others).
-        with open(os.open(pw_file, os.O_CREAT | os.O_WRONLY, 0o600), "w") as fh:
-            # Writes the string 'robot' to the file.
-            fh.write("robot")
-        # Logs an info message "Created the default mongo user."
-        logger.info("Created the default mongo user.")
-        # "--syslog": log to the system logger
-        # "--wiredTigerCacheSizeGB": set the WiredTiger internal cache size in GB
-        # "--bind_ip": specifies the IP address MongoDB listens on (127.0.0.1 is the localhost)
-    subprocess.call(
-        [
-            "mongod",
-            "--syslog",
-            "--wiredTigerCacheSizeGB",
-            "0.20",
-            "--bind_ip",
-            "127.0.0.1",
-        ]
-    )
+# Function to initialize MongoDB (create admin user)
+def init_mongo():
+    time.sleep(5)  # Wait for MongoDB to start up
+    try:
+        # Create admin user
+        subprocess.run(["mongo", "admin", "--eval", f'db.createUser({{user: "{mongo_user}", pwd: "{mongo_pass}", roles:[{{role:"root", db:"admin"}}]}});'])
+        print("MongoDB initialized with admin user.")
+    except Exception as e:
+        print(f"Failed to initialize MongoDB: {e}")
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
-    logging.getLogger().setLevel(logging.INFO)
-    main()
+    # Start MongoDB without authentication
+    mongo_process = start_mongo(auth=False)
+
+    if mongo_process:
+        init_mongo()
+
+        # Terminate the initial MongoDB process
+        mongo_process.terminate()
+        mongo_process.wait()
+
+        # Start MongoDB with authentication enabled
+        mongo_process = start_mongo(auth=True)
+
+        if mongo_process:
+            # Keep the script running to ensure MongoDB stays alive
+            try:
+                while True:
+                    time.sleep(10)  # Adjust this as needed
+            except KeyboardInterrupt:
+                print("Shutting down MongoDB.")
+                mongo_process.terminate()
+                mongo_process.wait()
+        else:
+            print("MongoDB did not restart with authentication. Exiting.")
+    else:
+        print("MongoDB did not start initially. Exiting.")
