@@ -465,6 +465,7 @@ body {
   background-color: rgba(0, 0, 0, 0.75);
   border-bottom-right-radius: 10px;
   border-bottom-left-radius: 10px;
+  z-index: 3;
 }
 
 #message_box_button_take_control {
@@ -489,7 +490,7 @@ body {
   bottom: 2.5rem;
   left: 2rem;
   padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.7);
   border-radius: 5px;
   font-size: 14px;
   color: var(--text_color_light_mode);

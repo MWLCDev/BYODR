@@ -404,6 +404,9 @@ class PathRenderer {
 }
 
 export var teleop_screen = {
+	//the class should be split into feeds related to inf (abbreviation of inference), rover/UI and camera control
+	//the rover class can be used in all of the other classes just because it will be more general
+	//
 	command_turn: null,
 	command_ctl: null,
 	server_message_listeners: [],
@@ -414,7 +417,7 @@ export var teleop_screen = {
 	c_msg_controller_err: 'Controller not detected - please press a button on the device.',
 	c_msg_teleop_view_only: 'Another user is in control - you can remain as viewer or take over.',
 	c_msg_teleop_follow: 'Use your phone to activate the Following mode and stay nearby the robot.',
-	c_msg_teleop_confidence_overview: 'Use your phone to activate the Following mode and stay nearby the robot.',
+	c_msg_teleop_confidence_overview: 'Controller not detected - please press a button on the device then move the robot.',
 	active_camera: 'front', // The active camera is rendered on the main display.
 	_debug_values_listeners: [],
 	camera_activation_listeners: [],
@@ -424,6 +427,24 @@ export var teleop_screen = {
 	_photo_snapshot_timer: null,
 	_last_server_message: null,
 
+	_init() {
+		try {
+			this.path_renderer = new PathRenderer();
+
+			//normal ui related
+			this.controller_status = gamepad_controller.is_active();
+			this.add_camera_selection_listener(function () {
+				teleop_screen._on_camera_selection();
+			});
+			this._select_camera('rear');
+			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
+			$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
+		} catch (error) {
+			console.error('Error in teleop_screen._init():', error);
+		}
+	},
+
+	//rover /ui
 	set_normal_ui_elements: function () {
 		try {
 			// Check each DOM element
@@ -461,25 +482,10 @@ export var teleop_screen = {
 			this.overlay_center_markers = [elements['overlay_center_distance0'], elements['overlay_center_distance1']];
 			this.overlay_left_markers = [elements['overlay_left_marker0'], elements['overlay_left_marker1']];
 			this.overlay_right_markers = [elements['overlay_right_marker0'], elements['overlay_right_marker1']];
+			this.el_inf_speed = $('div.inf_speed');
+			this.el_autopilot_operating_time = $('.inf_operating_time');
 		} catch (error) {
 			console.error('Error in teleop_screen.set_normal_ui_elements():', error);
-		}
-	},
-
-	_init() {
-		try {
-			this.path_renderer = new PathRenderer();
-
-			//normal ui related
-			this.controller_status = gamepad_controller.is_active();
-			this.add_camera_selection_listener(function () {
-				teleop_screen._on_camera_selection();
-			});
-			this._select_camera('rear');
-			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
-			$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
-		} catch (error) {
-			console.error('Error in teleop_screen._init():', error);
 		}
 	},
 
@@ -496,12 +502,14 @@ export var teleop_screen = {
 		}
 	},
 
+	//camera
 	_select_next_camera: function () {
 		// The active camera cannot be undefined.
 		const _next = this.selected_camera == undefined ? this.active_camera : this.selected_camera == 'front' ? 'rear' : 'front';
 		this._select_camera(_next);
 	},
 
+	//camera
 	_select_camera: function (name) {
 		this.selected_camera = name;
 		this.camera_selection_listeners.forEach(function (cb) {
@@ -509,7 +517,8 @@ export var teleop_screen = {
 		});
 	},
 
-	_cycle_camera_selection: function (direction) {
+	//camera
+	_cycle_camera_selection: function () {
 		this._select_next_camera();
 		if (this.selected_camera != undefined) {
 			console.log('Camera ' + this.selected_camera + ' is selected for ptz control.');
@@ -517,13 +526,15 @@ export var teleop_screen = {
 		this._camera_cycle_timer = null;
 	},
 
-	_schedule_camera_cycle: function (direction) {
+	//camera
+	_schedule_camera_cycle: function () {
 		if (this._camera_cycle_timer == undefined) {
 			this._camera_cycle_timer = setTimeout(function () {
 				teleop_screen._cycle_camera_selection();
 			}, 150);
 		}
 	},
+	//camera
 
 	_schedule_photo_snapshot_effect: function () {
 		if (this._photo_snapshot_timer != undefined) {
@@ -534,68 +545,127 @@ export var teleop_screen = {
 		}, 130);
 	},
 
+	//there are inf related here
 	_server_message: function (message) {
-		this._last_server_message = message;
-		// It may be the inference service is not (yet) available.
-		if (message.inf_surprise != undefined) {
-			$('span#inference_brake_critic').text(message.inf_brake_critic.toFixed(2));
-			$('span#inference_obstacle').text(message.inf_brake.toFixed(2));
-			$('span#inference_surprise').text(message.inf_surprise.toFixed(2));
-			$('span#inference_critic').text(message.inf_critic.toFixed(2));
-			$('span#inference_fps').text(message.inf_hz.toFixed(0));
-			$('span#inference_desired_speed').text(message.des_speed.toFixed(1));
-			// Calculate the color schemes.
-			const red_brake = Math.min(255, message.inf_brake_penalty * 2 * 255);
-			const green_brake = (1 - 2 * Math.max(0, message.inf_brake_penalty - 0.5)) * 255;
-			$('span#inference_brake_critic').css('color', `rgb(${red_brake}, ${green_brake}, 0)`);
-			$('span#inference_obstacle').css('color', `rgb(${red_brake}, ${green_brake}, 0)`);
-			const red_steer = Math.min(255, message.inf_steer_penalty * 2 * 255);
-			const green_steer = (1 - 2 * Math.max(0, message.inf_steer_penalty - 0.5)) * 255;
-			$('span#inference_surprise').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
-			$('span#inference_critic').css('color', `rgb(${red_steer}, ${green_steer}, 0)`);
-		}
-		// des_speed is the desired speed
-		// vel_y is the actual vehicle speed
-		var el_inf_speed = $('div.inf_speed');
-		var el_inf_speed_val = $('p.inf_speed_value');
-		var el_inf_speed_label = $('div.inf_speed_label');
-		var el_rover_speed = $('p.rover_speed_value');
-		var el_steering_wheel = $('img.steeringWheel');
-		var el_autopilot_status = $('.autopilot_status');
-		if (message._is_on_autopilot) {
-			el_inf_speed.show();
-			el_autopilot_status.show();
-			el_inf_speed_val.text(message.max_speed.toFixed(1));
-			el_inf_speed_label.text('MAX');
-			this._render_distance_indicators();
-			this.control_current_mode_btn_mc(true);
-		} else {
-			el_inf_speed.hide();
-			el_autopilot_status.text('00:00:00');
-			el_autopilot_status.hide();
-			this.control_current_mode_btn_mc(false);
-		}
-		if (message._is_on_autopilot && message.ctl_activation > 0) {
-			// Convert the time from milliseconds to seconds.
-			const _diff = 1e-3 * message.ctl_activation;
-			const _hours = Math.floor(_diff / 3600);
-			const _mins = Math.floor((_diff - _hours * 3600) / 60);
-			const _secs = Math.floor(_diff - _hours * 3600 - _mins * 60);
-			const _zf_h = ('00' + _hours).slice(-2);
-			const _zf_m = ('00' + _mins).slice(-2);
-			const _zf_s = ('00' + _secs).slice(-2);
-			el_autopilot_status.text(`${_zf_h}:${_zf_m}:${_zf_s}`);
-			el_autopilot_status.css('color', 'rgb(100, 217, 255)');
-		}
-		el_rover_speed.text(message.vel_y.toFixed(1));
-		if (message.vel_y >= 0) {
-			var display_rotation = Math.floor(message.ste * 90.0);
-			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
-		} else {
-			var display_rotation = Math.floor(message.ste * -90.0 - 180);
-			el_steering_wheel.css('transform', 'rotate(' + display_rotation + 'deg)');
+		try {
+			this._last_server_message = message;
+
+			// Handle inference-related updates
+			if (message.inf_surprise !== undefined) {
+				this._update_inference_ui(message);
+			}
+
+			// Update the rover speed display
+			$('p.rover_speed_value').text(message.vel_y.toFixed(1));
+
+			// Handle autopilot-related UI changes
+			if (message._is_on_autopilot) {
+				this._update_autopilot_ui(message);
+			} else {
+				this._hide_autopilot_ui();
+			}
+
+			// Update the steering wheel rotation based on speed and steering data
+			this._update_steering_wheel_rotation(message.vel_y, message.ste);
+		} catch (error) {
+			console.error('Error while handling server message: ', error);
 		}
 	},
+
+	//inf
+	_update_inference_ui: function (message) {
+		$('span#inference_brake_critic').text(message.inf_brake_critic.toFixed(2));
+		$('span#inference_obstacle').text(message.inf_brake.toFixed(2));
+		$('span#inference_surprise').text(message.inf_surprise.toFixed(2));
+		$('span#inference_critic').text(message.inf_critic.toFixed(2));
+		$('span#inference_fps').text(message.inf_hz.toFixed(0));
+		$('span#inference_desired_speed').text(message.des_speed.toFixed(1));
+
+		// Calculate and apply color schemes for inference metrics
+		this._apply_inference_color_scheme(message.inf_brake_penalty, message.inf_steer_penalty);
+	},
+
+	_apply_inference_color_scheme: function (brake_penalty, steer_penalty) {
+		const brake_colors = this._calculate_color_scheme(brake_penalty);
+		const steer_colors = this._calculate_color_scheme(steer_penalty);
+
+		$('span#inference_brake_critic').css('color', brake_colors);
+		$('span#inference_obstacle').css('color', brake_colors);
+		$('span#inference_surprise').css('color', steer_colors);
+		$('span#inference_critic').css('color', steer_colors);
+	},
+
+	_calculate_color_scheme: function (penalty) {
+		const red = Math.min(255, penalty * 2 * 255);
+		const green = (1 - 2 * Math.max(0, penalty - 0.5)) * 255;
+		return `rgb(${red}, ${green}, 0)`;
+	},
+
+	//inf
+	_update_autopilot_ui: function (message) {
+		this.el_inf_speed.show();
+		this.el_autopilot_operating_time.show();
+		$('p.inf_speed_value').text(`${message.max_speed.toFixed(1)} KM`);
+		$('div.inf_speed_label').text('Max Speed');
+		this._render_distance_indicators();
+
+		this.control_current_mode_btn_mc(true);
+
+		if (message.ctl_activation > 0) {
+			this._update_autopilot_time_display(message.ctl_activation);
+		}
+	},
+
+	//inf
+	_update_autopilot_time_display: function (ctl_activation) {
+		const el_autopilot_operating_time = $('.inf_operating_time');
+		const time = this._format_time(ctl_activation * 1e-3); // Convert ms to seconds
+
+		el_autopilot_operating_time.text(time);
+		el_autopilot_operating_time.css('color', 'rgb(100, 217, 255)');
+	},
+
+	_format_time: function (total_seconds) {
+		const hours = Math.floor(total_seconds / 3600);
+		const mins = Math.floor((total_seconds % 3600) / 60);
+		const secs = Math.floor(total_seconds % 60);
+
+		const zf_h = ('00' + hours).slice(-2);
+		const zf_m = ('00' + mins).slice(-2);
+		const zf_s = ('00' + secs).slice(-2);
+
+		return `${zf_h}:${zf_m}:${zf_s}`;
+	},
+
+	//inf
+	_hide_autopilot_ui: function () {
+		const el_inf_speed = $('div.inf_speed');
+		const el_autopilot_operating_time = $('.inf_operating_time');
+
+		el_inf_speed.hide();
+		el_autopilot_operating_time.text('00:00:00');
+		el_autopilot_operating_time.hide();
+
+		this.control_current_mode_btn_mc(false);
+	},
+
+	_update_steering_wheel_rotation: function (speed, steering_angle) {
+		try {
+			const el_steering_wheel = $('img.steeringWheel');
+			let display_rotation;
+
+			if (speed >= 0) {
+				display_rotation = Math.floor(steering_angle * 90.0);
+			} else {
+				display_rotation = Math.floor(steering_angle * -90.0 - 180);
+			}
+
+			el_steering_wheel.css('transform', `rotate(${display_rotation}deg)`);
+		} catch (error) {
+			console.error('Error while updating steering wheel:', error);
+		}
+	},
+
 	control_current_mode_btn_mc: function (active) {
 		if (CTRL_STAT.currentPage == 'autopilot_link') {
 			if (active) {
@@ -610,6 +680,8 @@ export var teleop_screen = {
 			}
 		}
 	},
+
+	//camera
 	_on_camera_selection: function () {
 		const _active = this.active_camera;
 		const _selected = this.selected_camera;
@@ -622,18 +694,17 @@ export var teleop_screen = {
 		}
 	},
 
-	add_toggle_debug_values_listener: function (cb) {
-		this._debug_values_listeners.push(cb);
-	},
-
+	//camera
 	add_camera_activation_listener: function (cb) {
 		this.camera_activation_listeners.push(cb);
 	},
 
+	//camera
 	add_camera_selection_listener: function (cb) {
 		this.camera_selection_listeners.push(cb);
 	},
 
+	//camera
 	toggle_camera: function () {
 		const name = this.active_camera == 'front' ? 'rear' : 'front';
 		this.active_camera = name;
@@ -655,8 +726,23 @@ export var teleop_screen = {
 		}
 	},
 
+	/**
+	 *camera
+	 * Keep the frontend updated with the commands made from the joystick.
+	 */
+	handle_camera_command: function (command) {
+		if (command != undefined && command.arrow_left) {
+			this._schedule_camera_cycle();
+		} else if (command != undefined && command.arrow_right) {
+			this._schedule_camera_cycle();
+		}
+		if (command != undefined && command.button_right) {
+			this._schedule_photo_snapshot_effect();
+		}
+	},
+
 	//Why it assigns the already init vars to consts?
-	controller_update: function (command) {
+	controller_update: function () {
 		try {
 			const message_box_container = this.el_message_box_container;
 			const message_box_message = this.el_message_box_message;
@@ -696,28 +782,20 @@ export var teleop_screen = {
 				} else {
 					message_box_container.hide();
 				}
-				if (command != undefined && command.arrow_left) {
-					this._schedule_camera_cycle();
-				} else if (command != undefined && command.arrow_right) {
-					this._schedule_camera_cycle();
-				}
-				if (command != undefined && command.button_right) {
-					this._schedule_photo_snapshot_effect();
-				}
 			}
 		} catch (error) {
 			console.error('Error in controller_update: ', error);
 		}
 	},
 	/**
-	 * Used by the two stream quality classes (mjpeg and h264) to show the width of the stream on the debug (advanced) bar
+	 * Used by the two stream quality classes (mjpeg and h264) to show the width of the stream on the debug (advanced) bar. This one is rover /ui
 	 */
 	on_canvas_init: function (width, height) {
 		$('span#debug_screen_dimension').text(width + 'x' + height);
 	},
 
 	/**
-	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes
+	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes. This one is rover/ui
 	 */
 	canvas_update: function (ctx) {
 		try {

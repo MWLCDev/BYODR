@@ -105,7 +105,9 @@ class MovementCommandSocket {
 			}
 			this._send(gamepad_command);
 			//E.g { steering - throttle - pan - tilt - camera_id}
-			teleop_screen.controller_update(gamepad_command);
+      //These functions are called periodically to keep the UI updated 
+			teleop_screen.controller_update();
+			teleop_screen.handle_camera_command(gamepad_command);
 		}
 		if (server_response != undefined && server_response.control == 'operator') {
 			teleop_screen.controller_status = gc_active;
