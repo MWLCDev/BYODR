@@ -1,10 +1,9 @@
 import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
-import { setupThemeManagers } from './Index/index_c_screen.js';
+import { helpMessageManager, messageContainerManager, advancedThemeManager  } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { teleop_start_all } from './Index/index_e_teleop.js';
-import { init_mjpeg } from './Index/index_video_mjpeg.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
-import { mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
+import { init_mjpeg, mjpeg_start_all, mjpeg_stop_all } from './Index/index_video_mjpeg.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js'; // Stands for control state
 import { Router } from './router.js';
 
@@ -58,7 +57,6 @@ function showSSID() {
 
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	let { helpMessageManager, messageContainerManager, advancedThemeManager } = setupThemeManagers();
 	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link'); // Need to have a default value for the homepage

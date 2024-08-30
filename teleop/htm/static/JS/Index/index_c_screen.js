@@ -98,6 +98,7 @@ class AdvancedThemeManager {
 }
 
 class NavigationManager {
+	//Deal with the navigation bar and toggle the blur motion when the navigation bar is active
 	constructor() {
 		this.toggleBtn = document.getElementById('hamburger_menu_toggle');
 		this.nav = document.querySelector('.hamburger_menu_nav');
@@ -139,6 +140,7 @@ class NavigationManager {
 }
 
 class HelpMessageManager {
+	//Define the types of message that will show in the help menu
 	constructor() {
 		this.help_message_img = $('.message_container img');
 		this.help_message_grid = document.querySelector('.help_message_grid');
@@ -228,7 +230,6 @@ class MessageContainerManager {
 		this.helpMessageManager = helpMessageManager;
 	}
 
-	// Set up event handlers
 	initEventHandlers() {
 		try {
 			$('.toggle_help_message').click(() => {
@@ -278,33 +279,6 @@ class MessageContainerManager {
 	}
 }
 
-export function setupThemeManagers() {
-	new NavigationManager();
-	new DarkThemeManager();
-	let advancedThemeManager = new AdvancedThemeManager();
-	let helpMessageManager = new HelpMessageManager();
-	let messageContainerManager = new MessageContainerManager(helpMessageManager);
-	return { helpMessageManager, messageContainerManager, advancedThemeManager };
-}
-
-export var screen_utils = {
-	_create_image: function (url) {
-		var img = new Image(); // Make sure to declare 'img' locally
-		img.src = url;
-		return img;
-	},
-
-	_decorate_server_message: function (message) {
-		message._is_on_autopilot = message.ctl == 5;
-		message._has_passage = message.inf_total_penalty < 1;
-		if (message.geo_head == undefined) {
-			message.geo_head_text = 'n/a';
-		} else {
-			message.geo_head_text = message.geo_head.toFixed(2);
-		}
-		return message;
-	},
-};
 
 class PathRenderer {
 	// Method to render a trapezoid shape
@@ -330,11 +304,10 @@ class PathRenderer {
 	// Method to get constants based on the vehicle type
 	_getConstants() {
 		const constants = {
-			default: [400 / 640, 74 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 80 / 640, 2 / 480],
 			rover1: [400 / 640, 120 / 480, 6 / 640, 8 / 480, 0.65, 0.65, 0.8, 0.7, 65 / 640, 2 / 480],
 		};
 
-		return constants[dev_tools._vehicle] || constants.default;
+		return constants.rover1;
 	}
 
 	// Method to render the path
@@ -345,7 +318,7 @@ class PathRenderer {
 		}
 
 		const canvas = ctx.canvas;
-		const [tzWidthFactor, tzHeightFactor, gapFactor, cutFactor, taper, heightShrink, gapShrink, cutShrink, wSteeringFactor, hSteeringFactor] = this._getConstants(); // Corrected the method call here
+		const [tzWidthFactor, tzHeightFactor, gapFactor, cutFactor, taper, heightShrink, gapShrink, cutShrink, wSteeringFactor, hSteeringFactor] = this._getConstants();
 
 		// Calculating dimensions based on canvas size
 		const tzWidth = tzWidthFactor * canvas.width;
@@ -356,7 +329,6 @@ class PathRenderer {
 		const hSteering = hSteeringFactor * canvas.height;
 
 		// Start from the middle of the base of the trapezoid.
-
 		let baseAx = canvas.width / 2 - tzWidth / 2;
 		let baseAy = canvas.height - gap;
 		let baseBx = baseAx + tzWidth;
@@ -389,7 +361,6 @@ class PathRenderer {
 
 			// Update the base coordinates for the next step
 			// The next step starts from the top of the previous with gap.
-
 			const cutShrinked = 0.5 * cut * Math.pow(cutShrink, idx);
 			const gapShrinked = gap * Math.pow(gapShrink, idx);
 

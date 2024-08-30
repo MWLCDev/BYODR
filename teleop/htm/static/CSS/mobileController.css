@@ -128,15 +128,15 @@
 
 
 .control_symbol {
-  border: 14px solid #d0d0d0;
   box-shadow: inset 1px 1px 3px #fff;
+  display: none;
+  position: relative;
   width: 40vw;
   height: 40vw;
-  border-radius: 100%;
-  position: relative;
-  display: none;
-  vertical-align: middle;
   background: #fff;
+  border: 14px solid #d0d0d0;
+  border-radius: 100%;
+  vertical-align: middle;
 }
 
 .control_symbol:before,
@@ -144,9 +144,9 @@
   content: '';
   position: absolute;
   top: 0;
+  bottom: 0;
   left: 0;
   right: 0;
-  bottom: 0;
 }
 
 
@@ -166,10 +166,10 @@
 }
 
 .control_symbol.minus:before {
-  background: #d0d0d0;
-  margin: auto 7vw;
-  height: 4vw;
   box-shadow: 0px 1px 1px #ffffff9e;
+  height: 4vw;
+  margin: auto 7vw;
+  background: #d0d0d0;
 }
 
 .control_symbol:active {

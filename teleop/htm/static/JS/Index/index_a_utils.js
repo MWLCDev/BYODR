@@ -10,11 +10,30 @@ jQuery.fn.is_visible = function () {
 	return this.css('visibility') == 'visible';
 };
 
-export function isMobileDevice() {
+function isMobileDevice() {
 	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
 
-export var network_utils = {
+var screen_utils = {
+	_create_image: function (url) {
+		var img = new Image(); // Make sure to declare 'img' locally
+		img.src = url;
+		return img;
+	},
+
+	_decorate_server_message: function (message) {
+		message._is_on_autopilot = message.ctl == 5;
+		message._has_passage = message.inf_total_penalty < 1;
+		if (message.geo_head == undefined) {
+			message.geo_head_text = 'n/a';
+		} else {
+			message.geo_head_text = message.geo_head.toFixed(2);
+		}
+		return message;
+	},
+};
+
+var network_utils = {
 	getSSID: async function () {
 		try {
 			const response = await fetch('/run_get_SSID');
@@ -28,7 +47,7 @@ export var network_utils = {
 };
 
 // Define the sockets that will be used for communication
-export var socket_utils = {
+var socket_utils = {
 	_init: function () {
 		// noop.
 	},
@@ -55,9 +74,8 @@ export var socket_utils = {
 	},
 };
 
-export var dev_tools = {
+var dev_tools = {
 	_develop: null,
-	_vehicle: null,
 	_image_cache: new Map(),
 
 	_random_choice: function (arr) {
@@ -97,7 +115,7 @@ export var dev_tools = {
 
 	get_img_url: function (camera_position) {
 		const _key = this.is_develop();
-		return '/develop/' + this._vehicle + '/img_' + camera_position + '_' + _key + '.jpg';
+		return '/develop/img_' + camera_position + '_' + _key + '.jpg';
 	},
 
 	get_img_blob: async function (camera_position, callback) {
@@ -133,7 +151,7 @@ export var dev_tools = {
 	},
 };
 
-export var page_utils = {
+var page_utils = {
 	_capabilities: null,
 
 	_init: function () {
@@ -181,3 +199,4 @@ export var page_utils = {
 		window.localStorage.setItem('video.stream.type', stream_type.toLowerCase());
 	},
 };
+export { screen_utils, network_utils, socket_utils, dev_tools, page_utils, isMobileDevice };

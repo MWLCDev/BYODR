@@ -1,5 +1,5 @@
 import { isMobileDevice } from './Index/index_a_utils.js';
-import { teleop_screen } from './Index/index_c_screen.js';
+import { roverUI } from './Index/index_c_screen.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { autoNavigationNavButtonHandler } from './mobileController/mobileController_f_auto_navigation.js';
 import { confidenceNavButtonHandler } from './mobileController/mobileController_f_confidence.js';
@@ -146,8 +146,8 @@ export class Router {
 			setupMobileController();
 		} else {
 			this.messageContainerManager.initEventHandlers();
-			teleop_screen.set_normal_ui_elements();
-			teleop_screen._init();
+			roverUI.init();
+			roverUI.setNormalUIElements();
 			this.start_all_handlers();
 		}
 	}

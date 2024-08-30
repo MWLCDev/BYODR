@@ -11,7 +11,6 @@ function setMobileCommand(x, y) {
 	} else {
 		console.error('Invalid types for setMobileCommand:', { x, y });
 	}
-	console.log(x, y);
 }
 
 function addDataToMobileCommand(newData) {

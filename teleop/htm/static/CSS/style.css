@@ -26,10 +26,10 @@
 
 html,
 body {
+  overflow: hidden;
   height: 100%;
   margin: 0;
   padding: 0;
-  overflow: hidden;
   background-color: var(--background_color_light_mode);
   font-family: "Sora", Arial, sans-serif;
   color: var(--text_color_light_mode);
@@ -78,12 +78,11 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  box-sizing: border-box;
   width: 100%;
+  min-height: 60px;
   padding: 10px 20px;
   border-bottom: 2px solid var(--VOR-light-color);
-  box-sizing: border-box;
-  min-height: 60px;
-  /* Adjust this value as needed */
 }
 
 #header_bar .left_section,
@@ -160,15 +159,38 @@ body {
   font-weight: 200;
 }
 
+
+
+#front_camera_framerate,
+#rear_camera_framerate,
+#inference_fps {
+  width: 2ch !important;
+}
+
+#inference_surprise,
+#inference_critic,
+#inference_brake_critic,
+#inference_obstacle,
+#inference_desired_speed {
+  width: 3ch !important;
+}
+
+#navigation_heading {
+  width: 7ch !important;
+}
+
+#navigation_match_image_distance,
+#navigation_current_command,
+#navigation_direction {
+  width: 4ch !important;
+}
+
 #debug_drive_values p span,
 #mjpeg_quality_val {
-  font-weight: bold;
   display: inline-block;
-  /* Ensures the width is respected */
   width: 3ch;
-  /* Reserves space for exactly three digits */
+  font-weight: bold;
   text-align: center;
-  /* Centers the text within the span */
 }
 
 /* Third Layer: Stream Quality and Options */
@@ -392,15 +414,15 @@ body {
 }
 
 #top_layer_iframe {
+  display: none;
   position: absolute;
+  z-index: 9999;
   top: 0;
   left: 0;
   width: 100%;
   height: 100%;
-  z-index: 9999;
-  display: none;
-  border: none;
   background-color: rgba(255, 255, 255, 0.9);
+  border: none;
 }
 
 #viewport_canvas {
@@ -457,6 +479,7 @@ body {
   align-items: center;
   gap: 10px;
   position: absolute;
+  z-index: 3;
   top: 0;
   left: 50%;
   transform: translate(-50%, 0);
@@ -465,7 +488,6 @@ body {
   background-color: rgba(0, 0, 0, 0.75);
   border-bottom-right-radius: 10px;
   border-bottom-left-radius: 10px;
-  z-index: 3;
 }
 
 #message_box_button_take_control {
