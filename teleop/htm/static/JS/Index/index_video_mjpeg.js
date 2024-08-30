@@ -414,31 +414,53 @@ function setupCameraActivationListener() {
 
 function setupMJPEGCanvasRendering(canvas) {
 	if (page_utils.get_stream_type() !== 'mjpeg') return;
-	// Render images for the active camera.
+
+	// Create a rendering context for the canvas
 	const display_ctx = canvas.getContext('2d');
-	mjpeg_page_controller.add_camera_listener(
-		function (position, _cmd) {
-			if (teleop_screen.active_camera == position && _cmd.action == 'init') {
+
+	// Define the callback function to handle camera initialization
+	function handleCameraInit(position, _cmd) {
+		try {
+			if (cameraControls.activeCamera == position && _cmd.action == 'init') {
 				canvas.width = _cmd.width;
 				canvas.height = _cmd.height;
-				teleop_screen.on_canvas_init(_cmd.width, _cmd.height);
+				roverUI.onCanvasInit(_cmd.width, _cmd.height);
 			}
-		},
-		function (position, _blob) {
-			if (teleop_screen.active_camera == position) {
+		} catch (error) {
+			console.error('Error handling camera initialization:', error);
+		}
+	}
+
+	// Define the callback function to handle image rendering
+	function handleImageRendering(position, _blob) {
+		try {
+			if (cameraControls.activeCamera == position) {
 				const img = new Image();
 				img.onload = function () {
-					requestAnimationFrame(() => {
-						// Do not run the canvas draws in parallel.
-						display_ctx.drawImage(img, 0, 0);
-						teleop_screen.canvas_update(display_ctx);
-					});
+					try {
+						requestAnimationFrame(() => {
+							// Ensure the canvas draws are not run in parallel
+							display_ctx.drawImage(img, 0, 0);
+							roverUI.canvasUpdate(display_ctx);
+						});
+					} catch (error) {
+						console.error('Error during image rendering:', error);
+					}
 				};
-				// Set the src to trigger the image load.
+				// Set the src to trigger the image load
 				img.src = _blob;
 			}
+		} catch (error) {
+			console.error('Error handling image rendering:', error);
 		}
-	);
+	}
+
+	// Add the camera listeners with the new standalone functions
+	try {
+		mjpeg_page_controller.add_camera_listener(handleCameraInit, handleImageRendering);
+	} catch (error) {
+		console.error('Error setting up camera listeners:', error);
+	}
 }
 
 function initializeApplication(canvas) {
