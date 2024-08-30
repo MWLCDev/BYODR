@@ -1,5 +1,5 @@
 import { page_utils, dev_tools } from './index_a_utils.js';
-import { teleop_screen } from './index_c_screen.js';
+import { roverUI, cameraControls } from './index_c_screen.js';
 
 if (page_utils.get_stream_type() == 'h264') {
 	class CameraSocketResumer {
@@ -64,12 +64,12 @@ if (page_utils.get_stream_type() == 'h264') {
 			this.wsavc = new WSAvcPlayer(canvas_controller.create(), 'yuv', this.socket);
 			this.wsavc.on('canvasReady', function (width, height) {
 				canvas_controller.replace(camera_controller.wsavc.canvas);
-				teleop_screen.on_canvas_init(width, height);
+				roverUI.onCanvasInit(width, height);
 			});
 			this.wsavc.on('canvasRendered', function () {
 				// Do not run the canvas draws in parallel.
 				if (canvas_controller.context_2d != undefined) {
-					teleop_screen.canvas_update(canvas_controller.context_2d);
+					roverUI.canvasUpdate(canvas_controller.context_2d);
 				}
 			});
 			this.wsavc.connect(uri);
@@ -85,7 +85,7 @@ if (page_utils.get_stream_type() == 'h264') {
 		},
 	};
 
-	teleop_screen.add_camera_activation_listener(function (position) {
+	cameraControls.addCameraActivationListener(function (position) {
 		camera_controller.stop();
 		camera_controller.start(position);
 	});
@@ -94,7 +94,7 @@ if (page_utils.get_stream_type() == 'h264') {
 export function h264_start_all() {
 	if (page_utils.get_stream_type() == 'h264' && camera_controller != undefined && canvas_controller != undefined && camera_controller.socket == undefined) {
 		canvas_controller.init(document.getElementById('viewport_container'));
-		camera_controller.start(teleop_screen.active_camera);
+		camera_controller.start(cameraControls.activeCamera);
 	}
 }
 

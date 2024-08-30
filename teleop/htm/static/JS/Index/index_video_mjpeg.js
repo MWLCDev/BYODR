@@ -1,5 +1,5 @@
 import { page_utils, socket_utils } from './index_a_utils.js';
-import { teleop_screen } from './index_c_screen.js';
+import { roverUI, cameraControls } from './index_c_screen.js';
 
 class MJPEGFrameController {
 	constructor() {
@@ -233,14 +233,14 @@ var mjpeg_page_controller = {
 			this.el_preview_image = $('img#mjpeg_camera_preview_image');
 			this.expand_camera_icon = $('img#expand_camera_icon');
 			this.expand_camera_icon.css({ cursor: 'zoom-in' });
-			this.set_camera_framerates(teleop_screen.active_camera);
+			this.set_camera_framerates(cameraControls.activeCamera);
 			this.bind_dom_actions();
 			// Set the image receiver handlers.
 			this.add_camera_listener(
 				function (position, _cmd) {},
 				function (position, _blob) {
 					// Show the other camera in preview.
-					if (position != teleop_screen.active_camera) {
+					if (position != cameraControls.activeCamera) {
 						mjpeg_page_controller.el_preview_image.attr('src', _blob);
 					}
 				}
@@ -261,7 +261,7 @@ var mjpeg_page_controller = {
 				mjpeg_page_controller.refresh_page_values();
 			});
 			this.el_preview_image.click(function () {
-				teleop_screen.toggle_camera();
+				cameraControls.toggleCamera();
 			});
 			this.expand_camera_icon.click(function () {
 				const _instance = mjpeg_page_controller;
@@ -280,7 +280,7 @@ var mjpeg_page_controller = {
 						_instance.expand_camera_icon.css({ cursor: 'zoom-in' });
 				}
 				// Reset the framerate.
-				_instance.set_camera_framerates(teleop_screen.active_camera);
+				_instance.set_camera_framerates(cameraControls.activeCamera);
 			});
 		} catch (error) {
 			console.error('Error while binding actions:', error);
@@ -405,7 +405,7 @@ function setupStreamTypeSelector() {
 
 function setupCameraActivationListener() {
 	// Set the socket desired fps when the active camera changes.
-	teleop_screen.add_camera_activation_listener(function (position) {
+	cameraControls.addCameraActivationListener(function (position) {
 		setTimeout(function () {
 			mjpeg_page_controller.set_camera_framerates(position);
 		}, 100);

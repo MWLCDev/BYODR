@@ -1,19 +1,10 @@
-import { teleop_screen } from './index_c_screen.js';
 import { server_socket } from './index_e_teleop.js';
 
 class RealNavigatorController {
-	constructor() {
+  constructor() {
 		const location = document.location;
 		this.nav_path = location.protocol + '//' + location.hostname + ':' + location.port + '/ws/nav';
 		this.random_id = Math.random(); // For browser control of navigation image urls.
-		this.el_current_image = null;
-		this.el_next_image = null;
-		this.el_image_width = null;
-		this.el_image_height = null;
-		this.el_route = null;
-		this.el_point = null;
-		this.el_route_select_prev = null;
-		this.el_route_select_next = null;
 		this.navigation_images = [null, null];
 		this.routes = [];
 		this.selected_route = null;
@@ -57,10 +48,6 @@ export function navigator_stop_all() {
 }
 
 // --------------------------------------------------- Initialisations follow --------------------------------------------------------- //
-teleop_screen.add_toggle_debug_values_listener(function (show) {
-	navigator_controller.in_debug = show;
-});
-
 // prettier-ignore
 server_socket.add_server_message_listener(function (message) {
     navigator_controller._server_message(message);

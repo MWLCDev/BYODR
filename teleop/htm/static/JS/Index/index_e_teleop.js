@@ -1,7 +1,7 @@
 import CTRL_STAT from '../mobileController/mobileController_z_state.js'; // Stands for control state
-import { socket_utils, isMobileDevice } from './index_a_utils.js';
+import { isMobileDevice, screen_utils, socket_utils } from './index_a_utils.js';
 import { gamepad_controller } from './index_b_gamepad.js';
-import { screen_utils, teleop_screen } from './index_c_screen.js';
+import { cameraControls, inferenceHandling, roverUI } from './index_c_screen.js';
 
 class LoggerServerSocket {
 	constructor() {
@@ -85,7 +85,7 @@ class MovementCommandSocket {
 		var current_page = localStorage.getItem('user.menu.screen');
 		if (isMobileDevice() || modeSwitchingPages.includes(current_page)) {
 			this._send(CTRL_STAT.mobileCommandJSON);
-			teleop_screen.message_box_update();
+			roverUI.controllerUpdate();
 
 			// Reset all keys except throttle and steering
 			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
@@ -98,21 +98,22 @@ class MovementCommandSocket {
 			var gamepad_command = gc_active ? gamepad_controller.get_command() : {};
 			// The selected camera for ptz control can also be undefined.
 			gamepad_command.camera_id = -1;
-			if (teleop_screen.selected_camera == 'front') {
+			if (cameraControls.selectedCamera == 'front') {
 				gamepad_command.camera_id = 0;
-			} else if (teleop_screen.selected_camera == 'rear') {
+			} else if (cameraControls.selectedCamera == 'rear') {
 				gamepad_command.camera_id = 1;
 			}
 			this._send(gamepad_command);
 			//E.g { steering - throttle - pan - tilt - camera_id}
-      //These functions are called periodically to keep the UI updated 
-			teleop_screen.controller_update();
-			teleop_screen.handle_camera_command(gamepad_command);
+			//These functions are called periodically to keep the UI updated
+			roverUI.controllerUpdate();
+
+			cameraControls.handleCameraCommand(gamepad_command);
 		}
 		if (server_response != undefined && server_response.control == 'operator') {
-			teleop_screen.controller_status = gc_active;
+			roverUI.controllerStatus = gc_active;
 		} else if (server_response != undefined) {
-			teleop_screen.controller_status = 2;
+			roverUI.controllerStatus = 2;
 		}
 	}
 
@@ -127,18 +128,18 @@ class MovementCommandSocket {
 				};
 				ws.onopen = function () {
 					// console.log("Operator socket connection was established.");
-					teleop_screen.is_connection_ok = 1;
+					roverUI.isConnectionOk = 1;
 					_instance._capture();
 				};
 				ws.onclose = function () {
-					teleop_screen.is_connection_ok = 0;
-					teleop_screen.controller_update({});
+					roverUI.isConnectionOk = 0;
+					roverUI.controllerUpdate({});
 					//console.log("Operator socket connection was closed.");
 				};
 				ws.onerror = function () {
-					teleop_screen.controller_status = gamepad_controller.is_active();
-					teleop_screen.is_connection_ok = 0;
-					teleop_screen.controller_update({});
+					roverUI.controller_status = gamepad_controller.is_active();
+					roverUI.isConnectionOk = 0;
+					roverUI.controllerUpdate({});
 				};
 				ws.onmessage = function (evt) {
 					// console.log(evt)
@@ -179,5 +180,5 @@ export function teleop_stop_all() {
 }
 
 server_socket.add_server_message_listener(function (message) {
-	teleop_screen._server_message(message);
+	inferenceHandling.handleServerMessage(message);
 });

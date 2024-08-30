@@ -403,270 +403,272 @@ class PathRenderer {
 	}
 }
 
-export var teleop_screen = {
-	//the class should be split into feeds related to inf (abbreviation of inference), rover/UI and camera control
-	//the rover class can be used in all of the other classes just because it will be more general
-	//
-	command_turn: null,
-	command_ctl: null,
-	server_message_listeners: [],
-	in_debug: 0,
-	is_connection_ok: 0,
-	controller_status: 0,
-	c_msg_connection_lost: 'Connection lost - please wait or refresh the page.',
-	c_msg_controller_err: 'Controller not detected - please press a button on the device.',
-	c_msg_teleop_view_only: 'Another user is in control - you can remain as viewer or take over.',
-	c_msg_teleop_follow: 'Use your phone to activate the Following mode and stay nearby the robot.',
-	c_msg_teleop_confidence_overview: 'Controller not detected - please press a button on the device then move the robot.',
-	active_camera: 'front', // The active camera is rendered on the main display.
-	_debug_values_listeners: [],
-	camera_activation_listeners: [],
-	selected_camera: null, // Select a camera for ptz control.
-	camera_selection_listeners: [],
-	_camera_cycle_timer: null,
-	_photo_snapshot_timer: null,
-	_last_server_message: null,
+class RoverUI {
+	//Changes the UI elements based on the backend
+	constructor() {
+		this.commandTurn = null;
+		this.serverMessageListeners = [];
+		this.isConnectionOk = 0;
+		this.controllerStatus = 0;
+		this.cMsgConnectionLost = 'Connection lost - please wait or refresh the page.';
+		this.cMsgControllerErr = 'Controller not detected - please press a button on the device.';
+		this.cMsgTeleopViewOnly = 'Another user is in control - you can remain as viewer or take over.';
+		this.infLastServerMessage = null;
+		this.activeCamera = null;
+	}
 
-	_init() {
+	init() {
 		try {
-			this.path_renderer = new PathRenderer();
-
-			//normal ui related
-			this.controller_status = gamepad_controller.is_active();
-			this.add_camera_selection_listener(function () {
-				teleop_screen._on_camera_selection();
-			});
-			this._select_camera('rear');
+			this.pathRenderer = new PathRenderer();
+			this.controllerStatus = gamepad_controller.is_active();
 			$('#video_stream_type').val(page_utils.get_stream_type() === 'mjpeg' ? 'mjpeg' : 'h264');
 			$('#message_box_button_take_control').click(() => gamepad_socket._request_take_over_control());
 		} catch (error) {
-			console.error('Error in teleop_screen._init():', error);
+			console.error('Error in RoverUI.init():', error);
 		}
-	},
+	}
 
-	//rover /ui
-	set_normal_ui_elements: function () {
+	getElement(selector, retries = 99) {
+		// Helper function to safely select an element
+		let element = null;
+		for (let i = 0; i < retries; i++) {
+			element = $(selector);
+			if (element.length > 0) {
+				break;
+			}
+		}
+		if (element.length === 0) {
+			console.error(`Element not found: ${selector}`);
+		}
+		return element;
+	}
+
+	setNormalUIElements() {
 		try {
-			// Check each DOM element
 			const elements = {
-				viewport_container: $('div#viewport_container'),
-				debug_drive_bar: $('div#debug_drive_bar'),
-				debug_drive_values: $('div#debug_drive_values'),
-				// pilot_drive_values: $('div#pilot_drive_values'),
-				message_box_container: $('div#message_box_container'),
-				overlay_image: $('img#mjpeg_camera_preview_image'),
-				overlay_center_distance0: $('div#overlay_center_distance0'),
-				overlay_center_distance1: $('div#overlay_center_distance1'),
-				overlay_left_marker0: $('div#overlay_left_marker0'),
-				overlay_left_marker1: $('div#overlay_left_marker1'),
-				overlay_right_marker0: $('div#overlay_right_marker0'),
-				overlay_right_marker1: $('div#overlay_right_marker1'),
+				viewportContainer: this.getElement('div#viewport_container'),
+				debugDriveBar: this.getElement('div#debug_drive_bar'),
+				debugDriveValues: this.getElement('div#debug_drive_values'),
+				messageBoxContainer: this.getElement('div#message_box_container'),
+				overlayImage: this.getElement('img#mjpeg_camera_preview_image'),
+				overlayCenterDistance0: this.getElement('div#overlay_center_distance0'),
+				overlayCenterDistance1: this.getElement('div#overlay_center_distance1'),
+				overlayLeftMarker0: this.getElement('div#overlay_left_marker0'),
+				overlayLeftMarker1: this.getElement('div#overlay_left_marker1'),
+				overlayRightMarker0: this.getElement('div#overlay_right_marker0'),
+				overlayRightMarker1: this.getElement('div#overlay_right_marker1'),
+				infSpeed: this.getElement('div.inf_speed'),
+				autopilotOperatingTime: this.getElement('.inf_operating_time'),
+				messageBoxMessage: this.getElement('div#message_box_message'),
+				buttonTakeControl: this.getElement('input#message_box_button_take_control'),
 			};
 
-			// Check if each element exists
-			for (const [name, element] of Object.entries(elements)) {
-				if (element.length === 0) {
-					console.error(`Element not found: ${name}`);
-				}
-			}
-
-			// Assign elements to class properties
-			this.el_viewport_container = elements['viewport_container'];
-			this.el_drive_bar = elements['debug_drive_bar'];
-			this.el_drive_values = elements['debug_drive_values'];
-			// this.el_pilot_bar = elements['pilot_drive_values'];
-			this.el_message_box_container = elements['message_box_container'];
-			this.overlay_image = elements['overlay_image'];
-			this.el_message_box_message = this.el_message_box_container.find('div#message_box_message');
-			this.el_button_take_control = this.el_message_box_container.find('input#message_box_button_take_control');
-			this.overlay_center_markers = [elements['overlay_center_distance0'], elements['overlay_center_distance1']];
-			this.overlay_left_markers = [elements['overlay_left_marker0'], elements['overlay_left_marker1']];
-			this.overlay_right_markers = [elements['overlay_right_marker0'], elements['overlay_right_marker1']];
-			this.el_inf_speed = $('div.inf_speed');
-			this.el_autopilot_operating_time = $('.inf_operating_time');
+			// Assign the elements to the corresponding class properties
+			this.elViewportContainer = elements.viewportContainer;
+			this.elDriveBar = elements.debugDriveBar;
+			this.elDriveValues = elements.debugDriveValues;
+			this.elMessageBoxContainer = elements.messageBoxContainer;
+			this.overlayImage = elements.overlayImage;
+			this.elMessageBoxMessage = elements.messageBoxMessage;
+			this.elButtonTakeControl = elements.buttonTakeControl;
+			this.overlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
+			this.overlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
+			this.overlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
+			this.elInfSpeed = elements.infSpeed;
+			this.elAutopilotOperatingTime = elements.autopilotOperatingTime;
 		} catch (error) {
-			console.error('Error in teleop_screen.set_normal_ui_elements():', error);
+			console.error('Error in RoverUI.setNormalUIElements():', error);
 		}
-	},
+	}
 
-	_render_distance_indicators: function () {
-		const _show = this.active_camera == 'front';
+	renderDistanceIndicators(activeCamera) {
+		const show = activeCamera == 'front';
 		if (!isMobileDevice()) {
-			[this.overlay_center_markers, this.overlay_left_markers, this.overlay_right_markers].flat().forEach(function (_m) {
-				if (_show) {
-					_m.show();
+			[this.overlayCenterMarkers, this.overlayLeftMarkers, this.overlayRightMarkers].flat().forEach(function (marker) {
+				if (show) {
+					marker.show();
 				} else {
-					_m.hide();
+					marker.hide();
 				}
 			});
 		}
-	},
+	}
 
-	//camera
-	_select_next_camera: function () {
-		// The active camera cannot be undefined.
-		const _next = this.selected_camera == undefined ? this.active_camera : this.selected_camera == 'front' ? 'rear' : 'front';
-		this._select_camera(_next);
-	},
-
-	//camera
-	_select_camera: function (name) {
-		this.selected_camera = name;
-		this.camera_selection_listeners.forEach(function (cb) {
-			cb();
-		});
-	},
-
-	//camera
-	_cycle_camera_selection: function () {
-		this._select_next_camera();
-		if (this.selected_camera != undefined) {
-			console.log('Camera ' + this.selected_camera + ' is selected for ptz control.');
-		}
-		this._camera_cycle_timer = null;
-	},
-
-	//camera
-	_schedule_camera_cycle: function () {
-		if (this._camera_cycle_timer == undefined) {
-			this._camera_cycle_timer = setTimeout(function () {
-				teleop_screen._cycle_camera_selection();
-			}, 150);
-		}
-	},
-	//camera
-
-	_schedule_photo_snapshot_effect: function () {
-		if (this._photo_snapshot_timer != undefined) {
-			clearTimeout(this._photo_snapshot_timer);
-		}
-		this._photo_snapshot_timer = setTimeout(function () {
-			teleop_screen.el_viewport_container.fadeOut(50).fadeIn(50);
-		}, 130);
-	},
-
-	//there are inf related here
-	_server_message: function (message) {
+	controllerUpdate() {
 		try {
-			this._last_server_message = message;
+			let showMessage = false;
+			let showButton = false;
+			if (this.elMessageBoxMessage !== undefined && this.elMessageBoxMessage.length > 0) {
+				if (!this.isConnectionOk) {
+					this.elMessageBoxMessage.text(this.cMsgConnectionLost);
+					this.elMessageBoxMessage.removeClass();
+					this.elMessageBoxMessage.addClass('error_message');
+					showMessage = true;
+				} else if (this.controllerStatus === 0) {
+					this.elMessageBoxMessage.text(this.cMsgControllerErr);
+					this.elMessageBoxMessage.removeClass();
+					this.elMessageBoxMessage.addClass('warning_message');
+					showMessage = true;
+				} else if (this.controllerStatus === 2) {
+					this.elMessageBoxMessage.text(this.cMsgTeleopViewOnly);
+					this.elMessageBoxMessage.removeClass();
+					this.elMessageBoxMessage.addClass('warning_message');
+					showMessage = true;
+					showButton = true;
+				}
+				if (showMessage) {
+					if (showButton) {
+						this.elButtonTakeControl.show();
+					} else {
+						this.elButtonTakeControl.hide();
+					}
+					this.elMessageBoxContainer.show();
+				} else {
+					this.elMessageBoxContainer.hide();
+				}
+			}
+		} catch (error) {
+			console.error('Error in RoverUI.controllerUpdate():', error);
+		}
+	}
+
+	onCanvasInit(width, height) {
+		$('span#debug_screen_dimension').text(width + 'x' + height);
+	}
+
+	canvasUpdate(ctx) {
+		try {
+			const serverMessage = this.infLastServerMessage;
+			const autopilotActive = serverMessage !== undefined && serverMessage._is_on_autopilot;
+			if (autopilotActive && this.activeCamera === 'front') {
+				this.pathRenderer.renderPath(ctx, serverMessage.nav_path);
+			}
+		} catch (error) {
+			console.error('Error in RoverUI.canvasUpdate():', error);
+		}
+	}
+}
+
+class InferenceHandling {
+	constructor(roverUI) {
+		this.roverUI = roverUI; // Dependency injection for shared UI elements and functionality
+	}
+
+	handleServerMessage(infMessage) {
+		try {
+			this.roverUI.infLastServerMessage = infMessage;
 
 			// Handle inference-related updates
-			if (message.inf_surprise !== undefined) {
-				this._update_inference_ui(message);
+			if (infMessage.inf_surprise !== undefined) {
+				this.updateInferenceUI(infMessage);
 			}
 
 			// Update the rover speed display
-			$('p.rover_speed_value').text(message.vel_y.toFixed(1));
+			$('p.rover_speed_value').text(infMessage.vel_y.toFixed(1));
 
 			// Handle autopilot-related UI changes
-			if (message._is_on_autopilot) {
-				this._update_autopilot_ui(message);
+			if (infMessage._isOnAutopilot) {
+				this.updateAutopilotUI(infMessage);
 			} else {
-				this._hide_autopilot_ui();
+				this.hideAutopilotUI();
 			}
 
 			// Update the steering wheel rotation based on speed and steering data
-			this._update_steering_wheel_rotation(message.vel_y, message.ste);
+			this.updateSteeringWheelRotation(infMessage.vel_y, infMessage.ste);
 		} catch (error) {
-			console.error('Error while handling server message: ', error);
+			console.error('Error in InferenceHandling.handleServerMessage():', error);
 		}
-	},
+	}
 
-	//inf
-	_update_inference_ui: function (message) {
-		$('span#inference_brake_critic').text(message.inf_brake_critic.toFixed(2));
-		$('span#inference_obstacle').text(message.inf_brake.toFixed(2));
-		$('span#inference_surprise').text(message.inf_surprise.toFixed(2));
-		$('span#inference_critic').text(message.inf_critic.toFixed(2));
-		$('span#inference_fps').text(message.inf_hz.toFixed(0));
-		$('span#inference_desired_speed').text(message.des_speed.toFixed(1));
+	updateInferenceUI(infMessage) {
+		$('span#inference_brake_critic').text(infMessage.inf_brake_critic.toFixed(2));
+		$('span#inference_obstacle').text(infMessage.inf_brake.toFixed(2));
+		$('span#inference_surprise').text(infMessage.inf_surprise.toFixed(2));
+		$('span#inference_critic').text(infMessage.inf_critic.toFixed(2));
+		$('span#inference_fps').text(infMessage.inf_hz.toFixed(0));
+		$('span#inference_desired_speed').text(infMessage.des_speed.toFixed(1));
 
-		// Calculate and apply color schemes for inference metrics
-		this._apply_inference_color_scheme(message.inf_brake_penalty, message.inf_steer_penalty);
-	},
+		this.applyInferenceColorScheme(infMessage.inf_brake_penalty, infMessage.inf_steer_penalty);
+	}
 
-	_apply_inference_color_scheme: function (brake_penalty, steer_penalty) {
-		const brake_colors = this._calculate_color_scheme(brake_penalty);
-		const steer_colors = this._calculate_color_scheme(steer_penalty);
+	applyInferenceColorScheme(brakePenalty, steerPenalty) {
+		const brakeColors = this.calculateColorScheme(brakePenalty);
+		const steerColors = this.calculateColorScheme(steerPenalty);
 
-		$('span#inference_brake_critic').css('color', brake_colors);
-		$('span#inference_obstacle').css('color', brake_colors);
-		$('span#inference_surprise').css('color', steer_colors);
-		$('span#inference_critic').css('color', steer_colors);
-	},
+		$('span#inference_brake_critic').css('color', brakeColors);
+		$('span#inference_obstacle').css('color', brakeColors);
+		$('span#inference_surprise').css('color', steerColors);
+		$('span#inference_critic').css('color', steerColors);
+	}
 
-	_calculate_color_scheme: function (penalty) {
+	calculateColorScheme(penalty) {
 		const red = Math.min(255, penalty * 2 * 255);
 		const green = (1 - 2 * Math.max(0, penalty - 0.5)) * 255;
 		return `rgb(${red}, ${green}, 0)`;
-	},
+	}
 
-	//inf
-	_update_autopilot_ui: function (message) {
-		this.el_inf_speed.show();
-		this.el_autopilot_operating_time.show();
-		$('p.inf_speed_value').text(`${message.max_speed.toFixed(1)} KM`);
+	updateAutopilotUI(infMessage) {
+		this.roverUI.elInfSpeed.show();
+		this.roverUI.elAutopilotOperatingTime.show();
+		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
 		$('div.inf_speed_label').text('Max Speed');
-		this._render_distance_indicators();
+		this.roverUI.renderDistanceIndicators('front');
 
-		this.control_current_mode_btn_mc(true);
+		this.controlCurrentModeButton(true);
 
-		if (message.ctl_activation > 0) {
-			this._update_autopilot_time_display(message.ctl_activation);
+		if (infMessage.ctl_activation > 0) {
+			this.updateAutopilotTimeDisplay(infMessage.ctl_activation);
 		}
-	},
+	}
 
-	//inf
-	_update_autopilot_time_display: function (ctl_activation) {
-		const el_autopilot_operating_time = $('.inf_operating_time');
-		const time = this._format_time(ctl_activation * 1e-3); // Convert ms to seconds
+	updateAutopilotTimeDisplay(ctlActivation) {
+		const elAutopilotOperatingTime = $('.inf_operating_time');
+		const time = this.formatTime(ctlActivation * 1e-3); // Convert ms to seconds
 
-		el_autopilot_operating_time.text(time);
-		el_autopilot_operating_time.css('color', 'rgb(100, 217, 255)');
-	},
+		elAutopilotOperatingTime.text(time);
+		elAutopilotOperatingTime.css('color', 'rgb(100, 217, 255)');
+	}
 
-	_format_time: function (total_seconds) {
-		const hours = Math.floor(total_seconds / 3600);
-		const mins = Math.floor((total_seconds % 3600) / 60);
-		const secs = Math.floor(total_seconds % 60);
+	formatTime(totalSeconds) {
+		const hours = Math.floor(totalSeconds / 3600);
+		const mins = Math.floor((totalSeconds % 3600) / 60);
+		const secs = Math.floor(totalSeconds % 60);
 
-		const zf_h = ('00' + hours).slice(-2);
-		const zf_m = ('00' + mins).slice(-2);
-		const zf_s = ('00' + secs).slice(-2);
+		const zfH = ('00' + hours).slice(-2);
+		const zfM = ('00' + mins).slice(-2);
+		const zfS = ('00' + secs).slice(-2);
 
-		return `${zf_h}:${zf_m}:${zf_s}`;
-	},
+		return `${zfH}:${zfM}:${zfS}`;
+	}
 
-	//inf
-	_hide_autopilot_ui: function () {
-		const el_inf_speed = $('div.inf_speed');
-		const el_autopilot_operating_time = $('.inf_operating_time');
+	hideAutopilotUI() {
+		const elAutopilotOperatingTime = this.roverUI.elAutopilotOperatingTime;
 
-		el_inf_speed.hide();
-		el_autopilot_operating_time.text('00:00:00');
-		el_autopilot_operating_time.hide();
+		this.roverUI.elInfSpeed.hide();
+		elAutopilotOperatingTime.text('00:00:00');
+		elAutopilotOperatingTime.hide();
 
-		this.control_current_mode_btn_mc(false);
-	},
+		this.controlCurrentModeButton(false);
+	}
 
-	_update_steering_wheel_rotation: function (speed, steering_angle) {
+	updateSteeringWheelRotation(speed, steeringAngle) {
 		try {
-			const el_steering_wheel = $('img.steeringWheel');
-			let display_rotation;
+			const elSteeringWheel = $('img.steeringWheel');
+			let displayRotation;
 
 			if (speed >= 0) {
-				display_rotation = Math.floor(steering_angle * 90.0);
+				displayRotation = Math.floor(steeringAngle * 90.0);
 			} else {
-				display_rotation = Math.floor(steering_angle * -90.0 - 180);
+				displayRotation = Math.floor(steeringAngle * -90.0 - 180);
 			}
 
-			el_steering_wheel.css('transform', `rotate(${display_rotation}deg)`);
+			elSteeringWheel.css('transform', `rotate(${displayRotation}deg)`);
 		} catch (error) {
-			console.error('Error while updating steering wheel:', error);
+			console.error('Error in InferenceHandling.updateSteeringWheelRotation():', error);
 		}
-	},
+	}
 
-	control_current_mode_btn_mc: function (active) {
+	controlCurrentModeButton(active) {
 		if (CTRL_STAT.currentPage == 'autopilot_link') {
 			if (active) {
 				$('#mobile_controller_container .current_mode_button').text('stop');
@@ -679,145 +681,110 @@ export var teleop_screen = {
 				$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
 			}
 		}
-	},
-
-	//camera
-	_on_camera_selection: function () {
-		const _active = this.active_camera;
-		const _selected = this.selected_camera;
-		this.el_viewport_container.removeClass('selected');
-		this.overlay_image.removeClass('selected');
-		if (_selected == _active) {
-			this.el_viewport_container.addClass('selected');
-		} else if (_selected != undefined) {
-			this.overlay_image.addClass('selected');
-		}
-	},
-
-	//camera
-	add_camera_activation_listener: function (cb) {
-		this.camera_activation_listeners.push(cb);
-	},
-
-	//camera
-	add_camera_selection_listener: function (cb) {
-		this.camera_selection_listeners.push(cb);
-	},
-
-	//camera
-	toggle_camera: function () {
-		const name = this.active_camera == 'front' ? 'rear' : 'front';
-		this.active_camera = name;
-		this.selected_camera = null;
-		this._render_distance_indicators();
-		this.camera_activation_listeners.forEach(function (cb) {
-			cb(name);
-		});
-		this.camera_selection_listeners.forEach(function (cb) {
-			cb();
-		});
-	},
-
-	message_box_update: function () {
-		if (CTRL_STAT.currentPage == 'follow_link' && this.el_message_box_message != undefined) {
-			this.el_message_box_message.text(this.c_msg_teleop_follow);
-		} else if (CTRL_STAT.currentPage == 'map_recognition_link' && this.el_message_box_message != undefined) {
-			this.el_message_box_message.text(this.c_msg_teleop_confidence_overview);
-		}
-	},
-
-	/**
-	 *camera
-	 * Keep the frontend updated with the commands made from the joystick.
-	 */
-	handle_camera_command: function (command) {
-		if (command != undefined && command.arrow_left) {
-			this._schedule_camera_cycle();
-		} else if (command != undefined && command.arrow_right) {
-			this._schedule_camera_cycle();
-		}
-		if (command != undefined && command.button_right) {
-			this._schedule_photo_snapshot_effect();
-		}
-	},
-
-	//Why it assigns the already init vars to consts?
-	controller_update: function () {
-		try {
-			const message_box_container = this.el_message_box_container;
-			const message_box_message = this.el_message_box_message;
-			const button_take_control = this.el_button_take_control;
-			const is_connection_ok = this.is_connection_ok;
-			const controller_status = this.controller_status;
-			const c_msg_connection_lost = this.c_msg_connection_lost;
-			const c_msg_controller_err = this.c_msg_controller_err;
-			const c_msg_teleop_view_only = this.c_msg_teleop_view_only;
-			var show_message = false;
-			var show_button = false;
-			if (message_box_message != undefined) {
-				if (!is_connection_ok) {
-					message_box_message.text(c_msg_connection_lost);
-					message_box_message.removeClass();
-					message_box_message.addClass('error_message');
-					show_message = true;
-				} else if (controller_status == 0) {
-					message_box_message.text(c_msg_controller_err);
-					message_box_message.removeClass();
-					message_box_message.addClass('warning_message');
-					show_message = true;
-				} else if (controller_status == 2) {
-					message_box_message.text(c_msg_teleop_view_only);
-					message_box_message.removeClass();
-					message_box_message.addClass('warning_message');
-					show_message = true;
-					show_button = true;
-				}
-				if (show_message) {
-					if (show_button) {
-						button_take_control.show();
-					} else {
-						button_take_control.hide();
-					}
-					message_box_container.show();
-				} else {
-					message_box_container.hide();
-				}
-			}
-		} catch (error) {
-			console.error('Error in controller_update: ', error);
-		}
-	},
-	/**
-	 * Used by the two stream quality classes (mjpeg and h264) to show the width of the stream on the debug (advanced) bar. This one is rover /ui
-	 */
-	on_canvas_init: function (width, height) {
-		$('span#debug_screen_dimension').text(width + 'x' + height);
-	},
-
-	/**
-	 * check if on autopilot mode, if yes, then draw the trapezoid. Used by the two stream quality classes. This one is rover/ui
-	 */
-	canvas_update: function (ctx) {
-		try {
-			const message = this._last_server_message;
-			const _ap = message != undefined && message._is_on_autopilot;
-			if (_ap && this.active_camera == 'front') {
-				this.path_renderer.renderPath(ctx, message.nav_path);
-			}
-		} catch (error) {
-			console.error('Error while rendering autopilot path: ', error);
-		}
-	},
-};
-
-export function screen_poll_platform() {
-	if (dev_tools._vehicle == undefined) {
-		setTimeout(function () {
-			screen_poll_platform();
-		}, 200);
-	} else {
-		teleop_screen._render_distance_indicators();
 	}
 }
 
-screen_poll_platform();
+class CameraControls {
+	constructor(roverUI) {
+		this.roverUI = roverUI; // Dependency injection for shared UI elements and functionality
+		this.activeCamera = 'front'; // The one in main view
+		this.selectedCamera = null; //The one being controlled
+		this.cameraSelectionListeners = [];
+		this.cameraActivationListeners = [];
+		this._cameraCycleTimer = null;
+		this._photoSnapshotTimer = null;
+
+		// Set the default active camera in RoverUI during initialization
+		this.roverUI.activeCamera = this.activeCamera;
+
+		// Add listeners to update RoverUI whenever the camera changes
+		this.addCameraActivationListener((name) => {
+			this.roverUI.activeCamera = name; 
+			this.roverUI.renderDistanceIndicators(name); 
+		});
+	}
+	selectNextCamera() {
+		const nextCamera = this.selectedCamera == null ? this.activeCamera : this.selectedCamera === 'front' ? 'rear' : 'front';
+		this.selectCamera(nextCamera);
+	}
+
+	selectCamera(name) {
+		this.selectedCamera = name;
+		this.cameraSelectionListeners.forEach((cb) => cb());
+		this.onCameraSelection();
+	}
+
+	cycleCameraSelection() {
+		this.selectNextCamera();
+		if (this.selectedCamera != null) {
+			console.log(`Camera ${this.selectedCamera} is selected for PTZ control.`);
+		}
+		this._cameraCycleTimer = null;
+	}
+
+	scheduleCameraCycle() {
+		if (this._cameraCycleTimer == null) {
+			this._cameraCycleTimer = setTimeout(() => this.cycleCameraSelection(), 150);
+		}
+	}
+
+	schedulePhotoSnapshotEffect() {
+		if (this._photoSnapshotTimer != null) {
+			clearTimeout(this._photoSnapshotTimer);
+		}
+		this._photoSnapshotTimer = setTimeout(() => {
+			this.roverUI.elViewportContainer.fadeOut(50).fadeIn(50);
+		}, 130);
+	}
+
+	handleCameraCommand(joystickCommand) {
+		if (joystickCommand != null && joystickCommand.arrow_left) {
+			this.scheduleCameraCycle();
+		} else if (joystickCommand != null && joystickCommand.arrow_right) {
+			this.scheduleCameraCycle();
+		}
+		if (joystickCommand != null && joystickCommand.button_right) {
+			this.schedulePhotoSnapshotEffect();
+		}
+	}
+
+	onCameraSelection() {
+		const active = this.activeCamera;
+		const selected = this.selectedCamera;
+		this.roverUI.elViewportContainer.removeClass('selected');
+		this.roverUI.overlayImage.removeClass('selected');
+		if (selected === active) {
+			this.roverUI.elViewportContainer.addClass('selected');
+		} else if (selected != null) {
+			this.roverUI.overlayImage.addClass('selected');
+		}
+	}
+
+	addCameraActivationListener(cb) {
+		this.cameraActivationListeners.push(cb);
+	}
+
+	addCameraSelectionListener(cb) {
+		this.cameraSelectionListeners.push(cb);
+	}
+
+	toggleCamera() {
+		const name = this.activeCamera === 'front' ? 'rear' : 'front';
+		this.activeCamera = name;
+		this.selectedCamera = null;
+		this.roverUI.renderDistanceIndicators(name);
+		this.cameraActivationListeners.forEach((cb) => cb(name));
+		this.cameraSelectionListeners.forEach((cb) => cb());
+	}
+}
+
+new NavigationManager();
+new DarkThemeManager();
+const advancedThemeManager = new AdvancedThemeManager();
+const helpMessageManager = new HelpMessageManager();
+const messageContainerManager = new MessageContainerManager(helpMessageManager);
+const roverUI = new RoverUI();
+const inferenceHandling = new InferenceHandling(roverUI);
+const cameraControls = new CameraControls(roverUI);
+
+export {  roverUI, inferenceHandling, cameraControls, helpMessageManager, messageContainerManager, advancedThemeManager };
