@@ -14,7 +14,6 @@ function setMobileCommand(x, y) {
 }
 
 function addDataToMobileCommand(newData) {
-	console.log(newData);
 	// Iterate through the keys of the new data
 	Object.keys(newData).forEach((key) => {
 		// Only add the key if it doesn't already exist in mobileCommandJSON

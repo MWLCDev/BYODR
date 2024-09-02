@@ -69,6 +69,7 @@ fieldset input[type=text] {
 #pro-view-toggle-div {
   position: relative;
   width: fit-content;
+  padding-top: 3vh;
 }
 
 #pro-view-toggle-div span {

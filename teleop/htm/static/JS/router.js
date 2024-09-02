@@ -1,10 +1,10 @@
 import { isMobileDevice } from './Index/index_a_utils.js';
 import { roverUI } from './Index/index_c_screen.js';
 import { setupMobileController } from './mobileController/mobileController_a_app.js';
-import { autoNavigationNavButtonHandler } from './mobileController/mobileController_f_auto_navigation.js';
-import { confidenceNavButtonHandler } from './mobileController/mobileController_f_confidence.js';
-import { followingNavButtonHandler } from './mobileController/mobileController_f_following.js';
-import { maneuverTrainingNavButtonHandler } from './mobileController/mobileController_f_maneuver_training.js';
+import { autoNavigationNavButtonHandler } from './mobileController/feature/mobileController_f_auto_navigation.js';
+import { confidenceNavButtonHandler } from './mobileController/feature/mobileController_f_confidence.js';
+import { followingNavButtonHandler } from './mobileController/feature/mobileController_f_following.js';
+import { maneuverTrainingNavButtonHandler } from './mobileController/feature/mobileController_f_maneuver_training.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js';
 import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
@@ -78,7 +78,6 @@ export class Router {
 		const activeNavLinkImageSrc = $(`#${selectedLinkId} img`).attr('src');
 		if (activeNavLinkImageSrc) {
 			$('.current_mode_img').attr('src', activeNavLinkImageSrc);
-			$('.current_mode_text').text(this.mode_to_nav_link[selectedLinkId]);
 		} else {
 			console.error('No image found for ID:', selectedLinkId);
 		}
@@ -153,13 +152,29 @@ export class Router {
 	}
 
 	/**
-	 * Actions that are bonded to the navbar buttons only. They will control the switch for the features
+	 * Removes all mode-related classes from the body element dynamically.
+	 */
+	resetStyles() {
+		// Define the pattern for mode-related classes
+		const modeClassPattern = /-\b(feature|mode)\b/;
+
+		// Get the current list of classes on the body element
+		const bodyClasses = $('body').attr('class') ? $('body').attr('class').split(/\s+/) : [];
+
+		// Filter and remove all classes that match the pattern
+		bodyClasses.forEach((className) => {
+			if (modeClassPattern.test(className)) {
+				$('body').removeClass(className);
+			}
+		});
+	}
+
+	/**
+	 * Actions that are bonded to the navbar buttons only.
 	 */
 	assignNavButtonActions(navLink) {
-		//TODO: should add a filter here to remove all the styles related to the lat mode and reset them to the default values. So the new mode would only add its new styles on DOM.
-		$('#mobile_controller_container #backward_square').removeClass('maneuver_square');
-		$('#mobile_controller_container  .trail_canvas').show();
-		$('#map_frame').hide();
+		this.resetStyles();
+
 		if (navLink == 'follow_link' && isMobileDevice()) followingNavButtonHandler.initializeDOM();
 		else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
 		else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();

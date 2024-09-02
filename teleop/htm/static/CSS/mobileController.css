@@ -20,25 +20,26 @@
   border-bottom: 1px solid var(--VOR-color);
 }
 
-#mobile_controller_container #horizontal_bar .left_section,
-#mobile_controller_container #horizontal_bar .middle_section,
-#mobile_controller_container #horizontal_bar .right_section {
+#mobile_controller_container .left_section,
+#mobile_controller_container .middle_section,
+#mobile_controller_container .right_section {
   display: flex;
   align-items: center;
-  flex: 1;
+
 }
 
-#mobile_controller_container #horizontal_bar .left_section {
+#mobile_controller_container .left_section {
   justify-content: flex-start;
   flex: 2;
   padding-left: 13px;
 }
 
-#mobile_controller_container #horizontal_bar .middle_section {
+#mobile_controller_container .middle_section {
   justify-content: center;
+  flex: 0;
 }
 
-#mobile_controller_container #horizontal_bar .right_section {
+#mobile_controller_container .right_section {
   flex-direction: row;
   align-content: flex-end;
   flex: 2;
@@ -47,17 +48,22 @@
 
 #horizontal_bar .current_mode_text {
   text-transform: uppercase;
+  display: block;
+}
+
+#horizontal_bar .current_mode_text:before {
+  content: "manual drive"
 }
 
 .current_mode_button {
   outline: none;
   box-shadow: 4px 6px 8px #d0d0d0;
   display: none;
-  width: 100%;
+  width: 50%;
   transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
   border: 2px solid;
-  border-radius: 20px;
+  border-radius: 8px;
   font-weight: bold;
   color: #451c58;
   text-transform: uppercase;
@@ -85,18 +91,20 @@
   border-radius: 1rem;
 }
 
-#backward_square.maneuver_square {
-  width: 100%;
-  background: repeating-linear-gradient(-45deg, #ffffff, #ffffff 16px, #ccc 18px, #ccc 11px);
-  border: 0;
-}
-
 #forward_square .square_text {
   bottom: 2vh;
 }
 
+#forward_square .square_text:before {
+  content: "forward"
+}
+
 #backward_square .square_text {
   top: 2vh;
+}
+
+#backward_square .square_text:before {
+  content:"backward"
 }
 
 .square_text {
