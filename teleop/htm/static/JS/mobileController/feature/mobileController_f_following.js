@@ -162,5 +162,4 @@ class FollowingHandler {
 }
 
 var followingNavButtonHandler = new FollowingHandler();
-
 export { followingNavButtonHandler };

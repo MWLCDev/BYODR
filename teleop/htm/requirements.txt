@@ -1,5 +1,0 @@
-Cython==0.29.35
-Flask==2.0.3
-folium==0.14.0
-gpx_converter==2.1.0
-pandas==1.1.5

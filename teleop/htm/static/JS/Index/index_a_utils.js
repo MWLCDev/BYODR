@@ -1,15 +1,3 @@
-jQuery.fn.visible = function () {
-	return this.css('visibility', 'visible');
-};
-
-jQuery.fn.invisible = function () {
-	return this.css('visibility', 'hidden');
-};
-
-jQuery.fn.is_visible = function () {
-	return this.css('visibility') == 'visible';
-};
-
 function isMobileDevice() {
 	return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 }
