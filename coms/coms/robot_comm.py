@@ -11,9 +11,6 @@ from byodr.utils.ssh import Router, Nano
 logger = logging.getLogger(__name__)
 
 
-# This file will have the ZMQ socket and dealing with the robot configuration file
-
-
 class DataPublisher(threading.Thread):
     def __init__(self, data, event, robot_config_dir, message=" ", sleep_time=5, pub_port=5454, rep_port=5455):
         super(DataPublisher, self).__init__()

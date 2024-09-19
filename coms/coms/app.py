@@ -4,7 +4,7 @@ import multiprocessing
 import signal
 import threading
 from byodr.utils.ssh import Router
-from .communication import start_communication
+from .communication import CommunicationHandler
 from .common_utils import *
 from .robot_comm import *
 
@@ -35,9 +35,10 @@ def main():
     application = ComsApplication(event=quit_event, config_dir=args.config)
     tel_chatter = TeleopChatter(application.get_robot_config_file(), application.get_user_config_file())
     socket_manager = SocketManager(tel_chatter, quit_event=quit_event)
+    communication_handler = CommunicationHandler(quit_event)
 
     # Starting the functions that will allow the client and server of each segment to start sending and receiving data
-    communication_thread = threading.Thread(target=start_communication, args=(socket_manager, application.get_robot_config_file()))
+    communication_thread = threading.Thread(target=communication_handler.start_communication, args=(socket_manager, application.get_robot_config_file()))
 
     application.setup()
     socket_manager.start_threads()

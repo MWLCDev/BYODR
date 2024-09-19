@@ -1,12 +1,6 @@
 import socket
 import logging
 import json
-from byodr.utils.ssh import Nano
-
-# import signal
-# signal.signal(signal.SIGPIPE,signal.SIG_DFL)
-
-nano_ip = Nano.get_ip_address()
 
 
 # Declaring the logger

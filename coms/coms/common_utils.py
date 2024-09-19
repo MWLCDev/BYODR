@@ -7,9 +7,6 @@ from byodr.utils.ipc import JSONPublisher, json_collector
 from .robot_comm import *
 
 
-common_queue = Queue(maxsize=1)
-
-
 class ComsApplication(Application):
     def __init__(self, event, config_dir=os.getcwd(), hz=20):
         """set up configuration directory and a configuration file path
@@ -62,8 +59,6 @@ class ComsApplication(Application):
             if _hash != self._config_hash:
                 self._config_hash = _hash
 
-        # logger.info(tel_data["command"]["robot_config"])
-
 
 class SocketManager:
     def __init__(self, teleop_chatter, quit_event):
@@ -80,11 +75,11 @@ class SocketManager:
         self.threads = [self.tel_chatter_socket, self.teleop_receiver, self.vehicle_receiver, self.pilot_receiver]
 
     def publish_to_pilot(self, message):
-        # Method to publish a message using coms_to_pilot_publisher
+        """Method to publish a message using coms_to_pilot_publisher"""
         self.coms_to_pilot_publisher.publish(message)
 
     def get_teleop_input(self):
-        # Method to get data from teleop_receiver
+        """Method to get data from teleop_receiver"""
         return self.teleop_receiver.get()
 
     def get_teleop_chatter(self):
@@ -95,11 +90,11 @@ class SocketManager:
 
     def chatter_message(self, cmd):
         """Broadcast message from COMS chatter with a timestamp. It is a one time message"""
-        logger.info(cmd)
+        # logger.info(cmd)
         self.coms_chatter.publish(dict(time=timestamp(), command=cmd))
 
     def get_velocity(self):
-        # Method to get data from vehicle_receiver
+        """Method to get data from vehicle_receiver"""
         return self.vehicle_receiver.get()
 
     def get_watchdog_status(self):
