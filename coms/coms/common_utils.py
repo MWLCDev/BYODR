@@ -118,6 +118,7 @@ class SocketManager:
 
 class TeleopChatter:
     """Resolve the data incoming from Teleop chatter socket"""
+
     def __init__(self, _robot_config_dir, _segment_config_dir):
         self.robot_config_dir = _robot_config_dir
         self.seg_config_dir = _segment_config_dir
