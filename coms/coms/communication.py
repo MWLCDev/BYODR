@@ -1,43 +1,31 @@
-import logging
-import threading
-from collections import deque
-import socket
-import copy
-import time
-import multiprocessing
-import signal
 import configparser
-from byodr.utils.ssh import Nano
+import copy
+import logging
+import socket
+import threading
+import time
+from collections import deque
+
 from byodr.utils import timestamp
-from .server import SegmentServer
+from byodr.utils.ssh import Nano
+
 from .client import SegmentClient
 from .command_processor import process
-
-
-# This flag starts as false
-quit_event = multiprocessing.Event()
-quit_event.clear()
-
-signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
-signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
-
-
-# Set the flag as true when we receive interrupt signals
-def _interrupt():
-    logger.info("Received interrupt, quitting.")
-    quit_event.set()
-
+from .server import SegmentServer
 
 logger = logging.getLogger(__name__)
 
 
-class CommunicationHandler:
-    def __init__(self, quit_event):
+class SegmentsCooperationCommunicationHandler:
+    def __init__(self, quit_event, robot_config_dir):
         self.global_watchdog_status_list = []
         self.robot_config_parser = configparser.ConfigParser()
         self.quit_event = quit_event
+        self.local_ip = Nano.get_ip_address()
+        self.nano_port = 1111
+        self.head_ip, self.follower_ip = self.read_config_file(robot_config_dir)
 
-    def read_config_file(self, config_file_dir, local_ip):
+    def read_config_file(self, config_file_dir):
         follower_ip = None
         head_ip = None
 
@@ -47,7 +35,7 @@ class CommunicationHandler:
 
         # Getting our local position
         for entry in sections_list[1:]:
-            if self.robot_config_parser.get(entry, "ip.number") == local_ip:
+            if self.robot_config_parser.get(entry, "ip.number") == self.local_ip:
                 local_position = self.robot_config_parser.get(entry, "position")
                 break
 
@@ -66,7 +54,7 @@ class CommunicationHandler:
 
         return head_ip, follower_ip
 
-    def start_communication(self, socket_manager, robot_config_dir):
+    def start_communication(self, socket_manager):
         """Use:
             The main function that starts all other communication functionalities.
             Starts 3 threads:\n
@@ -81,17 +69,11 @@ class CommunicationHandler:
         # A deque that will store messages received by the server of the segment
         msg_from_server_queue = deque(maxlen=1)
 
-        # Getting the IP of the local machine
-        local_ip = Nano.get_ip_address()
-        nano_port = 1111
+        segment_client = SegmentClient(self.follower_ip, self.nano_port, 0.10)  # The client that will connect to a follower
+        segment_server = SegmentServer(self.local_ip, self.nano_port, 0.10)  # The server that will wait for the lead to connect
 
-        # Reading the config files to receive information about this and neighboring segments
-        head_ip, follower_ip = self.read_config_file(robot_config_dir, local_ip)
-
-        segment_client = SegmentClient(follower_ip, nano_port, 0.10)  # The client that will connect to a follower
-        segment_server = SegmentServer(local_ip, nano_port, 0.10)  # The server that will wait for the lead to connect
-
-        command_receiver_thread = threading.Thread(target=self.command_receiver, args=(socket_manager, segment_client, local_ip, head_ip, msg_from_server_queue))
+        # I need to implement some sort of HZ here on these functions
+        command_receiver_thread = threading.Thread(target=self.command_receiver, args=(socket_manager, segment_client, self.local_ip, self.head_ip, msg_from_server_queue))
         client_interface_thread = threading.Thread(target=self.client_code, args=(socket_manager, segment_client))
         server_interface_thread = threading.Thread(target=self.server_code, args=(segment_server, msg_from_server_queue))
 
@@ -117,6 +99,7 @@ class CommunicationHandler:
         -If any other segment calls this function, it will receive commands from the deque.
         This deque is being filled up by the server thread, with commands received from its LD segment,
         """
+        # that is a blank command to start with
         previous_command = {"steering": 0.0, "throttle": 0, "time": 0, "navigator": {"route": None}, "button_b": 1, "velocity": 0.0}
 
         # The head segment forwards commands from teleop to pilot
@@ -131,10 +114,10 @@ class CommunicationHandler:
             while not self.quit_event.is_set():
 
                 # Getting the local watchdog status
-                status_dictionary = socket_manager.get_watchdog_status()
+                status_dictionary = socket_manager.get_watchdog_status()  # I think this line i useless
                 self.global_watchdog_status_list[0] = status_dictionary.get("status")
 
-                # Receiving the commands that we will forward to our FL, from Teleop
+                # Receiving the commands that we will forward to our FL, from our Teleop
                 segment_client.msg_to_server = socket_manager.get_teleop_input()
                 if segment_client.msg_to_server is not None:
                     segment_client.msg_to_server["time"] = timestamp()
@@ -247,12 +230,11 @@ class CommunicationHandler:
 
     def server_code(self, segment_server, msg_from_server_queue):
         """Use:
-            The main functionality of the server of the segment. It will setup a socket server and will wait for a client to connect.
-            Once a client connects, the server will wait for data, and when it is received, will send back a reply.
-            The data received will be appended to a deque. The command receiver thread consumes items from the deque by forwarding commands to the local pilot.
+        The main functionality of the server of the segment.
 
-        Returns:
-            Nothing
+        It will setup a socket server and will wait for a client to connect.
+        Once a client connects, the server will wait for data, and when it is received, will send back a reply.
+        The data received will be appended to a deque. The command_receiver thread consumes items from the deque by forwarding commands to the local pilot.
         """
 
         counter_server = 0

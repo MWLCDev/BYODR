@@ -6,8 +6,6 @@ import json
 
 # Declaring the logger
 logger = logging.getLogger(__name__)
-log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
-
 
 class SegmentClient:
     """Encapsulate the client functionalities of the segment.

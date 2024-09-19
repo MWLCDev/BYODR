@@ -5,8 +5,6 @@ import json
 
 # Declaring the logger
 logger = logging.getLogger(__name__)
-log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
-
 
 class SegmentServer:
     """Encapsulate the server functionalities of the segment.

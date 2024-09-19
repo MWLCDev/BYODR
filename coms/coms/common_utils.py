@@ -60,7 +60,7 @@ class ComsApplication(Application):
                 self._config_hash = _hash
 
 
-class SocketManager:
+class ServicesSocketManager:
     def __init__(self, teleop_chatter, quit_event):
         self.quit_event = quit_event
         self.tel_chatter_actions = teleop_chatter
@@ -114,10 +114,8 @@ class SocketManager:
 class TeleopChatter:
     """Resolve the data incoming from Teleop chatter socket"""
 
-    def __init__(self, _robot_config_dir, _segment_config_dir):
-        self.robot_config_dir = _robot_config_dir
-        self.seg_config_dir = _segment_config_dir
-        self.robot_actions = RobotActions(self.robot_config_dir)
+    def __init__(self, _robot_config_dir):
+        self.robot_actions = RobotActions(_robot_config_dir)
 
     def filter_robot_config(self, tel_data):
         """Get new robot_config from TEL chatter socket
@@ -128,9 +126,5 @@ class TeleopChatter:
         # Check if tel_data is not None and then check for existence of 'robot_config'
         if tel_data and "robot_config" in tel_data.get("command", {}):
             new_robot_config = tel_data["command"]["robot_config"]
-            logger.info(new_robot_config)
+            # logger.info(new_robot_config)
             self.robot_actions.driver(new_robot_config)
-
-    def filter_watch_dog(self):
-        """place holder for watchdog function"""
-        pass

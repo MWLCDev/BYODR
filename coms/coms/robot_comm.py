@@ -85,8 +85,7 @@ class TeleopSubscriberThread(threading.Thread):
         self._sub_port = sub_port
         self._req_port = req_port
         self._quit_event = event
-        self.robot_config_dir = robot_config_dir
-        self._robot_actions = RobotActions(self.robot_config_dir)
+        self._robot_actions = RobotActions(robot_config_dir)
 
         self.context = zmq.Context()
         self.req_socket = self.context.socket(zmq.REQ)
