@@ -9,8 +9,8 @@ import signal
 import configparser
 from byodr.utils.ssh import Nano
 from byodr.utils import timestamp
-from .server import Segment_server
-from .client import Segment_client
+from .server import SegmentServer
+from .client import SegmentClient
 from .command_processor import process
 
 
@@ -88,8 +88,8 @@ class CommunicationHandler:
         # Reading the config files to receive information about this and neighboring segments
         head_ip, follower_ip = self.read_config_file(robot_config_dir, local_ip)
 
-        segment_client = Segment_client(follower_ip, nano_port, 0.10)  # The client that will connect to a follower
-        segment_server = Segment_server(local_ip, nano_port, 0.10)  # The server that will wait for the lead to connect
+        segment_client = SegmentClient(follower_ip, nano_port, 0.10)  # The client that will connect to a follower
+        segment_server = SegmentServer(local_ip, nano_port, 0.10)  # The server that will wait for the lead to connect
 
         command_receiver_thread = threading.Thread(target=self.command_receiver, args=(socket_manager, segment_client, local_ip, head_ip, msg_from_server_queue))
         client_interface_thread = threading.Thread(target=self.client_code, args=(socket_manager, segment_client))
