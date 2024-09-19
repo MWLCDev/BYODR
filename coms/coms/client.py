@@ -10,13 +10,7 @@ log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 class Segment_client:
-    """Class that encapsulates the client functionalities of the segment.
-    Methods:
-        - connect_to_server(): Tries to connect to the server
-        - close_connection(): Closes the connection to the server
-        - start_server(): The server starts listening for clients
-        - send_to_FL(): The client sends data to its FL
-        - recv_from_FL(): The client receives a reply from its FL
+    """Encapsulate the client functionalities of the segment.
 
     Args:
         arg_server_ip (Str): IP of the server -> '192.168.1.100'
@@ -70,8 +64,8 @@ class Segment_client:
         finally:
             self.socket_initialized = False
 
-    # Sending data to the server
     def send_to_FL(self):
+        """Sending data to the server"""
         if self.msg_to_server is not None:
             message_to_send = json.dumps(self.msg_to_server).encode("utf-8")
         else:
@@ -79,8 +73,8 @@ class Segment_client:
             logger.warning(f"[Client] Empty message was about to be sent to the server")
         self.client_socket.send(message_to_send)
 
-    # Receiving data from the server
     def recv_from_FL(self):
+        """Receiving data from the server"""
         recv_message = self.client_socket.recv(512).decode("utf-8")
 
         try:

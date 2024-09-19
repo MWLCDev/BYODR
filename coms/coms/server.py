@@ -15,11 +15,7 @@ log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 
 class Segment_server:
-    """Class that encapsulates the server functionalities of the segment.
-    Methods:
-        - start_server(): The server starts listening for clients
-        - send_to_LD(): The server sends a reply to its LD
-        - recv_from_LD(): The server receives data from its LD
+    """Encapsulate the server functionalities of the segment.
 
     Args:
         arg_server_ip (Str): IP of the server -> '192.168.1.100'
