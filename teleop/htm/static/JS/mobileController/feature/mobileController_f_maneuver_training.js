@@ -14,13 +14,13 @@ class ManeuverTrainingHandler {
 	}
 
 	bindButtonAction() {
-		$('#mobile_controller_container .F').click((event) => {
-			const buttonText = $(event.target).text().toLowerCase();
-			if (CTRL_STAT.currentPage === 'ai_training_link' && buttonText === 'start') {
-				this.startTraining();
-			}
-			if (CTRL_STAT.currentPage === 'ai_training_link' && buttonText === 'stop') {
-				this.stopTraining();
+		$('#mobile_controller_container .F').click(() => {
+			if (CTRL_STAT.currentPage === 'ai_training_link') {
+				if (!$('body').hasClass('training-started')) {
+					this.startTraining();
+				} else {
+					this.stopTraining();
+				}
 			}
 		});
 	}

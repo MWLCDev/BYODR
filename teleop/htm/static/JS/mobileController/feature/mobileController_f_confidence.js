@@ -13,17 +13,22 @@ class ConfidenceHandler {
 	}
 
 	bindButtonAction() {
-		$('.current_mode_button').click((event) => {
-			const buttonText = $(event.target).text().toLowerCase();
-			if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'recognize') {
-				this.sendSwitchConfidenceRequest('start_confidence');
-				this.toggleButtonAppearance('stop');
-			} else if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'stop') {
-				this.sendSwitchConfidenceRequest('stop_confidence');
-				this.toggleButtonAppearance('start');
-			} else if (CTRL_STAT.currentPage == 'map_recognition_link' && buttonText == 'return') {
-				$('#map_frame, #top_layer_iframe').hide();
-				this.toggleButtonAppearance('start');
+		$('#mobile_controller_container .current_mode_button').click(() => {
+			if (CTRL_STAT.currentPage === 'map_recognition_link') {
+				// If no mode-related class is present, we start recognizing
+				if (!$('body').hasClass('recognize-mode') && !$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('show-result-mode')) {
+					// Start recognition process
+					this.sendSwitchConfidenceRequest('start_confidence');
+					this.toggleButtonAppearance('stop');
+				} else if ($('body').hasClass('recognize-mode')) {
+					// Stop the recognition process
+					this.sendSwitchConfidenceRequest('stop_confidence');
+					this.toggleButtonAppearance('start');
+				} else if ($('body').hasClass('stop-mode')) {
+					// Return to initial state and hide the map if needed
+					this.toggleButtonAppearance('start');
+					$('#map_frame, #top_layer_iframe').hide();
+				}
 			}
 		});
 	}

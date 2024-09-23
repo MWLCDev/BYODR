@@ -14,14 +14,20 @@ class FollowingHandler {
 		this.initializeCanvas();
 	}
 
+	//it should send in active state when i leave the page or when i exit the current page or when i change the current page from following to whatever comes afters
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
-			if (CTRL_STAT.followingState === 'inactive') {
-				this.sendSwitchFollowingRequest('show_image');
-			} else if (CTRL_STAT.followingState === 'image') {
-				this.sendSwitchFollowingRequest('start_following');
-			} else if (CTRL_STAT.followingState === 'active') {
-				this.sendSwitchFollowingRequest('show_image');
+			if (CTRL_STAT.currentPage === 'follow_link') {
+				if (CTRL_STAT.followingState === 'inactive') {
+					this.sendSwitchFollowingRequest('show_image');
+				} else if (CTRL_STAT.followingState === 'image') {
+					this.sendSwitchFollowingRequest('start_following');
+				} else if (CTRL_STAT.followingState === 'active') {
+					this.sendSwitchFollowingRequest('show_image');
+				}
+			} else {
+				console.log('doing the else statement');
+				this.sendSwitchFollowingRequest('inactive');
 			}
 		});
 	}
@@ -58,12 +64,9 @@ class FollowingHandler {
 				})
 					.then((response) => response.json())
 					.then((data) => {
-						const previousState = CTRL_STAT.followingState;
+						console.log(data.following_status);
 						this.assignFollowingState(data.following_status);
-						this.toggleButtonAppearance();
-						if (previousState !== CTRL_STAT.followingState) {
-							// Additional actions can be added here if needed when state changes
-						}
+						this.toggleBodyAppearance(data.following_status);
 						this.errorLogged = false;
 					})
 					.catch((error) => {
@@ -77,6 +80,7 @@ class FollowingHandler {
 	}
 
 	assignFollowingState(backendCommand) {
+		console.log(backendCommand);
 		switch (backendCommand) {
 			case 'active':
 				CTRL_STAT.followingState = 'active';
@@ -91,25 +95,25 @@ class FollowingHandler {
 				CTRL_STAT.followingState = 'loading';
 				break;
 			default:
-				console.log('Following: Unknown command received from the backend:', backendCommand);
+				console.error('Following: Unknown command received from the backend:', backendCommand);
 		}
 	}
 
-	toggleButtonAppearance() {
+	toggleBodyAppearance(cmd) {
 		$('body').removeClass('image-mode active-mode inactive-mode loading-mode');
 
-		if (CTRL_STAT.followingState === 'image') {
+		if (cmd === 'image') {
 			this.resizeCanvas();
 			this.showCanvas();
 			$('body').addClass('image-mode');
-		} else if (CTRL_STAT.followingState === 'active') {
+		} else if (cmd === 'active') {
 			this.resizeCanvas();
 			this.showCanvas();
 			$('body').addClass('active-mode');
-		} else if (CTRL_STAT.followingState === 'inactive') {
+		} else if (cmd === 'inactive') {
 			$('body').addClass('inactive-mode');
 			this.hideCanvas();
-		} else if (CTRL_STAT.followingState === 'loading') {
+		} else if (cmd === 'loading') {
 			$('body').addClass('loading-mode');
 			this.hideCanvas();
 		}
@@ -117,7 +121,6 @@ class FollowingHandler {
 
 	showCanvas() {
 		if (this.canvas) {
-			this.canvas.style.display = 'block';
 			if (!this.streamActive && !this.intervalId) {
 				this.streamActive = true;
 				this.intervalId = setInterval(() => this.refreshImage(), 30);
@@ -127,7 +130,6 @@ class FollowingHandler {
 
 	hideCanvas() {
 		if (this.canvas) {
-			this.canvas.style.display = 'none';
 			if (this.streamActive && this.intervalId) {
 				clearInterval(this.intervalId);
 				this.intervalId = null;
