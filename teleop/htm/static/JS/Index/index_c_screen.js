@@ -535,7 +535,6 @@ class InferenceHandling {
 				this.updateAutopilotUI(infMessage);
 				this.toggleMobileUI(true);
 			} else {
-				this.hideAutopilotUI();
 				this.toggleMobileUI(false);
 			}
 			this.updateSteeringWheelRotation(infMessage.vel_y, infMessage.ste);
@@ -572,10 +571,7 @@ class InferenceHandling {
 	}
 
 	updateAutopilotUI(infMessage) {
-		$('div.inf_speed').show();
-		$('.inf_operating_time').show();
 		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
-		$('div.inf_speed_label').text('Max Speed');
 		this.roverUI.renderDistanceIndicators('front');
 
 		if (infMessage.ctl_activation > 0) {
@@ -599,12 +595,6 @@ class InferenceHandling {
 		const zfS = ('00' + secs).slice(-2);
 
 		return `${zfH}:${zfM}:${zfS}`;
-	}
-
-	hideAutopilotUI() {
-		$('div.inf_speed').hide();
-		$('.inf_operating_time').text('00:00:00');
-		$('.inf_operating_time').hide();
 	}
 
 	updateSteeringWheelRotation(speed, steeringAngle) {

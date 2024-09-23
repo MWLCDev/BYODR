@@ -246,12 +246,23 @@ body {
   color: var(--text_color_light_mode);
 }
 
+.speed_value {
+  display: flex;
+  flex-direction: column;
+  justify-content: start;
+  align-items: center;
+}
+
 .inf_speed {
   display: none;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   align-content: center;
+}
+
+.inf_operating_time {
+  display: none;
 }
 
 .stream_quality {
@@ -316,14 +327,9 @@ body {
 }
 
 
-.speed_value {
-  display: flex;
-  flex-direction: column;
-  justify-content: start;
-  align-items: center;
-}
 
 .inf_speed_value {
+  display: none;
   font-weight: bold;
 }
 

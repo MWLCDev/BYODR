@@ -87,6 +87,7 @@ body.auto-navigation-feature #horizontal_bar .current_mode_text:before {
   content: "auto navigation";
 }
 
+
 body.auto-navigation-feature .current_mode_button:before {
   content: 'start';
 }
@@ -121,6 +122,19 @@ body.auto-navigation-feature.navigation-started .current_mode_button {
   content: 'stop';
   background-color: #f41e52;
   border: none;
+}
+
+
+body.auto-navigation-feature.navigation-started div.inf_speed {
+  display: block;
+}
+
+body.auto-navigation-feature.navigation-started .inf_operating_time {
+  display: block;
+}
+
+body.auto-navigation-feature.navigation-started .inf_speed_value {
+  display: block;
 }
 
 body.auto-navigation-feature.navigation-started .current_mode_button:before {
