@@ -220,7 +220,7 @@ body.following-feature .current_mode_button {
   display: block;
 }
 
-body.following-feature#horizontal_bar .current_mode_text:before {
+body.following-feature #horizontal_bar .current_mode_text:before {
   content: "follow";
 }
 
