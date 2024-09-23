@@ -16,6 +16,7 @@ export class Router {
 		this.messageContainerManager = messageContainerManager;
 		this.advancedThemeManager = advancedThemeManager;
 		this.start_all_handlers = start_all_handlers;
+		this.previousPage = null;
 		this.bindDomActions();
 		this.mode_to_nav_link = {
 			normal_ui_link: 'manual drive',
@@ -83,7 +84,18 @@ export class Router {
 		}
 	}
 
+	switchFolState(selectedLinkId) {
+		try {
+			if (this.previousPage === 'follow_link' && selectedLinkId !== 'follow_link') {
+				followingNavButtonHandler.sendSwitchFollowingRequest('inactive');
+			}
+		} catch (error) {
+			console.error('problem while sending fol stopping signal:', error);
+		}
+	}
+
 	handleUserMenuRoute(selectedLinkId) {
+		this.switchFolState(selectedLinkId);
 		this.updateModeUI(selectedLinkId);
 
 		CTRL_STAT.currentPage = selectedLinkId;
@@ -133,6 +145,7 @@ export class Router {
 				});
 			}
 		}
+		this.previousPage = selectedLinkId;
 	}
 
 	loadContentBasedOnDevice() {

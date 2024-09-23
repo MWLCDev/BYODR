@@ -96,7 +96,6 @@ class FollowingHandler(web.RequestHandler):
         command_text = self.get_body_argument("command", default=None)
         command_dict = {"following": command_text}
         self._fn_control.teleop_publish_to_following(command_dict)
-        print(command_text)
         self.write({"status": "success", "time": timestamp()})
 
     def get(self):

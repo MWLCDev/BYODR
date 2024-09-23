@@ -45,11 +45,12 @@ class FollowingHandler {
 		window.addEventListener('resize', () => this.resizeCanvas());
 	}
 
-	sendSwitchFollowingRequest(command) {
+	sendSwitchFollowingRequest(cmd) {
+		console.log('sent request', cmd);
 		fetch('/fol_handler', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-			body: `command=${encodeURIComponent(command)}`,
+			body: `command=${encodeURIComponent(cmd)}`,
 		})
 			.then((response) => response.json())
 			.catch((error) => console.error('Error sending command:', error));
@@ -57,30 +58,26 @@ class FollowingHandler {
 
 	startPolling() {
 		setInterval(() => {
-			if (CTRL_STAT.currentPage == 'follow_link') {
-				fetch('/fol_handler', {
-					method: 'GET',
-					headers: { 'Content-Type': 'application/json' },
+			fetch('/fol_handler', {
+				method: 'GET',
+				headers: { 'Content-Type': 'application/json' },
+			})
+				.then((response) => response.json())
+				.then((data) => {
+					this.assignFollowingState(data.following_status);
+					this.toggleBodyAppearance(data.following_status);
+					this.errorLogged = false;
 				})
-					.then((response) => response.json())
-					.then((data) => {
-						console.log(data.following_status);
-						this.assignFollowingState(data.following_status);
-						this.toggleBodyAppearance(data.following_status);
-						this.errorLogged = false;
-					})
-					.catch((error) => {
-						if (!this.errorLogged) {
-							console.error('Error polling backend:', error);
-							this.errorLogged = true;
-						}
-					});
-			}
+				.catch((error) => {
+					if (!this.errorLogged) {
+						console.error('Error polling backend:', error);
+						this.errorLogged = true;
+					}
+				});
 		}, 500);
 	}
 
 	assignFollowingState(backendCommand) {
-		console.log(backendCommand);
 		switch (backendCommand) {
 			case 'active':
 				CTRL_STAT.followingState = 'active';
@@ -101,7 +98,7 @@ class FollowingHandler {
 
 	toggleBodyAppearance(cmd) {
 		$('body').removeClass('image-mode active-mode inactive-mode loading-mode');
-
+		console.log('the source is giving', cmd);
 		if (cmd === 'image') {
 			this.resizeCanvas();
 			this.showCanvas();
@@ -112,6 +109,7 @@ class FollowingHandler {
 			$('body').addClass('active-mode');
 		} else if (cmd === 'inactive') {
 			$('body').addClass('inactive-mode');
+			console.log('calling in active');
 			this.hideCanvas();
 		} else if (cmd === 'loading') {
 			$('body').addClass('loading-mode');
@@ -137,16 +135,38 @@ class FollowingHandler {
 			}
 		}
 	}
-
 	refreshImage() {
-		if (!this.streamActive) return;
-
-		const img = new Image();
-		img.onload = () => {
-			this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
-			this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
-		};
-		img.src = '/latest_image?' + new Date().getTime();
+		if (!this.streamActive) {
+			// console.log('Stream is not active, skipping refresh');
+			return;
+		}
+		fetch('/latest_image?' + new Date().getTime(), {
+			method: 'GET',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+		})
+			.then((response) => {
+				// Check if the server returned a 204 status (No Content)
+				if (response.status === 204) {
+					console.log('No image available to display.');
+					return null; // Skip processing the image
+				}
+				return response.blob(); // Get the image blob if the status is not 204
+			})
+			.then((blob) => {
+				if (blob) {
+					const img = new Image();
+					img.onload = () => {
+						this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+						this.ctx.drawImage(img, 0, 0, this.canvas.width, this.canvas.height);
+					};
+					img.src = URL.createObjectURL(blob); // Use the image blob as the source
+				}
+			})
+			.catch((error) => {
+				// console.error('Error fetching the image:', error);
+			});
 	}
 
 	resizeCanvas() {
