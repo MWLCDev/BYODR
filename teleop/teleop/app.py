@@ -11,8 +11,6 @@ import os
 import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor
-
-import tornado.web
 from byodr.utils import Application, ApplicationExit, hash_dict
 from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
@@ -20,11 +18,9 @@ from byodr.utils.option import parse_option
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
-from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-
 from .server import *
 from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
 

@@ -31,7 +31,7 @@ body.maneuver-training-feature .steeringWheel {
 }
 
 body.maneuver-training-feature #horizontal_bar .current_mode_text:before {
-  content: "ai training"
+  content: "ai training";
 }
 
 body.maneuver-training-feature #mobile_controller_container #backward_square .trail_canvas,
@@ -55,21 +55,21 @@ body.maneuver-training-feature #mobile_controller_container .control_symbol {
 }
 
 body.maneuver-training-feature .current_mode_button {
+  box-shadow: none;
   display: block;
   background-color: #451c58;
   color: white;
-  box-shadow: none;
 }
 
 body.maneuver-training-feature .current_mode_button:before {
-  content: "start"
+  content: "start";
 }
 
 /*  Training started state */
 body.maneuver-training-feature.training-started .current_mode_button {
+  content: 'stop';
   background-color: #f41e52;
   border: none;
-  content: 'stop';
 }
 
 body.maneuver-training-feature.training-started .current_mode_button:before {
@@ -84,7 +84,7 @@ body.auto-navigation-feature .steeringWheel {
 }
 
 body.auto-navigation-feature #horizontal_bar .current_mode_text:before {
-  content: "auto navigation"
+  content: "auto navigation";
 }
 
 body.auto-navigation-feature .current_mode_button:before {
@@ -92,20 +92,18 @@ body.auto-navigation-feature .current_mode_button:before {
 }
 
 body.auto-navigation-feature #forward_square .square_text:before {
-  content: "Increase max speed"
+  content: "Increase max speed";
 }
 
 body.auto-navigation-feature #backward_square .square_text:before {
-  content: "decrease max speed"
+  content: "decrease max speed";
 }
 
-
-
 body.auto-navigation-feature .current_mode_button {
+  box-shadow: none;
   display: block;
   background-color: #451c58;
   color: white;
-  box-shadow: none;
 }
 
 body.auto-navigation-feature .current_mode_text,
@@ -120,9 +118,9 @@ body.auto-navigation-feature .control_symbol {
 
 
 body.auto-navigation-feature.navigation-started .current_mode_button {
+  content: 'stop';
   background-color: #f41e52;
   border: none;
-  content: 'stop';
 }
 
 body.auto-navigation-feature.navigation-started .current_mode_button:before {
@@ -137,7 +135,7 @@ body.confidence-feature .current_mode_text {
 }
 
 body.confidence-feature #horizontal_bar .current_mode_text:before {
-  content: "map recognize"
+  content: "map recognize";
 }
 
 body.confidence-feature .steeringWheel {
@@ -145,10 +143,10 @@ body.confidence-feature .steeringWheel {
 }
 
 body.confidence-feature .current_mode_button {
+  box-shadow: none;
   display: block;
   background-color: #451c58;
   color: white;
-  box-shadow: none;
 }
 
 /* Recognize mode */
@@ -192,9 +190,9 @@ body.confidence-feature.return-mode .current_mode_button:before {
 
 /* Show result mode */
 body.confidence-feature.show-result-mode .current_mode_button {
+  content: 'Show result';
   display: block;
   border: none;
-  content: 'Show result';
 }
 
 body.confidence-feature.show-result-mode .current_mode_button:before {
@@ -223,7 +221,7 @@ body.following-feature .current_mode_button {
 }
 
 body.following-feature#horizontal_bar .current_mode_text:before {
-  content: "follow"
+  content: "follow";
 }
 
 body.following-feature #mobile_controller_container .middle_section,
@@ -263,9 +261,9 @@ body.following-feature.active-mode #mobile_controller_container .square {
 
 /* Inactive mode */
 body.following-feature.inactive-mode .current_mode_button {
+  content: 'start';
   background-color: #ffffff;
   border: none;
-  content: 'start';
 }
 
 body.following-feature.inactive-mode #mobile_controller_container .square {
