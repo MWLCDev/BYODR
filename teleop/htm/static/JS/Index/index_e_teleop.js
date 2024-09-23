@@ -89,7 +89,7 @@ class MovementCommandSocket {
 
 			// Reset all keys except throttle and steering
 			Object.keys(CTRL_STAT.mobileCommandJSON).forEach((key) => {
-				if (key !== 'throttle' && key !== 'steering' && key !== 'button_b') {
+				if (key !== 'throttle' && key !== 'steering') {
 					// Remove transient data
 					delete CTRL_STAT.mobileCommandJSON[key];
 				}
