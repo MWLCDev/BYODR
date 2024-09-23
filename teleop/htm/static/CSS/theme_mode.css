@@ -224,6 +224,11 @@ body.following-feature#horizontal_bar .current_mode_text:before {
   content: "follow";
 }
 
+body.following-feature canvas#following_imageCanvas {
+  display: block;
+}
+
+
 body.following-feature #mobile_controller_container .middle_section,
 body.following-feature #mobile_controller_container .square {
   display: none;
