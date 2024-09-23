@@ -6,6 +6,7 @@ import json
 # Declaring the logger
 logger = logging.getLogger(__name__)
 
+
 class SegmentServer:
     """Encapsulate the server functionalities of the segment.
 

@@ -22,10 +22,12 @@ class MovementProcessor:
         self.steering_queue = deque()  # Queue to store steering values
         self.time_now = 0.0  # Timestamp when steering was first received
         self.delay = 0.0  # Delay before applying steering, calculated based on velocity
+        # TODO: Add it as part of the parse config function
         self.distance = distance  # Distance between the motors of the current segment and the LD segment in m
         self.use_steering_queue = False  # Flag to indicate when to use the steering queue
         self.started_counting_down = False  # Flag to indicate if the delay countdown has started
 
+    @staticmethod
     def process(self, movement_command):
         """
             Processes the movement command from the LD segment.

@@ -61,6 +61,7 @@ def main():
 
 if __name__ == "__main__":
     # Declaring the logger
+    # TODO: Add thread number here
     logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     logger = logging.getLogger(__name__)

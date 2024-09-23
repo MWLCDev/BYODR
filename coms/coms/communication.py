@@ -10,7 +10,7 @@ from byodr.utils import timestamp
 from byodr.utils.ssh import Nano
 
 from .client import SegmentClient
-from .command_processor import process
+from .command_processor import MovementProcessor
 from .server import SegmentServer
 
 logger = logging.getLogger(__name__)
@@ -65,14 +65,14 @@ class SegmentsCooperationCommunicationHandler:
         Returns:
             0 if all threads started close gracefully.
         """
-        # This function is the entry point to this whole file. I would need to have shared data between all these functions and the threads they are starting. The quit event I passed must be used instead of the quit event that is used here
+        # TODO: This function is the entry point to this whole file. I would need to have shared data between all these functions and the threads they are starting. The quit event I passed must be used instead of the quit event that is used here
         # A deque that will store messages received by the server of the segment
         msg_from_server_queue = deque(maxlen=1)
 
         segment_client = SegmentClient(self.follower_ip, self.nano_port, 0.10)  # The client that will connect to a follower
         segment_server = SegmentServer(self.local_ip, self.nano_port, 0.10)  # The server that will wait for the lead to connect
 
-        # I need to implement some sort of HZ here on these functions
+        # TODO: I need to implement some sort of HZ here on these functions
         command_receiver_thread = threading.Thread(target=self.command_receiver, args=(socket_manager, segment_client, self.local_ip, self.head_ip, msg_from_server_queue))
         client_interface_thread = threading.Thread(target=self.client_code, args=(socket_manager, segment_client))
         server_interface_thread = threading.Thread(target=self.server_code, args=(segment_server, msg_from_server_queue))
@@ -238,6 +238,7 @@ class SegmentsCooperationCommunicationHandler:
         """
 
         counter_server = 0
+        movement_processor = MovementProcessor()
 
         while not self.quit_event.is_set():
 
@@ -263,7 +264,7 @@ class SegmentsCooperationCommunicationHandler:
                     # Processing the command before sending it to the FL.
                     # Since we might receive a status message instead of a movement command, we check if its a normal movement command first
                     if "throttle" in command_to_process:
-                        segment_server.processed_command = process(command_to_process)
+                        segment_server.processed_command = movement_processor.process(command_to_process)
 
                         # Placing the message from the server in the queue
                         msg_from_server_queue.append(segment_server.processed_command)
