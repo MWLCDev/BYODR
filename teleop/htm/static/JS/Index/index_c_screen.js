@@ -525,30 +525,26 @@ class InferenceHandling {
 	handleServerMessage(infMessage) {
 		try {
 			this.roverUI.infLastServerMessage = infMessage;
-
-			// Handle inference-related updates
 			if (infMessage.inf_surprise !== undefined) {
-				this.updateInferenceUI(infMessage);
+				this.updateInferenceAdvancedViewUI(infMessage);
 			}
-
-			// Update the rover speed display
 			$('p.rover_speed_value').text(infMessage.vel_y.toFixed(1));
 
 			// Handle autopilot-related UI changes
-			if (infMessage._isOnAutopilot) {
+			if (infMessage._is_on_autopilot) {
 				this.updateAutopilotUI(infMessage);
+				this.toggleMobileUI(true);
 			} else {
 				this.hideAutopilotUI();
+				this.toggleMobileUI(false);
 			}
-
-			// Update the steering wheel rotation based on speed and steering data
 			this.updateSteeringWheelRotation(infMessage.vel_y, infMessage.ste);
 		} catch (error) {
 			console.error('Error in InferenceHandling.handleServerMessage():', error);
 		}
 	}
 
-	updateInferenceUI(infMessage) {
+	updateInferenceAdvancedViewUI(infMessage) {
 		$('span#inference_brake_critic').text(infMessage.inf_brake_critic.toFixed(2));
 		$('span#inference_obstacle').text(infMessage.inf_brake.toFixed(2));
 		$('span#inference_surprise').text(infMessage.inf_surprise.toFixed(2));
@@ -582,8 +578,6 @@ class InferenceHandling {
 		$('div.inf_speed_label').text('Max Speed');
 		this.roverUI.renderDistanceIndicators('front');
 
-		// this.controlCurrentModeButton(true);
-
 		if (infMessage.ctl_activation > 0) {
 			this.updateAutopilotTimeDisplay(infMessage.ctl_activation);
 		}
@@ -611,8 +605,6 @@ class InferenceHandling {
 		$('div.inf_speed').hide();
 		$('.inf_operating_time').text('00:00:00');
 		$('.inf_operating_time').hide();
-
-		// this.controlCurrentModeButton(false);
 	}
 
 	updateSteeringWheelRotation(speed, steeringAngle) {
@@ -632,17 +624,19 @@ class InferenceHandling {
 		}
 	}
 
-	controlCurrentModeButton(active) {
+	toggleMobileUI(active) {
+		if (CTRL_STAT.currentPage == 'ai_training_link') {
+			if (active) {
+				$('body').addClass('training-started');
+			} else if (!active) {
+				$('body').removeClass('training-started');
+			}
+		}
 		if (CTRL_STAT.currentPage == 'autopilot_link') {
 			if (active) {
-				$('#mobile_controller_container .current_mode_button').text('stop');
-				$('#mobile_controller_container .current_mode_button').css('background-color', '#f41e52');
-				$('#mobile_controller_container .current_mode_button').css('border', 'none');
-			} else {
-				$('#mobile_controller_container .current_mode_button').text('start');
-				$('#mobile_controller_container .current_mode_button').css('background-color', '#451c58');
-				$('#mobile_controller_container .current_mode_button').css('color', 'white');
-				$('#mobile_controller_container .current_mode_button').css('box-shadow', 'none');
+				$('body').addClass('navigation-started');
+			} else if (!active) {
+				$('body').removeClass('navigation-started');
 			}
 		}
 	}
