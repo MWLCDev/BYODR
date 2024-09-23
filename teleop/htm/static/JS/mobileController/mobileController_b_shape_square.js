@@ -108,7 +108,7 @@ class ControlSquare {
 		}
 
 		// Send throttle and steering for the pin
-		setMobileCommand(Number(normalizedX.toFixed(3)), Number(normalizedY.toFixed(3)), 'auto');
+		setMobileCommand(Number(normalizedX.toFixed(3)), Number(normalizedY.toFixed(3)));
 	}
 
 	switchCanvasDisplay(command) {

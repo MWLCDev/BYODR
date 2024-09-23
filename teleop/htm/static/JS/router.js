@@ -109,7 +109,6 @@ export class Router {
 			if (currentPage === '/normal_ui' || currentPage === '/mc') {
 				if (selectedLinkId === 'normal_ui_link') {
 					this.loadContentBasedOnDevice();
-					// Run the callback after loading the content
 					this.assignNavButtonActions(selectedLinkId);
 				}
 			} else {
@@ -120,7 +119,6 @@ export class Router {
 						// Call the appropriate callback based on the device
 						this.callbackBasedOnDevice();
 					}
-					// Run the callback after the page has been loaded
 					this.assignNavButtonActions(selectedLinkId);
 				});
 			}
@@ -140,7 +138,6 @@ export class Router {
 			if (url) {
 				this.loadPage(url, () => {
 					if (callback) callback();
-					// Run the callback after the page has been loaded
 					this.assignNavButtonActions(selectedLinkId);
 				});
 			}

@@ -14,9 +14,7 @@ class AutoNavigationHandler {
 
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
-			// Ensure we are on the autopilot screen before toggling auto navigation
 			if (CTRL_STAT.currentPage === 'autopilot_link') {
-				// Toggle auto navigation based on the presence of the class
 				if (!$('body').hasClass('navigation-started')) {
 					this.startAutoNavigation();
 				} else {

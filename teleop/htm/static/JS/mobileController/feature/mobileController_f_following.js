@@ -46,7 +46,6 @@ class FollowingHandler {
 	}
 
 	sendSwitchFollowingRequest(cmd) {
-		console.log('sent request', cmd);
 		fetch('/fol_handler', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
@@ -98,7 +97,6 @@ class FollowingHandler {
 
 	toggleBodyAppearance(cmd) {
 		$('body').removeClass('image-mode active-mode inactive-mode loading-mode');
-		console.log('the source is giving', cmd);
 		if (cmd === 'image') {
 			this.resizeCanvas();
 			this.showCanvas();
@@ -109,7 +107,6 @@ class FollowingHandler {
 			$('body').addClass('active-mode');
 		} else if (cmd === 'inactive') {
 			$('body').addClass('inactive-mode');
-			console.log('calling in active');
 			this.hideCanvas();
 		} else if (cmd === 'loading') {
 			$('body').addClass('loading-mode');

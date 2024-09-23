@@ -2,19 +2,14 @@ import { addDataToMobileCommand } from '../mobileController_c_logic.js';
 import CTRL_STAT from '../mobileController_z_state.js';
 
 class ManeuverTrainingHandler {
-	constructor() {}
-
 	initializeDOM() {
-		// Add the class to enable maneuver training feature styles
 		$('body').addClass('maneuver-training-feature');
-		// Ensure the correct state is reflected (start/stop)
 		this.updateTrainingState();
-
 		this.bindButtonAction();
 	}
 
 	bindButtonAction() {
-		$('#mobile_controller_container .F').click(() => {
+		$('#mobile_controller_container .current_mode_button').click(() => {
 			if (CTRL_STAT.currentPage === 'ai_training_link') {
 				if (!$('body').hasClass('training-started')) {
 					this.startTraining();
