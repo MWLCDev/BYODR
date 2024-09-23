@@ -13,10 +13,16 @@ class AutoNavigationHandler {
 	}
 
 	bindButtonAction() {
-		$('#mobile_controller_container .current_mode_button').click((event) => {
-			const buttonText = $(event.target).text().toLowerCase();
-			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'start') this.startAutoNavigation();
-			if (CTRL_STAT.currentPage === 'autopilot_link' && buttonText === 'stop') this.stopAutoNavigation();
+		$('#mobile_controller_container .current_mode_button').click(() => {
+			// Ensure we are on the autopilot screen before toggling auto navigation
+			if (CTRL_STAT.currentPage === 'autopilot_link') {
+				// Toggle auto navigation based on the presence of the class
+				if (!$('body').hasClass('navigation-started')) {
+					this.startAutoNavigation();
+				} else {
+					this.stopAutoNavigation();
+				}
+			}
 		});
 
 		document.querySelectorAll('.control_symbol').forEach((item) => {
@@ -38,7 +44,7 @@ class AutoNavigationHandler {
 
 	stopAutoNavigation() {
 		addDataToMobileCommand({ button_b: 1 });
-		$('body').removeClass('navigation-started')
+		$('body').removeClass('navigation-started');
 	}
 
 	updateNavigationState() {
