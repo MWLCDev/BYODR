@@ -193,7 +193,7 @@ def main():
                 (r"/(menu_logbox)", TemplateRenderer),
                 (r"/(menu_settings)", TemplateRenderer),
                 (r"/run_get_SSID", GetSegmentSSID),
-                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person"}),
+                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person", "following_utils": application.following_utils}),
                 (r"/fol_handler", FollowingHandler, dict(fn_control=application.following_utils)),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
                 (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),

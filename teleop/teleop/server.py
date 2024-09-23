@@ -3,10 +3,12 @@
 from __future__ import absolute_import
 
 import collections
+import fcntl
 import json
 import logging
 import os
 import threading
+import time
 import traceback
 from io import open
 
@@ -30,46 +32,53 @@ import tornado.websocket
 
 latest_message = {}
 
-import os
-import time
-import fcntl
-
 
 class LatestImageHandler(tornado.web.RequestHandler):
-    def initialize(self, path):
+    def initialize(self, path, following_utils):
         self.image_save_path = path
+        self.following_utils = following_utils  # Store the passed following_utils
 
     def get(self):
+        # Use the following_utils to get the current following state
+        following_state = self.following_utils.get_following_state()
+
+        # Only send the image if the following state is not "inactive"
+        if following_state == "inactive":
+            self.write("Following is inactive. No image to display.")
+            self.set_status(204)  # No content
+            self.finish()
+            return
+
+        # Set headers for the image response
         self.set_header("Content-Type", "image/jpeg")
         self.set_header("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
         self.set_header("Pragma", "no-cache")
         self.set_header("Expires", "0")
 
         try:
-            # Fetch all jpg files directly, assuming the folder contains only images
+            # Fetch all jpg files in the directory
             image_files = [f for f in os.listdir(self.image_save_path) if f.endswith(".jpg")]
 
-            # Get full paths
+            # Get full paths for the images
             full_paths = [os.path.join(self.image_save_path, f) for f in image_files]
 
-            # Sort files by creation time
+            # Sort by creation time (latest first)
             full_paths.sort(key=os.path.getctime, reverse=True)
 
             if full_paths:
                 latest_image = full_paths[0]
 
-                # Wait for the file to be completely written
-                while True:
-                    try:
-                        with open(latest_image, "rb") as img:
-                            # Lock the file while reading to ensure no other process writes to it
-                            fcntl.flock(img, fcntl.LOCK_SH)
-                            self.write(img.read())
-                            fcntl.flock(img, fcntl.LOCK_UN)
-                        break
-                    except IOError:
-                        # Wait briefly before retrying
-                        time.sleep(0.01)
+                # Try to read and serve the image
+                try:
+                    with open(latest_image, "rb") as img:
+                        # Lock the file while reading to prevent conflicts
+                        fcntl.flock(img, fcntl.LOCK_SH)
+                        self.write(img.read())
+                        fcntl.flock(img, fcntl.LOCK_UN)
+                except IOError:
+                    # Handle IO errors
+                    self.write("Error accessing the image file.")
+                    self.set_status(500)  # Internal Server Error
             else:
                 self.write("No images available.")
         except Exception as e:
