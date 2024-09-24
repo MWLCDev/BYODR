@@ -124,7 +124,6 @@ body.auto-navigation-feature.navigation-started .current_mode_button {
   border: none;
 }
 
-
 body.auto-navigation-feature.navigation-started div.inf_speed {
   display: block;
 }
@@ -163,13 +162,12 @@ body.confidence-feature .current_mode_button {
   color: white;
 }
 
-/* Recognize mode */
-body.confidence-feature.recognize-mode .current_mode_button:before {
+body.confidence-feature .current_mode_button:before {
   content: 'start';
 }
 
-body.confidence-feature.recognize-mode .control_symbol,
-body.confidence-feature.recognize-mode .stop_text {
+body.confidence-feature .control_symbol,
+body.confidence-feature .stop_text {
   display: none;
 }
 
@@ -192,27 +190,6 @@ body.confidence-feature.stop-mode .control_symbol {
   display: none;
 }
 
-/* Return mode */
-body.confidence-feature.return-mode .current_mode_button {
-  background-color: #ffffff;
-  color: #451c58;
-}
-
-body.confidence-feature.return-mode .current_mode_button:before {
-  content: 'return';
-}
-
-/* Show result mode */
-body.confidence-feature.show-result-mode .current_mode_button {
-  content: 'Show result';
-  display: block;
-  border: none;
-}
-
-body.confidence-feature.show-result-mode .current_mode_button:before {
-  content: 'Show result';
-}
-
 /* Loading mode */
 body.confidence-feature.loading-mode .current_mode_state {
   display: block;
@@ -226,6 +203,57 @@ body.confidence-feature.loading-mode .current_mode_state:before {
 body.confidence-feature.loading-mode .current_mode_button {
   display: none;
 }
+
+body.confidence-feature.loading-mode #mobile_controller_container .middle_section,
+body.confidence-feature.loading-mode #mobile_controller_container .square {
+  display: none;
+}
+
+
+/* Show result mode */
+body.confidence-feature.result-mode .current_mode_button {
+  display: block;
+  border: none;
+}
+
+body.confidence-feature.result-mode .current_mode_button:before {
+  content: 'Show result';
+}
+
+body.confidence-feature.result-mode #mobile_controller_container .middle_section,
+body.confidence-feature.result-mode #mobile_controller_container .square {
+  display: none;
+}
+
+
+body.confidence-feature.result-mode #map_frame,
+body.confidence-feature.result-mode #top_layer_iframe {
+  display: block;
+}
+
+
+/* Return mode */
+body.confidence-feature.return-mode .current_mode_button {
+  background-color: #ffffff;
+  color: #451c58;
+}
+
+body.confidence-feature.return-mode .current_mode_button:before {
+  content: 'return';
+}
+
+body.confidence-feature.return-mode #mobile_controller_container .middle_section,
+body.confidence-feature.return-mode #mobile_controller_container .square {
+  display: none;
+}
+
+
+body.confidence-feature.return-mode #map_frame,
+body.confidence-feature.return-mode #top_layer_iframe {
+  display: block;
+}
+
+
 
 /* #endregion */
 

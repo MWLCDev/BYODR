@@ -7,34 +7,35 @@ class ConfidenceHandler {
 
 	initializeDOM() {
 		$('body').addClass('confidence-feature');
-		this.toggleButtonAppearance('start');
 		this.initializeConfidenceWS();
 		this.bindButtonAction();
+		this.mapFilename = null;
 	}
-
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
 			if (CTRL_STAT.currentPage === 'map_recognition_link') {
-				// If no mode-related class is present, we start recognizing
-				if (!$('body').hasClass('recognize-mode') && !$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('show-result-mode')) {
-					// Start recognition process
+				if (!$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('result-mode') && !$('body').hasClass('loading-mode')) {
+					// Start state
 					this.sendSwitchConfidenceRequest('start_confidence');
-					this.toggleButtonAppearance('stop');
-				} else if ($('body').hasClass('recognize-mode')) {
-					// Stop the recognition process
-					this.sendSwitchConfidenceRequest('stop_confidence');
-					this.toggleButtonAppearance('start');
+					this.toggleButtonAppearance('show_stop_mode');
 				} else if ($('body').hasClass('stop-mode')) {
-					// Return to initial state and hide the map if needed
-					this.toggleButtonAppearance('start');
-					$('#map_frame, #top_layer_iframe').hide();
+					// Stop state
+					this.sendSwitchConfidenceRequest('stop_confidence');
+					// The backend should respond with 'loading', which will trigger the loading state
+				} else if ($('body').hasClass('result-mode')) {
+					// Result state
+					this.loadMapIntoIframe(this.mapFilename);
+					this.toggleButtonAppearance('show_return_mode');
+				} else if ($('body').hasClass('return-mode')) {
+					// Return state
+					this.resetBodyClasses();
+					// This will bring us back to the initial state
 				}
 			}
 		});
 	}
 
 	sendSwitchConfidenceRequest(command) {
-		console.log(command);
 		if (this.confidenceWS.websocket && this.confidenceWS.websocket.readyState === WebSocket.OPEN) {
 			this.confidenceWS.websocket.send(command);
 		} else {
@@ -43,17 +44,20 @@ class ConfidenceHandler {
 		}
 	}
 
+	resetBodyClasses() {
+		$('body').removeClass('stop-mode loading-mode result-mode return-mode');
+	}
 	toggleButtonAppearance(cmd) {
-		$('body').removeClass('recognize-mode stop-mode return-mode show-result-mode');
-
-		if (cmd == 'start') {
-			$('body').addClass('recognize-mode');
-		} else if (cmd == 'stop') {
+		console.log(cmd);
+		this.resetBodyClasses();
+		if (cmd === 'show_stop_mode') {
 			$('body').addClass('stop-mode');
-		} else if (cmd == 'return') {
+		} else if (cmd === 'show_loading_mode') {
+			$('body').addClass('loading-mode');
+		} else if (cmd === 'show_result_mode') {
+			$('body').addClass('result-mode');
+		} else if (cmd === 'show_return_mode') {
 			$('body').addClass('return-mode');
-		} else if (cmd == 'show_result') {
-			$('body').addClass('show-result-mode');
 		}
 	}
 
@@ -86,22 +90,18 @@ class ConfidenceHandler {
 
 	loadMapIntoIframe(url) {
 		const iframeSelector = '#map_frame, #top_layer_iframe';
-		$(iframeSelector).attr('src', `${this.currentURL}/overview_confidence/${url}`).fadeIn(500);
+		$(iframeSelector).attr('src', `${this.currentURL}/overview_confidence/${url}`)
 	}
-
 	updateButtonState(message) {
-		if (message === 'loading') {
-			$('body').addClass('loading-mode').removeClass('show-result-mode');
-		} else if (message.endsWith('.html')) {
-			const filename = message.match(/[\w-]+\.html$/)[0];
-			this.toggleButtonAppearance('show_result');
-
-			$('.current_mode_button')
-				.off('click')
-				.click(() => {
-					this.loadMapIntoIframe(filename);
-					this.toggleButtonAppearance('return');
-				});
+		try {
+			if (message === 'loading') {
+				this.toggleButtonAppearance('show_loading_mode');
+			} else if (message.endsWith('.html')) {
+				this.mapFilename = message.match(/[\w-]+\.html$/)[0];
+				this.toggleButtonAppearance('show_result_mode');
+			}
+		} catch (error) {
+			console.error('Problem while changing the result from the backend:', error);
 		}
 	}
 }

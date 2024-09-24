@@ -263,6 +263,7 @@ body {
 
 .inf_operating_time {
   display: none;
+  color: var(--text_color_light_mode);
 }
 
 .stream_quality {
