@@ -210,28 +210,6 @@ body.confidence-feature.loading-mode #mobile_controller_container .square {
 }
 
 
-/* Show result mode */
-body.confidence-feature.result-mode .current_mode_button {
-  display: block;
-  border: none;
-}
-
-body.confidence-feature.result-mode .current_mode_button:before {
-  content: 'Show result';
-}
-
-body.confidence-feature.result-mode #mobile_controller_container .middle_section,
-body.confidence-feature.result-mode #mobile_controller_container .square {
-  display: none;
-}
-
-
-body.confidence-feature.result-mode #map_frame,
-body.confidence-feature.result-mode #top_layer_iframe {
-  display: block;
-}
-
-
 /* Return mode */
 body.confidence-feature.return-mode .current_mode_button {
   background-color: #ffffff;

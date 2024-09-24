@@ -19,15 +19,9 @@ class ConfidenceHandler {
 					this.sendSwitchConfidenceRequest('start_confidence');
 					this.toggleButtonAppearance('show_stop_mode');
 				} else if ($('body').hasClass('stop-mode')) {
-					// Stop state
 					this.sendSwitchConfidenceRequest('stop_confidence');
 					// The backend should respond with 'loading', which will trigger the loading state
-				} else if ($('body').hasClass('result-mode')) {
-					// Result state
-					this.loadMapIntoIframe(this.mapFilename);
-					this.toggleButtonAppearance('show_return_mode');
 				} else if ($('body').hasClass('return-mode')) {
-					// Return state
 					this.resetBodyClasses();
 					// This will bring us back to the initial state
 				}
@@ -54,8 +48,6 @@ class ConfidenceHandler {
 			$('body').addClass('stop-mode');
 		} else if (cmd === 'show_loading_mode') {
 			$('body').addClass('loading-mode');
-		} else if (cmd === 'show_result_mode') {
-			$('body').addClass('result-mode');
 		} else if (cmd === 'show_return_mode') {
 			$('body').addClass('return-mode');
 		}
@@ -90,7 +82,7 @@ class ConfidenceHandler {
 
 	loadMapIntoIframe(url) {
 		const iframeSelector = '#map_frame, #top_layer_iframe';
-		$(iframeSelector).attr('src', `${this.currentURL}/overview_confidence/${url}`)
+		$(iframeSelector).attr('src', `${this.currentURL}/overview_confidence/${url}`);
 	}
 	updateButtonState(message) {
 		try {
@@ -98,7 +90,8 @@ class ConfidenceHandler {
 				this.toggleButtonAppearance('show_loading_mode');
 			} else if (message.endsWith('.html')) {
 				this.mapFilename = message.match(/[\w-]+\.html$/)[0];
-				this.toggleButtonAppearance('show_result_mode');
+				this.loadMapIntoIframe(this.mapFilename);
+				this.toggleButtonAppearance('show_return_mode');
 			}
 		} catch (error) {
 			console.error('Problem while changing the result from the backend:', error);
