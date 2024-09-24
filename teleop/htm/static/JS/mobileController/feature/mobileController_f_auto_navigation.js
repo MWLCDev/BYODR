@@ -5,16 +5,15 @@ class AutoNavigationHandler {
 	constructor() {}
 
 	initializeDOM() {
-		// Add the class to enable auto navigation feature styles
 		$('body').addClass('auto-navigation-feature');
 		this.updateNavigationState();
-
 		this.bindButtonAction();
 	}
 
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
-			if (CTRL_STAT.currentPage === 'autopilot_link') {
+			console.log(CTRL_STAT.currentPage);
+			if (CTRL_STAT.currentPage === 'auto_navigation_link') {
 				if (!$('body').hasClass('navigation-started')) {
 					this.startAutoNavigation();
 				} else {
@@ -24,15 +23,20 @@ class AutoNavigationHandler {
 		});
 
 		document.querySelectorAll('.control_symbol').forEach((item) => {
-			item.addEventListener('touchstart', (event) => {
-				item.classList.add('active');
-				const command = item.textContent.trim() === '+' ? 'increase' : 'decrease';
-				this.handleSpeedControl(command);
-			});
-			item.addEventListener('touchend', () => {
-				item.classList.remove('active');
+			item.addEventListener('click', (event) => {
+				this.handleSymbolInteraction(item);
 			});
 		});
+	}
+
+	handleSymbolInteraction(item) {
+		item.classList.add('active');
+		const command = item.textContent.trim() === '+' ? 'increase' : 'decrease';
+		this.handleSpeedControl(command);
+
+		setTimeout(() => {
+			item.classList.remove('active');
+		}, 500); // Adjusted timing to match transition duration in mobileController.css
 	}
 
 	startAutoNavigation() {

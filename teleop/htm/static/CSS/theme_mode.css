@@ -228,6 +228,7 @@ body.confidence-feature.return-mode #mobile_controller_container .square {
 
 body.confidence-feature.return-mode #map_frame,
 body.confidence-feature.return-mode #top_layer_iframe {
+
   display: block;
 }
 

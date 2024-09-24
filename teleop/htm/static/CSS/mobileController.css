@@ -25,7 +25,6 @@
 #mobile_controller_container .right_section {
   display: flex;
   align-items: center;
-
 }
 
 #mobile_controller_container .left_section {
@@ -47,12 +46,12 @@
 
 
 #horizontal_bar .current_mode_text {
-  text-transform: uppercase;
   display: block;
+  text-transform: uppercase;
 }
 
 #horizontal_bar .current_mode_text:before {
-  content: "manual drive"
+  content: "manual drive";
 }
 
 .current_mode_button {
@@ -96,7 +95,7 @@
 }
 
 #forward_square .square_text:before {
-  content: "forward"
+  content: "forward";
 }
 
 #backward_square .square_text {
@@ -104,7 +103,7 @@
 }
 
 #backward_square .square_text:before {
-  content:"backward"
+  content: "backward";
 }
 
 .square_text {
@@ -134,13 +133,13 @@
   text-transform: uppercase;
 }
 
-
 .control_symbol {
   box-shadow: inset 1px 1px 3px #fff;
   display: none;
   position: relative;
   width: 40vw;
   height: 40vw;
+  transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
   background: #fff;
   border: 14px solid #d0d0d0;
   border-radius: 100%;
@@ -156,7 +155,6 @@
   left: 0;
   right: 0;
 }
-
 
 .control_symbol.plus:before,
 .control_symbol.plus:after {
@@ -180,6 +178,7 @@
   background: #d0d0d0;
 }
 
+/* Smoothly transition colors on active state */
 .control_symbol:active {
   background-color: #555;
   border-color: #333;

@@ -427,7 +427,6 @@ class RoverUI {
 				overlayLeftMarker1: this.getElement('div#overlay_left_marker1'),
 				overlayRightMarker0: this.getElement('div#overlay_right_marker0'),
 				overlayRightMarker1: this.getElement('div#overlay_right_marker1'),
-				autopilotOperatingTime: this.getElement('.inf_operating_time'),
 				messageBoxMessage: this.getElement('div#message_box_message'),
 				buttonTakeControl: this.getElement('input#message_box_button_take_control'),
 			};
@@ -443,7 +442,6 @@ class RoverUI {
 			this.overlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
 			this.overlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
 			this.overlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
-			this.elAutopilotOperatingTime = elements.autopilotOperatingTime;
 		} catch (error) {
 			console.error('Error in RoverUI.setNormalUIElements():', error);
 		}
@@ -573,7 +571,7 @@ class InferenceHandling {
 	updateAutopilotUI(infMessage) {
 		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
 		this.roverUI.renderDistanceIndicators('front');
-
+		console.log(infMessage.ctl_activation);
 		if (infMessage.ctl_activation > 0) {
 			this.updateAutopilotTimeDisplay(infMessage.ctl_activation);
 		}
@@ -581,15 +579,14 @@ class InferenceHandling {
 
 	updateAutopilotTimeDisplay(ctlActivation) {
 		const time = this.formatTime(ctlActivation * 1e-3); // Convert ms to seconds
+		console.log(time);
 		$('.inf_operating_time').text(time);
-		$('.inf_operating_time').css('color', 'rgb(100, 217, 255)');
 	}
 
 	formatTime(totalSeconds) {
 		const hours = Math.floor(totalSeconds / 3600);
 		const mins = Math.floor((totalSeconds % 3600) / 60);
 		const secs = Math.floor(totalSeconds % 60);
-
 		const zfH = ('00' + hours).slice(-2);
 		const zfM = ('00' + mins).slice(-2);
 		const zfS = ('00' + secs).slice(-2);
