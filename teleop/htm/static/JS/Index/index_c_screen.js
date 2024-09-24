@@ -622,7 +622,7 @@ class InferenceHandling {
 				$('body').removeClass('training-started');
 			}
 		}
-		if (CTRL_STAT.currentPage == 'autopilot_link') {
+		if (CTRL_STAT.currentPage == 'auto_navigation_link') {
 			if (active) {
 				$('body').addClass('navigation-started');
 			} else if (!active) {

@@ -21,7 +21,7 @@ export class Router {
 		this.mode_to_nav_link = {
 			normal_ui_link: 'manual drive',
 			ai_training_link: 'ai training',
-			autopilot_link: 'autopilot',
+			auto_navigation_link: 'autopilot',
 			map_recognition_link: 'map recognition',
 			follow_link: 'follow',
 		};
@@ -101,7 +101,7 @@ export class Router {
 		CTRL_STAT.currentPage = selectedLinkId;
 		localStorage.setItem('user.menu.screen', selectedLinkId);
 
-		const modeSwitchingPages = ['normal_ui_link', 'ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+		const modeSwitchingPages = ['normal_ui_link', 'ai_training_link', 'auto_navigation_link', 'map_recognition_link', 'follow_link'];
 		if (modeSwitchingPages.includes(selectedLinkId)) {
 			const targetPage = isMobileDevice() ? '/mc' : '/normal_ui';
 			const currentPage = $('main#application_content').data('current-page');
@@ -184,9 +184,8 @@ export class Router {
 	 */
 	assignNavButtonActions(navLink) {
 		this.resetStyles();
-
 		if (navLink == 'follow_link' && isMobileDevice()) followingNavButtonHandler.initializeDOM();
-		else if (navLink == 'autopilot_link') autoNavigationNavButtonHandler.initializeDOM();
+		else if (navLink == 'auto_navigation_link') autoNavigationNavButtonHandler.initializeDOM();
 		else if (navLink == 'ai_training_link') maneuverTrainingNavButtonHandler.initializeDOM();
 		else if (navLink == 'map_recognition_link') confidenceNavButtonHandler.initializeDOM();
 		else if (navLink == 'phone_controller_link') {

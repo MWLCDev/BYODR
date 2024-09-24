@@ -81,7 +81,7 @@ class MovementCommandSocket {
 
 	_capture(server_response) {
 		const gc_active = gamepad_controller.is_active();
-		const modeSwitchingPages = ['ai_training_link', 'autopilot_link', 'map_recognition_link', 'follow_link'];
+		const modeSwitchingPages = ['ai_training_link', 'auto_navigation_link', 'map_recognition_link', 'follow_link'];
 		var current_page = localStorage.getItem('user.menu.screen');
 		if (isMobileDevice() || modeSwitchingPages.includes(current_page)) {
 			this._send(CTRL_STAT.mobileCommandJSON);
