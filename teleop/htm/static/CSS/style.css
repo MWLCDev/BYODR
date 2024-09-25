@@ -73,11 +73,11 @@ body {
 
 
 /* Top Layer: Logo and Hamburger Menu */
-
 #header_bar {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: stretch;
+  /* Changed to stretch */
   box-sizing: border-box;
   width: 100%;
   min-height: 60px;
@@ -91,6 +91,7 @@ body {
   display: flex;
   align-items: center;
   flex: 1;
+  /* Removed height: 100%; */
 }
 
 #header_bar .left_section {
@@ -101,16 +102,13 @@ body {
 #header_bar .middle_section {
   justify-content: center;
   flex: 2;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
 }
 
 #header_bar .right_section {
   justify-content: flex-end;
-}
-
-#header_bar .middle_content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
 }
 
 #header_bar .left_section .rover_speed {
@@ -118,6 +116,17 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 1vw;
+}
+
+#header_bar .right_section .current_mode_img {
+  height: 100%;
+  display: flex;
+  align-items: center;
+}
+
+#header_bar .right_section .current_mode_img svg {
+  max-height: 100%;
+  height: auto;
 }
 
 #VOR_center_logo {
@@ -261,10 +270,6 @@ body {
   align-content: center;
 }
 
-.inf_operating_time {
-  display: none;
-  color: var(--text_color_light_mode);
-}
 
 .stream_quality {
   display: flex;

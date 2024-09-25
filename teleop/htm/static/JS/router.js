@@ -32,10 +32,6 @@ export class Router {
 			this.assignNavButtonActions(event.target.id);
 		});
 	}
-	updateHeaderBar() {
-		const sections = ['left_section', 'right_section'];
-		sections.forEach((section) => $(`#header_bar .${section}`)[isMobileDevice() ? 'show' : 'hide']());
-	}
 
 	/**
 	 * Loads a page into the main content area and executes a callback if provided.
@@ -64,6 +60,7 @@ export class Router {
 		if (isMobileDevice()) {
 			$('#header_bar .left_section').show();
 			$('#header_bar .right_section').show();
+			$('.rover_speed_label').css('font-size', '5px');
 			if (['settings_link', 'controls_link', 'events_link'].includes(selectedLinkId)) {
 				$('#header_bar .left_section').hide();
 				$('#header_bar .right_section').hide();
@@ -76,11 +73,16 @@ export class Router {
 		$('.hamburger_menu_nav a').removeClass('active');
 		$(`#${selectedLinkId}`).addClass('active');
 
-		const activeNavLinkImageSrc = $(`#${selectedLinkId} img`).attr('src');
-		if (activeNavLinkImageSrc) {
-			$('.current_mode_img').attr('src', activeNavLinkImageSrc);
+		// Find the SVG inside the selected link
+		const $selectedNavLink = $(`#${selectedLinkId}`);
+		const $svg = $selectedNavLink.find('svg.nav_icon');
+
+		if ($svg.length > 0) {
+			// Clone the SVG and insert it into the current_mode_img element
+			const $clonedSvg = $svg.clone();
+			$('.current_mode_img').empty().append($clonedSvg);
 		} else {
-			console.error('No image found for ID:', selectedLinkId);
+			console.error('No SVG icon found for ID:', selectedLinkId);
 		}
 	}
 
