@@ -571,17 +571,9 @@ class InferenceHandling {
 	updateAutopilotUI(infMessage) {
 		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
 		this.roverUI.renderDistanceIndicators('front');
-		console.log(infMessage.ctl_activation);
-		if (infMessage.ctl_activation > 0) {
-			this.updateAutopilotTimeDisplay(infMessage.ctl_activation);
-		}
+
 	}
 
-	updateAutopilotTimeDisplay(ctlActivation) {
-		const time = this.formatTime(ctlActivation * 1e-3); // Convert ms to seconds
-		console.log(time);
-		$('.inf_operating_time').text(time);
-	}
 
 	formatTime(totalSeconds) {
 		const hours = Math.floor(totalSeconds / 3600);
