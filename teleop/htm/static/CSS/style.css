@@ -1,5 +1,5 @@
 @font-face {
-  src: url('../assets/Sora-VariableFont_wght.ttf') format('truetype');
+  src: url('../assets//static_sora/Sora-VariableFont_wght.ttf') format('truetype');
   font-family: 'Sora';
   font-style: normal;
   font-weight: normal;
@@ -11,7 +11,7 @@
   --text_color_light_mode: #000000;
   --background_color_dark_mode: #121212;
   --text_color_dark_mode: #ffffff;
-  --VOR-color: #654279;
+  --VOR-color: #3A0751;
   --VOR-light-color: #AFA2B4;
   --light-p: #8B7697;
   --text-color-dark-g: #2B2B2B;
@@ -77,12 +77,12 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: stretch;
-  /* Changed to stretch */
   box-sizing: border-box;
   width: 100%;
-  min-height: 60px;
-  padding: 10px 20px;
+  max-height: 80px;
+  padding: 1em 2em;
   border-bottom: 2px solid var(--VOR-light-color);
+  color: var(--VOR-color);
 }
 
 #header_bar .left_section,
@@ -96,12 +96,10 @@ body {
 
 #header_bar .left_section {
   justify-content: flex-start;
-  padding-left: 42px;
 }
 
 #header_bar .middle_section {
   justify-content: center;
-  flex: 2;
   flex-direction: column;
   align-items: center;
   gap: 0;
@@ -116,27 +114,32 @@ body {
   flex-direction: row;
   align-items: center;
   gap: 1vw;
+  padding-left: 40px;
 }
 
 #header_bar .right_section .current_mode_img {
   height: 100%;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
 }
 
 #header_bar .right_section .current_mode_img svg {
   max-height: 100%;
   height: auto;
+  width: auto;
 }
 
 #VOR_center_logo {
   display: block;
   height: 30px;
+  color: var(--VOR-color);
 }
 
 #current_seg_name {
   font-size: 0.8rem;
   color: #8b7597;
+  height: auto;
 }
 
 /* Adjust the right section image */
@@ -234,7 +237,7 @@ body {
   align-content: center;
 }
 
-.right_section {
+#application_content .right_section {
   display: flex;
   flex-direction: column;
   justify-content: flex-end;

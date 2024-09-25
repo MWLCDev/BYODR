@@ -9,45 +9,51 @@
 }
 
 #mobile_controller_container #horizontal_bar {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: nowrap;
-  justify-content: center;
-  align-items: center;
-  align-content: center;
-  width: 100%;
-  padding: 1rem;
-  border-bottom: 1px solid var(--VOR-color);
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+	width: 100%;
+	padding: 1em 2em;
+	border-bottom: 1px solid var(--VOR-color);
 }
 
 #mobile_controller_container .left_section,
-#mobile_controller_container .middle_section,
 #mobile_controller_container .right_section {
   display: flex;
   align-items: center;
+  flex-direction: row;
+}
+
+#mobile_controller_container .middle_section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
 }
 
 #mobile_controller_container .left_section {
   justify-content: flex-start;
-  flex: 2;
-  padding-left: 13px;
-}
-
-#mobile_controller_container .middle_section {
-  justify-content: center;
-  flex: 0;
+  flex: 3;
 }
 
 #mobile_controller_container .right_section {
-  flex-direction: row;
-  align-content: flex-end;
+  justify-content: flex-end;
   flex: 2;
+}
+
+#mobile_controller_container .steeringWheel {
+  display: block;
+  max-width: 100%;
+  /* Ensures the steering wheel image is responsive */
+  height: auto;
 }
 
 
 #horizontal_bar .current_mode_text {
   display: block;
   text-transform: uppercase;
+  text-align: center;
 }
 
 #horizontal_bar .current_mode_text:before {

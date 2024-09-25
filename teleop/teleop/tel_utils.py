@@ -287,7 +287,7 @@ class ThrottleController:
     def _teleop_publish(self, cmd):
         """Private function which shouldn't be called directly"""
         cmd["navigator"] = dict(route=self.route_store.get_selected_route())
-        logger.info(cmd)
+        # logger.info(cmd)
         self.teleop_publisher.publish(cmd)
 
     def update_following_state(self, state):

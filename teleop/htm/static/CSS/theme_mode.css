@@ -10,6 +10,10 @@ body.dark-theme {
   color: var(--text_color_dark_mode);
 }
 
+body.dark-theme .hamburger_menu_nav #VOR_nav {
+  color: var(--background_color_dark_mode);
+}
+
 body.dark-theme .caret {
   color: var(--text_color_dark_mode);
 }

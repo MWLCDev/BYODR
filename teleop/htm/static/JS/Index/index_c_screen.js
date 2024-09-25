@@ -34,13 +34,6 @@ class DarkThemeManager {
 
 	setTheme(isDarkMode) {
 		this.body.classList.toggle('dark-theme', isDarkMode); //Add dark mode to body only
-		this.updateLogo(isDarkMode);
-	}
-
-	updateLogo(isDarkMode) {
-		const logo = document.querySelector('#header_bar #VOR_center_logo');
-		const logoSrc = isDarkMode ? '../static/assets/VOR_Logo_light.png' : '../static/assets/VOR_Logo_dark.png';
-		logo.setAttribute('src', logoSrc);
 	}
 }
 
@@ -571,9 +564,7 @@ class InferenceHandling {
 	updateAutopilotUI(infMessage) {
 		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
 		this.roverUI.renderDistanceIndicators('front');
-
 	}
-
 
 	formatTime(totalSeconds) {
 		const hours = Math.floor(totalSeconds / 3600);
