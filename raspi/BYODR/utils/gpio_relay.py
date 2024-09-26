@@ -4,7 +4,7 @@ import RPi.GPIO as GPIO
 import threading
 
 
-class ThreadSafePIGpioRelay:
+class ThreadSafePi4GpioRelay:
     """Thread-safe class for managing a GPIO relay on a Raspberry Pi."""
 
     def __init__(self, pin=15):
@@ -36,3 +36,7 @@ class ThreadSafePIGpioRelay:
         """Returns the current state of the relay."""
         with self.lock:
             return self.state
+    
+    def cleanup(self):
+        """Cleans up the GPIO state."""
+        GPIO.cleanup(self.pin)
