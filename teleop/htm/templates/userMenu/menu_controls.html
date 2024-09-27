@@ -1,0 +1,58 @@
+<div id="controls_settings_container">
+	<h1 class="title">Controls</h1>
+	<!-- TODO: change the class names  -->
+
+	<div id="input-sliders">
+		<label for="dead_zone_width">Touch area width:</label>
+		<div class="slider-container">
+			<input type="range" class="custom-slider" id="dead_zone_input" name="dead_zone_width" min="0" max="1" step="0.01" value="0.1" />
+			<span id="dead_zone_width_value" class="slider_value">0.1</span>
+		</div>
+
+		<label for="scale-input-box-ID">Max km/h:</label>
+		<div class="slider-container">
+			<input type="range" class="custom-slider" id="scale_input" name="scale-slider" min="1" max="7" step="0.5" value="3" />
+			<span id="scale_input_value" class="slider_value">3</span>
+		</div>
+
+		<label for="offset-input-box-ID">Turning offset:</label>
+		<div class="slider-container">
+			<input type="range" class="custom-slider" id="offset_input" name="offset-slider" min="-1" max="1" step="0.02" value="0" />
+			<span id="offset_input_value" class="slider_value">0</span>
+		</div>
+	</div>
+
+	<div id="relay-control-container">
+		<h2>Primary Relays</h2>
+		<div class="relay-control-sliders-container">
+			<div id="channel-container">
+				<fieldset class="relay-channel" data-index="2">
+					<legend>Channel 3</legend>
+					<label class="relay-switch">
+						<input type="checkbox" id="channel3-toggle" name="channel3" />
+						<span class="slider round"></span>
+					</label>
+					<div class="on-off-labels">
+						<label for="channel3-toggle" id="channel3-label-off">OFF</label>
+						<label for="channel3-toggle" id="channel3-label-on">ON</label>
+					</div>
+				</fieldset>
+			</div>
+			<div id="channel-container">
+				<fieldset class="relay-channel" data-index="3">
+					<legend>Channel 4</legend>
+					<label class="relay-switch">
+						<input type="checkbox" id="channel4-toggle" name="channel4" />
+						<span class="slider round"></span>
+					</label>
+					<div class="on-off-labels">
+						<label for="channel4-toggle" id="channel4-label-off">OFF</label>
+						<label for="channel4-toggle" id="channel4-label-on">ON</label>
+					</div>
+				</fieldset>
+			</div>
+		</div>
+	</div>
+
+	<!-- <button id="save-button" disabled>SAVE</button> -->
+</div>

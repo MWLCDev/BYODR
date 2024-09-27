@@ -1,0 +1,165 @@
+body {
+  overflow: auto;
+}
+
+.button {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 80px;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+  border-radius: 8px;
+  font-weight: 700;
+  text-align: center;
+}
+
+#edit_button {
+  margin-left: auto;
+  color: #530D73;
+}
+
+#form_user_options {
+  margin-left: 2vw;
+}
+
+#form_user_options div {
+  margin: 3px 0;
+}
+
+
+#settings-content {
+  position: relative;
+  padding: 20px;
+}
+
+fieldset {
+  padding-left: 5%;
+  border: 0;
+}
+
+/* Style the legend of the fieldset */
+legend {
+  padding-top: 10px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+/* Style the input text of the fieldset */
+fieldset input[type=text] {
+  box-shadow: inset 0px 0px 7px rgba(0, 0, 0, 0.2);
+  width: 40%;
+  margin-left: 15px;
+  padding: 5px;
+  background-color: #E7E7E7;
+  border: 0;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+#submit_save_apply {
+  margin-left: auto;
+  background-color: #530D73;
+  color: #f0f0f0;
+}
+
+/*////////////    Style for the pro view toggle slider    ////////////*/
+/* The switch - the box around the slider */
+/* slider:before - the ball inside the slider */
+#pro-view-toggle-div {
+  position: relative;
+  width: fit-content;
+  padding-top: 3vh;
+}
+
+#pro-view-toggle-div span {
+  margin: 0 10px;
+}
+
+#pro-view-toggle-slider {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10px;
+}
+
+/* Toggle switch styling */
+#pro-view-toggle-div .switch {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 20px;
+}
+
+#pro-view-toggle-div .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+#pro-view-toggle-div .slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 80px;
+  height: 20px;
+  transition: .4s;
+  background-color: #D0D0D0;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+#pro-view-toggle-div .slider:before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: -2px;
+  width: 26px;
+  height: 26px;
+  transition: .4s;
+  background-color: #530D73;
+  border-radius: 50%;
+}
+
+#pro-view-toggle-div input:checked+.slider {
+  background-color: #8B7697;
+}
+
+#pro-view-toggle-div input:focus+.slider {
+  box-shadow: 0 0 1px #530D73;
+}
+
+#pro-view-toggle-div input:checked+.slider:before {
+  transform: translateX(60px);
+}
+
+/* Toggle name text */
+#pro-view-toggle-name {
+  font-size: 24px;
+  font-weight: bold;
+  color: #2B2B2B;
+  text-align: center;
+}
+
+/* Toggle status text */
+#pro-view-toggle-status {
+  padding-left: 10px;
+  font-size: 20px;
+  font-weight: bold;
+  color: #530D73;
+}
+
+
+#background-image {
+  position: relative;
+  z-index: -1;
+  bottom: 80%;
+  width: 100%;
+  height: 130%;
+  background-image: url('../assets/pictures/VR - pattern tree 1.png');
+  background-repeat: no-repeat;
+  background-position: right;
+  background-size: contain;
+}

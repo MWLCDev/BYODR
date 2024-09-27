@@ -6,7 +6,7 @@ import numpy as np
 import pymongo
 from bson.binary import Binary
 from bson.objectid import ObjectId
-
+from pymongo import MongoClient
 from byodr.utils import timestamp
 
 TRIGGER_SERVICE_START = 2**0
@@ -112,9 +112,15 @@ def _create_index_if_not_exists(collection, keys, name, unique=False, background
 
 
 class MongoLogBox(object):
-    def __init__(self, client):
-        self._client = client
-        self._database = client.logbox
+    def __init__(self):
+        # Define the MongoDB URI with authentication details
+        mongo_uri = "mongodb://admin:robot@localhost:27017/logbox?authSource=admin"
+
+        # Initialize the MongoClient with the URI
+        self._client = MongoClient(mongo_uri)
+
+        # Assign the specific database to a class variable
+        self._database = self._client.logbox
 
     def close(self):
         self._client.close()

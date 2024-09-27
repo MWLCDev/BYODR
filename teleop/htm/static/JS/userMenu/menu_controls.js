@@ -1,175 +1,109 @@
-class RealControlsBackend {
-  constructor() {
-  }
+class ControlSettings {
+	constructor() {
+		this.scaleInput = $('#scale_input');
+		this.offsetInput = $('#offset_input');
+		this.deadZoneInput = $('#dead_zone_input');
 
-  _call_get_channel_config(cb) {
-    $.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/conf`, function (response) {
-      cb(response['config']);
-    });
-  }
-  _call_get_channel_states(cb) {
-    $.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`, function (response) {
-      cb(response['states']);
-    });
-  }
-  _call_save_channel_state(channel, value, cb) {
-    const command = { 'channel': channel, 'action': ((value == true || value == 'true') ? 'on' : 'off') };
-    $.post(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`, JSON.stringify(command), function (response) {
-      cb(response['channel'], response['value']);
-    }, "json");
-  }
+		this.scaleInputText = $('#scale_input_value');
+		this.offsetInputText = $('#offset_input_value');
+		this.deadZoneInputText = $('#dead_zone_width_value');
+
+		this.initDomElements();
+	}
+
+	initDomElements() {
+		this.fetchRoverData();
+		this.bindSliderInputListeners();
+		this.bindBoldTextListeners();
+		this.updateRelayStates();
+	}
+
+	bindSliderInputListeners() {
+		// Bindings for scale and offset inputs
+		this.scaleInput.on('input touchmove', () => {
+			this.scaleInputText.text(this.scaleInput.val());
+		});
+		this.offsetInput.on('input touchmove', () => {
+			this.offsetInputText.text(this.offsetInput.val());
+		});
+
+		// Binding for dead zone input
+		this.deadZoneInput.on('input touchmove', () => {
+			this.deadZoneInputText.text(this.deadZoneInput.val());
+		});
+
+		// Post data on 'change' event
+		this.scaleInput
+			.add(this.offsetInput)
+			.add(this.deadZoneInput)
+			.on('change touchend', () => {
+				this.sendDataToBackend();
+			});
+	}
+
+	fetchRoverData() {
+		$.get('/teleop/user/options')
+			.done((data) => {
+				this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
+				this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
+				this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
+			})
+			.fail((error) => console.error('Error fetching data:', error));
+	}
+
+	sendDataToBackend() {
+		let data = {
+			vehicle: [
+				['ras.driver.motor.scale', this.scaleInput.val()],
+				['ras.driver.steering.offset', this.offsetInput.val()],
+				['ras.driver.deadzone.width', this.deadZoneInput.val()],
+			].filter((setting) => setting[1] !== ''),
+		};
+
+		$.ajax({
+			url: '/teleop/user/options',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(data),
+			error: (error) => console.error('Error:', error),
+		});
+	}
+
+	updateRelayStates() {
+		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`)
+			.done((response) => {
+				$('.channel').each(function () {
+					const index = $(this).data('index');
+					const state = response.states[index] === true;
+					$(this).find(`input[value="${state}"]`).prop('checked', state);
+				});
+			})
+			.fail((error) => console.error('Error updating relay states:', error));
+	}
+
+	bindBoldTextListeners() {
+		// General function to bind and update label styles
+		const bindAndUpdate = (toggle, labelOn, labelOff) => {
+			toggle
+				.on('change', () => {
+					this.updateLabelStyles(toggle[0], labelOn[0], labelOff[0]);
+				})
+				.trigger('change');
+		};
+
+		bindAndUpdate($('#channel3-toggle'), $('#channel3-label-on'), $('#channel3-label-off'));
+		bindAndUpdate($('#channel4-toggle'), $('#channel4-label-on'), $('#channel4-label-off'));
+	}
+
+	updateLabelStyles(checkbox, labelOn, labelOff) {
+		if (checkbox.checked) {
+			labelOn.style.fontWeight = 'bold';
+			labelOff.style.fontWeight = 'normal';
+		} else {
+			labelOn.style.fontWeight = 'normal';
+			labelOff.style.fontWeight = 'bold';
+		}
+	}
 }
 
-class FakeControlsBackend extends RealControlsBackend {
-    constructor() {
-        super();
-        this._config = [false, false, true, false];
-        this._states = [false, false, false, true];
-    }
-    _call_get_channel_config(cb) {
-        cb(this._config);
-    }
-    _call_get_channel_states(cb) {
-        cb(this._states);
-    }
-    _call_save_channel_state(channel, value, cb) {
-        this._states[channel] = value;
-        cb(channel, value);
-    }
-}
-
-
-var menu_controls = {
-    _backend: null,
-
-    _init: function(el_parent) {
-        // In development mode there is no use of a backend.
-        this._backend = dev_tools.is_develop()? new FakeControlsBackend(): new RealControlsBackend();
-        // Construct the dom elements.
-        const div_column = $("<div/>", {id: 'column'});
-        div_column.append($("<h2/>").text("Primary relays"));
-        const div_relays = $("<div/>", {id: 'relay_channels'});
-        div_column.append(div_relays);
-        el_parent.append(div_column);
-        this._channels = [];
-        this._channels.push(this._create_channel(div_relays, 3));
-        this._channels.push(this._create_channel(div_relays, 4));
-        this._apply_backend_config();
-        this._apply_backend_states();
-    },
-
-    _apply_backend_config: function() {
-        const channels = menu_controls._channels;
-        menu_controls._backend._call_get_channel_config(function(config) {
-            channels.forEach(function(channel) {
-                if (config[channel._index]) {
-                    channel.setPulsed();
-                }
-            });
-        });
-    },
-
-    _apply_backend_states: function() {
-        const channels = menu_controls._channels;
-        channels.forEach(function(channel) {
-            channel.flag();
-            channel.disable();
-        });
-        menu_controls._backend._call_get_channel_states(function(states) {
-            channels.forEach(function(channel) {
-                channel.enable();
-                channel.setValue(states[channel._index]);
-                channel.un_flag();
-            });
-        });
-    },
-
-    _on_channel_select: function(channel) {
-        // This method is called when the user sets a value and also when a value is set by code.
-        if (!channel.isFlagged()) {
-            menu_controls._backend._call_save_channel_state(channel._index + 1, channel.getValue(), function(ch, x) {});
-            setTimeout(function() {menu_controls._apply_backend_states();}, 250);
-        }
-    },
-
-    _create_channel: function(el_parent, number){
-        const _channel_container = $("<p/>");
-        const _name = 'channel' + number;
-        const _field = $("<fieldset/>", {id: _name});
-        const _legend = $("<legend/>", {id: _name + '_label'}).text('Channel ' + number);
-        _field.append(_legend);
-        _field.append($("<input/>", {id: _name + '_off', name: _name, type: 'radio', value: false, checked: true}));
-        _field.append($("<label/>", {for: _name + '_off'}).text('Off'));
-        _field.append($("<input/>", {id: _name + '_on', name: _name, type: 'radio', value: true}));
-        _field.append($("<label/>", {for: _name + '_on'}).text('On'));
-        _channel_container.css('width', '200px');
-        _channel_container.css('line-height', '25px');
-        _channel_container.append(_field)
-        el_parent.append(_channel_container);
-
-        const _slider = _field.radioslider({
-            fit: true,
-            onSelect: function(event) {menu_controls._on_channel_select(_slider);}
-        });
-        _slider._index = number - 1;
-        _slider._legend = _legend;
-        _slider._parent = _field;
-        _slider._flagged = false;
-        _slider.flag = function() {
-            _slider._flagged = true;
-            _slider._parent.css('cursor', 'wait');
-            return _slider;
-        }
-        _slider.un_flag = function() {
-            _slider._flagged = false;
-            _slider._parent.css('cursor', 'auto');
-            return _slider;
-        }
-        _slider.isFlagged = function() {
-            return _slider._flagged;
-        }
-        _slider.setPulsed = function() {
-            _slider._legend.text(_slider._legend.text() + " (PULSED)");
-            return _slider;
-        }
-        _slider.isDisabled = function() {
-            return _slider.find("input[name=" + _name + "]").is(':disabled');
-        }
-        _slider.getValue = function() {
-            return _slider.find("input:checked").val();
-        }
-        _slider.on = function() {
-            _slider.radioslider('setValue', 'true');
-            return _slider;
-        }
-        _slider.off = function() {
-            _slider.radioslider('setValue', 'false');
-            return _slider;
-        }
-        _slider.setValue = function(x) {
-            if (x || x  == 'true') {
-                _slider.on();
-            } else {
-                _slider.off();
-            }
-            return _slider;
-        }
-        _slider.disable = function() {
-            _slider.radioslider('setDisabled');
-            return _slider;
-        }
-        _slider.enable = function() {
-            _slider.radioslider('setEnabled');
-            return _slider;
-        }
-        return _slider;
-    }
-}
-
-
-
-// --------------------------------------------------- Init and public --------------------------------------------------------- //
-
-function menu_user_controls_main(el_parent) {
-    menu_controls._init(el_parent);
-}
+export { ControlSettings };

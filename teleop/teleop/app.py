@@ -11,25 +11,18 @@ import os
 import signal
 import threading
 from concurrent.futures import ThreadPoolExecutor
-
-import tornado.web
 from byodr.utils import Application, ApplicationExit, hash_dict
-from byodr.utils.ipc import (CameraThread, JSONPublisher, JSONZmqClient,
-                             json_collector)
-from byodr.utils.navigate import (FileSystemRouteDataSource,
-                                  ReloadableDataSource)
+from byodr.utils.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
 from logbox.app import LogApplication, PackageApplication
 from logbox.core import MongoLogBox, SharedState, SharedUser
 from logbox.web import DataTableRequestHandler, JPEGImageRequestHandler
-from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-
 from .server import *
-from .tel_utils import (DirectingUser, EndpointHandlers, RunGetSSIDPython,
-                        TemplateRenderer, ThrottleController)
+from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
 
 logger = logging.getLogger(__name__)
 
@@ -56,24 +49,27 @@ def _load_nav_image(fname):
 
 
 class TeleopApplication(Application):
-    def __init__(self, event, config_dir=os.getcwd()):
+    def __init__(self, tel_chatter, throttle_controller, fol_comm_socket, event, hz, config_dir=os.getcwd()):
         """set up configuration directory and a configuration file path
 
         Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
-
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. When provided, this directory is where the application expects to find its .ini configuration files.
+            event: allow for thread-safe signaling between processes or threads.
         """
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
-        self._user_config_file = os.path.join(self._config_dir, "config.ini")
         self._config_hash = -1
+        self._user_config_file = None
+
         self.rut_ip = None
+        self.following_utils = FollowingUtils(tel_chatter, throttle_controller, fol_comm_socket)
 
     def _check_user_config(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-        if len(_candidates) > 0:
-            self._user_config_file = _candidates[0]
+        for file_path in _candidates:
+            # Extract the filename from the path
+            file_name = os.path.basename(file_path)
+            if file_name == "config.ini":
+                self._user_config_file = file_path
 
     def _config(self):
         parser = SafeConfigParser()
@@ -109,9 +105,13 @@ class TeleopApplication(Application):
             self._check_user_config()
             self.read_user_config()
             _config = self._config()
+            self.following_utils.configs(self._user_config_file)
             _hash = hash_dict(**_config)
             if _hash != self._config_hash:
                 self._config_hash = _hash
+
+    def step(self):
+        self.following_utils.process_socket_commands()
 
 
 def main():
@@ -137,42 +137,38 @@ def main():
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
-    _mongo = MongoLogBox(MongoClient())
+    _mongo = MongoLogBox()
     _mongo.ensure_indexes()
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))
     route_store.load_routes()
 
-    application = TeleopApplication(event=quit_event, config_dir=args.config)
-    application.setup()
-
     camera_front = CameraThread(url="ipc:///byodr/camera_0.sock", topic=b"aav/camera/0", event=quit_event)
     camera_rear = CameraThread(url="ipc:///byodr/camera_1.sock", topic=b"aav/camera/1", event=quit_event)
     pilot = json_collector(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event, hwm=20)
+    following_comm_socket = json_collector(url="ipc:///byodr/following.sock", topic=b"aav/following/controls", event=quit_event, hwm=1)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event, hwm=20)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event, hwm=20)
+    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
+    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
+    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
     log_application = LogApplication(_mongo, logbox_user, logbox_state, event=quit_event, config_dir=args.config)
     package_application = PackageApplication(_mongo, logbox_user, event=quit_event, hz=0.100, sessions_dir=args.sessions)
-
+    throttle_controller = ThrottleController(teleop_publisher, route_store)
+    application = TeleopApplication(tel_chatter=chatter, throttle_controller=throttle_controller, fol_comm_socket=following_comm_socket, event=quit_event, config_dir=args.config, hz=20)
+    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-    threads = [camera_front, camera_rear, pilot, vehicle, inference, logbox_thread, package_thread]
 
+    threads = [camera_front, camera_rear, pilot, following_comm_socket, vehicle, inference, logbox_thread, package_thread, threading.Thread(target=application.run)]
+    application.setup()
     if quit_event.is_set():
         return 0
 
     [t.start() for t in threads]
-
-    teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
-    chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
-    zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
-    endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
-    # Initialize ThrottleController
-    throttle_controller = ThrottleController(teleop_publisher, route_store)
-
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
     asyncio.set_event_loop(asyncio.new_event_loop())
 
@@ -185,21 +181,24 @@ def main():
         main_app = web.Application(
             [
                 # Landing page
-                (r"/", DirectingUser),
+                (r"/", TemplateRenderer),
                 # Navigate to normal controller page
                 (r"/(nc)", TemplateRenderer),
                 # Navigate to user menu settings page
                 (r"/(user_menu)", TemplateRenderer),
                 # Navigate to Mobile controller UI
                 (r"/(mc)", TemplateRenderer),
-                # Getting the commands from the mobile controller (commands are sent in JSON)
-                (r"/ws/send_mobile_controller_commands", MobileControllerCommands, dict(fn_control=throttle_controller.throttle_control)),
-                # Run python script to get the SSID for the current segment
-                (r"/run_get_SSID", RunGetSSIDPython),
+                (r"/(normal_ui)", TemplateRenderer),
+                (r"/(menu_controls)", TemplateRenderer),
+                (r"/(menu_logbox)", TemplateRenderer),
+                (r"/(menu_settings)", TemplateRenderer),
+                (r"/run_get_SSID", GetSegmentSSID),
+                (r"/latest_image", LatestImageHandler, {"path": "/byodr/yolo_person", "following_utils": application.following_utils}),
+                (r"/fol_handler", FollowingHandler, dict(fn_control=application.following_utils)),
                 (r"/ws/switch_confidence", ConfidenceHandler, dict(inference_s=inference, vehicle_s=vehicle)),
                 (r"/api/datalog/event/v10/table", DataTableRequestHandler, dict(mongo_box=_mongo)),
                 (r"/api/datalog/event/v10/image", JPEGImageRequestHandler, dict(mongo_box=_mongo)),
-                # Get the commands from the controller in normal UI
+                # Get movement commands from the controller in normal UI
                 (r"/ws/ctl", ControlServerSocket, dict(fn_control=throttle_controller.throttle_control)),
                 (r"/ws/log", MessageServerSocket, dict(fn_state=(lambda: (pilot.peek(), vehicle.peek(), inference.peek())))),
                 (r"/ws/cam/front", CameraMJPegSocket, dict(image_capture=(lambda: camera_front.capture()))),
