@@ -152,3 +152,15 @@ services:
     volumes:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:ro
+  following:
+    cpuset: '3,2'
+    build:
+      context: .
+      dockerfile: following/Dockerfile
+    restart: always
+    privileged: true
+    network_mode: host
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
