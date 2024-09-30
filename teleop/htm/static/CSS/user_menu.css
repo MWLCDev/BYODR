@@ -86,7 +86,7 @@
 }
 
 #hamburger_menu_toggle.active .top {
-  transform: translateY(10px) rotate(45deg);
+  transform: translateY(18px) rotate(45deg);
   background-color: white;
 }
 
@@ -97,7 +97,7 @@
 
 
 #hamburger_menu_toggle.active .bottom {
-  transform: translateY(-10px) rotate(-45deg);
+  transform: translateY(-19px) rotate(-45deg);
   background-color: white;
 }
 

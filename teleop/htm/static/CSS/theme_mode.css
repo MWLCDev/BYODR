@@ -59,9 +59,8 @@ body.maneuver-training-feature #mobile_controller_container .control_symbol {
 }
 
 body.maneuver-training-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
+  background-color: var(--VOR-color);
   color: white;
 }
 
@@ -105,9 +104,8 @@ body.auto-navigation-feature #backward_square .square_text:before {
 }
 
 body.auto-navigation-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
+  background-color: var(--VOR-color);
   color: white;
 }
 
@@ -158,9 +156,8 @@ body.confidence-feature .steeringWheel {
 }
 
 body.confidence-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
+  background-color: var(--VOR-color);
   color: white;
 }
 

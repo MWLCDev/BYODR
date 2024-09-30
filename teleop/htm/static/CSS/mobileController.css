@@ -9,13 +9,13 @@
 }
 
 #mobile_controller_container #horizontal_bar {
-	display: flex;
-	flex-direction: row;
-	justify-content: space-between;
-	align-items: center;
-	width: 100%;
-	padding: 1em 2em;
-	border-bottom: 1px solid var(--VOR-color);
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1em 2em;
+  border-bottom: 1px solid var(--VOR-color);
 }
 
 #mobile_controller_container .left_section,
@@ -34,7 +34,6 @@
 
 #mobile_controller_container .left_section {
   justify-content: flex-start;
-  flex: 3;
 }
 
 #mobile_controller_container .right_section {
@@ -54,6 +53,8 @@
   display: block;
   text-transform: uppercase;
   text-align: center;
+  white-space: nowrap;
+
 }
 
 #horizontal_bar .current_mode_text:before {
@@ -64,7 +65,7 @@
   outline: none;
   box-shadow: 4px 6px 8px #d0d0d0;
   display: none;
-  width: 50%;
+  width: 80%;
   transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
   border: 2px solid;

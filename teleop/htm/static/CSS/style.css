@@ -242,7 +242,6 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   align-items: flex-end;
-  padding: 0 20px;
 }
 
 .stream_quality p {
