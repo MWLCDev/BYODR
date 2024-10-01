@@ -77,22 +77,17 @@ services:
     cpuset: '0'
     build:
       context: .
-      dockerfile: mongodb/Dockerfile
-    hostname: mongo
-    container_name: mongo
+      dockerfile: mongodb/Dockerfile 
     restart: always
-    stop_signal: SIGKILL
+    command: ['python3', 'wrap.py']
     network_mode: host
-    ports:
-      - '27017:27017'
+    stop_signal: SIGKILL
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: robot 
     volumes:
       - volume_mongodb_config:/config:rw
       - volume_mongodb_data:/data/db:rw
-    healthcheck:
-      test: ['CMD', 'mongo', '--eval', "db.adminCommand('ping')"]
-      interval: 10s
-      timeout: 10s
-      retries: 5
   teleop:
     cpuset: '0'
     build:
