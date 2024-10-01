@@ -324,9 +324,7 @@ class GpsPollerThreadSNMP(threading.Thread):
             return latitude, longitude
 
     def run(self):
-        """
-        The main method of the thread that runs continuously until the quit event is set.
-        """
+        """The main method of the thread that runs continuously until the quit event is set."""
         while not self._quit_event.is_set():
             try:
                 coordinates = self.fetch_gps_coordinates()
