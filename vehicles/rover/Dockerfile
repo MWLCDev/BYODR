@@ -1,7 +1,7 @@
 FROM mwlvdev/jetson-nano-ubuntu:focal-cp310-GST
 
 
-RUN pip3 install pysnmp==4.4.12
+RUN pip3 install pysnmp==4.4.12 pyasn1
 
 COPY ./common common/
 COPY ./vehicles/rover app/
