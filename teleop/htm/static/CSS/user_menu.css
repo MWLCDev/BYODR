@@ -80,7 +80,7 @@
 #hamburger_menu_toggle .bar {
   width: 100%;
   height: 3px;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   border-radius: 2px;
   transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
@@ -111,7 +111,7 @@
   transition: left 0.5s;
   z-index: 3;
   padding: 2rem 0 2rem 2rem;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   color: #ffffff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;

@@ -10,8 +10,8 @@ body.dark-theme {
   color: var(--text_color_dark_mode);
 }
 
-body.dark-theme .hamburger_menu_nav #VOR_nav {
-  color: var(--background_color_dark_mode);
+body.dark-theme #VOR_center_logo {
+  color: var(--text_color_dark_mode);
 }
 
 body.dark-theme .caret {
@@ -25,6 +25,23 @@ body.dark-theme #hamburger_menu_toggle .bar {
 body.dark-theme #video_stream_type {
   background-color: var(--background_color_light_mode);
   color: var(--text_color_light_mode);
+}
+
+
+body.dark-theme #advanced_settings_container .title,
+body.dark-theme #controls_settings_container .title,
+body.dark-theme #logbox_container .title {
+  color: var(--text_color_dark_mode);
+}
+
+
+/* #region Dark mode styles */
+body.dark-theme table tbody>tr:nth-child(odd) {
+  background-color: var(--secondary_background_dark_mode);
+}
+
+body.dark-theme table tbody>tr:nth-child(even) {
+  background-color: var(--tertiary_background_dark_mode);
 }
 
 /* #endregion */
@@ -60,7 +77,7 @@ body.maneuver-training-feature #mobile_controller_container .control_symbol {
 
 body.maneuver-training-feature .current_mode_button {
   display: block;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   color: white;
 }
 
@@ -105,7 +122,7 @@ body.auto-navigation-feature #backward_square .square_text:before {
 
 body.auto-navigation-feature .current_mode_button {
   display: block;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   color: white;
 }
 
@@ -157,7 +174,7 @@ body.confidence-feature .steeringWheel {
 
 body.confidence-feature .current_mode_button {
   display: block;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   color: white;
 }
 

@@ -15,7 +15,7 @@
   align-items: center;
   width: 100%;
   padding: 1em 2em;
-  border-bottom: 1px solid var(--VOR-color);
+  border-bottom: 1px solid var(--VOR_color);
 }
 
 #mobile_controller_container .left_section,

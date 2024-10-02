@@ -14,7 +14,8 @@ body {
 
 #edit_button {
   margin-left: auto;
-  color: #530D73;
+  color: var(--VOR_color);
+
 }
 
 #form_user_options {
@@ -59,7 +60,8 @@ fieldset input[type=text] {
 
 #submit_save_apply {
   margin-left: auto;
-  background-color: #530D73;
+  background-color: var(--VOR_color);
+
   color: #f0f0f0;
 }
 
@@ -119,7 +121,7 @@ fieldset input[type=text] {
   width: 26px;
   height: 26px;
   transition: .4s;
-  background-color: #530D73;
+  background-color: var(--VOR_color);
   border-radius: 50%;
 }
 
@@ -128,7 +130,7 @@ fieldset input[type=text] {
 }
 
 #pro-view-toggle-div input:focus+.slider {
-  box-shadow: 0 0 1px #530D73;
+  box-shadow: 0 0 1px var(--VOR_color);
 }
 
 #pro-view-toggle-div input:checked+.slider:before {
@@ -139,7 +141,6 @@ fieldset input[type=text] {
 #pro-view-toggle-name {
   font-size: 24px;
   font-weight: bold;
-  color: #2B2B2B;
   text-align: center;
 }
 
@@ -148,18 +149,5 @@ fieldset input[type=text] {
   padding-left: 10px;
   font-size: 20px;
   font-weight: bold;
-  color: #530D73;
 }
 
-
-#background-image {
-  position: relative;
-  z-index: -1;
-  bottom: 80%;
-  width: 100%;
-  height: 130%;
-  background-image: url('../assets/pictures/VR - pattern tree 1.png');
-  background-repeat: no-repeat;
-  background-position: right;
-  background-size: contain;
-}

@@ -1,15 +1,3 @@
-#background-image {
-  position: relative;
-  z-index: -1;
-  bottom: 0%;
-  width: 100%;
-  height: 130%;
-  background-image: url('../assets/pictures/VR-pattern_tree_1.png');
-  background-repeat: no-repeat;
-  background-position: right;
-  background-size: contain;
-}
-
 #input-sliders {
   width: 100%;
 }
@@ -48,7 +36,7 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: var(--VOR-color);
+  background: var(--VOR_color);
   cursor: pointer;
 }
 
@@ -56,7 +44,7 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: var(--VOR-color);
+  background: var(--VOR_color);
   cursor: pointer;
 }
 

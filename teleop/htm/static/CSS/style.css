@@ -7,15 +7,22 @@
 
 
 :root {
+  /* Light mode colors */
   --background_color_light_mode: #ffffff;
   --text_color_light_mode: #000000;
+  --secondary_background_light_mode: #E5E5E5;
+  --tertiary_background_light_mode: #F7F7F7;
+
+  --VOR_color: #3A0751;
+  --VOR_light_color: #AFA2B4;
+
+  /* Dark mode colors */
   --background_color_dark_mode: #121212;
   --text_color_dark_mode: #ffffff;
-  --VOR-color: #3A0751;
-  --VOR-light-color: #AFA2B4;
-  --light-p: #8B7697;
-  --text-color-dark-g: #2B2B2B;
-  --button-color: #B8B8B8;
+  --secondary_background_dark_mode: #333333;
+  /* Equivalent of #E5E5E5 */
+  --tertiary_background_dark_mode: #444444;
+  /* Equivalent of #F7F7F7 */
 }
 
 * {
@@ -67,7 +74,7 @@ body {
   border-bottom: 2px solid #694978;
   font-size: 50px;
   font-weight: bold;
-  color: var(--VOR-color);
+  color: var(--VOR_color);
 }
 
 
@@ -81,8 +88,8 @@ body {
   width: 100%;
   max-height: 80px;
   padding: 1em 2em;
-  border-bottom: 2px solid var(--VOR-light-color);
-  color: var(--VOR-color);
+  border-bottom: 2px solid var(--VOR_light_color);
+  color: var(--VOR_color);
 }
 
 #header_bar .left_section,
@@ -133,7 +140,7 @@ body {
 #VOR_center_logo {
   display: block;
   height: 30px;
-  color: var(--VOR-color);
+  color: var(--VOR_color);
 }
 
 #current_seg_name {
@@ -153,7 +160,7 @@ body {
   display: block;
   width: 100%;
   padding: 10px;
-  border-bottom: 2px solid var(--VOR-light-color);
+  border-bottom: 2px solid var(--VOR_light_color);
 }
 
 #debug_drive_values {
@@ -381,7 +388,6 @@ body {
 
 .help_message_grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   grid-gap: 10px;
 }
 
@@ -508,7 +514,7 @@ body {
   display: none;
   height: 100%;
   padding: 0.5rem 0.2rem;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   border-radius: 10px;
   font-weight: 700;
   color: white;
