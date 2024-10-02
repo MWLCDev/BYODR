@@ -66,14 +66,13 @@
 
 <!-- Fourth Layer: Camera Stream View -->
 <div id="viewport_container">
-	<iframe id="top_layer_iframe"></iframe>
-	<!-- Where the main stream is shown -->
-	<canvas id="viewport_canvas"></canvas>
-	<!-- Message box container -->
 	<div id="message_box_container">
 		<div id="message_box_message"></div>
 		<input id="message_box_button_take_control" type="button" value="Take over control" />
 	</div>
+	<iframe id="top_layer_iframe"></iframe>
+	<!-- Main stream -->
+	<canvas id="viewport_canvas"></canvas>
 
 	<div id="overlay_distance_markers">
 		<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
@@ -84,16 +83,11 @@
 		<div id="overlay_right_marker1" class="overlay_distance">0.25</div>
 	</div>
 
-	<div id="control_bar">
-		<div id="overlay_control_container">
-			<img src="../static/assets/pictures/expand_collapse.png" id="expand_camera_icon" title="Expand or collapse the second camera stream" />
-		</div>
-		<div id="preview_container" title="Show this camera on the main display">
-			<img id="mjpeg_camera_preview_image" class="preview_img" />
-		</div>
+	<div id="second_stream_container">
+		<img id="expand_camera_icon" src="../static/assets/pictures/expand_collapse.png" title="Expand or collapse the second camera stream" />
+		<img id="mjpeg_camera_preview_image" title="click to switch this stream with the main one" />
 	</div>
 
-	<!-- Displayed at the bottom left -->
 	<div id="geo_data">
 		<p>Lat <span id="navigation_geo_lat"></span></p>
 		<p>Lon <span id="navigation_geo_long"></span></p>
