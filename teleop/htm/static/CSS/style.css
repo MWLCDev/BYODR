@@ -501,15 +501,15 @@ body {
 }
 
 
-#main_stream_canvas,
-#mjpeg_camera_preview_image {
+#main_stream_view,
+#second_stream_view {
   width: 100%;
   height: 100%;
   object-fit: fill;
 }
 
-#main_stream_canvas.selected,
-#mjpeg_camera_preview_image.selected {
+#main_stream_view.selected,
+#second_stream_view.selected {
   border: 2px solid cyan;
 }
 

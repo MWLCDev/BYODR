@@ -409,10 +409,10 @@ class RoverUI {
 	setNormalUIElements() {
 		try {
 			const elements = {
-				mainCameraStream: this.getElement('#main_stream_canvas'),
+				mainCameraStream: this.getElement('#main_stream_view'),
 				debugDriveValues: this.getElement('div#debug_drive_values'),
 				messageBoxContainer: this.getElement('div#message_box_container'),
-				secondCameraStream: this.getElement('img#mjpeg_camera_preview_image'),
+				secondCameraStream: this.getElement('img#second_stream_view'),
 				overlayCenterDistance0: this.getElement('div#overlay_center_distance0'),
 				overlayCenterDistance1: this.getElement('div#overlay_center_distance1'),
 				overlayLeftMarker0: this.getElement('div#overlay_left_marker0'),
