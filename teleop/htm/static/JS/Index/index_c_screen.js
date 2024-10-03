@@ -409,11 +409,10 @@ class RoverUI {
 	setNormalUIElements() {
 		try {
 			const elements = {
-				viewportContainer: this.getElement('div#viewport_container'),
-				debugDriveBar: this.getElement('div#debug_drive_bar'),
+				mainCameraStream: this.getElement('#main_stream_canvas'),
 				debugDriveValues: this.getElement('div#debug_drive_values'),
 				messageBoxContainer: this.getElement('div#message_box_container'),
-				overlayImage: this.getElement('img#mjpeg_camera_preview_image'),
+				secondCameraStream: this.getElement('img#mjpeg_camera_preview_image'),
 				overlayCenterDistance0: this.getElement('div#overlay_center_distance0'),
 				overlayCenterDistance1: this.getElement('div#overlay_center_distance1'),
 				overlayLeftMarker0: this.getElement('div#overlay_left_marker0'),
@@ -425,16 +424,15 @@ class RoverUI {
 			};
 
 			// Assign the elements to the corresponding class properties
-			this.elViewportContainer = elements.viewportContainer;
-			this.elDriveBar = elements.debugDriveBar;
+			this.elMainCameraStream = elements.mainCameraStream;
 			this.elDriveValues = elements.debugDriveValues;
 			this.elMessageBoxContainer = elements.messageBoxContainer;
-			this.overlayImage = elements.overlayImage;
+			this.elSecondCameraStream = elements.secondCameraStream;
 			this.elMessageBoxMessage = elements.messageBoxMessage;
 			this.elButtonTakeControl = elements.buttonTakeControl;
-			this.overlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
-			this.overlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
-			this.overlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
+			this.elOverlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
+			this.elOverlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
+			this.elOverlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
 		} catch (error) {
 			console.error('Error in RoverUI.setNormalUIElements():', error);
 		}
@@ -443,7 +441,7 @@ class RoverUI {
 	renderDistanceIndicators(activeCamera) {
 		const show = activeCamera == 'front';
 		if (!isMobileDevice()) {
-			[this.overlayCenterMarkers, this.overlayLeftMarkers, this.overlayRightMarkers].flat().forEach(function (marker) {
+			[this.elOverlayCenterMarkers, this.elOverlayLeftMarkers, this.elOverlayRightMarkers].flat().forEach(function (marker) {
 				if (show) {
 					marker.show();
 				} else {
@@ -661,7 +659,7 @@ class CameraControls {
 			clearTimeout(this._photoSnapshotTimer);
 		}
 		this._photoSnapshotTimer = setTimeout(() => {
-			this.roverUI.elViewportContainer.fadeOut(50).fadeIn(50);
+			this.roverUI.elMainCameraStream.fadeOut(100).fadeIn(100);
 		}, 130);
 	}
 
@@ -679,12 +677,12 @@ class CameraControls {
 	onCameraSelection() {
 		const active = this.activeCamera;
 		const selected = this.selectedCamera;
-		this.roverUI.elViewportContainer.removeClass('selected');
-		this.roverUI.overlayImage.removeClass('selected');
+		this.roverUI.elMainCameraStream.removeClass('selected');
+		this.roverUI.elSecondCameraStream.removeClass('selected');
 		if (selected === active) {
-			this.roverUI.elViewportContainer.addClass('selected');
+			this.roverUI.elMainCameraStream.addClass('selected');
 		} else if (selected != null) {
-			this.roverUI.overlayImage.addClass('selected');
+			this.roverUI.elSecondCameraStream.addClass('selected');
 		}
 	}
 

@@ -162,5 +162,9 @@ legend {
   #relay-control-container {
     margin-left: 0;
   }
+  .relay-control-sliders-container {
+    flex-direction: column;
+  }
+  
 
 }

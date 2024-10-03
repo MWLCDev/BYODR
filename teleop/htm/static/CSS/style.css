@@ -155,19 +155,15 @@ body {
 
 
 /* Second Layer: Advanced View */
-#debug_drive_bar {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border-bottom: 2px solid var(--VOR_light_color);
-}
-
 #debug_drive_values {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  padding: 1em;
+  border-bottom: 2px solid var(--VOR_light_color);
 }
 
 #debug_drive_values p {
@@ -218,6 +214,9 @@ body {
   align-items: center;
   width: 100%;
   padding: 1rem;
+  height: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 #horizontal_bar .left_section,
@@ -229,6 +228,8 @@ body {
 .left_section {
   display: flex;
   align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .middle_section {
@@ -430,61 +431,9 @@ body {
   position: relative;
   overflow: hidden;
   width: 100%;
-}
-
-#top_layer_iframe {
-  display: none;
-  position: absolute;
-  z-index: 9999;
-  top: 0;
-  left: 0;
-  width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: none;
 }
 
-#viewport_canvas {
-  position: absolute;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-#second_stream_container {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
-  align-content: center;
-  position: absolute;
-  z-index: 99;
-  bottom: 10px;
-  right: 2vw;
-  padding: 10px;
-  border-radius: 8px;
-  gap: 1em;
-}
-
-#second_stream_container #mjpeg_camera_preview_image {
-  height: auto;
-  border-radius: 5px;
-}
-
-
-#second_stream_container #expand_camera_icon {
-  right: 0;
-  width: 20px;
-  height: 20px;
-  cursor: pointer;
-}
-
-#viewport_container.selected {
-  border: 1px solid cyan;
-}
-
-#mjpeg_camera_preview_image.selected {
-  border: 2px solid cyan;
-}
 
 #message_box_container {
   display: flex;
@@ -520,29 +469,60 @@ body {
   color: var(--text_color_dark_mode);
 }
 
-#geo_data {
-  display: flex;
+#top_layer_iframe {
+  display: none;
   position: absolute;
-  bottom: 2.5rem;
-  left: 2rem;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 5px;
-  font-size: 14px;
-  color: var(--text_color_light_mode);
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
 }
 
-#geo_data p:nth-child(2) {
-  margin-left: 10px;
+#camera_streams {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  overflow: hidden;
 }
 
-#navigation_geo_lat,
-#navigation_geo_long {
-  font-weight: bold;
+#main_stream_container,
+#second_stream_container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
 }
 
-div.overlay_distance {
+
+#main_stream_canvas,
+#mjpeg_camera_preview_image {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+}
+
+#main_stream_canvas.selected,
+#mjpeg_camera_preview_image.selected {
+  border: 2px solid cyan;
+}
+
+#overlay_distance_markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   pointer-events: none;
+}
+
+.overlay_distance {
   position: absolute;
   visibility: visible;
   border-bottom: 2px solid rgba(255, 255, 120, 0.99);
@@ -550,24 +530,8 @@ div.overlay_distance {
   text-align: center;
 }
 
-#overlay_distance_markers {
-  position: absolute;
-  top: 0;
-  width: 100%;
-  height: 100%;
-}
 
-#overlay_center_distance0 {
-  bottom: 52%;
-  left: calc(50vw - 180px);
-  width: 360px;
-}
 
-#overlay_center_distance1 {
-  bottom: 25%;
-  left: calc(50vw - 300px);
-  width: 600px;
-}
 
 #overlay_left_marker0 {
   bottom: 45%;
@@ -581,6 +545,21 @@ div.overlay_distance {
   width: 35px;
 }
 
+#overlay_center_distance0 {
+  bottom: 52%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20vw;
+}
+
+#overlay_center_distance1 {
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25vw;
+}
+
+
 #overlay_right_marker0 {
   bottom: 45%;
   right: 0;
@@ -591,4 +570,39 @@ div.overlay_distance {
   bottom: 34%;
   right: 0;
   width: 35px;
+}
+
+
+#geo_data {
+  display: flex;
+  position: absolute;
+  gap: 2em;
+  bottom: 2.5rem;
+  left: 2rem;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  font-size: 14px;
+  color: var(--text_color_light_mode);
+}
+
+
+#navigation_geo_lat,
+#navigation_geo_long {
+  font-weight: bold;
+}
+
+
+/* Media query for smaller screens (e.g., phones) */
+@media (max-width: 768px) {
+  #camera_streams {
+    flex-direction: column;
+  }
+
+  #main_stream_container,
+  #second_stream_container {
+    width: 100%;
+    height: 50%;
+  }
+
 }

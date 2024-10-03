@@ -475,7 +475,7 @@ function initializeApplication(canvas) {
 }
 
 function findCanvasAndExecute() {
-	const canvas = document.getElementById('viewport_canvas');
+	const canvas = document.getElementById('main_stream_canvas');
 	if (canvas) {
 		initializeApplication(canvas);
 	} else {
