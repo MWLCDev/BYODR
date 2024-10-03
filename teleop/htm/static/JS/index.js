@@ -1,5 +1,5 @@
 import { dev_tools, isMobileDevice, network_utils, page_utils, socket_utils } from './Index/index_a_utils.js';
-import { helpMessageManager, messageContainerManager, advancedThemeManager } from './Index/index_c_screen.js';
+import { helpMessageManager, messageContainerManager, advancedThemeManager,pipThemeManager } from './Index/index_c_screen.js';
 import { navigator_start_all } from './Index/index_d_navigator.js';
 import { teleop_start_all } from './Index/index_e_teleop.js';
 import { h264_start_all, h264_stop_all } from './Index/index_video_hlp.js';
@@ -57,7 +57,7 @@ function showSSID() {
 
 $(window).on('load', () => {
 	['phone_controller_link'].forEach((id) => $(`#${id}`)[isMobileDevice() ? 'hide' : 'show']());
-	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers);
+	const router = new Router(helpMessageManager, messageContainerManager, advancedThemeManager,pipThemeManager, start_all_handlers);
 
 	router.handleUserMenuRoute(localStorage.getItem('user.menu.screen') || 'normal_ui_link'); // Need to have a default value for the homepage
 

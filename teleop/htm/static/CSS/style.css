@@ -513,6 +513,14 @@ body {
   border: 2px solid cyan;
 }
 
+#second_stream_container #expand_camera_icon {
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: none;
+}
+
 #overlay_distance_markers {
   position: absolute;
   top: 0;
@@ -529,9 +537,6 @@ body {
   color: rgba(255, 255, 120, 0.99);
   text-align: center;
 }
-
-
-
 
 #overlay_left_marker0 {
   bottom: 45%;

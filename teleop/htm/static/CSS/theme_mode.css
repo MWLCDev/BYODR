@@ -3,6 +3,32 @@ body.advanced-theme .advanced_view {
   display: none !important;
 }
 
+/* #region PIP mode */
+body.PIP-theme #second_stream_container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  align-content: center;
+  position: absolute;
+  z-index: 99;
+  bottom: 10px;
+  right: 2vw;
+  padding: 10px;
+  border-radius: 8px;
+  gap: 1em;
+}
+
+body.PIP-theme #second_stream_container #second_stream_view {
+  height: auto;
+  border-radius: 5px;
+}
+
+
+body.PIP-theme #second_stream_container #expand_camera_icon {
+  display: block;
+}
+/* #endregion */
 
 /* #region Dark mode */
 body.dark-theme {
@@ -34,8 +60,6 @@ body.dark-theme #logbox_container .title {
   color: var(--text_color_dark_mode);
 }
 
-
-/* #region Dark mode styles */
 body.dark-theme table tbody>tr:nth-child(odd) {
   background-color: var(--secondary_background_dark_mode);
 }

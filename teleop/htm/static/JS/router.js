@@ -11,10 +11,11 @@ import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 export class Router {
-	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers) {
+	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, pipThemeManager, start_all_handlers) {
 		this.helpMessageManager = helpMessageManager;
 		this.messageContainerManager = messageContainerManager;
 		this.advancedThemeManager = advancedThemeManager;
+		this.pipThemeManager = pipThemeManager;
 		this.start_all_handlers = start_all_handlers;
 		this.previousPage = null;
 		this.bindDomActions();
@@ -132,6 +133,7 @@ export class Router {
 					() => {
 						new UserSettingsManager();
 						this.advancedThemeManager.bindActions();
+						this.pipThemeManager.bindActions();
 					},
 				],
 				controls_link: ['/menu_controls', () => new ControlSettings()],

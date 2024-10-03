@@ -137,17 +137,67 @@ fieldset input[type=text] {
   transform: translateX(60px);
 }
 
-/* Toggle name text */
 #pro-view-toggle-name {
   font-size: 24px;
   font-weight: bold;
   text-align: center;
 }
 
-/* Toggle status text */
-#pro-view-toggle-status {
-  padding-left: 10px;
-  font-size: 20px;
-  font-weight: bold;
+
+/* PIP switch styling */
+#PIP-view-toggle-container .switch {
+  display: inline-block;
+  position: relative;
+  width: 80px;
+  height: 20px;
 }
 
+#PIP-view-toggle-container .switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+#PIP-view-toggle-container .slider {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 80px;
+  height: 20px;
+  transition: .4s;
+  background-color: #D0D0D0;
+  cursor: pointer;
+  border-radius: 20px;
+}
+
+#PIP-view-toggle-container .slider:before {
+  content: "";
+  position: absolute;
+  bottom: -3px;
+  left: -2px;
+  width: 26px;
+  height: 26px;
+  transition: .4s;
+  background-color: var(--VOR_color);
+  border-radius: 50%;
+}
+
+#PIP-view-toggle-container input:checked+.slider {
+  background-color: #8B7697;
+}
+
+#PIP-view-toggle-container input:focus+.slider {
+  box-shadow: 0 0 1px var(--VOR_color);
+}
+
+#PIP-view-toggle-container input:checked+.slider:before {
+  transform: translateX(60px);
+}
+
+#PIP-view-toggle-name {
+  font-size: 24px;
+  font-weight: bold;
+  text-align: center;
+}

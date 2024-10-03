@@ -47,7 +47,6 @@ class AdvancedThemeManager {
 
 	bindActions() {
 		this.advancedModeCheckBox = document.getElementById('pro-view-toggle-button');
-		this.toggleStatus = $('#pro-view-toggle-status');
 		this.addEventListeners();
 		this.toggleAdvancedTheme();
 	}
@@ -72,10 +71,8 @@ class AdvancedThemeManager {
 
 	changeToggleUI() {
 		if (this.isAdvancedMode) {
-			this.toggleStatus.text('on');
 			this.advancedModeCheckBox.checked = true;
 		} else {
-			this.toggleStatus.text('off');
 			this.advancedModeCheckBox.checked = false;
 		}
 		this.setAdvancedTheme();
@@ -86,6 +83,53 @@ class AdvancedThemeManager {
 			$('body').removeClass('advanced-theme');
 		} else {
 			$('body').addClass('advanced-theme');
+		}
+	}
+}
+
+class PIPThemeManager {
+	/* Picture in picture view for the two streams in the normal ui */
+	constructor() {
+		this.body = document.body;
+		this.isPIPMode = false;
+		this.loadPIPThemeSavedState();
+		this.setPIPTheme();
+	}
+
+	bindActions() {
+		this.PIPModeCheckBox = document.getElementById('PIP-view-toggle-button');
+		this.addEventListeners();
+		this.togglePIPTheme();
+	}
+
+	loadPIPThemeSavedState() {
+		const savedState = localStorage.getItem('PIPMode');
+		this.isPIPMode = savedState === 'true';
+	}
+
+	addEventListeners() {
+		this.PIPModeCheckBox.addEventListener('change', () => {
+			this.isPIPMode = this.PIPModeCheckBox.checked;
+			this.togglePIPTheme();
+		});
+	}
+
+	togglePIPTheme() {
+		this.changeToggleUI();
+		this.setPIPTheme();
+		localStorage.setItem('PIPMode', this.isPIPMode.toString());
+	}
+
+	changeToggleUI() {
+		this.PIPModeCheckBox.checked = this.isPIPMode;
+		this.setPIPTheme();
+	}
+
+	setPIPTheme() {
+		if (this.isPIPMode) {
+			this.body.classList.add('PIP-theme');
+		} else {
+			this.body.classList.remove('PIP-theme');
 		}
 	}
 }
@@ -707,10 +751,11 @@ class CameraControls {
 new NavigationManager();
 new DarkThemeManager();
 const advancedThemeManager = new AdvancedThemeManager();
+const pipThemeManager = new PIPThemeManager();
 const helpMessageManager = new HelpMessageManager();
 const messageContainerManager = new MessageContainerManager(helpMessageManager);
 const roverUI = new RoverUI();
 const inferenceHandling = new InferenceHandling(roverUI);
 const cameraControls = new CameraControls(roverUI);
 
-export { advancedThemeManager, cameraControls, helpMessageManager, inferenceHandling, messageContainerManager, roverUI };
+export { advancedThemeManager, cameraControls, helpMessageManager, inferenceHandling, messageContainerManager, pipThemeManager, roverUI };

@@ -151,5 +151,4 @@ class UserSettingsManager {
 	}
 }
 
-// Initialize the UserSettingsManager class
 export { UserSettingsManager };
