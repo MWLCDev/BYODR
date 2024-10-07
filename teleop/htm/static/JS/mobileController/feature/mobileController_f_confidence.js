@@ -12,7 +12,7 @@ class ConfidenceHandler {
 		this.mapFilename = null;
 	}
 	bindButtonAction() {
-		$('#mobile_controller_container .current_mode_button').click(() => {
+		$(' .current_mode_button').click(() => {
 			if (CTRL_STAT.currentPage === 'map_recognition_link') {
 				if (!$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('map_recognition_loading-mode')) {
 					// Start state
