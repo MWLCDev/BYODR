@@ -4,6 +4,10 @@ body.advanced-theme .advanced_view {
 }
 
 /* #region PIP mode */
+body.PIP-theme #main_stream_view {
+  position: absolute;
+}
+
 body.PIP-theme #second_stream_container {
   display: flex;
   flex-direction: column;
@@ -28,6 +32,7 @@ body.PIP-theme #second_stream_container #second_stream_view {
 body.PIP-theme #second_stream_container #expand_camera_icon {
   display: block;
 }
+
 /* #endregion */
 
 /* #region Dark mode */
