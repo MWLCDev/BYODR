@@ -96,7 +96,7 @@ class FollowingHandler {
 	}
 
 	toggleBodyAppearance(cmd) {
-		$('body').removeClass('image-mode active-mode inactive-mode loading-mode');
+		$('body').removeClass('image-mode active-mode inactive-mode following_loading-mode');
 		if (cmd === 'image') {
 			this.resizeCanvas();
 			this.showCanvas();
@@ -109,7 +109,7 @@ class FollowingHandler {
 			$('body').addClass('inactive-mode');
 			this.hideCanvas();
 		} else if (cmd === 'loading') {
-			$('body').addClass('loading-mode');
+			$('body').addClass('following_loading-mode');
 			this.hideCanvas();
 		}
 	}
