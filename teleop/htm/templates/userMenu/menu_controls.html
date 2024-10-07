@@ -25,32 +25,14 @@
 	<div id="relay-control-container">
 		<h2>Primary Relays</h2>
 		<div class="relay-control-sliders-container">
-			<div id="channel-container">
-				<fieldset class="relay-channel" data-index="2">
-					<legend>Channel 3</legend>
-					<label class="relay-switch">
-						<input type="checkbox" id="channel3-toggle" name="channel3" />
-						<span class="slider round"></span>
-					</label>
-					<div class="on-off-labels">
-						<label for="channel3-toggle" id="channel3-label-off">OFF</label>
-						<label for="channel3-toggle" id="channel3-label-on">ON</label>
-					</div>
-				</fieldset>
-			</div>
-			<div id="channel-container">
-				<fieldset class="relay-channel" data-index="3">
-					<legend>Channel 4</legend>
-					<label class="relay-switch">
-						<input type="checkbox" id="channel4-toggle" name="channel4" />
-						<span class="slider round"></span>
-					</label>
-					<div class="on-off-labels">
-						<label for="channel4-toggle" id="channel4-label-off">OFF</label>
-						<label for="channel4-toggle" id="channel4-label-on">ON</label>
-					</div>
-				</fieldset>
-			</div>
+			<fieldset class="relay-channel" data-index="2">
+				<legend>Channel 3</legend>
+				<div class="toggle" id="channel3-toggle"></div>
+			</fieldset>
+			<fieldset class="relay-channel" data-index="3">
+				<legend>Channel 4</legend>
+				<div class="toggle" id="channel4-toggle"></div>
+			</fieldset>
 		</div>
 	</div>
 

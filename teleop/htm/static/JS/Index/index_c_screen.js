@@ -36,19 +36,18 @@ class DarkThemeManager {
 		this.body.classList.toggle('dark-theme', isDarkMode); //Add dark mode to body only
 	}
 }
-
 class AdvancedThemeManager {
 	constructor() {
 		this.body = document.body;
-		this.isAdvancedMode = true;
+		this.isAdvancedMode = false;
 		this.loadAdvancedThemeSavedState();
 		this.setAdvancedTheme();
 	}
 
 	bindActions() {
-		this.advancedModeCheckBox = document.getElementById('pro-view-toggle-button');
+		this.advancedModeToggle = document.getElementById('pro-view-toggle-button');
 		this.addEventListeners();
-		this.toggleAdvancedTheme();
+		this.updateToggleUI();
 	}
 
 	loadAdvancedThemeSavedState() {
@@ -57,38 +56,36 @@ class AdvancedThemeManager {
 	}
 
 	addEventListeners() {
-		this.advancedModeCheckBox.addEventListener('change', () => {
-			this.isAdvancedMode = this.advancedModeCheckBox.checked;
+		this.advancedModeToggle.addEventListener('click', () => {
+			this.isAdvancedMode = !this.isAdvancedMode;
 			this.toggleAdvancedTheme();
 		});
 	}
 
 	toggleAdvancedTheme() {
-		this.changeToggleUI();
+		this.updateToggleUI();
 		this.setAdvancedTheme();
 		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
-	changeToggleUI() {
+	updateToggleUI() {
 		if (this.isAdvancedMode) {
-			this.advancedModeCheckBox.checked = true;
+			this.advancedModeToggle.classList.add('active');
 		} else {
-			this.advancedModeCheckBox.checked = false;
+			this.advancedModeToggle.classList.remove('active');
 		}
-		this.setAdvancedTheme();
 	}
 
 	setAdvancedTheme() {
 		if (this.isAdvancedMode) {
-			$('body').removeClass('advanced-theme');
+			this.body.classList.add('advanced-theme');
 		} else {
-			$('body').addClass('advanced-theme');
+			this.body.classList.remove('advanced-theme');
 		}
 	}
 }
 
 class PIPThemeManager {
-	/* Picture in picture view for the two streams in the normal ui */
 	constructor() {
 		this.body = document.body;
 		this.isPIPMode = false;
@@ -97,9 +94,9 @@ class PIPThemeManager {
 	}
 
 	bindActions() {
-		this.PIPModeCheckBox = document.getElementById('PIP-view-toggle-button');
+		this.PIPModeToggle = document.getElementById('PIP-view-toggle-button');
 		this.addEventListeners();
-		this.togglePIPTheme();
+		this.updateToggleUI();
 	}
 
 	loadPIPThemeSavedState() {
@@ -108,21 +105,24 @@ class PIPThemeManager {
 	}
 
 	addEventListeners() {
-		this.PIPModeCheckBox.addEventListener('change', () => {
-			this.isPIPMode = this.PIPModeCheckBox.checked;
+		this.PIPModeToggle.addEventListener('click', () => {
+			this.isPIPMode = !this.isPIPMode;
 			this.togglePIPTheme();
 		});
 	}
 
 	togglePIPTheme() {
-		this.changeToggleUI();
+		this.updateToggleUI();
 		this.setPIPTheme();
 		localStorage.setItem('PIPMode', this.isPIPMode.toString());
 	}
 
-	changeToggleUI() {
-		this.PIPModeCheckBox.checked = this.isPIPMode;
-		this.setPIPTheme();
+	updateToggleUI() {
+		if (this.isPIPMode) {
+			this.PIPModeToggle.classList.add('active');
+		} else {
+			this.PIPModeToggle.classList.remove('active');
+		}
 	}
 
 	setPIPTheme() {

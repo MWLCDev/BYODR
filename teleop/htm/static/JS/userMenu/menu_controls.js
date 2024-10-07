@@ -8,37 +8,63 @@ class ControlSettings {
 		this.offsetInputText = $('#offset_input_value');
 		this.deadZoneInputText = $('#dead_zone_width_value');
 
+		this.channel3Toggle = $('#channel3-toggle');
+		this.channel4Toggle = $('#channel4-toggle');
+
 		this.initDomElements();
 	}
 
 	initDomElements() {
 		this.fetchRoverData();
 		this.bindSliderInputListeners();
-		this.bindBoldTextListeners();
+		this.bindToggleListeners();
 		this.updateRelayStates();
 	}
 
 	bindSliderInputListeners() {
-		// Bindings for scale and offset inputs
 		this.scaleInput.on('input touchmove', () => {
 			this.scaleInputText.text(this.scaleInput.val());
 		});
 		this.offsetInput.on('input touchmove', () => {
 			this.offsetInputText.text(this.offsetInput.val());
 		});
-
-		// Binding for dead zone input
 		this.deadZoneInput.on('input touchmove', () => {
 			this.deadZoneInputText.text(this.deadZoneInput.val());
 		});
 
-		// Post data on 'change' event
 		this.scaleInput
 			.add(this.offsetInput)
 			.add(this.deadZoneInput)
 			.on('change touchend', () => {
 				this.sendDataToBackend();
 			});
+	}
+
+	bindToggleListeners() {
+		this.channel3Toggle.on('click', () => {
+			this.channel3Toggle.toggleClass('active');
+			this.sendToggleStateToBackend(2, this.channel3Toggle.hasClass('active'));
+		});
+
+		this.channel4Toggle.on('click', () => {
+			this.channel4Toggle.toggleClass('active');
+			this.sendToggleStateToBackend(3, this.channel4Toggle.hasClass('active'));
+		});
+	}
+
+	sendToggleStateToBackend(channelIndex, isActive) {
+		let data = {
+			channel: channelIndex,
+			state: isActive,
+		};
+
+		$.ajax({
+			url: '/teleop/pilot/controls/relay/state',
+			method: 'POST',
+			contentType: 'application/json',
+			data: JSON.stringify(data),
+			error: (error) => console.error('Error sending toggle state:', error),
+		});
 	}
 
 	fetchRoverData() {
@@ -51,58 +77,25 @@ class ControlSettings {
 			.fail((error) => console.error('Error fetching data:', error));
 	}
 
-	sendDataToBackend() {
-		let data = {
-			vehicle: [
-				['ras.driver.motor.scale', this.scaleInput.val()],
-				['ras.driver.steering.offset', this.offsetInput.val()],
-				['ras.driver.deadzone.width', this.deadZoneInput.val()],
-			].filter((setting) => setting[1] !== ''),
-		};
-
-		$.ajax({
-			url: '/teleop/user/options',
-			method: 'POST',
-			contentType: 'application/json',
-			data: JSON.stringify(data),
-			error: (error) => console.error('Error:', error),
-		});
-	}
-
 	updateRelayStates() {
 		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`)
 			.done((response) => {
-				$('.channel').each(function () {
-					const index = $(this).data('index');
-					const state = response.states[index] === true;
-					$(this).find(`input[value="${state}"]`).prop('checked', state);
-				});
+				const channel3State = response.states[2] === true;
+				const channel4State = response.states[3] === true;
+
+				this.channel3Toggle.toggleClass('active', channel3State);
+				this.channel4Toggle.toggleClass('active', channel4State);
 			})
 			.fail((error) => console.error('Error updating relay states:', error));
 	}
 
 	bindBoldTextListeners() {
-		// General function to bind and update label styles
-		const bindAndUpdate = (toggle, labelOn, labelOff) => {
-			toggle
-				.on('change', () => {
-					this.updateLabelStyles(toggle[0], labelOn[0], labelOff[0]);
-				})
-				.trigger('change');
+		const bindAndUpdate = (toggle) => {
+			toggle.on('change', () => {}).trigger('change');
 		};
 
-		bindAndUpdate($('#channel3-toggle'), $('#channel3-label-on'), $('#channel3-label-off'));
-		bindAndUpdate($('#channel4-toggle'), $('#channel4-label-on'), $('#channel4-label-off'));
-	}
-
-	updateLabelStyles(checkbox, labelOn, labelOff) {
-		if (checkbox.checked) {
-			labelOn.style.fontWeight = 'bold';
-			labelOff.style.fontWeight = 'normal';
-		} else {
-			labelOn.style.fontWeight = 'normal';
-			labelOff.style.fontWeight = 'bold';
-		}
+		bindAndUpdate(this.channel3Toggle);
+		bindAndUpdate(this.channel4Toggle);
 	}
 }
 
