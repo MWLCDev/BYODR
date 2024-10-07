@@ -488,6 +488,7 @@ body {
   flex-direction: row;
   justify-content: space-between;
   overflow: hidden;
+  position: absolute;
 }
 
 #main_stream_container,
