@@ -2,20 +2,40 @@ body {
   overflow: auto;
 }
 
-.button {
+#advanced_settings_form_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#advanced_settings_form_buttons {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+#edit_button,
+#submit_save_apply {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
   width: 80px;
+  height: 1em;
   transition: background-color 0.3s ease, color 0.3s ease;
   cursor: pointer;
   border-radius: 8px;
-  font-weight: 700;
-  text-align: center;
+  text-transform: uppercase;
 }
 
 #edit_button {
-  margin-left: auto;
+  margin-bottom: auto;
   color: var(--VOR_color);
+}
 
+#submit_save_apply {
+  margin-top: auto;
+  background-color: var(--VOR_color);
+  color: #f0f0f0;
 }
 
 #form_user_options {
@@ -37,7 +57,6 @@ fieldset {
   border: 0;
 }
 
-/* Style the legend of the fieldset */
 legend {
   padding-top: 10px;
   padding-right: 10px;
@@ -46,7 +65,6 @@ legend {
   font-weight: bold;
 }
 
-/* Style the input text of the fieldset */
 fieldset input[type=text] {
   box-shadow: inset 0px 0px 7px rgba(0, 0, 0, 0.2);
   width: 40%;
@@ -58,34 +76,26 @@ fieldset input[type=text] {
   font-size: 16px;
 }
 
-#submit_save_apply {
-  margin-left: auto;
-  background-color: var(--VOR_color);
-
-  color: #f0f0f0;
+fieldset input[type=checkbox] {
+  margin-left: 15px;
+  padding: 5px;
 }
 
-/*////////////    Style for the pro view toggle slider    ////////////*/
-/* The switch - the box around the slider */
-/* slider:before - the ball inside the slider */
+
+
+#view-switch {
+  display: flex;
+  flex-direction: row;
+  gap: 3em;
+  padding-top: 3em;
+}
+
+/* #region Pro view*/
 #pro-view-toggle-div {
   position: relative;
   width: fit-content;
-  padding-top: 3vh;
 }
 
-#pro-view-toggle-div span {
-  margin: 0 10px;
-}
-
-#pro-view-toggle-slider {
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  margin-top: 10px;
-}
-
-/* Toggle switch styling */
 #pro-view-toggle-div .switch {
   display: inline-block;
   position: relative;
@@ -138,13 +148,16 @@ fieldset input[type=text] {
 }
 
 #pro-view-toggle-name {
-  font-size: 24px;
+  margin-bottom: 1em;
+  font-size: 20px;
   font-weight: bold;
   text-align: center;
 }
 
+/* #endregion */
 
-/* PIP switch styling */
+
+/* #region PIP switch styling */
 #PIP-view-toggle-container .switch {
   display: inline-block;
   position: relative;
@@ -197,7 +210,10 @@ fieldset input[type=text] {
 }
 
 #PIP-view-toggle-name {
-  font-size: 24px;
+  margin-bottom: 1em;
+  font-size: 20px;
   font-weight: bold;
   text-align: center;
 }
+
+/* #endregion */
