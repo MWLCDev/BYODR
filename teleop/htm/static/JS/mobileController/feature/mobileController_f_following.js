@@ -26,7 +26,6 @@ class FollowingHandler {
 					this.sendSwitchFollowingRequest('show_image');
 				}
 			} else {
-				console.log('doing the else statement');
 				this.sendSwitchFollowingRequest('inactive');
 			}
 		});
@@ -134,7 +133,6 @@ class FollowingHandler {
 	}
 	refreshImage() {
 		if (!this.streamActive) {
-			// console.log('Stream is not active, skipping refresh');
 			return;
 		}
 		fetch('/latest_image?' + new Date().getTime(), {
@@ -146,7 +144,6 @@ class FollowingHandler {
 			.then((response) => {
 				// Check if the server returned a 204 status (No Content)
 				if (response.status === 204) {
-					console.log('No image available to display.');
 					return null; // Skip processing the image
 				}
 				return response.blob(); // Get the image blob if the status is not 204

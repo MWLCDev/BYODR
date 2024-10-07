@@ -12,7 +12,6 @@ class AutoNavigationHandler {
 
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
-			console.log(CTRL_STAT.currentPage);
 			if (CTRL_STAT.currentPage === 'auto_navigation_link') {
 				if (!$('body').hasClass('navigation-started')) {
 					this.startAutoNavigation();

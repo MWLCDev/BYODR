@@ -42,7 +42,6 @@ class ConfidenceHandler {
 		$('body').removeClass('stop-mode map_recognition_loading-mode return-mode');
 	}
 	toggleButtonAppearance(cmd) {
-		console.log(cmd);
 		this.resetBodyClasses();
 		if (cmd === 'show_stop_mode') {
 			$('body').addClass('stop-mode');
@@ -68,7 +67,6 @@ class ConfidenceHandler {
 		};
 
 		this.confidenceWS.websocket.onclose = () => {
-			console.log('Confidence websocket connection closed');
 			this.confidenceWS.isWebSocketOpen = false;
 			setTimeout(() => this.checkAndReconnectWebSocket(), 500);
 		};
