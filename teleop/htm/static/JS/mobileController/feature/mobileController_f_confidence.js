@@ -14,7 +14,7 @@ class ConfidenceHandler {
 	bindButtonAction() {
 		$('#mobile_controller_container .current_mode_button').click(() => {
 			if (CTRL_STAT.currentPage === 'map_recognition_link') {
-				if (!$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('result-mode') && !$('body').hasClass('loading-mode')) {
+				if (!$('body').hasClass('stop-mode') && !$('body').hasClass('return-mode') && !$('body').hasClass('map_recognition_loading-mode')) {
 					// Start state
 					this.sendSwitchConfidenceRequest('start_confidence');
 					this.toggleButtonAppearance('show_stop_mode');
@@ -39,7 +39,7 @@ class ConfidenceHandler {
 	}
 
 	resetBodyClasses() {
-		$('body').removeClass('stop-mode loading-mode result-mode return-mode');
+		$('body').removeClass('stop-mode map_recognition_loading-mode return-mode');
 	}
 	toggleButtonAppearance(cmd) {
 		console.log(cmd);
@@ -47,7 +47,7 @@ class ConfidenceHandler {
 		if (cmd === 'show_stop_mode') {
 			$('body').addClass('stop-mode');
 		} else if (cmd === 'show_loading_mode') {
-			$('body').addClass('loading-mode');
+			$('body').addClass('map_recognition_loading-mode');
 		} else if (cmd === 'show_return_mode') {
 			$('body').addClass('return-mode');
 		}

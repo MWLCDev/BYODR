@@ -236,21 +236,21 @@ body.confidence-feature.stop-mode .control_symbol {
 }
 
 /* Loading mode */
-body.confidence-feature.loading-mode .current_mode_state {
+body.confidence-feature.map_recognition_loading-mode .current_mode_state {
   display: block;
   color: #ff8a00;
 }
 
-body.confidence-feature.loading-mode .current_mode_state:before {
+body.confidence-feature.map_recognition_loading-mode .current_mode_state:before {
   content: 'Loading...';
 }
 
-body.confidence-feature.loading-mode .current_mode_button {
+body.confidence-feature.map_recognition_loading-mode .current_mode_button {
   display: none;
 }
 
-body.confidence-feature.loading-mode #mobile_controller_container .middle_section,
-body.confidence-feature.loading-mode #mobile_controller_container .square {
+body.confidence-feature.map_recognition_loading-mode #mobile_controller_container .middle_section,
+body.confidence-feature.map_recognition_loading-mode #mobile_controller_container .square {
   display: none;
 }
 
@@ -342,12 +342,12 @@ body.following-feature.inactive-mode #mobile_controller_container .square {
 }
 
 /* Loading mode */
-body.following-feature.loading-mode #mobile_controller_container .current_mode_state:before {
+body.following-feature.following_loading-mode #mobile_controller_container .current_mode_state:before {
   content: 'Loading...';
 }
 
-body.following-feature.loading-mode .current_mode_button,
-body.following-feature.loading-mode #mobile_controller_container .square {
+body.following-feature.following_loading-mode .current_mode_button,
+body.following-feature.following_loading-mode #mobile_controller_container .square {
   display: none;
 }
 
