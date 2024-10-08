@@ -1,10 +1,10 @@
 import { isMobileDevice } from './Index/index_a_utils.js';
 import { roverUI } from './Index/index_c_screen.js';
-import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { autoNavigationNavButtonHandler } from './mobileController/feature/mobileController_f_auto_navigation.js';
 import { confidenceNavButtonHandler } from './mobileController/feature/mobileController_f_confidence.js';
 import { followingNavButtonHandler } from './mobileController/feature/mobileController_f_following.js';
 import { maneuverTrainingNavButtonHandler } from './mobileController/feature/mobileController_f_maneuver_training.js';
+import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js';
 import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
@@ -27,6 +27,7 @@ export class Router {
 			follow_link: 'follow',
 		};
 	}
+
 	bindDomActions() {
 		$('.hamburger_menu_nav a').click((event) => {
 			this.handleUserMenuRoute(event.target.id);
@@ -89,6 +90,7 @@ export class Router {
 	}
 
 	switchFolState(selectedLinkId) {
+		/*To stop following when the user navigates from fol to another mode. This is the reason the pooling socket for fol, needs to be working all the time in the backend  */
 		try {
 			if (this.previousPage === 'follow_link' && selectedLinkId !== 'follow_link') {
 				followingNavButtonHandler.sendSwitchFollowingRequest('inactive');
