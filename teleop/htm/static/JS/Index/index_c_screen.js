@@ -604,7 +604,7 @@ class InferenceHandling {
 	}
 
 	updateAutopilotUI(infMessage) {
-		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
+		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} Km/h`);
 		this.roverUI.renderDistanceIndicators('front');
 	}
 

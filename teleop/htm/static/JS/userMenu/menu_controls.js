@@ -1,5 +1,11 @@
 class ControlSettings {
 	constructor() {
+		this.cacheDomElements();
+		this.initializeSettings();
+	}
+
+	cacheDomElements() {
+		// Caching DOM elements
 		this.scaleInput = $('#scale_input');
 		this.offsetInput = $('#offset_input');
 		this.deadZoneInput = $('#dead_zone_input');
@@ -10,92 +16,100 @@ class ControlSettings {
 
 		this.channel3Toggle = $('#channel3-toggle');
 		this.channel4Toggle = $('#channel4-toggle');
-
-		this.initDomElements();
 	}
 
-	initDomElements() {
-		this.fetchRoverData();
-		this.bindSliderInputListeners();
-		this.bindToggleListeners();
-		this.updateRelayStates();
+	initializeSettings() {
+		this.fetchAndUpdateRoverData();
+		this.setupInputListeners();
+		this.setupRelayToggleListeners();
+		this.fetchAndUpdateRelayStates();
 	}
 
-	bindSliderInputListeners() {
-		this.scaleInput.on('input touchmove', () => {
-			this.scaleInputText.text(this.scaleInput.val());
-		});
-		this.offsetInput.on('input touchmove', () => {
-			this.offsetInputText.text(this.offsetInput.val());
-		});
-		this.deadZoneInput.on('input touchmove', () => {
-			this.deadZoneInputText.text(this.deadZoneInput.val());
-		});
+	setupInputListeners() {
+		this.bindSliderChangeEvents();
+		this.bindSliderValueUpdates();
+	}
 
+	bindSliderChangeEvents() {
+		// Sends data to the backend when the slider values change
 		this.scaleInput
 			.add(this.offsetInput)
 			.add(this.deadZoneInput)
-			.on('change touchend', () => {
-				this.sendDataToBackend();
-			});
+			.on('change touchend', () => this.sendSliderDataToBackend());
 	}
 
-	bindToggleListeners() {
-		this.channel3Toggle.on('click', () => {
-			this.channel3Toggle.toggleClass('active');
-			this.sendToggleStateToBackend(2, this.channel3Toggle.hasClass('active'));
-		});
-
-		this.channel4Toggle.on('click', () => {
-			this.channel4Toggle.toggleClass('active');
-			this.sendToggleStateToBackend(3, this.channel4Toggle.hasClass('active'));
-		});
+	bindSliderValueUpdates() {
+		// Updates the text values based on slider inputs
+		this.scaleInput.on('input touchmove', () => this.updateSliderValue(this.scaleInput, this.scaleInputText));
+		this.offsetInput.on('input touchmove', () => this.updateSliderValue(this.offsetInput, this.offsetInputText));
+		this.deadZoneInput.on('input touchmove', () => this.updateSliderValue(this.deadZoneInput, this.deadZoneInputText));
 	}
 
-	sendToggleStateToBackend(channelIndex, isActive) {
-		let data = {
-			channel: channelIndex,
-			state: isActive,
+	updateSliderValue(input, displayElement) {
+		displayElement.text(input.val());
+	}
+
+	fetchAndUpdateRoverData() {
+		// Fetches rover data and updates input fields accordingly
+		$.get('/teleop/user/options')
+			.done((data) => this.updateInputsFromData(data))
+			.fail((error) => console.error('Error fetching rover data:', error));
+	}
+
+	updateInputsFromData(data) {
+		this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
+		this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
+		this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
+	}
+
+	sendSliderDataToBackend() {
+		const data = {
+			vehicle: this.getSliderData(),
 		};
 
 		$.ajax({
-			url: '/teleop/pilot/controls/relay/state',
+			url: '/teleop/user/options',
 			method: 'POST',
 			contentType: 'application/json',
 			data: JSON.stringify(data),
-			error: (error) => console.error('Error sending toggle state:', error),
+			error: (error) => console.error('Error sending data to backend:', error),
 		});
 	}
 
-	fetchRoverData() {
-		$.get('/teleop/user/options')
-			.done((data) => {
-				this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
-				this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
-				this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
-			})
-			.fail((error) => console.error('Error fetching data:', error));
+	getSliderData() {
+		// Collects slider data to be sent to the backend
+		return [
+			['ras.driver.motor.scale', this.scaleInput.val()],
+			['ras.driver.steering.offset', this.offsetInput.val()],
+			['ras.driver.deadzone.width', this.deadZoneInput.val()],
+		].filter(([key, value]) => value !== '');
 	}
 
-	updateRelayStates() {
-		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`)
-			.done((response) => {
-				const channel3State = response.states[2] === true;
-				const channel4State = response.states[3] === true;
-
-				this.channel3Toggle.toggleClass('active', channel3State);
-				this.channel4Toggle.toggleClass('active', channel4State);
-			})
+	fetchAndUpdateRelayStates() {
+		// Fetches relay states and updates the UI
+		const relayUrl = `${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`;
+		$.get(relayUrl)
+			.done((response) => this.updateRelayControls(response.states))
 			.fail((error) => console.error('Error updating relay states:', error));
 	}
 
-	bindBoldTextListeners() {
-		const bindAndUpdate = (toggle) => {
-			toggle.on('change', () => {}).trigger('change');
-		};
+	updateRelayControls(states) {
+		$('.channel').each(function () {
+			const index = $(this).data('index');
+			const state = states[index] === true;
+			$(this).find(`input[value="${state}"]`).prop('checked', state);
+		});
+	}
 
-		bindAndUpdate(this.channel3Toggle);
-		bindAndUpdate(this.channel4Toggle);
+	setupRelayToggleListeners() {
+		// Sets up listeners for relay toggle buttons
+		this.bindToggleListener(this.channel3Toggle);
+		this.bindToggleListener(this.channel4Toggle);
+	}
+
+	bindToggleListener(toggleElement) {
+		// These relays aren't used in the smaller boxes and they were not used with the older boxes. There is no need to implement the full logic for them here
+		toggleElement.on('change', () => {}).trigger('change');
 	}
 }
 

@@ -89,7 +89,11 @@ body {
   padding: 1em 2em;
   border-bottom: 2px solid var(--VOR_light_color);
   color: var(--VOR_color);
+  background-color: var(--background_color_light_mode);
+  position: sticky;
+  top: 0;
 }
+
 
 #header_bar .left_section,
 #header_bar .middle_section,
@@ -125,6 +129,7 @@ body {
 
 #header_bar .right_section .current_mode_img {
   height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -133,8 +138,10 @@ body {
 #header_bar .right_section .current_mode_img svg {
   max-height: 100%;
   height: auto;
+  display: block;
   width: auto;
 }
+
 
 #VOR_center_logo {
   display: block;
@@ -273,7 +280,7 @@ body {
 
 .inf_speed {
   display: none;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
   align-content: center;
@@ -341,11 +348,10 @@ body {
   font-size: 14px;
 }
 
-
-
 .inf_speed_value {
   display: none;
   font-weight: bold;
+  margin-right: 0.5em;
 }
 
 .speed_display {

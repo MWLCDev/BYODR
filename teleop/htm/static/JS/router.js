@@ -62,8 +62,7 @@ export class Router {
 		if (isMobileDevice()) {
 			$('#header_bar .left_section').show();
 			$('#header_bar .right_section').show();
-			$('.rover_speed_label').css('font-size', '5px');
-			$('.inf_speed_label').css('font-size', '5px');
+			$('.rover_speed_label').css('font-size', '8px');
 			if (['settings_link', 'controls_link', 'events_link'].includes(selectedLinkId)) {
 				$('#header_bar .left_section').hide();
 				$('#header_bar .right_section').hide();

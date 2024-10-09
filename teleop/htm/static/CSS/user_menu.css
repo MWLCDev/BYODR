@@ -147,17 +147,6 @@
   color: #D0D0D0;
 }
 
-.current_mode_img {
-  width: 100%;
-  height: 100%;
-  display: inline-block;
-}
-
-.current_mode_img svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
 .hamburger_menu_nav a.active {
   color: #F7DA6F;

@@ -36,7 +36,8 @@ body.PIP-theme #second_stream_container #expand_camera_icon {
 /* #endregion */
 
 /* #region Dark mode */
-body.dark-theme {
+body.dark-theme,
+body.dark-theme #header_bar {
   background-color: var(--background_color_dark_mode);
   color: var(--text_color_dark_mode);
 }
@@ -64,6 +65,11 @@ body.dark-theme #controls_settings_container .title,
 body.dark-theme #logbox_container .title {
   color: var(--text_color_dark_mode);
 }
+
+body.dark-theme .control_symbol {
+  background: var(--secondary_background_dark_mode);
+}
+
 
 body.dark-theme table tbody>tr:nth-child(odd) {
   background-color: var(--secondary_background_dark_mode);
@@ -152,7 +158,14 @@ body.auto-navigation-feature #backward_square .square_text:before {
 body.auto-navigation-feature .current_mode_button {
   display: block;
   background-color: var(--VOR_color);
-  color: white;
+  color: var(--text_color_light_mode);
+
+}
+
+body.dark-theme.auto-navigation-feature .current_mode_button {
+  background-color: var(--background_color_light_mode);
+  color: var(--text_color_light_mode);
+
 }
 
 body.auto-navigation-feature .current_mode_text,
@@ -169,6 +182,7 @@ body.auto-navigation-feature .control_symbol {
 body.auto-navigation-feature.navigation-started .current_mode_button {
   content: 'stop';
   background-color: #f41e52;
+  box-shadow: 4px 6px 8px #ff4a77;
   border: none;
 }
 

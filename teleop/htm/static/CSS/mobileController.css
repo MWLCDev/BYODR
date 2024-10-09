@@ -54,7 +54,6 @@
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
-
 }
 
 #horizontal_bar .current_mode_text:before {
@@ -73,6 +72,10 @@
   font-weight: bold;
   color: #451c58;
   text-transform: uppercase;
+}
+
+#mobile_controller_container .inf_speed_label {
+  font-size: 8px;
 }
 
 #mobile_controller_container #main_view {
@@ -95,6 +98,14 @@
   border: 0.5rem solid;
   border-color: #f6f6f6;
   border-radius: 1rem;
+}
+
+.square .trail_canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Removes any default inline spacing */
+
 }
 
 #forward_square .square_text {
@@ -147,7 +158,7 @@
   width: 40vw;
   height: 40vw;
   transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
-  background: #fff;
+  background: var(--secondary_background_light_mode);
   border: 14px solid #d0d0d0;
   border-radius: 100%;
   vertical-align: middle;

@@ -135,3 +135,9 @@ body {
 .toggle.active::before {
   left: calc(100% - 1em);
 }
+
+@media (max-width: 768px) {
+  #view-switch {
+    flex-direction: column;
+  }
+}
