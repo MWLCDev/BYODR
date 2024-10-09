@@ -55,6 +55,7 @@ class AbstractRelay(six.with_metaclass(ABCMeta, object)):
 
 class NoopMonitoringRelay(AbstractRelay):
     """Fake class made for testing"""
+
     def setup(self):
         return []
 
@@ -147,7 +148,8 @@ class RealMonitoringRelay(AbstractRelay):
         _steering_offset = parse_option("ras.driver.steering.offset", float, 0.0, errors, **_config)
         _motor_scale = parse_option("ras.driver.motor.scale", float, 1.0, errors, **_config)
         _motor_alternate = parse_option("ras.driver.motor.alternate", bool, False, errors, **_config)
-        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, motor_alternate=_motor_alternate)
+        _is_gpio_relay = parse_option("driver.gpio_relay", bool, False, errors, **_config)
+        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, is_gpio_relay=_is_gpio_relay, motor_alternate=_motor_alternate)
         self._integrity.reset()
         self._send_config(self._servo_config)
         return errors
