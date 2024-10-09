@@ -37,7 +37,7 @@ services:
     depends_on:
       - "pigpiod"
     network_mode: "host"
-    command: bash -c "modprobe i2c-dev && python3 -m ras.servos --config /config/driver.ini"
+    command: bash -c "modprobe i2c-dev && python3 -m ras.servos"
     environment:
       GPIOZERO_PIN_FACTORY: 'pigpio'
     volumes:

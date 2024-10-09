@@ -37,8 +37,8 @@ def _interrupt():
 
 
 class AbstractDriver(ABC):
-    def __init__(self, relay):
-        self._relay = relay
+    def __init__(self):
+        self._relay = None
 
     @staticmethod
     def configuration_check(config):
@@ -80,36 +80,23 @@ class AbstractDriver(ABC):
         raise NotImplementedError()
 
 
-class ConfigFiles:
+class ConfigFile:
     def __init__(self, config_dir):
         self._config_dir = config_dir
-        self.__set_parsers()
-
-    def __set_parsers(self):
-        self.servos_config_dir = os.path.join(self._config_dir, "driver.ini")
-        self.servos_config_parser = ConfigParser()
-        self.servos_config_parser.read(self.servos_config_dir)
+        self.driver_config_dir = os.path.join(self._config_dir, "driver.ini")
+        self.driver_config_parser = ConfigParser()
+        self.check_configuration_files()
 
     def check_configuration_files(self):
         """Checks if the configuration file exists, if not, creates it from the template."""
         config_file = "driver.ini"
         template_file_path = "ras/driver.template"
 
-        if not os.path.exists(self.servos_config_dir):
-            shutil.copyfile(template_file_path, self.servos_config_dir)
-            logger.info("Created {} from template at {}".format(config_file, self.servos_config_dir))
+        if not os.path.exists(self.driver_config_dir):
+            shutil.copyfile(template_file_path, self.driver_config_dir)
+            logger.info("Created {} from template at {}".format(config_file, self.driver_config_dir))
 
-        self._verify_and_add_missing_keys(self.servos_config_dir, template_file_path)
-
-    def read_configuration(self):
-        parser = ConfigParser()
-        parser.read(self.servos_config_dir)
-        servos_file_arguments = {}
-        if parser.has_section("driver"):
-            servos_file_arguments.update(dict(parser.items("driver")))
-        if parser.has_section("odometer"):
-            servos_file_arguments.update(dict(parser.items("odometer")))
-        return servos_file_arguments
+        self._verify_and_add_missing_keys(self.driver_config_dir, template_file_path)
 
     def _verify_and_add_missing_keys(self, ini_file, template_file):
         config = ConfigParser()
@@ -128,33 +115,61 @@ class ConfigFiles:
                     logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
 
         # Save changes to the ini file if any modifications have been made
-        with open(ini_file, "w") as configfile:
-            config.write(configfile)
+        with open(ini_file, "w") as config_file:
+            config.write(config_file)
+
+    def read_configuration(self):
+        self.driver_config_parser.read(self.driver_config_dir)
+        servos_file_arguments = {}
+        if self.driver_config_parser.has_section("driver"):
+            servos_file_arguments.update(dict(self.driver_config_parser.items("driver")))
+        if self.driver_config_parser.has_section("odometer"):
+            servos_file_arguments.update(dict(self.driver_config_parser.items("odometer")))
+        return servos_file_arguments
 
 
 class DualVescDriver(AbstractDriver):
-    def __init__(self, relay, config_file_dir, **kwargs):
-        super().__init__(relay)
-        self._relay.close()
-        self._config_file_dir = config_file_dir
-        self._config_file_path = os.path.join(self._config_file_dir, "drive_config.ini")
+    def __init__(self, config_file):
+        super().__init__()
         self._previous_motor_alternate = None
-        self._pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **kwargs)
-        # Initialize with default configuration
-        self.update_drive_instances(kwargs)
-        self.last_config = None  # Attribute to store the last configuration
-
+        self.last_config = None  # Attribute to store the last configuration received from the nano
         self._steering_offset = 0
-        self._steering_effect = max(0.0, float(kwargs.get("drive.steering.effect", 1.8)))
-        self._throttle_config = dict(scale=parse_option("throttle.domain.scale", float, 2.0, **kwargs))
-        self._axes_ordered = kwargs.get("drive.axes.mount.order", "normal") == "normal"
-        self._axis0_multiplier = 1 if kwargs.get("drive.axis0.mount.direction", "forward") == "forward" else -1
-        self._axis1_multiplier = 1 if kwargs.get("drive.axis1.mount.direction", "forward") == "forward" else -1
+
+        self.config_file = config_file
+        self.driver_config = self.config_file.read_configuration()
+
+        self._setup_driver_configs()
+        self._check_relay_type()
+        self.update_drive_instances(self.driver_config)
+        self._relay.close()
+
+    def _setup_driver_configs(self):
+        self._pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **self.driver_config)
+        self._steering_effect = max(0.0, float(self.driver_config.get("drive.steering.effect", 1.8)))
+        self._throttle_config = dict(scale=parse_option("throttle.domain.scale", float, 2.0, **self.driver_config))
+        self._axes_ordered = self.driver_config.get("drive.axes.mount.order", "normal") == "normal"
+        self._axis0_multiplier = 1 if self.driver_config.get("drive.axis0.mount.direction", "forward") == "forward" else -1
+        self._axis1_multiplier = 1 if self.driver_config.get("drive.axis1.mount.direction", "forward") == "forward" else -1
+
+    def _check_relay_type(self):
+        """Decide on the relay type based on configuration and initialize it."""
+        try:
+            gpio_relay = self.driver_config.get("driver.gpio_relay", "false").strip().lower() == "true"
+            if gpio_relay:
+                self._relay = ThreadSafePi4GpioRelay()
+                logger.info("Initialized GPIO Relay")
+            else:
+                self._relay = SearchUsbRelayFactory().get_relay()
+                logger.info("Initialized USB Relay")
+                assert self._relay.is_attached(), "The relay device is not attached."
+        except AssertionError as e:
+            logger.error("Relay initialization error: %s", e)
+            raise
+        except Exception as e:
+            logger.error("Unexpected error during relay type checking: %s", e)
+            raise
 
     def update_drive_instances(self, config):
-        parser = ConfigParser()
-        parser.read(self._config_file_path)
-
         motor_alternate = config.get("motor_alternate", False)
         if motor_alternate != self._previous_motor_alternate:
             self._previous_motor_alternate = motor_alternate
@@ -179,7 +194,7 @@ class DualVescDriver(AbstractDriver):
                 self._throttle_config["scale"] = max(0, config.get("motor_scale"))
                 self.update_drive_instances(config)
                 logger.info("Received new configuration {}.".format(config))
-                self.last_config = config  # Update last configuration
+                self.last_config = config
 
     def has_sensors(self):
         return self.is_configured()
@@ -225,33 +240,27 @@ class MainApplication(Application):
     def __init__(self, event, config_dir, hz, test_mode=False):
         super(MainApplication, self).__init__(run_hz=hz, quit_event=event)
         self.test_mode = test_mode
-        self.config_dir = config_dir  # Changed to config_dir for consistency
-        self.relay = None
         self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
         self._drive_queue = collections.deque(maxlen=4)
-
         self._last_drive_command = None
         self._chassis = None
         self.platform = None
         self.publisher = None
         self._odometer = None
 
-        self.config_files = ConfigFiles(self.config_dir)
-        self._check_relay_type()
-        self.setup_components()
+        # Instantiate ConfigFile
+        self.config_file = ConfigFile(config_dir)
 
     def setup_components(self):
-        # Use ConfigFiles instance to check and read configurations
-        self.config_files.check_configuration_files()
-        kwargs = self.config_files.read_configuration()
+        kwargs = self.config_file.read_configuration()
 
         self._odometer = HallOdometer(**kwargs)
 
         drive_type = kwargs.get("drive.type", "unknown")
         if drive_type == "vesc_dual":
-            self._chassis = DualVescDriver(self.relay, self.config_dir, **kwargs)
+            self._chassis = DualVescDriver(self.config_file)
         else:
             raise AssertionError("Unknown drive type '{}'.".format(drive_type))
 
@@ -259,26 +268,6 @@ class MainApplication(Application):
         self._integrity.reset()
         self._cmd_history.reset()
         self._odometer.setup()
-
-    def _check_relay_type(self):
-        """Decide on the relay type based on configuration and initialize it."""
-        try:
-            # Use ConfigFiles to read the configuration
-            kwargs = self.config_files.read_configuration()
-            gpio_relay = kwargs.get("driver.gpio_relay", "false").strip().lower() == "true"
-            if gpio_relay:
-                self.relay = ThreadSafePi4GpioRelay()
-                logger.info("Initialized GPIO Relay")
-            else:
-                self.relay = SearchUsbRelayFactory().get_relay()
-                logger.info("Initialized USB Relay")
-                assert self.relay.is_attached(), "The relay device is not attached."
-        except AssertionError as e:
-            logger.error("Relay initialization error: %s", e)
-            self.quit()
-        except Exception as e:
-            logger.error("Unexpected error during relay type checking: %s", e)
-            self.quit()
 
     def _pop_config(self):
         return self._config_queue.popleft() if bool(self._config_queue) else None
@@ -345,7 +334,7 @@ class MainApplication(Application):
 
 def main():
     parser = argparse.ArgumentParser(description="Steering and throttle driver.")
-    parser.add_argument("--config", type=str, default="/config/driver.ini", help="Configuration file.")
+    parser.add_argument("--config", type=str, default="/config", help="Configuration file.")
     args = parser.parse_args()
 
     ras_dynamic_ip = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
@@ -354,6 +343,7 @@ def main():
         application = MainApplication(quit_event, args.config, hz=50)
         application.publisher = JSONPublisher(url="tcp://{}:5555".format(ras_dynamic_ip), topic="ras/drive/status")
         application.platform = JSONServerThread(url="tcp://{}:5550".format(ras_dynamic_ip), event=quit_event, receive_timeout_ms=50)
+        application.setup_components()
 
         threads = [application.platform]
         if quit_event.is_set():
@@ -365,7 +355,7 @@ def main():
         logger.info("Waiting on threads to stop.")
         [t.join() for t in threads]
     finally:
-        application.relay.open()
+        application._chassis.relay.open()
 
     while not quit_event.is_set():
         time.sleep(1)
