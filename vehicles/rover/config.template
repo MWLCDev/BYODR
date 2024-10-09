@@ -11,6 +11,7 @@ driver.cc.throttle.pid_controller.i = 0.05
 driver.cc.throttle.pid_controller.d = 0
 driver.cc.control.type = pid
 driver.throttle.direct.up.momentum = 0.020
+driver.gpio_relay = true
 
 [vehicle]
 ras.driver.steering.offset = 0
@@ -19,4 +20,4 @@ ras.driver.deadzone.width = 0
 ras.master.uri = 192.168.1.32
 gps.provider.host = 192.168.1.1
 gps.provider.port = 502
-ras.driver.motor.alternate = False 
+ras.driver.motor.alternate = false
