@@ -134,12 +134,10 @@ class DualVescDriver(AbstractDriver):
         self._previous_motor_alternate = None
         self.last_config = None  # Attribute to store the last configuration received from the nano
         self._steering_offset = 0
-
-        self.config_file = config_file
-        self.driver_config = self.config_file.read_configuration()
+        self._relay = SearchUsbRelayFactory().get_relay()  # Initialize the relay with a default type to avoid triggering violations prematurely.
+        self.driver_config = config_file.read_configuration()
 
         self._setup_driver_configs()
-        self._check_relay_type()
         self.update_drive_instances(self.driver_config)
         self._relay.close()
 
@@ -151,11 +149,10 @@ class DualVescDriver(AbstractDriver):
         self._axis0_multiplier = 1 if self.driver_config.get("drive.axis0.mount.direction", "forward") == "forward" else -1
         self._axis1_multiplier = 1 if self.driver_config.get("drive.axis1.mount.direction", "forward") == "forward" else -1
 
-    def _check_relay_type(self):
+    def _check_relay_type(self, is_gpio_relay):
         """Decide on the relay type based on configuration and initialize it."""
         try:
-            gpio_relay = self.driver_config.get("driver.gpio_relay", "false").strip().lower() == "true"
-            if gpio_relay:
+            if is_gpio_relay:
                 self._relay = ThreadSafePi4GpioRelay()
                 logger.info("Initialized GPIO Relay")
             else:
@@ -193,6 +190,7 @@ class DualVescDriver(AbstractDriver):
                 self._steering_offset = max(-1.0, min(1.0, config.get("steering_offset")))
                 self._throttle_config["scale"] = max(0, config.get("motor_scale"))
                 self.update_drive_instances(config)
+                self._check_relay_type(config.get("is_gpio_relay"))
                 logger.info("Received new configuration {}.".format(config))
                 self.last_config = config
 
