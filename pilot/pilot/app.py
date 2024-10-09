@@ -51,12 +51,33 @@ class PilotApplication(Application):
         self.ros = None
         self.vehicle = None
         self.inference = None
-        self._init(relay)
+        self._check_relay_type()
 
-    def _init(self, _relay):
+    def _init_relay(self, _relay):
         self._holder = StaticRelayHolder(relay=_relay, default_channels=(0, 1))
         self._monitor = RealMonitoringRelay(relay=self._holder, config_dir=self._config_dir)
 
+    def _check_relay_type(self):
+        try:
+            _cfg = self._config()
+            gpio_relay = _cfg.get("driver.gpio_relay", "false").strip().lower() == "true" # in case it is saved in lower case from JS in TEL side
+            if gpio_relay:
+                relay = ThreadSafeGpioRelay()
+                logger.info("Initialized GPIO Relay")
+            else:
+                relay = SearchUsbRelayFactory().get_relay()
+                logger.info("Initialized USB Relay")
+                assert relay.is_attached(), "The relay device is not attached."
+
+            self._init_relay(relay)
+        except AssertionError as e:
+            logger.error("Relay initialization error: %s", e)
+            logger.error(traceback.format_exc())
+            self.quit()
+        except Exception as e:
+            logger.error("Unexpected error during relay type checking: %s", e)
+            logger.error(traceback.format_exc())
+            self.quit()
 
     def _config(self):
         parser = SafeConfigParser()
