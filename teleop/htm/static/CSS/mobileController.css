@@ -64,7 +64,7 @@
   outline: none;
   box-shadow: 4px 6px 8px #d0d0d0;
   display: none;
-  width: 80%;
+  width: 8em;
   transition: background-color 0.3s, transform 0.2s;
   cursor: pointer;
   border: 2px solid;

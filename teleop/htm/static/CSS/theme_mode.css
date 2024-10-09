@@ -70,6 +70,11 @@ body.dark-theme .control_symbol {
   background: var(--secondary_background_dark_mode);
 }
 
+body.dark-theme .current_mode_button {
+  background-color: var(--background_color_light_mode) !important;
+  color: var(--text_color_light_mode) !important;
+}
+
 
 body.dark-theme table tbody>tr:nth-child(odd) {
   background-color: var(--secondary_background_dark_mode);
@@ -102,7 +107,14 @@ body.maneuver-training-feature #mobile_controller_container #forward_square .squ
 body.maneuver-training-feature #mobile_controller_container #backward_square {
   display: block;
   width: 100%;
-  background: repeating-linear-gradient(-45deg, var(--background_color_light_mode), var(--background_color_light_mode) 16px, #ccc 18px, #ccc 11px);
+  background: repeating-linear-gradient(-45deg, var(--background_color_light_mode), var(--background_color_light_mode) 16px, var(--secondary_background_light_mode) 18px, var(--secondary_background_light_mode) 11px);
+  border: 0;
+}
+
+body.dark-theme.maneuver-training-feature #mobile_controller_container #backward_square {
+  display: block;
+  width: 100%;
+  background: repeating-linear-gradient(-45deg, var(--background_color_dark_mode), var(--background_color_dark_mode) 16px, var(--secondary_background_dark_mode) 18px, var(--secondary_background_dark_mode) 11px);
   border: 0;
 }
 
@@ -158,12 +170,6 @@ body.auto-navigation-feature #backward_square .square_text:before {
 body.auto-navigation-feature .current_mode_button {
   display: block;
   background-color: var(--VOR_color);
-  color: var(--text_color_light_mode);
-
-}
-
-body.dark-theme.auto-navigation-feature .current_mode_button {
-  background-color: var(--background_color_light_mode);
   color: var(--text_color_light_mode);
 
 }
