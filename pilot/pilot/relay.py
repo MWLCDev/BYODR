@@ -7,7 +7,7 @@ import os
 from abc import ABCMeta, abstractmethod
 
 import six
-from six.moves.configparser import SafeConfigParser
+from configparser import ConfigParser
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import ReceiverThread, JSONZmqClient
@@ -106,9 +106,15 @@ class RealMonitoringRelay(AbstractRelay):
             self._send_drive(steering=pilot.get("steering"), throttle=pilot.get("throttle"), reverse_gear=_reverse, wakeup=_wakeup)
 
     def _config(self):
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
-        return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
+        config_data = {}
+
+        # Loop through all sections and store keys with section prefixes
+        for section in parser.sections():
+            for key, value in parser.items(section):
+                config_data[f"{key}"] = value
+        return config_data
 
     def _on_receive(self, msg):
         self._integrity.on_message(msg.get("time"))
