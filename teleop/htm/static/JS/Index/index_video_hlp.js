@@ -39,7 +39,7 @@ if (page_utils.get_stream_type() == 'h264') {
 		},
 
 		create: function () {
-			let canvas = document.getElementById('viewport_canvas');
+			let canvas = document.getElementById('main_stream_view');
 			if (canvas) {
 				return canvas;
 			} else {
@@ -93,7 +93,7 @@ if (page_utils.get_stream_type() == 'h264') {
 
 export function h264_start_all() {
 	if (page_utils.get_stream_type() == 'h264' && camera_controller != undefined && canvas_controller != undefined && camera_controller.socket == undefined) {
-		canvas_controller.init(document.getElementById('viewport_container'));
+		canvas_controller.init(document.getElementById('main_stream_view'));
 		camera_controller.start(cameraControls.activeCamera);
 	}
 }

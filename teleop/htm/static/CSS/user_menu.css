@@ -80,13 +80,13 @@
 #hamburger_menu_toggle .bar {
   width: 100%;
   height: 3px;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   border-radius: 2px;
   transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
 }
 
 #hamburger_menu_toggle.active .top {
-  transform: translateY(10px) rotate(45deg);
+  transform: translateY(18px) rotate(45deg);
   background-color: white;
 }
 
@@ -97,7 +97,7 @@
 
 
 #hamburger_menu_toggle.active .bottom {
-  transform: translateY(-10px) rotate(-45deg);
+  transform: translateY(-19px) rotate(-45deg);
   background-color: white;
 }
 
@@ -111,7 +111,7 @@
   transition: left 0.5s;
   z-index: 3;
   padding: 2rem 0 2rem 2rem;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   color: #ffffff;
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
   display: flex;
@@ -147,17 +147,6 @@
   color: #D0D0D0;
 }
 
-.current_mode_img {
-  width: 100%;
-  height: 100%;
-  display: inline-block;
-}
-
-.current_mode_img svg {
-  width: 100%;
-  height: 100%;
-  display: block;
-}
 
 .hamburger_menu_nav a.active {
   color: #F7DA6F;

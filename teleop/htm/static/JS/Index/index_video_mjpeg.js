@@ -230,7 +230,7 @@ var mjpeg_page_controller = {
 			this.cameras = cameras;
 			this.apply_limits();
 			this.refresh_page_values();
-			this.el_preview_image = $('img#mjpeg_camera_preview_image');
+			this.el_preview_image = $('img#second_stream_view');
 			this.expand_camera_icon = $('img#expand_camera_icon');
 			this.expand_camera_icon.css({ cursor: 'zoom-in' });
 			this.set_camera_framerates(cameraControls.activeCamera);
@@ -475,7 +475,7 @@ function initializeApplication(canvas) {
 }
 
 function findCanvasAndExecute() {
-	const canvas = document.getElementById('viewport_canvas');
+	const canvas = document.getElementById('main_stream_view');
 	if (canvas) {
 		initializeApplication(canvas);
 	} else {

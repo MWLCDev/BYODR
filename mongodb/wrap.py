@@ -1,61 +1,28 @@
+#!/usr/bin/env python
+from __future__ import absolute_import
+
+import logging
 import os
 import subprocess
-import time
-import json
 
-# Environment variables for MongoDB credentials
-mongo_user = os.getenv("MONGO_INITDB_ROOT_USERNAME", "admin")
-mongo_pass = os.getenv("MONGO_INITDB_ROOT_PASSWORD", "robot")
+logger = logging.getLogger(__name__)
+
+log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
 
 
-# Function to start MongoDB and filter logs
-def start_mongo(auth=False):
-    try:
-        command = ["mongod", "--bind_ip_all"]
-        if auth:
-            command.append("--auth")
+def main():
+    pw_file = os.path.join(os.path.sep, "config", "mongo-root")
+    if not os.path.exists(pw_file):
+        os.umask(0)
+        with open(os.open(pw_file, os.O_CREAT | os.O_WRONLY, 0o600), "w") as fh:
+            fh.write("robot")  # Ensure this matches the root password in the updated Docker image
+        logger.info("Created the default mongo user.")
 
-        # Use Popen to capture output
-        process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, universal_newlines=True)
-
-        print(f"MongoDB started {'with' if auth else 'without'} authentication.")
-
-        # Continuously read and filter the output
-        for line in process.stdout:
-            try:
-                log_entry = json.loads(line.strip())
-                if log_entry.get("s") in ["W", "E"]:  # 'W' for warnings, 'E' for errors
-                    print(f"[{log_entry['s']}] {log_entry['msg']}")
-            except json.JSONDecodeError:
-                # If it's not JSON, print if it looks like a warning or error
-                if "warning" in line.lower() or "error" in line.lower():
-                    print(line.strip())
-
-        return process
-    except Exception as e:
-        print(f"Failed to start MongoDB: {e}")
-        return None
-
-
-# Function to initialize MongoDB (create admin user)
-def init_mongo():
-    time.sleep(10)  # Wait for MongoDB to start up
-    try:
-        # Create admin user
-        subprocess.run(["mongo", "admin", "--eval", f'db.createUser({{user: "{mongo_user}", pwd: "{mongo_pass}", roles:[{{role:"root", db:"admin"}}]}});'])
-        print("MongoDB initialized with admin user.")
-    except Exception as e:
-        print(f"Failed to initialize MongoDB: {e}")
+    # Adjust memory settings and binding IP as needed
+    subprocess.call(["mongod", "--syslog", "--wiredTigerCacheSizeGB", "0.20", "--bind_ip", "127.0.0.1"])
 
 
 if __name__ == "__main__":
-    # Start MongoDB with authentication enabled from the beginning
-    mongo_process = start_mongo(auth=True)
-    if mongo_process:
-        init_mongo()
-        # Keep the script running to ensure MongoDB stays alive
-        try:
-            mongo_process.wait()
-        except KeyboardInterrupt:
-            print("Shutting down MongoDB.")
-            mongo_process.terminate()
+    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
+    logging.getLogger().setLevel(logging.INFO)
+    main()

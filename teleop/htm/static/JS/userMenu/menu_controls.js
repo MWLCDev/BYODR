@@ -1,5 +1,11 @@
 class ControlSettings {
 	constructor() {
+		this.cacheDomElements();
+		this.initializeSettings();
+	}
+
+	cacheDomElements() {
+		// Caching DOM elements
 		this.scaleInput = $('#scale_input');
 		this.offsetInput = $('#offset_input');
 		this.deadZoneInput = $('#dead_zone_input');
@@ -8,56 +14,57 @@ class ControlSettings {
 		this.offsetInputText = $('#offset_input_value');
 		this.deadZoneInputText = $('#dead_zone_width_value');
 
-		this.initDomElements();
+		this.channel3Toggle = $('#channel3-toggle');
+		this.channel4Toggle = $('#channel4-toggle');
 	}
 
-	initDomElements() {
-		this.fetchRoverData();
-		this.bindSliderInputListeners();
-		this.bindBoldTextListeners();
-		this.updateRelayStates();
+	initializeSettings() {
+		this.fetchAndUpdateRoverData();
+		this.setupInputListeners();
+		this.setupRelayToggleListeners();
+		this.fetchAndUpdateRelayStates();
 	}
 
-	bindSliderInputListeners() {
-		// Bindings for scale and offset inputs
-		this.scaleInput.on('input touchmove', () => {
-			this.scaleInputText.text(this.scaleInput.val());
-		});
-		this.offsetInput.on('input touchmove', () => {
-			this.offsetInputText.text(this.offsetInput.val());
-		});
+	setupInputListeners() {
+		this.bindSliderChangeEvents();
+		this.bindSliderValueUpdates();
+	}
 
-		// Binding for dead zone input
-		this.deadZoneInput.on('input touchmove', () => {
-			this.deadZoneInputText.text(this.deadZoneInput.val());
-		});
-
-		// Post data on 'change' event
+	bindSliderChangeEvents() {
+		// Sends data to the backend when the slider values change
 		this.scaleInput
 			.add(this.offsetInput)
 			.add(this.deadZoneInput)
-			.on('change touchend', () => {
-				this.sendDataToBackend();
-			});
+			.on('change touchend', () => this.sendSliderDataToBackend());
 	}
 
-	fetchRoverData() {
+	bindSliderValueUpdates() {
+		// Updates the text values based on slider inputs
+		this.scaleInput.on('input touchmove', () => this.updateSliderValue(this.scaleInput, this.scaleInputText));
+		this.offsetInput.on('input touchmove', () => this.updateSliderValue(this.offsetInput, this.offsetInputText));
+		this.deadZoneInput.on('input touchmove', () => this.updateSliderValue(this.deadZoneInput, this.deadZoneInputText));
+	}
+
+	updateSliderValue(input, displayElement) {
+		displayElement.text(input.val());
+	}
+
+	fetchAndUpdateRoverData() {
+		// Fetches rover data and updates input fields accordingly
 		$.get('/teleop/user/options')
-			.done((data) => {
-				this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
-				this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
-				this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
-			})
-			.fail((error) => console.error('Error fetching data:', error));
+			.done((data) => this.updateInputsFromData(data))
+			.fail((error) => console.error('Error fetching rover data:', error));
 	}
 
-	sendDataToBackend() {
-		let data = {
-			vehicle: [
-				['ras.driver.motor.scale', this.scaleInput.val()],
-				['ras.driver.steering.offset', this.offsetInput.val()],
-				['ras.driver.deadzone.width', this.deadZoneInput.val()],
-			].filter((setting) => setting[1] !== ''),
+	updateInputsFromData(data) {
+		this.scaleInput.val(data.vehicle['ras.driver.motor.scale']).trigger('input');
+		this.offsetInput.val(data.vehicle['ras.driver.steering.offset']).trigger('input');
+		this.deadZoneInput.val(data.vehicle['ras.driver.deadzone.width']).trigger('input');
+	}
+
+	sendSliderDataToBackend() {
+		const data = {
+			vehicle: this.getSliderData(),
 		};
 
 		$.ajax({
@@ -65,44 +72,44 @@ class ControlSettings {
 			method: 'POST',
 			contentType: 'application/json',
 			data: JSON.stringify(data),
-			error: (error) => console.error('Error:', error),
+			error: (error) => console.error('Error sending data to backend:', error),
 		});
 	}
 
-	updateRelayStates() {
-		$.get(`${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`)
-			.done((response) => {
-				$('.channel').each(function () {
-					const index = $(this).data('index');
-					const state = response.states[index] === true;
-					$(this).find(`input[value="${state}"]`).prop('checked', state);
-				});
-			})
+	getSliderData() {
+		// Collects slider data to be sent to the backend
+		return [
+			['ras.driver.motor.scale', this.scaleInput.val()],
+			['ras.driver.steering.offset', this.offsetInput.val()],
+			['ras.driver.deadzone.width', this.deadZoneInput.val()],
+		].filter(([key, value]) => value !== '');
+	}
+
+	fetchAndUpdateRelayStates() {
+		// Fetches relay states and updates the UI
+		const relayUrl = `${window.location.protocol}//${window.location.hostname}:8082/teleop/pilot/controls/relay/state`;
+		$.get(relayUrl)
+			.done((response) => this.updateRelayControls(response.states))
 			.fail((error) => console.error('Error updating relay states:', error));
 	}
 
-	bindBoldTextListeners() {
-		// General function to bind and update label styles
-		const bindAndUpdate = (toggle, labelOn, labelOff) => {
-			toggle
-				.on('change', () => {
-					this.updateLabelStyles(toggle[0], labelOn[0], labelOff[0]);
-				})
-				.trigger('change');
-		};
-
-		bindAndUpdate($('#channel3-toggle'), $('#channel3-label-on'), $('#channel3-label-off'));
-		bindAndUpdate($('#channel4-toggle'), $('#channel4-label-on'), $('#channel4-label-off'));
+	updateRelayControls(states) {
+		$('.channel').each(function () {
+			const index = $(this).data('index');
+			const state = states[index] === true;
+			$(this).find(`input[value="${state}"]`).prop('checked', state);
+		});
 	}
 
-	updateLabelStyles(checkbox, labelOn, labelOff) {
-		if (checkbox.checked) {
-			labelOn.style.fontWeight = 'bold';
-			labelOff.style.fontWeight = 'normal';
-		} else {
-			labelOn.style.fontWeight = 'normal';
-			labelOff.style.fontWeight = 'bold';
-		}
+	setupRelayToggleListeners() {
+		// Sets up listeners for relay toggle buttons
+		this.bindToggleListener(this.channel3Toggle);
+		this.bindToggleListener(this.channel4Toggle);
+	}
+
+	bindToggleListener(toggleElement) {
+		// These relays aren't used in the smaller boxes and they were not used with the older boxes. There is no need to implement the full logic for them here
+		toggleElement.on('change', () => {}).trigger('change');
 	}
 }
 

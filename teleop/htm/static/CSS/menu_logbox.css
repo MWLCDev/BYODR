@@ -23,11 +23,11 @@ table td {
 }
 
 table tbody>tr:nth-child(odd) {
-  background-color: #E5E5E5;
+  background-color: var(--secondary_background_light_mode);
 }
 
 table tbody>tr:nth-child(even) {
-  background-color: #F7F7F7;
+  background-color: var(--tertiary_background_light_mode);
 }
 
 table th {
@@ -47,32 +47,25 @@ button {
   min-width: 45px;
   min-height: 45px;
   margin: 2px;
-  background-color: var(--button-color);
   border-radius: 1rem;
   font-size: 15px;
   font-weight: bold;
-  color: #FFFFFF;
 }
 
 button.currentBtn {
   margin: 0px;
-  background-color: #E4E4E4;
   cursor: default;
-  color: #B8B8B8;
 }
 
 button#prevBtn,
 button#nextBtn {
-  background: none;
   font-size: 1rem;
   font-weight: 400;
-  color: #2B2B2B;
 }
 
 button#prevBtn.limit,
 button#nextBtn.limit {
   cursor: default;
-  color: #B8B8B8;
 }
 
 #under_table {

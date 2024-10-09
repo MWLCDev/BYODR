@@ -7,15 +7,21 @@
 
 
 :root {
+  /* Light mode colors */
   --background_color_light_mode: #ffffff;
   --text_color_light_mode: #000000;
+  --secondary_background_light_mode: #E5E5E5;
+  --tertiary_background_light_mode: #F7F7F7;
+
+  /* Dark mode colors */
   --background_color_dark_mode: #121212;
   --text_color_dark_mode: #ffffff;
-  --VOR-color: #3A0751;
-  --VOR-light-color: #AFA2B4;
-  --light-p: #8B7697;
-  --text-color-dark-g: #2B2B2B;
-  --button-color: #B8B8B8;
+  --secondary_background_dark_mode: #333333;
+  --tertiary_background_dark_mode: #444444;
+
+
+  --VOR_color: #3A0751;
+  --VOR_light_color: #AFA2B4;
 }
 
 * {
@@ -67,7 +73,7 @@ body {
   border-bottom: 2px solid #694978;
   font-size: 50px;
   font-weight: bold;
-  color: var(--VOR-color);
+  color: var(--VOR_color);
 }
 
 
@@ -81,9 +87,13 @@ body {
   width: 100%;
   max-height: 80px;
   padding: 1em 2em;
-  border-bottom: 2px solid var(--VOR-light-color);
-  color: var(--VOR-color);
+  border-bottom: 2px solid var(--VOR_light_color);
+  color: var(--VOR_color);
+  background-color: var(--background_color_light_mode);
+  position: sticky;
+  top: 0;
 }
+
 
 #header_bar .left_section,
 #header_bar .middle_section,
@@ -119,6 +129,7 @@ body {
 
 #header_bar .right_section .current_mode_img {
   height: 100%;
+  width: 100%;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -127,13 +138,15 @@ body {
 #header_bar .right_section .current_mode_img svg {
   max-height: 100%;
   height: auto;
+  display: block;
   width: auto;
 }
+
 
 #VOR_center_logo {
   display: block;
   height: 30px;
-  color: var(--VOR-color);
+  color: var(--VOR_color);
 }
 
 #current_seg_name {
@@ -149,19 +162,15 @@ body {
 
 
 /* Second Layer: Advanced View */
-#debug_drive_bar {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border-bottom: 2px solid var(--VOR-light-color);
-}
-
 #debug_drive_values {
   display: flex;
   flex-direction: row;
   flex-wrap: wrap;
   justify-content: center;
   align-items: center;
+  width: 100%;
+  padding: 1em;
+  border-bottom: 2px solid var(--VOR_light_color);
 }
 
 #debug_drive_values p {
@@ -212,6 +221,9 @@ body {
   align-items: center;
   width: 100%;
   padding: 1rem;
+  height: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 #horizontal_bar .left_section,
@@ -223,6 +235,8 @@ body {
 .left_section {
   display: flex;
   align-items: center;
+  flex-direction: row;
+  flex-wrap: wrap;
 }
 
 .middle_section {
@@ -242,7 +256,6 @@ body {
   flex-direction: column;
   justify-content: flex-end;
   align-items: flex-end;
-  padding: 0 20px;
 }
 
 .stream_quality p {
@@ -267,7 +280,7 @@ body {
 
 .inf_speed {
   display: none;
-  flex-direction: column;
+  flex-direction: row;
   justify-content: center;
   align-items: center;
   align-content: center;
@@ -335,11 +348,10 @@ body {
   font-size: 14px;
 }
 
-
-
 .inf_speed_value {
   display: none;
   font-weight: bold;
+  margin-right: 0.5em;
 }
 
 .speed_display {
@@ -382,7 +394,6 @@ body {
 
 .help_message_grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
   grid-gap: 10px;
 }
 
@@ -426,66 +437,9 @@ body {
   position: relative;
   overflow: hidden;
   width: 100%;
-}
-
-#top_layer_iframe {
-  display: none;
-  position: absolute;
-  z-index: 9999;
-  top: 0;
-  left: 0;
-  width: 100%;
   height: 100%;
-  background-color: rgba(255, 255, 255, 0.9);
-  border: none;
 }
 
-#viewport_canvas {
-  position: absolute;
-  width: 100% !important;
-  height: 100% !important;
-}
-
-#control_bar {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-end;
-  align-items: flex-end;
-  align-content: center;
-  position: absolute;
-  z-index: 99;
-  bottom: 10px;
-  right: 2vw;
-  padding: 10px;
-  border-radius: 8px;
-}
-
-.preview_img {
-  height: auto;
-  margin: 5px 0;
-  border-radius: 5px;
-}
-
-#overlay_control_container {
-  display: flex;
-  justify-content: space-between;
-}
-
-#overlay_control_container #expand_camera_icon {
-  right: 0;
-  width: 20px;
-  height: 20px;
-  margin: 5px;
-  cursor: pointer;
-}
-
-#viewport_container.selected {
-  border: 1px solid cyan;
-}
-
-#mjpeg_camera_preview_image.selected {
-  border: 2px solid cyan;
-}
 
 #message_box_container {
   display: flex;
@@ -509,7 +463,7 @@ body {
   display: none;
   height: 100%;
   padding: 0.5rem 0.2rem;
-  background-color: var(--VOR-color);
+  background-color: var(--VOR_color);
   border-radius: 10px;
   font-weight: 700;
   color: white;
@@ -521,53 +475,74 @@ body {
   color: var(--text_color_dark_mode);
 }
 
-#geo_data {
+#top_layer_iframe {
+  display: none;
+  position: absolute;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  border: none;
+}
+
+#camera_streams {
   display: flex;
+  width: 100%;
+  height: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  overflow: hidden;
   position: absolute;
-  bottom: 2.5rem;
-  left: 2rem;
-  padding: 5px 10px;
-  background: rgba(255, 255, 255, 0.7);
-  border-radius: 5px;
-  font-size: 14px;
-  color: var(--text_color_light_mode);
 }
 
-#geo_data p:nth-child(2) {
-  margin-left: 10px;
+#main_stream_container,
+#second_stream_container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 0;
 }
 
-#navigation_geo_lat,
-#navigation_geo_long {
-  font-weight: bold;
+
+#main_stream_view,
+#second_stream_view {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
 }
 
-div.overlay_distance {
-  pointer-events: none;
-  position: absolute;
-  visibility: visible;
-  border-bottom: 2px solid rgba(255, 255, 120, 0.99);
-  color: rgba(255, 255, 120, 0.99);
-  text-align: center;
+#main_stream_view.selected,
+#second_stream_view.selected {
+  border: 2px solid cyan;
+}
+
+#second_stream_container #expand_camera_icon {
+  right: 0;
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  display: none;
 }
 
 #overlay_distance_markers {
   position: absolute;
   top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
+  pointer-events: none;
 }
 
-#overlay_center_distance0 {
-  bottom: 52%;
-  left: calc(50vw - 180px);
-  width: 360px;
-}
-
-#overlay_center_distance1 {
-  bottom: 25%;
-  left: calc(50vw - 300px);
-  width: 600px;
+.overlay_distance {
+  position: absolute;
+  visibility: visible;
+  border-bottom: 2px solid rgba(255, 255, 120, 0.99);
+  color: rgba(255, 255, 120, 0.99);
+  text-align: center;
 }
 
 #overlay_left_marker0 {
@@ -582,6 +557,21 @@ div.overlay_distance {
   width: 35px;
 }
 
+#overlay_center_distance0 {
+  bottom: 52%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20vw;
+}
+
+#overlay_center_distance1 {
+  bottom: 25%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 25vw;
+}
+
+
 #overlay_right_marker0 {
   bottom: 45%;
   right: 0;
@@ -592,4 +582,39 @@ div.overlay_distance {
   bottom: 34%;
   right: 0;
   width: 35px;
+}
+
+
+#geo_data {
+  display: flex;
+  position: absolute;
+  gap: 2em;
+  bottom: 2.5rem;
+  left: 2rem;
+  padding: 5px 10px;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 5px;
+  font-size: 14px;
+  color: var(--text_color_light_mode);
+}
+
+
+#navigation_geo_lat,
+#navigation_geo_long {
+  font-weight: bold;
+}
+
+
+/* Media query for smaller screens (e.g., phones) */
+@media (max-width: 768px) {
+  #camera_streams {
+    flex-direction: column;
+  }
+
+  #main_stream_container,
+  #second_stream_container {
+    width: 100%;
+    height: 50%;
+  }
+
 }

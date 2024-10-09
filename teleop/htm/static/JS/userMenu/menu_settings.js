@@ -35,37 +35,18 @@ class UserSettingsManager {
 			.catch((error) => alert('Error fetching settings: ' + error.message));
 	}
 
+	// Populate form with fetched settings
 	populateForm(settings) {
 		this.form.innerHTML = '';
+
 		Object.entries(settings).forEach(([section, options]) => {
-			const fieldset = document.createElement('fieldset');
-			const legend = document.createElement('legend');
-			legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
-			fieldset.appendChild(legend);
+			const fieldset = this.createFieldset(section);
 
 			Object.entries(options).forEach(([name, value]) => {
-				// Skip specific fields as they are already in the relay settings menu (menu_control.js)
-				if (section === 'vehicle' && ['ras.driver.steering.offset', 'ras.driver.motor.scale', 'ras.driver.deadzone.width'].includes(name)) {
-					return;
-				}
-				const input = document.createElement('input');
-				input.type = value === 'true' || value === 'false' ? 'checkbox' : 'text';
-				input.name = this.filterFieldName(section, name); // Use the transformed name
-				input.dataset.originalKey = name; // Store the original key without applying filters
-				input.dataset.section = section; // Store the section name in dataset
-				input.disabled = true; // Initially disable input fields
+				if (this.shouldSkipField(section, name)) return;
 
-				if (value === 'true' || value === 'false') {
-					input.checked = value === 'true';
-				} else {
-					input.value = value;
-				}
-
-				const displayName = this.filterFieldName(section, name);
-
-				const label = document.createElement('label');
-				label.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1) + ':';
-				label.appendChild(input);
+				const input = this.createInput(section, name, value);
+				const label = this.createLabel(section, name, input);
 
 				const div = document.createElement('div');
 				div.appendChild(label);
@@ -76,7 +57,49 @@ class UserSettingsManager {
 		});
 	}
 
+	// Create a fieldset with a legend for each section
+	createFieldset(section) {
+		const fieldset = document.createElement('fieldset');
+		const legend = document.createElement('legend');
+		legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
+		fieldset.appendChild(legend);
+		return fieldset;
+	}
+
+	// Determine whether to skip certain fields
+	shouldSkipField(section, name) {
+		return section === 'vehicle' && ['ras.driver.steering.offset', 'ras.driver.motor.scale', 'ras.driver.deadzone.width'].includes(name);
+	}
+
+	// Create an input element based on the value or specific field name
+	createInput(section, name, value) {
+		const isCheckbox = value === 'true' || value === 'false' || name === 'ras.driver.motor.alternate';
+		const input = document.createElement('input');
+		input.type = isCheckbox ? 'checkbox' : 'text';
+		input.name = this.filterFieldName(section, name); // Use the transformed name
+		input.dataset.originalKey = name; // Store the original key without applying filters
+		input.dataset.section = section; // Store the section name in dataset
+		input.disabled = true; // Initially disable input fields
+
+		if (isCheckbox) {
+			input.checked = value === 'true';
+		} else {
+			input.value = value;
+		}
+		return input;
+	}
+
+	// Create a label for the input element
+	createLabel(section, name, input) {
+		const displayName = this.filterFieldName(section, name);
+		const label = document.createElement('label');
+		label.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1) + ':';
+		label.appendChild(input);
+		return label;
+	}
+
 	filterFieldName(section, name) {
+		console.log(section, name);
 		if (section === 'camera') {
 			name = name.replace('ip', 'IP');
 		} else if (section === 'pilot') {
@@ -90,26 +113,9 @@ class UserSettingsManager {
 		return name.replace(/[._]/g, ' ');
 	}
 
+	// Save settings to the backend
 	saveSettings() {
-		const sections = {}; // Hold the structured settings
-
-		const inputs = this.form.querySelectorAll('input');
-
-		// Iterate through the inputs and organize them by section
-		inputs.forEach((input) => {
-			const originalKey = input.dataset.originalKey;
-			const section = input.dataset.section;
-
-			if (!sections[section]) {
-				sections[section] = []; // Initialize the section as an array if it doesn't exist
-			}
-
-			// Convert the value to a string before saving it. This is how the backend expects them
-			const value = input.type === 'checkbox' ? String(input.checked) : String(input.value);
-
-			// Save the key-value pair as an array (tuple-like) in the correct section
-			sections[section].push([originalKey, value]);
-		});
+		const sections = this.collectFormData();
 
 		fetch('/teleop/user/options', {
 			method: 'POST',
@@ -133,6 +139,27 @@ class UserSettingsManager {
 			});
 	}
 
+	// Collect data from the form inputs
+	collectFormData() {
+		const sections = {};
+		const inputs = this.form.querySelectorAll('input');
+
+		inputs.forEach((input) => {
+			const originalKey = input.dataset.originalKey;
+			const section = input.dataset.section;
+
+			if (!sections[section]) {
+				sections[section] = [];
+			}
+			// Convert the value to a lowercase string for boolean values
+			const value = input.type === 'checkbox' ? String(input.checked).toLowerCase() : String(input.value);
+			// Save the key-value pair as an array (tuple-like) in the correct section
+			sections[section].push([originalKey, value]);
+		});
+
+		return sections;
+	}
+
 	enableEditMode() {
 		this.enableFormInputs();
 		this.editButton.style.display = 'none';
@@ -151,5 +178,4 @@ class UserSettingsManager {
 	}
 }
 
-// Initialize the UserSettingsManager class
 export { UserSettingsManager };

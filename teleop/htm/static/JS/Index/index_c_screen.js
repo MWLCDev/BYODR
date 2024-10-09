@@ -36,20 +36,18 @@ class DarkThemeManager {
 		this.body.classList.toggle('dark-theme', isDarkMode); //Add dark mode to body only
 	}
 }
-
 class AdvancedThemeManager {
 	constructor() {
 		this.body = document.body;
-		this.isAdvancedMode = true;
+		this.isAdvancedMode = false;
 		this.loadAdvancedThemeSavedState();
 		this.setAdvancedTheme();
 	}
 
 	bindActions() {
-		this.advancedModeCheckBox = document.getElementById('pro-view-toggle-button');
-		this.toggleStatus = $('#pro-view-toggle-status');
+		this.advancedModeToggle = document.getElementById('pro-view-toggle-button');
 		this.addEventListeners();
-		this.toggleAdvancedTheme();
+		this.updateToggleUI();
 	}
 
 	loadAdvancedThemeSavedState() {
@@ -58,34 +56,80 @@ class AdvancedThemeManager {
 	}
 
 	addEventListeners() {
-		this.advancedModeCheckBox.addEventListener('change', () => {
-			this.isAdvancedMode = this.advancedModeCheckBox.checked;
+		this.advancedModeToggle.addEventListener('click', () => {
+			this.isAdvancedMode = !this.isAdvancedMode;
 			this.toggleAdvancedTheme();
 		});
 	}
 
 	toggleAdvancedTheme() {
-		this.changeToggleUI();
+		this.updateToggleUI();
 		this.setAdvancedTheme();
 		localStorage.setItem('advancedMode', this.isAdvancedMode.toString());
 	}
 
-	changeToggleUI() {
+	updateToggleUI() {
 		if (this.isAdvancedMode) {
-			this.toggleStatus.text('on');
-			this.advancedModeCheckBox.checked = true;
+			this.advancedModeToggle.classList.add('active');
 		} else {
-			this.toggleStatus.text('off');
-			this.advancedModeCheckBox.checked = false;
+			this.advancedModeToggle.classList.remove('active');
 		}
-		this.setAdvancedTheme();
 	}
 
 	setAdvancedTheme() {
 		if (this.isAdvancedMode) {
-			$('body').removeClass('advanced-theme');
+			this.body.classList.add('advanced-theme');
 		} else {
-			$('body').addClass('advanced-theme');
+			this.body.classList.remove('advanced-theme');
+		}
+	}
+}
+
+class PIPThemeManager {
+	constructor() {
+		this.body = document.body;
+		this.isPIPMode = false;
+		this.loadPIPThemeSavedState();
+		this.setPIPTheme();
+	}
+
+	bindActions() {
+		this.PIPModeToggle = document.getElementById('PIP-view-toggle-button');
+		this.addEventListeners();
+		this.updateToggleUI();
+	}
+
+	loadPIPThemeSavedState() {
+		const savedState = localStorage.getItem('PIPMode');
+		this.isPIPMode = savedState === 'true';
+	}
+
+	addEventListeners() {
+		this.PIPModeToggle.addEventListener('click', () => {
+			this.isPIPMode = !this.isPIPMode;
+			this.togglePIPTheme();
+		});
+	}
+
+	togglePIPTheme() {
+		this.updateToggleUI();
+		this.setPIPTheme();
+		localStorage.setItem('PIPMode', this.isPIPMode.toString());
+	}
+
+	updateToggleUI() {
+		if (this.isPIPMode) {
+			this.PIPModeToggle.classList.add('active');
+		} else {
+			this.PIPModeToggle.classList.remove('active');
+		}
+	}
+
+	setPIPTheme() {
+		if (this.isPIPMode) {
+			this.body.classList.add('PIP-theme');
+		} else {
+			this.body.classList.remove('PIP-theme');
 		}
 	}
 }
@@ -409,11 +453,10 @@ class RoverUI {
 	setNormalUIElements() {
 		try {
 			const elements = {
-				viewportContainer: this.getElement('div#viewport_container'),
-				debugDriveBar: this.getElement('div#debug_drive_bar'),
+				mainCameraStream: this.getElement('#main_stream_view'),
 				debugDriveValues: this.getElement('div#debug_drive_values'),
 				messageBoxContainer: this.getElement('div#message_box_container'),
-				overlayImage: this.getElement('img#mjpeg_camera_preview_image'),
+				secondCameraStream: this.getElement('img#second_stream_view'),
 				overlayCenterDistance0: this.getElement('div#overlay_center_distance0'),
 				overlayCenterDistance1: this.getElement('div#overlay_center_distance1'),
 				overlayLeftMarker0: this.getElement('div#overlay_left_marker0'),
@@ -425,16 +468,15 @@ class RoverUI {
 			};
 
 			// Assign the elements to the corresponding class properties
-			this.elViewportContainer = elements.viewportContainer;
-			this.elDriveBar = elements.debugDriveBar;
+			this.elMainCameraStream = elements.mainCameraStream;
 			this.elDriveValues = elements.debugDriveValues;
 			this.elMessageBoxContainer = elements.messageBoxContainer;
-			this.overlayImage = elements.overlayImage;
+			this.elSecondCameraStream = elements.secondCameraStream;
 			this.elMessageBoxMessage = elements.messageBoxMessage;
 			this.elButtonTakeControl = elements.buttonTakeControl;
-			this.overlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
-			this.overlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
-			this.overlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
+			this.elOverlayCenterMarkers = [elements.overlayCenterDistance0, elements.overlayCenterDistance1];
+			this.elOverlayLeftMarkers = [elements.overlayLeftMarker0, elements.overlayLeftMarker1];
+			this.elOverlayRightMarkers = [elements.overlayRightMarker0, elements.overlayRightMarker1];
 		} catch (error) {
 			console.error('Error in RoverUI.setNormalUIElements():', error);
 		}
@@ -443,7 +485,7 @@ class RoverUI {
 	renderDistanceIndicators(activeCamera) {
 		const show = activeCamera == 'front';
 		if (!isMobileDevice()) {
-			[this.overlayCenterMarkers, this.overlayLeftMarkers, this.overlayRightMarkers].flat().forEach(function (marker) {
+			[this.elOverlayCenterMarkers, this.elOverlayLeftMarkers, this.elOverlayRightMarkers].flat().forEach(function (marker) {
 				if (show) {
 					marker.show();
 				} else {
@@ -562,7 +604,7 @@ class InferenceHandling {
 	}
 
 	updateAutopilotUI(infMessage) {
-		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} KM`);
+		$('p.inf_speed_value').text(`${infMessage.max_speed.toFixed(1)} Km/h`);
 		this.roverUI.renderDistanceIndicators('front');
 	}
 
@@ -661,7 +703,7 @@ class CameraControls {
 			clearTimeout(this._photoSnapshotTimer);
 		}
 		this._photoSnapshotTimer = setTimeout(() => {
-			this.roverUI.elViewportContainer.fadeOut(50).fadeIn(50);
+			this.roverUI.elMainCameraStream.fadeOut(100).fadeIn(100);
 		}, 130);
 	}
 
@@ -679,12 +721,12 @@ class CameraControls {
 	onCameraSelection() {
 		const active = this.activeCamera;
 		const selected = this.selectedCamera;
-		this.roverUI.elViewportContainer.removeClass('selected');
-		this.roverUI.overlayImage.removeClass('selected');
+		this.roverUI.elMainCameraStream.removeClass('selected');
+		this.roverUI.elSecondCameraStream.removeClass('selected');
 		if (selected === active) {
-			this.roverUI.elViewportContainer.addClass('selected');
+			this.roverUI.elMainCameraStream.addClass('selected');
 		} else if (selected != null) {
-			this.roverUI.overlayImage.addClass('selected');
+			this.roverUI.elSecondCameraStream.addClass('selected');
 		}
 	}
 
@@ -709,10 +751,11 @@ class CameraControls {
 new NavigationManager();
 new DarkThemeManager();
 const advancedThemeManager = new AdvancedThemeManager();
+const pipThemeManager = new PIPThemeManager();
 const helpMessageManager = new HelpMessageManager();
 const messageContainerManager = new MessageContainerManager(helpMessageManager);
 const roverUI = new RoverUI();
 const inferenceHandling = new InferenceHandling(roverUI);
 const cameraControls = new CameraControls(roverUI);
 
-export { advancedThemeManager, cameraControls, helpMessageManager, inferenceHandling, messageContainerManager, roverUI };
+export { advancedThemeManager, cameraControls, helpMessageManager, inferenceHandling, messageContainerManager, pipThemeManager, roverUI };

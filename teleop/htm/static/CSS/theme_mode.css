@@ -3,15 +3,47 @@ body.advanced-theme .advanced_view {
   display: none !important;
 }
 
+/* #region PIP mode */
+body.PIP-theme #main_stream_view {
+  position: absolute;
+}
+
+body.PIP-theme #second_stream_container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: flex-end;
+  align-content: center;
+  position: absolute;
+  z-index: 99;
+  bottom: 10px;
+  right: 2vw;
+  padding: 10px;
+  border-radius: 8px;
+  gap: 1em;
+}
+
+body.PIP-theme #second_stream_container #second_stream_view {
+  height: auto;
+  border-radius: 5px;
+}
+
+
+body.PIP-theme #second_stream_container #expand_camera_icon {
+  display: block;
+}
+
+/* #endregion */
 
 /* #region Dark mode */
-body.dark-theme {
+body.dark-theme,
+body.dark-theme #header_bar {
   background-color: var(--background_color_dark_mode);
   color: var(--text_color_dark_mode);
 }
 
-body.dark-theme .hamburger_menu_nav #VOR_nav {
-  color: var(--background_color_dark_mode);
+body.dark-theme #VOR_center_logo {
+  color: var(--text_color_dark_mode);
 }
 
 body.dark-theme .caret {
@@ -25,6 +57,31 @@ body.dark-theme #hamburger_menu_toggle .bar {
 body.dark-theme #video_stream_type {
   background-color: var(--background_color_light_mode);
   color: var(--text_color_light_mode);
+}
+
+
+body.dark-theme #advanced_settings_container .title,
+body.dark-theme #controls_settings_container .title,
+body.dark-theme #logbox_container .title {
+  color: var(--text_color_dark_mode);
+}
+
+body.dark-theme .control_symbol {
+  background: var(--secondary_background_dark_mode);
+}
+
+body.dark-theme .current_mode_button {
+  background-color: var(--background_color_light_mode) !important;
+  color: var(--text_color_light_mode) !important;
+}
+
+
+body.dark-theme table tbody>tr:nth-child(odd) {
+  background-color: var(--secondary_background_dark_mode);
+}
+
+body.dark-theme table tbody>tr:nth-child(even) {
+  background-color: var(--tertiary_background_dark_mode);
 }
 
 /* #endregion */
@@ -50,7 +107,14 @@ body.maneuver-training-feature #mobile_controller_container #forward_square .squ
 body.maneuver-training-feature #mobile_controller_container #backward_square {
   display: block;
   width: 100%;
-  background: repeating-linear-gradient(-45deg, var(--background_color_light_mode), var(--background_color_light_mode) 16px, #ccc 18px, #ccc 11px);
+  background: repeating-linear-gradient(-45deg, var(--background_color_light_mode), var(--background_color_light_mode) 16px, var(--secondary_background_light_mode) 18px, var(--secondary_background_light_mode) 11px);
+  border: 0;
+}
+
+body.dark-theme.maneuver-training-feature #mobile_controller_container #backward_square {
+  display: block;
+  width: 100%;
+  background: repeating-linear-gradient(-45deg, var(--background_color_dark_mode), var(--background_color_dark_mode) 16px, var(--secondary_background_dark_mode) 18px, var(--secondary_background_dark_mode) 11px);
   border: 0;
 }
 
@@ -59,9 +123,8 @@ body.maneuver-training-feature #mobile_controller_container .control_symbol {
 }
 
 body.maneuver-training-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
+  background-color: var(--VOR_color);
   color: white;
 }
 
@@ -105,10 +168,10 @@ body.auto-navigation-feature #backward_square .square_text:before {
 }
 
 body.auto-navigation-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
-  color: white;
+  background-color: var(--VOR_color);
+  color: var(--text_color_light_mode);
+
 }
 
 body.auto-navigation-feature .current_mode_text,
@@ -125,6 +188,7 @@ body.auto-navigation-feature .control_symbol {
 body.auto-navigation-feature.navigation-started .current_mode_button {
   content: 'stop';
   background-color: #f41e52;
+  box-shadow: 4px 6px 8px #ff4a77;
   border: none;
 }
 
@@ -158,9 +222,8 @@ body.confidence-feature .steeringWheel {
 }
 
 body.confidence-feature .current_mode_button {
-  box-shadow: none;
   display: block;
-  background-color: #451c58;
+  background-color: var(--VOR_color);
   color: white;
 }
 
@@ -193,21 +256,21 @@ body.confidence-feature.stop-mode .control_symbol {
 }
 
 /* Loading mode */
-body.confidence-feature.loading-mode .current_mode_state {
+body.confidence-feature.map_recognition_loading-mode .current_mode_state {
   display: block;
   color: #ff8a00;
 }
 
-body.confidence-feature.loading-mode .current_mode_state:before {
+body.confidence-feature.map_recognition_loading-mode .current_mode_state:before {
   content: 'Loading...';
 }
 
-body.confidence-feature.loading-mode .current_mode_button {
+body.confidence-feature.map_recognition_loading-mode .current_mode_button {
   display: none;
 }
 
-body.confidence-feature.loading-mode #mobile_controller_container .middle_section,
-body.confidence-feature.loading-mode #mobile_controller_container .square {
+body.confidence-feature.map_recognition_loading-mode #mobile_controller_container .middle_section,
+body.confidence-feature.map_recognition_loading-mode #mobile_controller_container .square {
   display: none;
 }
 
@@ -299,12 +362,12 @@ body.following-feature.inactive-mode #mobile_controller_container .square {
 }
 
 /* Loading mode */
-body.following-feature.loading-mode #mobile_controller_container .current_mode_state:before {
+body.following-feature.following_loading-mode #mobile_controller_container .current_mode_state:before {
   content: 'Loading...';
 }
 
-body.following-feature.loading-mode .current_mode_button,
-body.following-feature.loading-mode #mobile_controller_container .square {
+body.following-feature.following_loading-mode .current_mode_button,
+body.following-feature.following_loading-mode #mobile_controller_container .square {
   display: none;
 }
 

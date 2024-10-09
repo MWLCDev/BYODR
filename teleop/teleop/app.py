@@ -23,6 +23,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 from .server import *
 from .tel_utils import EndpointHandlers, ThrottleController, FollowingUtils
+from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
@@ -137,7 +138,7 @@ def main():
     args = parser.parse_args()
 
     # The mongo client is thread-safe and provides for transparent connection pooling.
-    _mongo = MongoLogBox()
+    _mongo = MongoLogBox(MongoClient())
     _mongo.ensure_indexes()
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, fn_load_image=_load_nav_image, load_instructions=False))

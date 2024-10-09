@@ -112,15 +112,10 @@ def _create_index_if_not_exists(collection, keys, name, unique=False, background
 
 
 class MongoLogBox(object):
-    def __init__(self):
-        # Define the MongoDB URI with authentication details
-        mongo_uri = "mongodb://admin:robot@localhost:27017/logbox?authSource=admin"
+    def __init__(self, client):
+        self._client = client
+        self._database = client.logbox
 
-        # Initialize the MongoClient with the URI
-        self._client = MongoClient(mongo_uri)
-
-        # Assign the specific database to a class variable
-        self._database = self._client.logbox
 
     def close(self):
         self._client.close()

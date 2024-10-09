@@ -1,20 +1,21 @@
 import { isMobileDevice } from './Index/index_a_utils.js';
 import { roverUI } from './Index/index_c_screen.js';
-import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import { autoNavigationNavButtonHandler } from './mobileController/feature/mobileController_f_auto_navigation.js';
 import { confidenceNavButtonHandler } from './mobileController/feature/mobileController_f_confidence.js';
 import { followingNavButtonHandler } from './mobileController/feature/mobileController_f_following.js';
 import { maneuverTrainingNavButtonHandler } from './mobileController/feature/mobileController_f_maneuver_training.js';
+import { setupMobileController } from './mobileController/mobileController_a_app.js';
 import CTRL_STAT from './mobileController/mobileController_z_state.js';
 import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
 
 export class Router {
-	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, start_all_handlers) {
+	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, pipThemeManager, start_all_handlers) {
 		this.helpMessageManager = helpMessageManager;
 		this.messageContainerManager = messageContainerManager;
 		this.advancedThemeManager = advancedThemeManager;
+		this.pipThemeManager = pipThemeManager;
 		this.start_all_handlers = start_all_handlers;
 		this.previousPage = null;
 		this.bindDomActions();
@@ -26,6 +27,7 @@ export class Router {
 			follow_link: 'follow',
 		};
 	}
+
 	bindDomActions() {
 		$('.hamburger_menu_nav a').click((event) => {
 			this.handleUserMenuRoute(event.target.id);
@@ -60,8 +62,7 @@ export class Router {
 		if (isMobileDevice()) {
 			$('#header_bar .left_section').show();
 			$('#header_bar .right_section').show();
-			$('.rover_speed_label').css('font-size', '5px');
-			$('.inf_speed_label').css('font-size', '5px');
+			$('.rover_speed_label').css('font-size', '8px');
 			if (['settings_link', 'controls_link', 'events_link'].includes(selectedLinkId)) {
 				$('#header_bar .left_section').hide();
 				$('#header_bar .right_section').hide();
@@ -88,6 +89,7 @@ export class Router {
 	}
 
 	switchFolState(selectedLinkId) {
+		/*To stop following when the user navigates from fol to another mode. This is the reason the pooling socket for fol, needs to be working all the time in the backend  */
 		try {
 			if (this.previousPage === 'follow_link' && selectedLinkId !== 'follow_link') {
 				followingNavButtonHandler.sendSwitchFollowingRequest('inactive');
@@ -132,6 +134,7 @@ export class Router {
 					() => {
 						new UserSettingsManager();
 						this.advancedThemeManager.bindActions();
+						this.pipThemeManager.bindActions();
 					},
 				],
 				controls_link: ['/menu_controls', () => new ControlSettings()],

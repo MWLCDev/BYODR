@@ -1,22 +1,24 @@
 <div id="advanced_settings_container">
 	<h1 class="title">Advanced Settings</h1>
-	<button class="button" id="edit_button">Edit</button>
-	<form id="form_user_options">
-		<!-- User options will be populated here -->
-	</form>
-	<button class="button" id="submit_save_apply">SAVE</button>
-
-	<!-- Pro View Toggle Section -->
-	<div id="pro-view-toggle-div">
-		<span id="pro-view-toggle-name">Pro View</span>
-		<div id="pro-view-toggle-slider">
-			<label class="switch">
-				<input type="checkbox" id="pro-view-toggle-button" />
-				<span class="slider round"></span>
-			</label>
-			<span id="pro-view-toggle-status">Off</span>
+	<div id="advanced_settings_form_container">
+		<form id="form_user_options">
+			<!-- User options will be populated here -->
+		</form>
+		<div id="advanced_settings_form_buttons">
+			<button id="edit_button">edit</button>
+			<button id="submit_save_apply">save</button>
 		</div>
 	</div>
 
-	<div id="background-image"></div>
+	<div id="view-switch">
+		<fieldset class="relay-channel pro-view-toggle-container">
+			<legend>Pro View</legend>
+			<div class="toggle" id="pro-view-toggle-button"></div>
+		</fieldset>
+
+		<fieldset class="relay-channel PIP-view-toggle-container">
+			<legend>Picture-In-Picture View</legend>
+			<div class="toggle" id="PIP-view-toggle-button"></div>
+		</fieldset>
+	</div>
 </div>

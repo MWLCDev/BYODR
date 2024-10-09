@@ -1,15 +1,3 @@
-#background-image {
-  position: relative;
-  z-index: -1;
-  bottom: 0%;
-  width: 100%;
-  height: 130%;
-  background-image: url('../assets/pictures/VR-pattern_tree_1.png');
-  background-repeat: no-repeat;
-  background-position: right;
-  background-size: contain;
-}
-
 #input-sliders {
   width: 100%;
 }
@@ -48,7 +36,7 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: var(--VOR-color);
+  background: var(--VOR_color);
   cursor: pointer;
 }
 
@@ -56,7 +44,7 @@
   width: 25px;
   height: 25px;
   border-radius: 50%;
-  background: var(--VOR-color);
+  background: var(--VOR_color);
   cursor: pointer;
 }
 
@@ -81,98 +69,66 @@
   justify-content: flex-start;
   align-items: center;
   align-content: center;
-  gap: 1rem;
+  gap: 3rem;
   width: 100%;
   margin-top: 20px;
 }
 
+.relay-channel {
+  border: 0;
 
-legend {
+}
+
+.relay-channel>legend {
   margin-bottom: 1rem;
   font-size: 24px;
   font-weight: bold;
   white-space: nowrap;
 }
 
-#channel-container {
-  padding: 15px;
-  border: 1px solid #e0e0e0;
-  border-radius: 10px;
-}
-
-
-.relay-channel {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin: 0 10px;
-  border-style: hidden;
-}
-
-.relay-switch {
-  display: inline-block;
+.toggle {
   position: relative;
-  width: 100%;
-  height: 34px;
-}
-
-.relay-switch input {
-  width: 0;
-  height: 0;
-}
-
-#relay-control-container .slider {
-  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
-  position: absolute;
-  width: 100%;
-  height: 20px;
-  transition: .4s;
-  background-color: #D0D0D0;
+  width: 100%em;
+  height: 1em;
+  background: #ccc;
+  border-radius: 6em;
   cursor: pointer;
-  border-radius: 10px;
+  transition: background 0.3s;
+  user-select: none;
 }
 
-#relay-control-container input:checked+.slider {
-  background-color: #8B44A8;
-  /* or any color you prefer */
-}
-
-#relay-control-container .slider.round:before {
+.toggle::before {
   content: "";
   position: absolute;
-  bottom: -3px;
-  left: 0;
-  /* Start at the exact left edge */
-  width: 26px;
-  height: 26px;
-  transition: .4s;
-  background-color: #530D73;
+  width: 2em;
+  height: 2em;
+  background: var(--VOR_color);
   border-radius: 50%;
+  top: 50%;
+  left: 0;
+  transform: translate(0, -50%);
+  transition: left 0.3s;
+  will-change: left;
 }
 
-#relay-control-container input:checked+.slider.round:before {
-  transform: translateX(120px);
-  /* Adjust translateX to stop at the right edge */
+.toggle.active {
+  background-color: var(--VOR_light_color)
 }
 
-.on-off-labels {
-  display: flex;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 5px;
+.toggle.active::before {
+  left: calc(100% - 1em);
 }
 
-.toggle-label {
-  width: 50%;
-  font-size: 20px;
-  font-family: 'Noto Sans', sans-serif;
-  color: #727272;
-  text-align: center;
-}
+
 
 @media (max-width: 768px) {
   #relay-control-container {
     margin-left: 0;
   }
+
+  .relay-control-sliders-container {
+    flex-direction: column;
+  }
+
 
 }
