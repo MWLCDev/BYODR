@@ -8,7 +8,13 @@ import multiprocessing
 import os
 import signal
 import threading
-
+import logging
+import traceback
+import os
+import glob
+import signal
+import multiprocessing
+import collections
 from byodr.utils import Application, ApplicationExit
 from byodr.utils.gpio_relay import ThreadSafeGpioRelay
 from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
@@ -38,7 +44,7 @@ def _interrupt():
 
 
 class PilotApplication(Application):
-    def __init__(self, event, processor, relay, config_dir=os.getcwd(), hz=100):
+    def __init__(self, event, processor, config_dir=os.getcwd(), hz=100):
         super(PilotApplication, self).__init__(quit_event=event, run_hz=hz)
         self._config_dir = config_dir
         self._processor = processor
@@ -60,7 +66,7 @@ class PilotApplication(Application):
     def _check_relay_type(self):
         try:
             _cfg = self._config()
-            gpio_relay = _cfg.get("driver.gpio_relay", "false").strip().lower() == "true" # in case it is saved in lower case from JS in TEL side
+            gpio_relay = _cfg.get("driver.gpio_relay", "false").strip().lower() == "true"  # in case it is saved in lower case from JS in TEL side
             if gpio_relay:
                 relay = ThreadSafeGpioRelay()
                 logger.info("Initialized GPIO Relay")
@@ -72,28 +78,34 @@ class PilotApplication(Application):
             self._init_relay(relay)
         except AssertionError as e:
             logger.error("Relay initialization error: %s", e)
-            logger.error(traceback.format_exc())
             self.quit()
         except Exception as e:
             logger.error("Unexpected error during relay type checking: %s", e)
-            logger.error(traceback.format_exc())
             self.quit()
 
     def _config(self):
-        parser = SafeConfigParser()
-        [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
-        cfg = dict(parser.items("pilot")) if parser.has_section("pilot") else {}
-        cfg.update(dict(parser.items("relay")) if parser.has_section("relay") else {})
-        return cfg
+        try:
+            parser = SafeConfigParser()
+            [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
+            cfg = dict(parser.items("pilot")) if parser.has_section("pilot") else {}
+            cfg.update(dict(parser.items("relay")) if parser.has_section("relay") else {})
+            return cfg
+        except Exception as e:
+            logger.error("Error reading configuration: %s", e)
+            self.quit()
 
     def _set_pulse_channels(self, **kwargs):
-        _pulse_channels = []
-        # The channel index is zero based in the code and 1-based in the configuration.
-        if parse_option("primary.channel.3.operation", str, "", [], **kwargs) == "pulse":
-            _pulse_channels.append(2)
-        if parse_option("primary.channel.4.operation", str, "", [], **kwargs) == "pulse":
-            _pulse_channels.append(3)
-        self._holder.set_pulse_channels(_pulse_channels)
+        try:
+            _pulse_channels = []
+            # The channel index is zero based in the code and 1-based in the configuration.
+            if parse_option("primary.channel.3.operation", str, "", [], **kwargs) == "pulse":
+                _pulse_channels.append(2)
+            if parse_option("primary.channel.4.operation", str, "", [], **kwargs) == "pulse":
+                _pulse_channels.append(3)
+            self._holder.set_pulse_channels(_pulse_channels)
+        except Exception as e:
+            logger.error("Error setting pulse channels: %s", e)
+            self.quit()
 
     def get_process_frequency(self):
         return self._processor.get_frequency()
@@ -102,32 +114,40 @@ class PilotApplication(Application):
         return self._holder
 
     def setup(self):
-        if self.active():
-            _cfg = self._config()
-            self._set_pulse_channels(**_cfg)
-            _errors = self._monitor.setup()
-            _restarted = self._processor.restart(**_cfg)
-            if _restarted:
-                self.ipc_server.register_start(_errors + self._processor.get_errors())
-                _frequency = self._processor.get_frequency()
-                self.set_hz(_frequency)
-                self.logger.info("Processing at {} Hz - patience is {:2.2f} ms.".format(_frequency, self._processor.get_patience_ms()))
+        try:
+            if self.active():
+                _cfg = self._config()
+                self._set_pulse_channels(**_cfg)
+                _errors = self._monitor.setup()
+                _restarted = self._processor.restart(**_cfg)
+                if _restarted:
+                    self.ipc_server.register_start(_errors + self._processor.get_errors())
+                    _frequency = self._processor.get_frequency()
+                    self.set_hz(_frequency)
+                    logger.info(f"Processing at {_frequency} Hz - patience is {self._processor.get_patience_ms():2.2f} ms.")
+        except Exception as e:
+            logger.error("Error during setup: %s", e)
+            self.quit()
 
     def finish(self):
         self._monitor.quit()
         self._processor.quit()
 
     def step(self):
-        teleop = self.teleop()
-        commands = (teleop, self.ros(), self.vehicle(), self.inference())
-        pilot = self._processor.next_action(*commands)
-        self._monitor.step(pilot, teleop)
-        if pilot is not None:
-            self.publisher.publish(pilot)
-        chat = self.ipc_chatter()
-        if chat is not None:
-            if chat.get("command") == "restart":
-                self.setup()
+        try:
+            teleop = self.teleop()
+            commands = (teleop, self.ros(), self.vehicle(), self.inference())
+            pilot = self._processor.next_action(*commands)
+            self._monitor.step(pilot, teleop)
+            if pilot is not None:
+                self.publisher.publish(pilot)
+            chat = self.ipc_chatter()
+            if chat is not None:
+                if chat.get("command") == "restart":
+                    self.setup()
+        except Exception as e:
+            logger.error("Error during step: %s", e)
+            self.quit()
 
 
 def main():
@@ -137,10 +157,8 @@ def main():
     parser.add_argument("--routes", type=str, default="/routes", help="Directory with the navigation routes.")
     args = parser.parse_args()
 
-    _relay = ThreadSafeGpioRelay()
-
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
-    application = PilotApplication(quit_event, processor=CommandProcessor(route_store), relay=_relay, config_dir=args.config)
+    application = PilotApplication(quit_event, processor=CommandProcessor(route_store), config_dir=args.config)
 
     teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
     ros = json_collector(url="ipc:///byodr/ros.sock", topic=b"aav/ros/input", hwm=10, pop=True, event=quit_event)
@@ -191,6 +209,6 @@ def main():
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
+    logging.basicConfig(format="%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s", datefmt="%Y%m%d:%H:%M:%S %p %Z")
     logging.getLogger().setLevel(logging.INFO)
     main()
