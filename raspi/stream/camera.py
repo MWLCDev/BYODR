@@ -26,7 +26,8 @@ from byodr.utils.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSo
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
+
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
@@ -174,7 +175,7 @@ def main():
         rear_server = web.HTTPServer(web_app, xheaders=True)
         rear_server.bind(args.port)
         rear_server.start()
-        logger.info("Web service started on port {}.".format(args.port))
+        # logger.info("Web service started on port {}.".format(args.port))
         io_loop.start()
 
         logger.info("Waiting on threads to stop.")

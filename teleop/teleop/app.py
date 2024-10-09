@@ -27,7 +27,8 @@ from pymongo import MongoClient
 
 logger = logging.getLogger(__name__)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s %(funcName)s %(message)s"
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
+
 
 signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
 signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
