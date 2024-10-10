@@ -1,4 +1,6 @@
 [driver]
 drive.0.serial.port = /dev/ttyACM0
 drive.1.serial.port = /dev/ttyACM1
+drive.axis0.mount.direction = forward
+drive.axis1.mount.direction = forward
 drive.type = vesc_dual

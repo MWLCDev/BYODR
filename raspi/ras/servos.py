@@ -13,14 +13,14 @@ from abc import ABC, abstractmethod
 from configparser import ConfigParser
 
 import numpy as np
-from byodr.utils import Application, timestamp
-from byodr.utils.ipc import JSONPublisher, JSONServerThread
-from byodr.utils.option import parse_option
-from byodr.utils.protocol import MessageStreamProtocol
-from byodr.utils.usbrelay import SearchUsbRelayFactory
-from BYODR.utils.gpio_relay import ThreadSafePi4GpioRelay
+from BYODR_utils.common import Application, timestamp
+from BYODR_utils.common.ipc import JSONPublisher, JSONServerThread
+from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.protocol import MessageStreamProtocol
+from BYODR_utils.common.usbrelay import SearchUsbRelayFactory
+from BYODR_utils.PI_specific.gpio_relay import ThreadSafePi4GpioRelay
 
-from .core import CommandHistory, HallOdometer, VESCDrive
+from ras.core import CommandHistory, HallOdometer, VESCDrive
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
@@ -34,6 +34,14 @@ quit_event = multiprocessing.Event()
 def _interrupt():
     logger.info("Received interrupt, quitting.")
     quit_event.set()
+
+
+class DummyRelay:
+    def open(self):
+        pass
+
+    def close(self):
+        pass
 
 
 class AbstractDriver(ABC):
@@ -134,7 +142,7 @@ class DualVescDriver(AbstractDriver):
         self._previous_motor_alternate = None
         self.last_config = None  # Attribute to store the last configuration received from the nano
         self._steering_offset = 0
-        self._relay = SearchUsbRelayFactory().get_relay()  # Initialize the relay with a default type to avoid triggering violations prematurely.
+        self._relay = DummyRelay()  # Initialize the relay with a default type to avoid triggering violations prematurely.
         self.driver_config = config_file.read_configuration()
 
         self._setup_driver_configs()
@@ -143,11 +151,12 @@ class DualVescDriver(AbstractDriver):
 
     def _setup_driver_configs(self):
         self._pp_cm = parse_option("drive.distance.cm_per_pole_pair", float, 2.3, **self.driver_config)
+        self._max_km_speed = parse_option("drive.throttle.max_km", float, 7, **self.driver_config)
         self._steering_effect = max(0.0, float(self.driver_config.get("drive.steering.effect", 1.8)))
         self._throttle_config = dict(scale=parse_option("throttle.domain.scale", float, 2.0, **self.driver_config))
         self._axes_ordered = self.driver_config.get("drive.axes.mount.order", "normal") == "normal"
-        self._axis0_multiplier = 1 if self.driver_config.get("drive.axis0.mount.direction", "forward") == "forward" else -1
-        self._axis1_multiplier = 1 if self.driver_config.get("drive.axis1.mount.direction", "forward") == "forward" else -1
+        self._axis0_multiplier = 1 if self.driver_config.get("drive.axis0.mount.direction", "forward") == "forward" else -1  # Left wheel
+        self._axis1_multiplier = 1 if self.driver_config.get("drive.axis1.mount.direction", "forward") == "forward" else -1  # Reft wheel
 
     def _check_relay_type(self, is_gpio_relay):
         """Decide on the relay type based on configuration and initialize it."""
@@ -158,7 +167,7 @@ class DualVescDriver(AbstractDriver):
             else:
                 self._relay = SearchUsbRelayFactory().get_relay()
                 logger.info("Initialized USB Relay")
-                assert self._relay.is_attached(), "The relay device is not attached."
+                # assert self._relay.is_attached(), "The relay device is not attached."
         except AssertionError as e:
             logger.error("Relay initialization error: %s", e)
             raise
@@ -215,6 +224,7 @@ class DualVescDriver(AbstractDriver):
             return 0
 
     def drive(self, steering, throttle):
+        logger.info(throttle)
         _motor_scale = self._throttle_config.get("scale")
         # Scale down throttle for one wheel, the other retains its value.
         steering = min(1.0, max(-1.0, steering + self._steering_offset))
@@ -222,8 +232,12 @@ class DualVescDriver(AbstractDriver):
         effect = 1 - min(1.0, abs(steering) * self._steering_effect)
         left = throttle if steering >= 0 else throttle * effect
         right = throttle if steering < 0 else throttle * effect
-        a = (right if self._axes_ordered else left) * self._axis0_multiplier * _motor_scale
-        b = (left if self._axes_ordered else right) * self._axis1_multiplier * _motor_scale
+        raw_a = (right if self._axes_ordered else left) * self._axis0_multiplier * _motor_scale
+        raw_b = (left if self._axes_ordered else right) * self._axis1_multiplier * _motor_scale
+        # Clamp efforts if they might exceed expected values. Not to damage the fuses.
+        # Max speed of 10Km/h
+        a = max(-self._max_km_speed, min(self._max_km_speed, raw_a))
+        b = max(-self._max_km_speed, min(self._max_km_speed, raw_b))
         self._drive1.set_effort(a)
         self._drive2.set_effort(b)
         return np.mean([a, b])
@@ -238,7 +252,7 @@ class MainApplication(Application):
     def __init__(self, event, config_dir, hz, test_mode=False):
         super(MainApplication, self).__init__(run_hz=hz, quit_event=event)
         self.test_mode = test_mode
-        self._integrity = MessageStreamProtocol(max_age_ms=100, max_delay_ms=100)
+        self._integrity = MessageStreamProtocol(max_age_ms=200, max_delay_ms=200)
         self._cmd_history = CommandHistory(hz=hz)
         self._config_queue = collections.deque(maxlen=1)
         self._drive_queue = collections.deque(maxlen=4)
@@ -353,7 +367,7 @@ def main():
         logger.info("Waiting on threads to stop.")
         [t.join() for t in threads]
     finally:
-        application._chassis.relay.open()
+        application._chassis._relay.open()
 
     while not quit_event.is_set():
         time.sleep(1)

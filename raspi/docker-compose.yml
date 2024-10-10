@@ -3,14 +3,15 @@ volumes:
   volume_zerotier_config:
   volume_local_config:
 services:
-  pigpiod:
-    image: centipede2donald/raspbian-stretch:pigpio-zmq-byodr-0.25.0
-    container_name: pigpiod
-    privileged: true
-    user: root
-    restart: always
-    network_mode: "host"
-    command: bash -c "/bin/rm -rf /var/run/pigpio.pid && /pigpio/pigpiod -gl"
+  #  TODO: remove pigpiod service
+  # pigpiod:
+  #   image: centipede2donald/raspbian-stretch:pigpio-zmq-byodr-0.25.0
+  #   container_name: pigpiod
+  #   privileged: true
+  #   user: root
+  #   restart: always
+  #   network_mode: 'host'
+  #   command: bash -c "/bin/rm -rf /var/run/pigpio.pid && /pigpio/pigpiod -gl"
   zerotier:
     image: zyclonite/zerotier:1.6.6
     container_name: zerotier-one
@@ -28,18 +29,13 @@ services:
   servos:
     build:
       context: .
-      dockerfile: pi_gpio.dockerfile
+      dockerfile: ras/Dockerfile
     privileged: true
     labels:
       io.balena.features.kernel-modules: '1'
     user: root
     restart: always
-    depends_on:
-      - "pigpiod"
-    network_mode: "host"
-    command: bash -c "modprobe i2c-dev && python3 -m ras.servos"
-    environment:
-      GPIOZERO_PIN_FACTORY: 'pigpio'
+    network_mode: 'host'
     volumes:
       - volume_local_config:/config:rw
   stream0:
@@ -49,8 +45,8 @@ services:
     privileged: true
     user: root
     restart: always
-    network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9101", "--config", "/config/camera0.ini"]
+    network_mode: 'host'
+    command: ['python3', '-m', 'stream.camera', '--port', '9101', '--config', '/config/camera0.ini']
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
@@ -61,9 +57,8 @@ services:
     privileged: true
     user: root
     restart: always
-    network_mode: "host"
-    command: ["python3", "-m", "stream.camera", "--port", "9102", "--config", "/config/camera1.ini"]
+    network_mode: 'host'
+    command: ['python3', '-m', 'stream.camera', '--port', '9102', '--config', '/config/camera1.ini']
     stop_signal: SIGKILL
     volumes:
       - volume_local_config:/config:rw
-
