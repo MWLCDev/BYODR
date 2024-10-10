@@ -169,7 +169,11 @@ class AbstractDriverBase(six.with_metaclass(ABCMeta, object)):
         raise NotImplementedError()
 
     def _reset_activation_timestamp(self):
-        self._activation_timestamp = timestamp()
+        try:
+            print("im inside")
+            self._activation_timestamp = timestamp()
+        except Exception as e:
+            logger.error(f"error while resetting activation time {e}")
 
     def _clear_activation_timestamp(self):
         self._activation_timestamp = None
@@ -780,6 +784,7 @@ class DriverManager(Configurable):
             _inference_brake = 0.0 if inference is None else inference.get("obstacle", 0.0)
             # Report the driver activation time in milliseconds.
             _driver_activation_time = self._driver.get_activation_timestamp()
+            # print(self._driver.get_activation_timestamp())
             if _driver_activation_time is not None:
                 _driver_activation_time = (timestamp() - _driver_activation_time) * 1e-3
             blob = Blob(
@@ -793,7 +798,7 @@ class DriverManager(Configurable):
                 navigation_match_distance=_nav_match_distance,
                 navigation_match_point=_nav_match_point,
                 inference_brake=_inference_brake,
-                **teleop
+                **teleop,
             )
             # Scale teleop before interpretation by the driver.
             blob.steering_scale = self._principal_steer_scale

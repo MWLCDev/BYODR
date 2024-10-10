@@ -1,153 +1,354 @@
+class LogBox {
+	constructor() {
+		this.apiUrl = 'api/datalog/event/v10/table';
+		this.drawCount = 1; // Starting point in the dataset
+		this.start = 0;
+		this.length = 10; // Number of records per page. Greater length will take longer to load
+		this.orderDir = 'desc'; // Default sorting order
+		this.currentPage = 1;
+		this.pagesAmount = 1;
+		this.totalRecords = 0;
 
-var menu_logbox = {
+		this._data_map = {};
+		this.elements = {
+			startDots: document.getElementById('startDots'),
+			first_btn: document.getElementById('first_btn'),
+			prevBtn: document.getElementById('prevBtn'),
+			nextBtn: document.getElementById('nextBtn'),
+			last_btn: document.getElementById('last_btn'),
+			endDots: document.getElementById('endDots'),
+			pagination: document.getElementById('pagination'),
+			varpag: document.getElementById('varpag'),
+			selectElement: document.getElementById('mySelect'),
+			tableBody: document.getElementById('table_order'),
+			fromNr: document.getElementById('from_nr'),
+			toNr: document.getElementById('to_nr'),
+			maxNr: document.getElementById('max_nr'),
+		};
+		this.init();
+	}
 
-    _data_map: {},
+	init() {
+		this.fetchData();
+		this.setupEventListeners();
+		this.updateButtonVisibility();
+	}
 
-    //_dt_formatter: new Intl.DateTimeFormat([], {dateStyle: 'medium', timeStyle: 'full'}),
-    _dt_formatter: new Intl.DateTimeFormat([], {
-                     weekday: 'short',
-                     year: 'numeric',
-                     month: 'numeric',
-                     day: 'numeric',
-                     hour: 'numeric',
-                     minute: 'numeric',
-                     second: 'numeric',
-                     fractionalSecondDigits: 3,
-                     hour12: false
-                     //timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    }),
+	setupEventListeners() {
+		this.elements.pagination.addEventListener('click', (event) => this.handlePaginationClick(event));
+		this.elements.selectElement.addEventListener('change', () => this.handleSelectChange());
+	}
 
-    _init: function(el_parent) {
-        const column_names = [
-            'time', 'image', 'trigger', 'driver', 'max speed', 'desired speed', 'velocity', 'steer', 'throttle',
-            'steer intervention', 'speed intervention', 'save', 'latitude', 'longitude',
-            'ap steer', 'ap brake', 'ap steer confidence', 'ap brake confidence'
-        ];
-        // Construct the dom elements.
-        const el_table = $("<table/>", {id: 'logbox', class: 'display', style: 'font-size: 0.8em'});
-        const el_head = $("<thead/>");
-        //const el_foot = $("<tfoot/>");
-        const el_head_row = $("<tr/>");
-        //const el_foot_row = $("<tr/>");
-        el_head.append(el_head_row);
-        //el_foot.append(el_foot_row);
-        column_names.forEach(function(column) {el_head_row.append($("<th/>").text(column));});
-        //column_names.forEach(function(column) {el_foot_row.append($("<th/>").text(column));});
-        el_table.append(el_head);
-        //el_table.append(el_foot);
-        el_parent.append(el_table);
-        this._setup();
-    },
+	handlePaginationClick(event) {
+		if (event.target.nodeName !== 'BUTTON') return;
+		this.clickButtons(event.target);
+	}
 
-    _string_str: function(x) {
-        return x == 'null'? '': x;
-    },
+	/**
+	 * Handles changes in the entries per page select element.
+	 */
+	handleSelectChange() {
+		this.length = Number(this.elements.selectElement.value);
+		this.start = 0;
+		this.currentPage = 1;
+		this.fetchData();
+	}
 
-    _bool_str: function(x) {
-        return x == 1? 'yes': '';
-    },
+	/**
+	 * Processes clicks on pagination buttons and updates the current page.
+	 * @param {HTMLButtonElement} clickedBtn - The clicked button element.
+	 */
+	clickButtons(clickedBtn) {
+		const clickedId = clickedBtn.id;
+		switch (clickedId) {
+			case 'prevBtn':
+				if (this.currentPage > 1) this.currentPage--;
+				break;
+			case 'nextBtn':
+				if (this.currentPage < this.pagesAmount) this.currentPage++;
+				break;
+			case 'first_btn':
+				this.currentPage = 1;
+				break;
+			case 'last_btn':
+				this.currentPage = this.pagesAmount;
+				break;
+			default:
+				this.currentPage = Number(clickedBtn.textContent);
+				break;
+		}
+		this.changePage();
+	}
 
-    _float_str: function(x, precision) {
-        const result = parseFloat(x).toFixed(precision);
-        return isNaN(result)? '': result;
-    },
+	/**
+	 * Updates the start index based on the current page and fetches new data.
+	 */
+	changePage() {
+		this.start = (this.currentPage - 1) * this.length;
+		this.fetchData();
+	}
 
-    _date_time_str: function(x) {
-        // return this._dt_formatter.format(new Date(x * 1e-3));
-        return this._dt_formatter.formatToParts(new Date(x * 1e-3)).map(({type, value}) => {return value;}).join('');
-    },
+	/**
+	 * Updates the visibility of pagination buttons based on the current page.
+	 */
+	updateButtonVisibility() {
+		const { prevBtn, nextBtn, startDots, first_btn, endDots, last_btn } = this.elements;
 
-    _driver_str: function(x) {
-        return x == 1? 'teleop': x == 2? 'ap': '';
-    },
+		prevBtn.classList.toggle('limit', this.currentPage <= 1);
+		nextBtn.classList.toggle('limit', this.currentPage >= this.pagesAmount);
 
-    _on_data_loaded: function(data) {
-        var _map = {};
-        data.forEach(function(row) {
-            const object_id = row[0];
-            const img_exists = row[2];
-            const user_steer = row[8];
-            const ap_steer = row[15];
-            _map[object_id] = [img_exists, user_steer, ap_steer];
-        });
-        this._data_map = _map;
-        return data;
-    },
+		const showStartButtons = this.currentPage > 3;
+		startDots.style.display = showStartButtons ? 'inline' : 'none';
+		first_btn.style.display = showStartButtons ? 'inline' : 'none';
 
-    _img_tag: function(object_id) {
-        const row = this._data_map[object_id];
-        const exists = row == undefined? 0: row[0];
-        if (exists) {
-            var _cnt = "<canvas id='" + object_id + "' width=200 height=80></canvas>";
-            _cnt += "<img ";
-            _cnt += "id='" + object_id + "' ";
-            _cnt += "value1='" + 0 + "' ";
-            _cnt += "value2='" + 0 + "' ";
-            _cnt += "style='display:none' onload='menu_logbox._img_loaded(this)' ";
-            _cnt += "src='api/datalog/event/v10/image?object_id=" + object_id + "'/>";
-            return _cnt;
-        } else {
-            return "<img src='./assets/im_no_image_available.png'/>";
-        }
-    },
+		const showEndButtons = this.currentPage < this.pagesAmount - 2;
+		endDots.style.display = showEndButtons ? 'inline' : 'none';
+		last_btn.style.display = showEndButtons ? 'inline' : 'none';
+	}
 
-    _draw_line: function(ctx, color, x, y) {
-        ctx.strokeStyle = color;
-        ctx.beginPath();
-        ctx.moveTo(x, 0);
-        ctx.lineTo(x, y);
-        ctx.stroke();
-    },
+	fetchData() {
+		const params = new URLSearchParams({
+			draw: this.drawCount++,
+			start: this.start,
+			length: this.length,
+			'order[0][dir]': this.orderDir,
+		});
 
-    _img_loaded: function(el_image) {
-        const object_id = el_image.id;
-        const row = this._data_map[object_id];
-        const value1 = parseFloat(row[1]);
-        const value2 = parseFloat(row[2]);
-        const ctx = $("canvas#" + object_id)[0].getContext('2d');
-        ctx.drawImage(el_image, 0, 0, 200, 80);
-        this._draw_line(ctx, '#fff', (100 + 98 * value1), 80);
-        this._draw_line(ctx, '#0937b5', (100 + 98 * value2), 80);
-    },
+		fetch(`${this.apiUrl}?${params.toString()}`)
+			.then((response) => response.json())
+			.then((data) => this.handleFetchResponse(data))
+			.catch((error) => console.error('Error loading the data:', error));
+	}
 
-    _setup: function() {
-        $('table#logbox').DataTable({
-            "fixedHeader": true,
-            "processing": true,
-            "serverSide": true,
-            "searching": false,
-            ajax: {
-                url: "api/datalog/event/v10/table",
-                dataSrc: function (x) {return menu_logbox._on_data_loaded(x.data);}
-            },
-            "columns": [
-                {data: 1, orderable: true, render: function(data, type, row, meta) {return menu_logbox._date_time_str(data);}},
-                {data: 0, orderable: false, render: function(data, type, row, meta) {return menu_logbox._img_tag(data);}},
-                {data: 3, orderable: false},
-                {data: 4, orderable: false, render: function(data, type, row, meta) {return menu_logbox._driver_str(data);}},
-                {data: 5, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 2);}},
-                {data: 6, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 2);}},
-                {data: 7, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 2);}},
-                {data: 8, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}},
-                {data: 9, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}},
-                {data: 10, orderable: false, render: function(data, type, row, meta) {return menu_logbox._bool_str(data);}},
-                {data: 11, orderable: false, render: function(data, type, row, meta) {return menu_logbox._bool_str(data);}},
-                {data: 12, orderable: false, render: function(data, type, row, meta) {return menu_logbox._bool_str(data);}},
-                {data: 13, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 8);}},
-                {data: 14, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 8);}},
-                {data: 15, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}},
-                {data: 16, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}},
-                {data: 17, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}},
-                {data: 18, orderable: false, render: function(data, type, row, meta) {return menu_logbox._float_str(data, 4);}}
-            ]
-        });
-    }
+	/**
+	 * Handles the API response, updating the table and pagination.
+	 * @param {Object} data - The data returned from the API.
+	 */
+	handleFetchResponse(data) {
+		if (data.error) {
+			console.error('Error from server:', data.error);
+			return;
+		}
+		this.totalRecords = data.recordsTotal;
+		this.displayNumbers();
+		this.createImgData(data.data); // Call the data processing method
+		this.getButtons();
+		this.updateButtonVisibility();
+		this.updateCurrentButton();
+	}
+
+	/**
+	 * Updates the display of record numbers and calculates total pages.
+	 */
+	displayNumbers() {
+		try {
+			this.elements.maxNr.textContent = this.totalRecords;
+			this.elements.fromNr.textContent = this.start + 1;
+			this.elements.toNr.textContent = Math.min(this.start + this.length, this.totalRecords);
+			this.pagesAmount = Math.ceil(this.totalRecords / this.length);
+			this.elements.last_btn.textContent = this.pagesAmount;
+		} catch (error) {
+			console.error('cannot display the numbers: ', error);
+		}
+	}
+
+	/**
+	 * Create object with all returned img details
+	 */
+	createImgData(data) {
+		var _map = {};
+		data.forEach((row) => {
+			const object_id = row[0]; // ID
+			const img_exists = row[2];
+			const user_steer = row[8];
+			const ap_steer = row[15];
+			_map[object_id] = [img_exists, user_steer, ap_steer];
+		});
+		this._data_map = _map; // Save the map
+		this.processData(data, this.drawCount - 1); // Proceed to processing the data for the table
+	}
+
+	/**
+	 * Generates and displays pagination buttons.
+	 */
+	getButtons() {
+		const buttonContainer = this.elements.varpag;
+		buttonContainer.innerHTML = '';
+		if (this.pagesAmount >= 1) {
+			for (let i = 0; i < 5 && i < this.pagesAmount; i++) {
+				const buttonNr = this.currentPage + i - 2;
+				if (buttonNr >= 1 && buttonNr <= this.pagesAmount) {
+					const newBtn = document.createElement('button');
+					newBtn.id = i - 2;
+					newBtn.className = 'logbox nrbtn';
+					newBtn.textContent = buttonNr;
+					buttonContainer.appendChild(newBtn);
+				}
+			}
+		}
+	}
+
+	createImageTag(objectId) {
+		const row = this._data_map[objectId];
+		const exists = row == undefined ? 0 : row[0];
+		if (exists) {
+			const imageUrl = `api/datalog/event/v10/image?object_id=${objectId}`;
+			this.loadImageOnCanvas(objectId, imageUrl);
+			return `<canvas id="canvas_${objectId}" width="200" height="80"></canvas>`;
+		} else {
+			return `No image available`;
+		}
+	}
+
+	loadImageOnCanvas(objectId, imageUrl) {
+		const img = new Image();
+		img.onload = () => {
+			const canvas = document.getElementById(`canvas_${objectId}`);
+			const ctx = canvas.getContext('2d');
+
+			// Draw rounded rectangle as a clipping path
+			this.drawRoundedRect(ctx, 0, 0, canvas.width, canvas.height, 10); // 10 is the radius for the rounded corners
+			ctx.clip(); // Clip to the rounded rectangle path
+
+			// Draw the image within the rounded rectangle
+			ctx.drawImage(img, 0, 0, 200, 80);
+
+			const row = this._data_map[objectId];
+			const value1 = parseFloat(row[1]);
+			const value2 = parseFloat(row[2]);
+			this.drawOnCanvas(ctx, '#fff', 100 + 98 * value1, 80);
+			this.drawOnCanvas(ctx, '#0937b5', 100 + 98 * value2, 80);
+		};
+		img.src = imageUrl;
+	}
+
+	/**
+	 * Processes and displays the fetched data in the table.
+	 * @param {Array} data - The array of data to be displayed.
+	 * @param {number} serverDraw - The draw count from the server.
+	 */
+	processData(data, serverDraw) {
+		try {
+			if (serverDraw !== this.drawCount - 1) {
+				console.warn('Received out of sync data');
+				return;
+			}
+
+			this.elements.tableBody.innerHTML = '';
+			data.forEach((row) => {
+				const tr = document.createElement('tr');
+				// Filter out `img_exists` column
+				const filteredRow = row.filter((item, index) => index !== 2);
+				tr.innerHTML = filteredRow.map((item, index) => this.formatCell(item, index)).join('');
+				this.elements.tableBody.appendChild(tr);
+			});
+		} catch (error) {
+			console.error("Couldn't process server data", error);
+		}
+	}
+
+	/**
+	 * Formats a cell's content for display in the table.
+	 * @param {*} item - The item to be formatted.
+	 * @param {number} columnIndex - The index of the column.
+	 * @returns {string} The HTML string for the formatted cell.
+	 */
+	formatCell(item, columnIndex) {
+		if (item === 'null' || item === null) return '<td></td>';
+
+		switch (columnIndex) {
+			case 0: // ID or frame column
+				return `<td>${this.createImageTag(item)}</td>`;
+			case 1: // Timestamp
+				return `<td>${this.formatTimestamp(item)}</td>`;
+			case 3: // Driver type
+				return `<td>${this.driverStr(item)}</td>`;
+		}
+
+		if (this.isStringNumber(item)) {
+			return `<td>${this.roundIfMoreThanTwoDecimals(item)}</td>`;
+		}
+
+		return `<td>${item}</td>`;
+	}
+  
+	/**
+	 * Translate the driver's number to a string
+	 */
+	driverStr(x) {
+		return x == 1 ? 'Teleop' : x == 2 ? 'ap' : '';
+	}
+
+	/**
+	 * Formats a timestamp from microseconds to the desired string format.
+	 * @param {string} timestamp - The timestamp in microseconds.
+	 * @returns {string} The formatted date string.
+	 */
+	formatTimestamp(timestamp) {
+		const date = new Date(parseInt(timestamp) / 1000); // Convert microseconds to milliseconds
+
+		const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+		const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+		const dayName = days[date.getDay()];
+		const day = date.getDate();
+		const monthName = months[date.getMonth()];
+		const year = date.getFullYear();
+		const hours = date.getHours().toString().padStart(2, '0');
+		const minutes = date.getMinutes().toString().padStart(2, '0');
+		const seconds = date.getSeconds().toString().padStart(2, '0');
+		const milliseconds = date.getMilliseconds().toString().padStart(3, '0');
+
+		return `${dayName}, ${day}/${monthName}/${year}, ${hours}:${minutes}:${seconds}.${milliseconds}`;
+	}
+
+	/**
+	 * Updates the current button's visual state in the pagination.
+	 */
+	updateCurrentButton() {
+		const currentBtn = document.querySelector('.currentBtn');
+		if (currentBtn) currentBtn.classList.remove('currentBtn');
+
+		document.querySelectorAll('.nrbtn').forEach((btn) => {
+			if (this.currentPage == Number(btn.textContent)) {
+				btn.classList.add('currentBtn');
+			}
+		});
+	}
+
+	isStringNumber(str) {
+		return !isNaN(Number(str));
+	}
+
+	drawRoundedRect(ctx, x, y, width, height, radius) {
+		ctx.beginPath();
+		ctx.moveTo(x + radius, y);
+		ctx.lineTo(x + width - radius, y);
+		ctx.quadraticCurveTo(x + width, y, x + width, y + radius);
+		ctx.lineTo(x + width, y + height - radius);
+		ctx.quadraticCurveTo(x + width, y + height, x + width - radius, y + height);
+		ctx.lineTo(x + radius, y + height);
+		ctx.quadraticCurveTo(x, y + height, x, y + height - radius);
+		ctx.lineTo(x, y + radius);
+		ctx.quadraticCurveTo(x, y, x + radius, y);
+		ctx.closePath();
+	}
+
+	drawOnCanvas(ctx, color, x, y) {
+		ctx.strokeStyle = color;
+		ctx.beginPath();
+		ctx.moveTo(x, 0);
+		ctx.lineTo(x, y);
+		ctx.stroke();
+	}
+
+	roundIfMoreThanTwoDecimals(number) {
+		const [integerPart, decimalPart] = number.toString().split('.');
+		if (decimalPart && decimalPart.length > 3) {
+			return parseFloat(number).toFixed(3);
+		}
+		return number;
+	}
 }
 
-
-
-// --------------------------------------------------- Init and public --------------------------------------------------------- //
-
-function menu_user_logbox_main(el_parent) {
-    menu_logbox._init(el_parent);
-}
+export { LogBox };

@@ -84,7 +84,7 @@ class RealMonitoringRelay(AbstractRelay):
         super(RealMonitoringRelay, self).__init__()
         self._relay = relay
         self._config_dir = config_dir
-        self._integrity = MessageStreamProtocol(max_age_ms=200, max_delay_ms=250)
+        self._integrity = MessageStreamProtocol(max_age_ms=500, max_delay_ms=250)
         self._status_factory = StatusReceiverThreadFactory() if status_factory is None else status_factory
         self._client_factory = PiClientFactory() if client_factory is None else client_factory
         self._relay_closed_calltrace = collections.deque(maxlen=1)
@@ -139,7 +139,7 @@ class RealMonitoringRelay(AbstractRelay):
         errors = []
         _config = self._config()
         self._patience_micro = parse_option("patience.ms", int, 100, errors, **_config) * 1000.0
-        _pi_uri = parse_option("ras.master.uri", str, "tcp://192.168.1.32", errors, **_config)
+        _pi_uri = parse_option("ras.master.uri", str, "192.168.1.32", errors, **_config)
         _pi_uri = f"tcp://{_pi_uri}"
         # Stopping the sockets that handle communication with the Pi
         if self._pi_client is not None:

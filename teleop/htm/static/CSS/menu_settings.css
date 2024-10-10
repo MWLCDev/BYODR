@@ -1,0 +1,143 @@
+body {
+  overflow: auto;
+}
+
+#advanced_settings_form_container {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  width: 100%;
+}
+
+#advanced_settings_form_buttons {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+
+#edit_button,
+#submit_save_apply {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+  width: 80px;
+  height: 1em;
+  transition: background-color 0.3s ease, color 0.3s ease;
+  cursor: pointer;
+  border-radius: 8px;
+  text-transform: uppercase;
+}
+
+#edit_button {
+  margin-bottom: auto;
+  color: var(--VOR_color);
+}
+
+#submit_save_apply {
+  margin-top: auto;
+  background-color: var(--VOR_color);
+  color: #f0f0f0;
+}
+
+#form_user_options {
+  margin-left: 2vw;
+}
+
+#form_user_options div {
+  margin: 3px 0;
+}
+
+
+#settings-content {
+  position: relative;
+  padding: 20px;
+}
+
+#form_user_options fieldset {
+  padding-left: 5%;
+  border: 0;
+}
+
+#form_user_options legend {
+  padding-top: 10px;
+  padding-right: 10px;
+  padding-bottom: 10px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+#form_user_options fieldset input[type=text] {
+  box-shadow: inset 0px 0px 7px rgba(0, 0, 0, 0.2);
+  width: 40%;
+  margin-left: 15px;
+  padding: 5px;
+  background-color: #E7E7E7;
+  border: 0;
+  border-radius: 5px;
+  font-size: 16px;
+}
+
+#form_user_options fieldset input[type=checkbox] {
+  margin-left: 15px;
+  padding: 5px;
+}
+
+
+#view-switch {
+  display: flex;
+  flex-direction: row;
+  gap: 3em;
+  padding-top: 3em;
+}
+
+
+
+.relay-channel {
+  border: 0;
+
+}
+
+.relay-channel>legend {
+  margin-bottom: 1rem;
+  font-size: 24px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.toggle {
+  position: relative;
+  width: 100%em;
+  height: 1em;
+  background: #ccc;
+  border-radius: 6em;
+  cursor: pointer;
+  transition: background 0.3s;
+  user-select: none;
+}
+
+.toggle::before {
+  content: "";
+  position: absolute;
+  width: 2em;
+  height: 2em;
+  background: var(--VOR_color);
+  border-radius: 50%;
+  top: 50%;
+  left: 0;
+  transform: translate(0, -50%);
+  transition: left 0.3s;
+  will-change: left;
+}
+
+.toggle.active {
+  background-color: var(--VOR_light_color)
+}
+
+.toggle.active::before {
+  left: calc(100% - 1em);
+}
+
+@media (max-width: 768px) {
+  #view-switch {
+    flex-direction: column;
+  }
+}

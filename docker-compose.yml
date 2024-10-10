@@ -77,14 +77,14 @@ services:
     cpuset: '0'
     build:
       context: .
-      dockerfile: mongodb/Dockerfile
+      dockerfile: mongodb/Dockerfile 
     restart: always
     command: ['python3', 'wrap.py']
     network_mode: host
     stop_signal: SIGKILL
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD_FILE: /config/mongo-root
+      MONGO_INITDB_ROOT_PASSWORD: robot 
     volumes:
       - volume_mongodb_config:/config:rw
       - volume_mongodb_data:/data/db:rw
@@ -96,6 +96,8 @@ services:
     restart: always
     command: ['sh', '-c', 'python3 -m teleop.app --name teleop --routes /sessions/routes']
     network_mode: host
+    depends_on:
+      - mongodb
     environment:
       LD_PRELOAD: libgomp.so.1
     volumes:
@@ -145,3 +147,15 @@ services:
     volumes:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:ro
+  following:
+    cpuset: '3,2'
+    build:
+      context: .
+      dockerfile: following/Dockerfile
+    restart: always
+    privileged: true
+    network_mode: host
+    stop_signal: SIGKILL
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw

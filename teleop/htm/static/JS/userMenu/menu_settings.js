@@ -1,184 +1,181 @@
-class RealSettingsBackend {
-  constructor() {
-  }
-  _call_get_state(cb) {
-    $.get("/teleop/system/state", cb);
-  }
-  _call_get_settings(cb) {
-    $.get("/teleop/user/options", cb);
-  }
-  _call_save_settings(data, cb) {
-    $.post("/teleop/user/options", data).done(cb);
-  }
+class UserSettingsManager {
+	constructor() {
+		this.form = document.getElementById('form_user_options');
+		this.editButton = document.getElementById('edit_button');
+		this.saveButton = document.getElementById('submit_save_apply');
+		this.fetchUserSettings();
+		this.disableFormInputs();
+		this.init();
+	}
+
+	init() {
+		if (this.editButton) {
+			this.editButton.addEventListener('click', () => this.enableEditMode());
+		}
+
+		if (this.saveButton) {
+			this.saveButton.addEventListener('click', () => this.saveSettings());
+		}
+
+		this.form.addEventListener('input', () => {
+			if (this.saveButton) {
+				this.saveButton.disabled = false;
+			}
+		});
+
+		this.saveButton.style.display = 'none';
+	}
+
+	fetchUserSettings() {
+		fetch('/teleop/user/options')
+			.then((response) => response.json())
+			.then((settings) => {
+				this.populateForm(settings);
+			})
+			.catch((error) => alert('Error fetching settings: ' + error.message));
+	}
+
+	// Populate form with fetched settings
+	populateForm(settings) {
+		this.form.innerHTML = '';
+
+		Object.entries(settings).forEach(([section, options]) => {
+			const fieldset = this.createFieldset(section);
+
+			Object.entries(options).forEach(([name, value]) => {
+				if (this.shouldSkipField(section, name)) return;
+
+				const input = this.createInput(section, name, value);
+				const label = this.createLabel(section, name, input);
+
+				const div = document.createElement('div');
+				div.appendChild(label);
+				fieldset.appendChild(div);
+			});
+
+			this.form.appendChild(fieldset);
+		});
+	}
+
+	// Create a fieldset with a legend for each section
+	createFieldset(section) {
+		const fieldset = document.createElement('fieldset');
+		const legend = document.createElement('legend');
+		legend.textContent = section.charAt(0).toUpperCase() + section.slice(1);
+		fieldset.appendChild(legend);
+		return fieldset;
+	}
+
+	// Determine whether to skip certain fields
+	shouldSkipField(section, name) {
+		return section === 'vehicle' && ['ras.driver.steering.offset', 'ras.driver.motor.scale', 'ras.driver.deadzone.width'].includes(name);
+	}
+
+	// Create an input element based on the value or specific field name
+	createInput(section, name, value) {
+		const isCheckbox = value === 'true' || value === 'false' || name === 'ras.driver.motor.alternate';
+		const input = document.createElement('input');
+		input.type = isCheckbox ? 'checkbox' : 'text';
+		input.name = this.filterFieldName(section, name); // Use the transformed name
+		input.dataset.originalKey = name; // Store the original key without applying filters
+		input.dataset.section = section; // Store the section name in dataset
+		input.disabled = true; // Initially disable input fields
+
+		if (isCheckbox) {
+			input.checked = value === 'true';
+		} else {
+			input.value = value;
+		}
+		return input;
+	}
+
+	// Create a label for the input element
+	createLabel(section, name, input) {
+		const displayName = this.filterFieldName(section, name);
+		const label = document.createElement('label');
+		label.textContent = displayName.charAt(0).toUpperCase() + displayName.slice(1) + ':';
+		label.appendChild(input);
+		return label;
+	}
+
+	filterFieldName(section, name) {
+		console.log(section, name);
+		if (section === 'camera') {
+			name = name.replace('ip', 'IP');
+		} else if (section === 'pilot') {
+			name = name.replace('driver.', '').replace('cc.', '').replace('throttle.', '');
+			if (name.includes('pid')) name = name.slice(0, -1) + name.slice(-1).toUpperCase();
+		} else if (section === 'vehicle') {
+			if (name.includes('ras.master.uri')) name = name.replace('ras.master.uri', 'Pi URI');
+			else if (name.includes('gps')) name = name.replace('gps', 'GPS');
+			else if (name.includes('ras.driver.')) name = name.replace('ras.driver.', '');
+		}
+		return name.replace(/[._]/g, ' ');
+	}
+
+	// Save settings to the backend
+	saveSettings() {
+		const sections = this.collectFormData();
+
+		fetch('/teleop/user/options', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(sections),
+		})
+			.then((response) => {
+				if (response.ok) {
+					alert('Settings saved successfully.');
+					this.disableFormInputs();
+					this.editButton.style.display = 'block';
+					this.saveButton.style.display = 'none';
+				} else {
+					throw new Error('Failed to save settings');
+				}
+			})
+			.catch((error) => {
+				alert('Error saving settings: ' + error.message);
+			});
+	}
+
+	// Collect data from the form inputs
+	collectFormData() {
+		const sections = {};
+		const inputs = this.form.querySelectorAll('input');
+
+		inputs.forEach((input) => {
+			const originalKey = input.dataset.originalKey;
+			const section = input.dataset.section;
+
+			if (!sections[section]) {
+				sections[section] = [];
+			}
+			// Convert the value to a lowercase string for boolean values
+			const value = input.type === 'checkbox' ? String(input.checked).toLowerCase() : String(input.value);
+			// Save the key-value pair as an array (tuple-like) in the correct section
+			sections[section].push([originalKey, value]);
+		});
+
+		return sections;
+	}
+
+	enableEditMode() {
+		this.enableFormInputs();
+		this.editButton.style.display = 'none';
+		this.saveButton.style.display = 'block';
+		this.saveButton.disabled = true; // Disable save button initially until changes are made
+	}
+
+	disableFormInputs() {
+		const inputs = this.form.querySelectorAll('input');
+		inputs.forEach((input) => (input.disabled = true));
+	}
+
+	enableFormInputs() {
+		const inputs = this.form.querySelectorAll('input');
+		inputs.forEach((input) => (input.disabled = false));
+	}
 }
 
-
-class FakeSettingsBackend extends RealSettingsBackend {
-  constructor() {
-    super();
-  }
-  _call_get_state(cb) {
-    cb({ "platform": { 'entry': [new Date().toLocaleString()] } });
-  }
-  _call_get_settings(cb) {
-    cb({ "vehicle": { "ras.driver.motor.scale": "14", "ras.driver.steering.offset": "0.54" } });
-  }
-  _call_save_settings(data, cb) {
-    console.log("Dev backend save settings: " + data);
-    cb({});
-  }
-}
-
-
-var menu_settings = {
-  _backend: null,
-
-  _init: function (el_parent) {
-    // In development mode there is no use of a backend.
-    this._backend = dev_tools.is_develop() ? new FakeSettingsBackend() : new RealSettingsBackend();
-    // Construct the dom elements.
-    const div_column = $("<div/>", { id: 'column' });
-    div_column.append($("<h2/>").text("systems"));
-    div_column.append($("<div/>", { id: 'system_state' }));
-    div_column.append($("<h2/>").text("options"));
-    div_column.append($("<form/>", { id: 'form_user_options', action: '' }));
-    el_parent.append(div_column);
-    // Get and render.
-    this._poll_system_state();
-    this._create_user_settings();
-  },
-
-  _system_state_update: function (data) {
-    const el_parent = $("div#system_state");
-    el_parent.find('table').remove();
-    var el_table = $("<table/>");
-    Object.keys(data).forEach(subsystem => {
-      Object.keys(data[subsystem]).forEach(timestamp => {
-        var startup_errors = data[subsystem][timestamp];
-        startup_errors.forEach(err_msg => {
-          var el_row = $("<tr/>");
-          el_row.append($("<td/>").text(subsystem));
-          el_row.append($("<td/>").text(timestamp));
-          el_row.append($("<td/>").text(err_msg));
-          el_table.append(el_row);
-        });
-      });
-    });
-    el_parent.append(el_table);
-  },
-
-  _poll_system_state: function () {
-    menu_settings._backend._call_get_state(menu_settings._system_state_update);
-  },
-
-  _create_user_settings: function () {
-    menu_settings._backend._call_get_settings(menu_settings._create_settings_form);
-  },
-
-  _start_state_polling: function () {
-    setTimeout(menu_settings._poll_system_state, 0);
-    setTimeout(menu_settings._poll_system_state, 2000);
-    setTimeout(menu_settings._poll_system_state, 10000);
-  },
-
-  _settings_form_submit: function () {
-    $("input#submit_save_apply").prop('disabled', true);
-    const form_inputs = $("form#form_user_options").find(':input').toArray();
-    let p_body = {};
-  
-    form_inputs.forEach((input) => {
-      let isDirty = false;
-      let value;
-  
-      // Check if the input is a checkbox and handle boolean values
-      if (input.type === 'checkbox') {
-        isDirty = input.checked.toString().toLowerCase() !== input.defaultValue.toLowerCase();
-        value = input.checked ? 'True' : 'False'; // Convert boolean to string matching server expectation
-      } else {
-        isDirty = input.value !== input.defaultValue;
-        value = input.value;
-      }
-  
-      if (isDirty) {
-        const section = input.attributes.section.value;
-        p_body[section] = p_body[section] || [];
-        p_body[section].push([input.name, value]);
-      }
-    });
-  
-    // p_body now contains the string 'True' or 'False' for checkboxes,
-    // and the string value for other inputs. No need to map through p_body to convert values.
-  
-    menu_settings._backend._call_save_settings(JSON.stringify(p_body), function (data) {
-      // Update the default values to the current state after successful save
-      form_inputs.forEach((input) => {
-        if (input.type === 'checkbox') {
-          input.defaultValue = input.checked.toString(); // Update defaultValue to 'true' or 'false'
-        } else {
-          input.defaultValue = input.value;
-        }
-      });
-      $("input#submit_save_apply").prop('disabled', false);
-      menu_settings._start_state_polling();
-    });
-  },
-
-  _create_settings_form: function (data) {
-    const el_form = $("form#form_user_options");
-    Object.keys(data).forEach(section => {
-      var el_table = $("<table/>");
-      el_table.append($("<caption/>").text(section).css('font-weight', 'bold').css('text-align', 'left'));
-      var section_a = Object.keys(data[section]).sort();
-      section_a.forEach(name => {
-        var value = data[section][name].toString().toLowerCase(); // Convert to string and lower case for comparison
-        var el_row = $("<tr/>");
-        el_row.append($("<td/>").text(name));
-        var el_input_td = $("<td/>");
-
-        // Check if the value is a boolean
-        if (value === 'true' || value === 'false') {
-          // Create a toggle switch
-          var el_input = $("<input/>", {
-            section: section,
-            name: name,
-            type: 'checkbox',
-            checked: value === 'true' // Check if the value is 'true'
-          });
-          el_input_td.append(el_input);
-        } else {
-          // Use a text input for non-boolean values
-          el_input_td.append($("<input/>", {
-            section: section,
-            name: name,
-            type: 'text',
-            value: value,
-            size: 40,
-            maxlen: 80
-          }));
-        }
-        el_row.append(el_input_td);
-        el_table.append(el_row);
-      });
-      el_form.append(el_table);
-    });
-    const el_button = $("<input/>", {
-      id: 'submit_save_apply',
-      type: 'button',
-      value: 'Save',
-      disabled: true,
-      click: menu_settings._settings_form_submit
-    });
-    el_form.append(el_button);
-    el_form.on("input", function (evt) {
-      el_button.prop('disabled', false);
-    });
-  }
-}
-
-
-
-// --------------------------------------------------- Init and public --------------------------------------------------------- //
-
-function menu_user_settings_main(el_parent) {
-  menu_settings._init(el_parent);
-}
+export { UserSettingsManager };

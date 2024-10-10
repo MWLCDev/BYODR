@@ -1,0 +1,134 @@
+#input-sliders {
+  width: 100%;
+}
+
+#input-sliders>div {
+  margin-bottom: 20px;
+}
+
+#input-sliders .slider-container {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  align-content: center;
+  justify-content: flex-start;
+  gap: 1rem;
+}
+
+#input-sliders label {
+  margin-right: 15px;
+  font-size: 24px;
+  font-weight: bold;
+}
+
+.custom-slider {
+  -webkit-appearance: none;
+  width: 59%;
+  height: 15px;
+  border-radius: 5px;
+  background: #D0D0D0;
+  outline: none;
+}
+
+.custom-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--VOR_color);
+  cursor: pointer;
+}
+
+.custom-slider::-moz-range-thumb {
+  width: 25px;
+  height: 25px;
+  border-radius: 50%;
+  background: var(--VOR_color);
+  cursor: pointer;
+}
+
+#input-sliders input[type="range"]:focus {
+  outline: none;
+  box-shadow: 0 0 5px #3A0751;
+}
+
+.slider_value {
+  font-size: 20px;
+}
+
+
+#relay-control-container {
+  margin-left: 20px;
+  width: 100%;
+}
+
+.relay-control-sliders-container {
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: center;
+  gap: 3rem;
+  width: 100%;
+  margin-top: 20px;
+}
+
+.relay-channel {
+  border: 0;
+
+}
+
+.relay-channel>legend {
+  margin-bottom: 1rem;
+  font-size: 24px;
+  font-weight: bold;
+  white-space: nowrap;
+}
+
+.toggle {
+  position: relative;
+  width: 100%em;
+  height: 1em;
+  background: #ccc;
+  border-radius: 6em;
+  cursor: pointer;
+  transition: background 0.3s;
+  user-select: none;
+}
+
+.toggle::before {
+  content: "";
+  position: absolute;
+  width: 2em;
+  height: 2em;
+  background: var(--VOR_color);
+  border-radius: 50%;
+  top: 50%;
+  left: 0;
+  transform: translate(0, -50%);
+  transition: left 0.3s;
+  will-change: left;
+}
+
+.toggle.active {
+  background-color: var(--VOR_light_color)
+}
+
+.toggle.active::before {
+  left: calc(100% - 1em);
+}
+
+
+
+@media (max-width: 768px) {
+  #relay-control-container {
+    margin-left: 0;
+  }
+
+  .relay-control-sliders-container {
+    flex-direction: column;
+  }
+
+
+}

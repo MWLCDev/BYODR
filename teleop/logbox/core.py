@@ -6,7 +6,7 @@ import numpy as np
 import pymongo
 from bson.binary import Binary
 from bson.objectid import ObjectId
-
+from pymongo import MongoClient
 from byodr.utils import timestamp
 
 TRIGGER_SERVICE_START = 2**0
@@ -115,6 +115,7 @@ class MongoLogBox(object):
     def __init__(self, client):
         self._client = client
         self._database = client.logbox
+
 
     def close(self):
         self._client.close()
