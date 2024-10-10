@@ -1,7 +1,8 @@
 from __future__ import absolute_import
 
-import Jetson.GPIO as GPIO
 import threading
+
+import Jetson.GPIO as GPIO
 
 
 class ThreadSafeGpioRelay(object):
@@ -20,12 +21,14 @@ class ThreadSafeGpioRelay(object):
         """Turns the relay ON (sets the GPIO pin LOW)."""
         with self.lock:
             GPIO.output(self.pin, GPIO.LOW)
+            print("opened the relay")
             self.state = False
 
     def close(self):
         """Turns the relay OFF (sets the GPIO pin HIGH)."""
         with self.lock:
             GPIO.output(self.pin, GPIO.HIGH)
+            print("closed the relay")
             self.state = True
 
     def toggle(self):

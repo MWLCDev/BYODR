@@ -14,11 +14,9 @@ import traceback
 from byodr.utils import Application, ApplicationExit
 from byodr.utils.gpio_relay import ThreadSafeGpioRelay
 from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
-from byodr.utils.navigate import (FileSystemRouteDataSource,
-                                  ReloadableDataSource)
+from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from byodr.utils.option import parse_option
-from byodr.utils.usbrelay import (SearchUsbRelayFactory, StaticRelayHolder,
-                                  TransientMemoryRelay)
+from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
 from six.moves.configparser import SafeConfigParser
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
