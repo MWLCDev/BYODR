@@ -73,7 +73,7 @@ class UserSettingsManager {
 
 	// Create an input element based on the value or specific field name
 	createInput(section, name, value) {
-		const isCheckbox = value === 'true' || value === 'false' || name === 'ras.driver.motor.alternate';
+		const isCheckbox = value === 'true' || value === 'false' || name === 'ras.driver.motor.alternate' || name === 'driver.gpio_relay';
 		const input = document.createElement('input');
 		input.type = isCheckbox ? 'checkbox' : 'text';
 		input.name = this.filterFieldName(section, name); // Use the transformed name

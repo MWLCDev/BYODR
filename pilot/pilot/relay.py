@@ -1,6 +1,5 @@
 from __future__ import absolute_import
 
-import argparse
 import collections
 import glob
 import logging
@@ -8,29 +7,15 @@ import os
 from abc import ABCMeta, abstractmethod
 
 import six
-from six.moves.configparser import SafeConfigParser
+from configparser import ConfigParser
 
 from byodr.utils import timestamp
 from byodr.utils.ipc import ReceiverThread, JSONZmqClient
 from byodr.utils.option import parse_option, hash_dict
 from byodr.utils.protocol import MessageStreamProtocol
-from byodr.utils.usbrelay import SingleChannelUsbRelay
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
-
-
-def execute(arguments):
-    _device = SingleChannelUsbRelay()
-    _device.attach()
-
-    _cmd = arguments.cmd
-    if _cmd == "open":
-        _device.open()
-    elif _cmd == "close":
-        _device.close()
-    else:
-        raise AssertionError("Invalid command string '{}'.".format(_cmd))
 
 
 class StatusReceiverThreadFactory(object):
@@ -69,6 +54,8 @@ class AbstractRelay(six.with_metaclass(ABCMeta, object)):
 
 
 class NoopMonitoringRelay(AbstractRelay):
+    """Fake class made for testing"""
+
     def setup(self):
         return []
 
@@ -120,9 +107,15 @@ class RealMonitoringRelay(AbstractRelay):
             self._send_drive(steering=pilot.get("steering"), throttle=pilot.get("throttle"), reverse_gear=_reverse, wakeup=_wakeup)
 
     def _config(self):
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
-        return dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
+        config_data = {}
+
+        # Loop through all sections and store keys
+        for section in parser.sections():
+            for key, value in parser.items(section):
+                config_data[f"{key}"] = value
+        return config_data
 
     def _on_receive(self, msg):
         self._integrity.on_message(msg.get("time"))
@@ -155,7 +148,8 @@ class RealMonitoringRelay(AbstractRelay):
         _steering_offset = parse_option("ras.driver.steering.offset", float, 0.0, errors, **_config)
         _motor_scale = parse_option("ras.driver.motor.scale", float, 1.0, errors, **_config)
         _motor_alternate = parse_option("ras.driver.motor.alternate", bool, False, errors, **_config)
-        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, motor_alternate=_motor_alternate)
+        _is_gpio_relay = parse_option("driver.gpio_relay", bool, False, errors, **_config)
+        self._servo_config = dict(app_version=2, steering_offset=_steering_offset, motor_scale=_motor_scale, is_gpio_relay=_is_gpio_relay, motor_alternate=_motor_alternate)
         self._integrity.reset()
         self._send_config(self._servo_config)
         return errors
@@ -196,19 +190,6 @@ class RealMonitoringRelay(AbstractRelay):
             self._drive(None, None)
 
 
-def main():
-    parser = argparse.ArgumentParser(description="Spdt usb relay.")
-    subparsers = parser.add_subparsers(help="Methods.")
-
-    parser_a = subparsers.add_parser("exec", help="Open or close the relay.")
-    parser_a.add_argument("--cmd", type=str, required=True, help="Open or close the relay.")
-    parser_a.set_defaults(func=execute)
-
-    args = parser.parse_args()
-    args.func(args)
-
-
 if __name__ == "__main__":
     logging.basicConfig(format=log_format)
     logging.getLogger().setLevel(logging.INFO)
-    main()

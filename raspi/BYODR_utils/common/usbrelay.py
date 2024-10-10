@@ -91,11 +91,11 @@ class DoubleChannelUsbRelay(object):
         return self._device is not None
 
     def open(self, channel=0):
-        assert self.is_attached(), "The device is not attached."
+        # assert self.is_attached(), "The device is not attached."
         self._device.ctrl_transfer(0x21, 0x09, 0x0300, 0x0000, "".join(chr(n) for n in self._device_off[channel]), 1000)
 
     def close(self, channel=0):
-        assert self.is_attached(), "The device is not attached."
+        # assert self.is_attached(), "The device is not attached."
         self._device.ctrl_transfer(0x21, 0x09, 0x0300, 0x0000, "".join(chr(n) for n in self._device_on[channel]), 1000)
 
 
@@ -168,11 +168,11 @@ class FourChannelUsbRelay(object):
         return self._device is not None
 
     def _query(self, request, value, index, length):
-        assert self.is_attached(), "The device is not attached."
+        # assert self.is_attached(), "The device is not attached."
         return self._device.ctrl_transfer(self.CP210X_REQUEST_TYPE_READ, request, value, index, length)
 
     def _write(self, request, value, index, data):
-        assert self.is_attached(), "The device is not attached."
+        # assert self.is_attached(), "The device is not attached."
         return self._device.ctrl_transfer(self.CP210X_REQUEST_TYPE_WRITE, request, value, index, data)
 
     def _set_gpio(self, index, value):

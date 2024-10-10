@@ -1,13 +1,13 @@
 import logging
+import math
 import threading
 
 import pyvesc
 import serial
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.option import parse_option
 from gpiozero import DigitalInputDevice
 from pyvesc.VESC.messages import GetValues, SetDutyCycle, SetRPM
-
-from byodr.utils import timestamp
-from byodr.utils.option import parse_option
 
 logger = logging.getLogger(__name__)
 
@@ -133,7 +133,7 @@ class VESCDrive(object):
         try:
             if self._ser is None:
                 self._ser = serial.Serial(self._port, baudrate=115200, timeout=0.05)
-                logger.info("Connected serial port {}.".format(self._port))
+                # logger.info("Connected serial port {}.".format(self._port))
             _good = self._ser.isOpen()
         except serial.serialutil.SerialException:
             self._close()
