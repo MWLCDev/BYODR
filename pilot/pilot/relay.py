@@ -111,7 +111,7 @@ class RealMonitoringRelay(AbstractRelay):
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         config_data = {}
 
-        # Loop through all sections and store keys with section prefixes
+        # Loop through all sections and store keys
         for section in parser.sections():
             for key, value in parser.items(section):
                 config_data[f"{key}"] = value

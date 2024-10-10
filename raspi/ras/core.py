@@ -1,13 +1,13 @@
 import logging
+import math
 import threading
 
 import pyvesc
 import serial
-from gpiozero import DigitalInputDevice
-from pyvesc import GetValues, SetDutyCycle, SetRPM
-
 from BYODR_utils.common import timestamp
 from BYODR_utils.common.option import parse_option
+from gpiozero import DigitalInputDevice
+from pyvesc.VESC.messages import GetValues, SetDutyCycle, SetRPM
 
 logger = logging.getLogger(__name__)
 
@@ -173,7 +173,7 @@ class VESCDrive(object):
                     if self._rpm_drive:
                         self._ser.write(pyvesc.encode(SetRPM(int(value * 1e3))))
                     else:
-                        self._ser.write(pyvesc.encode(SetDutyCycle(int(value * 1e4))))
+                        self._ser.write(pyvesc.encode(SetDutyCycle(float(value * 1e-1))))
                 except serial.serialutil.SerialException:
                     self._close()
                     _operational = False

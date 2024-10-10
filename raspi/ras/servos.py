@@ -147,6 +147,8 @@ class DualVescDriver(AbstractDriver):
 
         self._setup_driver_configs()
         self.update_drive_instances(self.driver_config)
+
+
         self._relay.close()
 
     def _setup_driver_configs(self):
@@ -224,7 +226,7 @@ class DualVescDriver(AbstractDriver):
             return 0
 
     def drive(self, steering, throttle):
-        logger.info(throttle)
+
         _motor_scale = self._throttle_config.get("scale")
         # Scale down throttle for one wheel, the other retains its value.
         steering = min(1.0, max(-1.0, steering + self._steering_offset))
