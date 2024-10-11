@@ -28,9 +28,9 @@ RUN git clone https://github.com/LiamBindle/PyVESC.git \
 COPY ./BYODR_utils/common/ /app/BYODR_utils/common/
 COPY ./BYODR_utils/PI_specific/ /app/BYODR_utils/PI_specific/
 
-COPY ./ras /app/ras
+COPY ./servos /app/servos
 ENV PYTHONPATH "/app:${PYTHONPATH}"
 
-WORKDIR /app/ras
+WORKDIR /app/servos
 
 CMD ["python", "servos.py"]

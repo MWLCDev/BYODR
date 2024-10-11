@@ -25,8 +25,8 @@ ENV MONGO_INITDB_ROOT_PASSWORD=robot
 EXPOSE 27017
 
 # Copy the Python script and any other necessary files into the container
-COPY ./mongodb /app/
-WORKDIR /app
+COPY ./mongodb /app/mongodb
+WORKDIR /app/mongodb
 
 
 # Set the entrypoint to run the Python script that manages MongoDB

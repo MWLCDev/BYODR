@@ -23,18 +23,14 @@ RUN \
 
 RUN pip3 install --upgrade pyzmq lap simple-pid
 
-# Copy your application files
-COPY ./common/ /common/
-COPY ./following/ /app/
-WORKDIR /app
+# Copy application files
+COPY ./BYODR_utils/common/ /app/BYODR_utils/common/
+COPY ./BYODR_utils/JETSON_specific/ /app/BYODR_utils/JETSON_specific/
 
-ENV PYTHONPATH "/app:/common:${PYTHONPATH}"
+COPY ./following /app/following
+ENV PYTHONPATH "/app:${PYTHONPATH}"
 
-# Should use this one in the future. to keep the imports also desciverable by the local env. Will need to add `common.` at the beginning of each byodr import 
-# COPY ./common/ /app/common/
-# COPY ./following/ /app/following/
-# WORKDIR /app/following
-# ENV PYTHONPATH "/app:${PYTHONPATH}"
+WORKDIR /app/following
 
 
 # Command to run your application

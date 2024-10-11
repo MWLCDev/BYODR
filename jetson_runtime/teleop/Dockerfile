@@ -19,10 +19,18 @@ RUN pip3 install pymongo tornado folium Flask flask_socketio paramiko user-agent
 # from cryptography.x509 import load_der_x509_certificate as _load_der_x509_certificate
 ENV PYTHONWARNINGS "ignore::UserWarning"
 
-COPY ./common common/
-COPY ./teleop app/
-WORKDIR /app
-
 EXPOSE 8080 5000
 
-ENV PYTHONPATH "${PYTHONPATH}:/common"
+
+# Copy application files
+COPY ./BYODR_utils/common/ /app/BYODR_utils/common/
+COPY ./BYODR_utils/JETSON_specific/ /app/BYODR_utils/JETSON_specific/
+
+COPY ./teleop /app/teleop
+ENV PYTHONPATH "/app:${PYTHONPATH}"
+
+WORKDIR /app/teleop
+
+
+# # Command to run your application
+# CMD ["python3", "app.py"]

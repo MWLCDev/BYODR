@@ -13,7 +13,7 @@ RUN npm install -g mapport
 #The entry point for the Docker container is set to run haproxy with a configuration file /app/haproxy.conf. 
 #This means that when the container starts, it will initiate HAProxy with the given configuration in haproxy.conf.
 
-COPY ./httpd app/
-WORKDIR /app
+COPY ./httpd app/httpd
+WORKDIR /app/httpd
 
 CMD ["/usr/sbin/haproxy", "-f", "/app/haproxy.conf"]

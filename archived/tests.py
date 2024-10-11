@@ -2,7 +2,7 @@ from __future__ import absolute_import
 import multiprocessing
 from six.moves.configparser import SafeConfigParser
 
-from .app import TeleopApplication
+from ..jetson_runtime.teleop.teleop.app import TeleopApplication
 from io import open
 
 
