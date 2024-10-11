@@ -19,7 +19,7 @@ from BYODR_utils.common.option import parse_option
 from BYODR_utils.common.protocol import MessageStreamProtocol
 from BYODR_utils.common.usbrelay import SearchUsbRelayFactory
 from BYODR_utils.PI_specific.gpio_relay import ThreadSafePi4GpioRelay
-
+from BYODR_utils.PI_specific.utilities import RaspberryPi
 from ras.core import CommandHistory, HallOdometer, VESCDrive
 
 logger = logging.getLogger(__name__)
@@ -148,7 +148,6 @@ class DualVescDriver(AbstractDriver):
         self._setup_driver_configs()
         self.update_drive_instances(self.driver_config)
 
-
         self._relay.close()
 
     def _setup_driver_configs(self):
@@ -226,7 +225,6 @@ class DualVescDriver(AbstractDriver):
             return 0
 
     def drive(self, steering, throttle):
-
         _motor_scale = self._throttle_config.get("scale")
         # Scale down throttle for one wheel, the other retains its value.
         steering = min(1.0, max(-1.0, steering + self._steering_offset))
@@ -351,7 +349,7 @@ def main():
     parser.add_argument("--config", type=str, default="/config", help="Configuration file.")
     args = parser.parse_args()
 
-    ras_dynamic_ip = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+    ras_dynamic_ip = RaspberryPi.get_ip_address()
 
     try:
         application = MainApplication(quit_event, args.config, hz=50)
