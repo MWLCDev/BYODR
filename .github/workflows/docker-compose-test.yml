@@ -15,15 +15,15 @@ jobs:
 
       - name: Docker compose build
         run: |
-          services="zerotier wireguard httpd teleop pilot ftpd rosnode vehicle"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml build $services
+          cd jetson_runtime
+          docker-compose build 
 
       - name: Docker compose up
         run: |
-          services="zerotier wireguard httpd teleop pilot ftpd rosnode vehicle"
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml up -d $services
+          cd jetson_runtime
+          docker-compose up -d 
           sleep 30
-          docker-compose -f docker-compose.yml -f docker-compose.override.yml down
+          docker-compose down
 
   Pi_Docker:
     runs-on: ubuntu-20.04
@@ -33,10 +33,13 @@ jobs:
         uses: actions/checkout@v2
 
       - name: Docker compose build (raspi)
-        run: docker-compose -f raspi/docker-compose.yml build
+        run: |
+          cd pi4_runtime
+          docker-compose build
 
       - name: Docker compose up (raspi)
         run: |
-          docker-compose -f raspi/docker-compose.yml up -d
+          cd pi4_runtime
+          docker-compose up -d
           sleep 30
-          docker-compose -f raspi/docker-compose.yml down
+          docker-compose down
