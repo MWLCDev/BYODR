@@ -65,14 +65,14 @@ services:
     cpuset: '0'
     build:
       context: .
-      dockerfile: mongodb/Dockerfile 
+      dockerfile: mongodb/Dockerfile
     restart: always
     command: ['python3', 'wrap.py']
     network_mode: host
     stop_signal: SIGKILL
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
-      MONGO_INITDB_ROOT_PASSWORD: robot 
+      MONGO_INITDB_ROOT_PASSWORD: robot
     volumes:
       - volume_mongodb_config:/config:rw
       - volume_mongodb_data:/data/db:rw
