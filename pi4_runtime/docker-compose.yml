@@ -3,15 +3,6 @@ volumes:
   volume_zerotier_config:
   volume_local_config:
 services:
-  #  TODO: remove pigpiod service
-  # pigpiod:
-  #   image: centipede2donald/raspbian-stretch:pigpio-zmq-byodr-0.25.0
-  #   container_name: pigpiod
-  #   privileged: true
-  #   user: root
-  #   restart: always
-  #   network_mode: 'host'
-  #   command: bash -c "/bin/rm -rf /var/run/pigpio.pid && /pigpio/pigpiod -gl"
   zerotier:
     image: zyclonite/zerotier:1.6.6
     container_name: zerotier-one
@@ -29,7 +20,7 @@ services:
   servos:
     build:
       context: .
-      dockerfile: ras/Dockerfile
+      dockerfile: servos/Dockerfile
     privileged: true
     labels:
       io.balena.features.kernel-modules: '1'
@@ -41,7 +32,7 @@ services:
   stream0:
     build:
       context: .
-      dockerfile: pi_gstreamer.dockerfile
+      dockerfile: stream/Dockerfile
     privileged: true
     user: root
     restart: always
@@ -53,7 +44,7 @@ services:
   stream1:
     build:
       context: .
-      dockerfile: pi_gstreamer.dockerfile
+      dockerfile: stream/Dockerfile
     privileged: true
     user: root
     restart: always
