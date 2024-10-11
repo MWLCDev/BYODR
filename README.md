@@ -21,3 +21,8 @@ We went ahead and designed a rover that can be assembled from **generally availa
 * Community driven self-driving models
 * Dockerized
 * Free for personal use
+* Ability to work with modular hardware
+
+## License
+
+This project is licensed under the MIT License. See the [LICENSE](./LICENSE) file for more information.

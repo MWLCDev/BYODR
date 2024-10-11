@@ -1,5 +1,0 @@
-version: '3' # or whatever version you're using
-
-services:
-  pilot:
-    cpuset: '' # Clearing the CPU set constraint for testing

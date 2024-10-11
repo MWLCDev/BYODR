@@ -5,8 +5,8 @@ import time
 
 from gpiozero import DigitalInputDevice
 
-from byodr.utils import timestamp
-from byodr.utils.ipc import JSONPublisher
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ipc import JSONPublisher
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
