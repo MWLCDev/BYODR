@@ -164,11 +164,11 @@ class CLIWrapper:
 
 
 if __name__ == "__main__":
-    # How to run: python cli_wrapper.py jetson_runtime push 192.168.1.100 --debug
 
     # Command-line parsing
     if len(sys.argv) < 2:
         print("Usage: python cli_wrapper.py <target_directory> [balena_command] [balena_args]")
+        # Example: python cli_wrapper.py jetson_runtime push 192.168.1.100 --debug
         sys.exit(1)
 
     target_dir_name = sys.argv[1]
