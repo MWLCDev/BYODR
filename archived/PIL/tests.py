@@ -8,9 +8,9 @@ from six.moves.configparser import SafeConfigParser
 
 from app import CommandProcessor
 from app import PilotApplication
-from byodr.utils import timestamp
-from byodr.utils.navigate import ReloadableDataSource, FileSystemRouteDataSource
-from byodr.utils.testing import CollectPublisher, QueueReceiver, CollectServer
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.navigate import ReloadableDataSource, FileSystemRouteDataSource
+from BYODR_utils.common.testing import CollectPublisher, QueueReceiver, CollectServer
 
 
 def test_create_and_setup(tmpdir):

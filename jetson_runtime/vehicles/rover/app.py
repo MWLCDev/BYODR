@@ -7,10 +7,10 @@ import re
 import shutil
 import subprocess
 
-from byodr.utils import Application, Configurable, PeriodicCallTrace, timestamp
-from byodr.utils.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
-from byodr.utils.location import GeoTracker
-from byodr.utils.option import hash_dict, parse_option
+from BYODR_utils.common import Application, Configurable, PeriodicCallTrace, timestamp
+from BYODR_utils.common.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
+from BYODR_utils.common.location import GeoTracker
+from BYODR_utils.common.option import hash_dict, parse_option
 from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 

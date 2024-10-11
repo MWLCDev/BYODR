@@ -19,10 +19,10 @@ from configparser import ConfigParser as SafeConfigParser
 from tornado import web, ioloop
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
-from byodr.utils import Application
-from byodr.utils.option import parse_option
-from byodr.utils.video import create_video_source
-from byodr.utils.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSocket
+from BYODR_utils.common import Application
+from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.video import create_video_source
+from BYODR_utils.common.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSocket
 
 logger = logging.getLogger(__name__)
 

@@ -16,10 +16,10 @@ from scipy.special import softmax
 from six.moves import range
 from sklearn.metrics.pairwise import cosine_distances
 
-from byodr.utils import timestamp, Configurable, Application
-from byodr.utils.ipc import CameraThread, JSONPublisher, LocalIPCServer, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.option import parse_option, PropertyError
+from BYODR_utils.common import timestamp, Configurable, Application
+from BYODR_utils.common.ipc import CameraThread, JSONPublisher, LocalIPCServer, json_collector
+from BYODR_utils.common.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from BYODR_utils.common.option import parse_option, PropertyError
 from .image import get_registered_function
 from .torched import DynamicMomentum, TRTDriver
 
@@ -373,7 +373,7 @@ class InferenceApplication(Application):
         self._runner.quit()
 
     # def run(self):
-    #     from byodr.utils import Profiler
+    #     from BYODR_utils.common import Profiler
     #     profiler = Profiler()
     #     with profiler():
     #         super(InferenceApplication, self).run()

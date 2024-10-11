@@ -17,8 +17,8 @@ import numpy as np
 import tornado
 import tornado.ioloop
 import tornado.web
-from byodr.utils import timestamp
-from byodr.utils.ssh import Router
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ssh import Router
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket

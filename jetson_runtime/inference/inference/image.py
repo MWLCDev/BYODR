@@ -5,7 +5,7 @@ from functools import partial
 import cv2
 import numpy as np
 
-from byodr.utils.option import PropertyError
+from BYODR_utils.common.option import PropertyError
 
 
 def hwc_bgr_to_yuv(img):

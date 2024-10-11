@@ -14,9 +14,9 @@ import six
 from simple_pid import PID as pid_control
 from six.moves import zip
 
-from byodr.utils import timestamp, Configurable
-from byodr.utils.navigate import NavigationCommand, NavigationInstructions
-from byodr.utils.option import parse_option
+from BYODR_utils.common import timestamp, Configurable
+from BYODR_utils.common.navigate import NavigationCommand, NavigationInstructions
+from BYODR_utils.common.option import parse_option
 
 logger = logging.getLogger(__name__)
 

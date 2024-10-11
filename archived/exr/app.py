@@ -18,8 +18,8 @@ import numpy as np
 from can import CanError
 from pyueye import ueye
 
-from byodr.utils import timestamp
-from byodr.utils.ipc import ReceiverThread, JSONPublisher, ImagePublisher
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ipc import ReceiverThread, JSONPublisher, ImagePublisher
 from camera import Camera, FrameThread
 
 logger = logging.getLogger(__name__)

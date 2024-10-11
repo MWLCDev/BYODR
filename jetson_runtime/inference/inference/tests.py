@@ -4,7 +4,7 @@ import os
 import sys
 from io import open
 
-from byodr.utils.testing import CollectPublisher, QueueReceiver, CollectServer, QueueCamera
+from BYODR_utils.common.testing import CollectPublisher, QueueReceiver, CollectServer, QueueCamera
 from .app import InferenceApplication, TFRunner
 
 if sys.version_info > (3,):

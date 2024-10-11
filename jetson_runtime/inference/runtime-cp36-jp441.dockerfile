@@ -11,3 +11,5 @@ ENV PYTHONPATH "/app:${PYTHONPATH}"
 
 WORKDIR /app/inference
 
+
+CMD ["python3", "-m", "inference.app", "--user", "/sessions/models", "--routes", "/sessions/routes", "--internal","/app/models"]

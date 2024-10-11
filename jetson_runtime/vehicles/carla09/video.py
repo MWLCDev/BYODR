@@ -4,8 +4,8 @@ import logging
 
 import gi
 
-from byodr.utils import Configurable
-from byodr.utils.option import parse_option
+from BYODR_utils.common import Configurable
+from BYODR_utils.common.option import parse_option
 
 gi.require_version("Gst", "1.0")
 

@@ -11,7 +11,7 @@ from datetime import datetime
 import folium
 import pandas as pd
 import requests
-from byodr.utils import timestamp
+from BYODR_utils.common import timestamp
 
 # needs to be installed on the router
 from pysnmp.hlapi import *

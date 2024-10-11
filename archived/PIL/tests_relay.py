@@ -8,9 +8,9 @@ from io import open
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 
-from byodr.utils import timestamp
-from byodr.utils.testing import QueueReceiver, CollectServer, CollectJSONClient
-from byodr.utils.usbrelay import SearchUsbRelayFactory
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.testing import QueueReceiver, CollectServer, CollectJSONClient
+from BYODR_utils.common.usbrelay import SearchUsbRelayFactory
 from relay import MonitorApplication
 
 

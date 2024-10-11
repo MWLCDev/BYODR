@@ -6,8 +6,8 @@ import multiprocessing
 import os
 import signal
 
-from byodr.utils import Application, hash_dict
-from byodr.utils.ipc import json_collector
+from BYODR_utils.common import Application, hash_dict
+from BYODR_utils.common.ipc import json_collector
 from fol_utils import FollowingController
 
 logger = logging.getLogger(__name__)

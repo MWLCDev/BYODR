@@ -3,7 +3,7 @@ import os
 from ConfigParser import SafeConfigParser
 
 from app import RoverApplication
-from byodr.utils.testing import CollectPublisher, QueueReceiver, CollectServer
+from BYODR_utils.common.testing import CollectPublisher, QueueReceiver, CollectServer
 
 
 def test_rover_create_and_setup(tmpdir):

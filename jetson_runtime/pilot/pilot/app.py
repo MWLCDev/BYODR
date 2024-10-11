@@ -11,16 +11,17 @@ import signal
 import threading
 import traceback
 
-from byodr.utils import Application, ApplicationExit
-from byodr.utils.gpio_relay import ThreadSafeGpioRelay
-from byodr.utils.ipc import JSONPublisher, LocalIPCServer, json_collector
-from byodr.utils.navigate import FileSystemRouteDataSource, ReloadableDataSource
-from byodr.utils.option import parse_option
-from byodr.utils.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
 from six.moves.configparser import SafeConfigParser
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
+
+from BYODR_utils.common import Application, ApplicationExit
+from BYODR_utils.common.ipc import JSONPublisher, LocalIPCServer, json_collector
+from BYODR_utils.common.navigate import FileSystemRouteDataSource, ReloadableDataSource
+from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
+from BYODR_utils.JETSON_specific.gpio_relay import ThreadSafeJetsonGpioRelay
 
 from .core import CommandProcessor
 from .relay import NoopMonitoringRelay, RealMonitoringRelay
@@ -64,7 +65,7 @@ class PilotApplication(Application):
             _cfg = self._config()
             gpio_relay = _cfg.get("driver.gpio_relay", "false").strip().lower() == "true"  # in case it is saved in lower case from JS in TEL side
             if gpio_relay:
-                relay = ThreadSafeGpioRelay()
+                relay = ThreadSafeJetsonGpioRelay()
                 logger.info("Initialized GPIO Relay")
             else:
                 relay = SearchUsbRelayFactory().get_relay()

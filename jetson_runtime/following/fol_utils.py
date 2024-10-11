@@ -5,8 +5,8 @@ import threading
 import time
 
 import cv2
-from byodr.utils.ipc import JSONPublisher
-from byodr.utils.option import parse_option
+from BYODR_utils.common.ipc import JSONPublisher
+from BYODR_utils.common.option import parse_option
 from ultralytics import YOLO
 
 logger = logging.getLogger(__name__)

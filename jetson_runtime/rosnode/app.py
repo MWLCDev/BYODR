@@ -10,8 +10,8 @@ from diagnostic_msgs.msg import DiagnosticArray, DiagnosticStatus, KeyValue
 from rclpy.node import Node
 from std_msgs.msg import Float32
 
-from byodr.utils import Application, timestamp
-from byodr.utils.ipc import json_collector, JSONPublisher
+from BYODR_utils.common import Application, timestamp
+from BYODR_utils.common.ipc import json_collector, JSONPublisher
 
 
 class Bridge(Node):

@@ -11,11 +11,11 @@ from ConfigParser import SafeConfigParser
 from tornado import web, ioloop
 from tornado.httpserver import HTTPServer
 
-from byodr.utils import Application
-from byodr.utils import Configurable
-from byodr.utils.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector
-from byodr.utils.option import parse_option
-from byodr.utils.websocket import HttpLivePlayerVideoSocket
+from BYODR_utils.common import Application
+from BYODR_utils.common import Configurable
+from BYODR_utils.common.ipc import JSONPublisher, ImagePublisher, LocalIPCServer, json_collector
+from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.websocket import HttpLivePlayerVideoSocket
 from vehicle import CarlaHandler
 from video import NumpyImageVideoSource
 
@@ -148,7 +148,7 @@ class CarlaApplication(Application):
         self._runner.quit()
 
     # def run(self):
-    #     from byodr.utils import Profiler
+    #     from BYODR_utils.common import Profiler
     #     profiler = Profiler()
     #     with profiler():
     #         super(CarlaApplication, self).run()

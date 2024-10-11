@@ -1,6 +1,8 @@
 {
     "cSpell.words": [
+      "BYODR",
       "GPIO",
+      "Jetson",
       "teleop"
     ],
     "python.analysis.typeCheckingMode": "off",

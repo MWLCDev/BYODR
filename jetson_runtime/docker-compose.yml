@@ -128,7 +128,6 @@ services:
       dockerfile: inference/runtime-cp36-jp441.dockerfile
     restart: always
     privileged: true
-    command: ['python3', '-m', 'inference.app', '--user', '/sessions/models', '--routes', '/sessions/routes']
     environment:
       LD_PRELOAD: libgomp.so.1
       OMP_PLACES: '{3}'

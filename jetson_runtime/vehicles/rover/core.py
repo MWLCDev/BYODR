@@ -6,9 +6,9 @@ import threading
 import time
 
 import requests
-from byodr.utils import Configurable
-from byodr.utils.option import parse_option
-from byodr.utils.video import create_image_source
+from BYODR_utils.common import Configurable
+from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.video import create_image_source
 
 # Needs to be installed on the router
 from pysnmp.hlapi import *

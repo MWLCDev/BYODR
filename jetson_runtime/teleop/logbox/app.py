@@ -7,7 +7,7 @@ import sys
 import traceback
 from datetime import datetime
 
-from byodr.utils import Application
+from BYODR_utils.common import Application
 from .core import *
 from .store import Event, create_data_source
 

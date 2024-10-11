@@ -7,7 +7,7 @@ import pymongo
 from bson.binary import Binary
 from bson.objectid import ObjectId
 from pymongo import MongoClient
-from byodr.utils import timestamp
+from BYODR_utils.common import timestamp
 
 TRIGGER_SERVICE_START = 2**0
 TRIGGER_SERVICE_END = 2**1

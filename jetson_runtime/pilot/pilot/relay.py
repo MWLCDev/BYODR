@@ -9,10 +9,10 @@ from abc import ABCMeta, abstractmethod
 import six
 from configparser import ConfigParser
 
-from byodr.utils import timestamp
-from byodr.utils.ipc import ReceiverThread, JSONZmqClient
-from byodr.utils.option import parse_option, hash_dict
-from byodr.utils.protocol import MessageStreamProtocol
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ipc import ReceiverThread, JSONZmqClient
+from BYODR_utils.common.option import parse_option, hash_dict
+from BYODR_utils.common.protocol import MessageStreamProtocol
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
