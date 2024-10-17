@@ -181,7 +181,8 @@ def main():
     _conditional_exit = ApplicationExit(quit_event, lambda: io_loop.stop())
     _periodic = ioloop.PeriodicCallback(lambda: _conditional_exit(), 5e3)
     _periodic.start()
-
+    current_dir = os.path.dirname(__file__)  # Get the directory where app.py is located
+    htm_folder = os.path.join(current_dir, "../", "htm")  # Set path relative to the app.py location
     try:
         main_app = web.Application(
             [
@@ -215,7 +216,7 @@ def main():
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),
                 # Path to where the static files are stored (JS,CSS, images)
-                (r"/(.*)", web.StaticFileHandler, {"path": os.path.join(os.path.sep, "app", "htm")}),
+                (r"/(.*)", web.StaticFileHandler, {"path": htm_folder}),
             ],  # Disable request logging with an empty lambda expression
             # un/comment if you want to see the requests from tornado
             log_function=lambda *args, **kwargs: None,
