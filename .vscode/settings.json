@@ -1,6 +1,9 @@
 {
     "cSpell.words": [
-        "teleop"
+      "BYODR",
+      "GPIO",
+      "Jetson",
+      "teleop"
     ],
     "python.analysis.typeCheckingMode": "off",
     "liveServer.settings.port": 5501,

@@ -1,3 +1,12 @@
+# mkdocs documentation
+/site
+
+# folders
+data_root
+docs/
+pi4_runtime/BYODR_utils
+jetson_runtime/BYODR_utils
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -103,15 +112,8 @@ venv.bak/
 # Rope project settings
 .ropeproject
 
-# mkdocs documentation
-/site
-
 # mypy
 .mypy_cache/
-
-# folders
-data_root
-docs/
 
 # Google protocol buffers
 *.pb
