@@ -99,7 +99,6 @@ class UserSettingsManager {
 	}
 
 	filterFieldName(section, name) {
-		console.log(section, name);
 		if (section === 'camera') {
 			name = name.replace('ip', 'IP');
 		} else if (section === 'pilot') {

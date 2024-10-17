@@ -1,5 +1,5 @@
-import { page_utils, dev_tools } from './index_a_utils.js';
-import { roverUI, cameraControls } from './index_c_screen.js';
+import { page_utils, dev_tools } from '../index_a_utils.js';
+import { roverUI, cameraControls } from '../index_c_screen.js';
 
 if (page_utils.get_stream_type() == 'h264') {
 	class CameraSocketResumer {

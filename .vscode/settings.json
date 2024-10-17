@@ -3,6 +3,7 @@
       "BYODR",
       "GPIO",
       "Jetson",
+      "mjpeg",
       "teleop"
     ],
     "python.analysis.typeCheckingMode": "off",
