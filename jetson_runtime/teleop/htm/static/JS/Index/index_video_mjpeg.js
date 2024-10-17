@@ -241,6 +241,7 @@ var mjpeg_page_controller = {
 				function (position, _blob) {
 					// Show the other camera in preview.
 					if (position != cameraControls.activeCamera) {
+            console.log(_blob)
 						mjpeg_page_controller.el_preview_image.attr('src', _blob);
 					}
 				}
@@ -374,13 +375,16 @@ var mjpeg_front_camera_consumer = function (_blob) {
 };
 
 export function mjpeg_start_all() {
-	if (mjpeg_rear_camera != undefined) {
-		mjpeg_rear_camera.start_socket();
-	}
-	if (mjpeg_front_camera != undefined) {
-		mjpeg_front_camera.start_socket();
-	}
+  // Find and bind new canvas and img elements before starting the streams
+  findCanvasAndRebind();
+  if (mjpeg_rear_camera != undefined) {
+      mjpeg_rear_camera.start_socket();
+  }
+  if (mjpeg_front_camera != undefined) {
+      mjpeg_front_camera.start_socket();
+  }
 }
+
 
 export function mjpeg_stop_all() {
 	if (mjpeg_rear_camera != undefined) {
@@ -482,6 +486,23 @@ function findCanvasAndExecute() {
 		setTimeout(findCanvasAndExecute, 500);
 	}
 }
+
+function findCanvasAndRebind() {
+  // Find the canvas and img DOM elements
+  const canvas = document.getElementById('main_stream_view');
+  const imgPreview = document.querySelector('img#second_stream_view');
+
+  // Check if elements are found, and rebind them to their respective listeners
+  if (canvas && imgPreview) {
+      mjpeg_page_controller.el_preview_image = $(imgPreview);
+      setupMJPEGCanvasRendering(canvas);  // Re-bind the canvas rendering logic
+      console.log('Re-bound canvas and image elements to the streams.');
+  } else {
+      console.error('Canvas or image elements not found. Retrying...');
+      setTimeout(findCanvasAndRebind, 500);  // Retry if elements are not ready yet
+  }
+}
+
 
 export function init_mjpeg() {
 	mjpeg_rear_camera = new RealCameraController('rear', rear_camera_frame_controller, mjpeg_rear_camera_consumer);
