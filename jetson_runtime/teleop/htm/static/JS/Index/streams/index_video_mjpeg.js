@@ -1,28 +1,16 @@
-import { page_utils, socket_utils } from './index_a_utils.js';
-import { roverUI, cameraControls } from './index_c_screen.js';
+import { page_utils, socket_utils } from '../index_a_utils.js';
+import { roverUI, cameraControls } from '../index_c_screen.js';
 
-/**
- * Controls the frame rate and JPEG quality adjustments for MJPEG streams.
- */
 class MJPEGFrameController {
 	constructor() {
-		/** @type {number|null} Timeout until the next frame capture. */
 		this.targetTimeout = null;
-		/** @type {number} Smoothing factor for frame rate adjustments. Larger values mean more smoothing. */
 		this.timeSmoothing = 0.8;
-		/** @type {number} Actual frames per second. */
 		this.actualFps = 0;
-		/** @type {number} Target frames per second. */
 		this.targetFps = 0;
-		/** @type {number} Smoothed duration between frames in milliseconds. */
 		this.duration = 1000;
-		/** @type {number} Timestamp of the last frame request start. */
 		this.requestStart = performance.now();
-		/** @type {number} Maximum JPEG quality. */
 		this.maxJpegQuality = 50;
-		/** @type {number} Current JPEG quality. */
 		this.jpegQuality = 20;
-		/** @type {number} Minimum JPEG quality. */
 		this.minJpegQuality = 25;
 		this.updateFramerate();
 	}
@@ -70,9 +58,6 @@ class MJPEGFrameController {
 	}
 }
 
-/**
- * Manages JPEG quality settings and persists them using localStorage.
- */
 class MJPEGControlLocalStorage {
 	constructor() {
 		/** @type {number} Minimum JPEG quality. */
@@ -138,9 +123,6 @@ class MJPEGControlLocalStorage {
 	}
 }
 
-/**
- * Manages the communication with a real camera via WebSocket.
- */
 class RealCameraController {
 	/**
 	 * Constructs a RealCameraController.
@@ -290,9 +272,6 @@ class RealCameraController {
 	}
 }
 
-/**
- * Manages MJPEG settings and interactions with the page elements.
- */
 class MJPEGPageController {
 	constructor() {
 		/** @type {MJPEGControlLocalStorage} Stores JPEG quality settings. */
@@ -480,9 +459,6 @@ class MJPEGPageController {
 	}
 }
 
-/**
- * Main application class for MJPEG management.
- */
 class MJPEGApplication {
 	constructor() {
 		this.mjpegPageController = new MJPEGPageController();
