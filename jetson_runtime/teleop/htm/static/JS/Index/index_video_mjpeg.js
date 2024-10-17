@@ -1,127 +1,191 @@
 import { page_utils, socket_utils } from './index_a_utils.js';
 import { roverUI, cameraControls } from './index_c_screen.js';
 
+/**
+ * Controls the frame rate and JPEG quality adjustments for MJPEG streams.
+ */
 class MJPEGFrameController {
 	constructor() {
-		this._target_timeout = null;
-		// larger = more smoothing
-		this._time_smoothing = 0.8;
-		this._actual_fps = 0;
-		this._target_fps = 0;
-		this._timeout = 0;
-		this._duration = 1000;
-		this._request_start = performance.now();
-		this.max_jpeg_quality = 50;
-		this.jpeg_quality = 20;
-		this.min_jpeg_quality = 25;
-		this.update_framerate();
-	}
-	set_target_fps(x) {
-		this._actual_fps = x;
-		this._target_fps = x;
-		this._target_timeout = this._target_fps > 0 ? 1000 / this._target_fps : null;
-	}
-	get_actual_fps() {
-		return this._actual_fps;
+		/** @type {number|null} Timeout until the next frame capture. */
+		this.targetTimeout = null;
+		/** @type {number} Smoothing factor for frame rate adjustments. Larger values mean more smoothing. */
+		this.timeSmoothing = 0.8;
+		/** @type {number} Actual frames per second. */
+		this.actualFps = 0;
+		/** @type {number} Target frames per second. */
+		this.targetFps = 0;
+		/** @type {number} Smoothed duration between frames in milliseconds. */
+		this.duration = 1000;
+		/** @type {number} Timestamp of the last frame request start. */
+		this.requestStart = performance.now();
+		/** @type {number} Maximum JPEG quality. */
+		this.maxJpegQuality = 50;
+		/** @type {number} Current JPEG quality. */
+		this.jpegQuality = 20;
+		/** @type {number} Minimum JPEG quality. */
+		this.minJpegQuality = 25;
+		this.updateFramerate();
 	}
 
-	update_framerate() {
+	/**
+	 * Sets the target frames per second.
+	 * @param {number} fps - The target frames per second.
+	 */
+	setTargetFps(fps) {
+		this.actualFps = fps;
+		this.targetFps = fps;
+		this.targetTimeout = this.targetFps > 0 ? 1000 / this.targetFps : null;
+	}
+
+	/**
+	 * Gets the actual frames per second.
+	 * @returns {number} The actual frames per second.
+	 */
+	getActualFps() {
+		return this.actualFps;
+	}
+
+	/**
+	 * Updates the frame rate and adjusts JPEG quality based on actual fps.
+	 * @returns {number|null} The timeout until the next frame capture.
+	 */
+	updateFramerate() {
 		try {
-			if (this._target_timeout === undefined) {
-				this._timeout = null;
+			if (this.targetTimeout === undefined) {
+				this.timeout = null;
 			} else {
-				const _now = performance.now();
-				const _duration = _now - this._request_start;
-				this._duration = this._time_smoothing * this._duration + (1 - this._time_smoothing) * _duration;
-				this._request_start = _now;
-				this._actual_fps = Math.round(1000.0 / this._duration);
-				const q_step = Math.min(1, Math.max(-1, this._actual_fps - this._target_fps));
-				this.jpeg_quality = Math.min(this.max_jpeg_quality, Math.max(this.min_jpeg_quality, this.jpeg_quality + q_step));
-				this._timeout = Math.max(0, this._target_timeout - this._duration);
+				const now = performance.now();
+				const frameDuration = now - this.requestStart;
+				this.duration = this.timeSmoothing * this.duration + (1 - this.timeSmoothing) * frameDuration;
+				this.requestStart = now;
+				this.actualFps = Math.round(1000.0 / this.duration);
+				const qualityStep = Math.min(1, Math.max(-1, this.actualFps - this.targetFps));
+				this.jpegQuality = Math.min(this.maxJpegQuality, Math.max(this.minJpegQuality, this.jpegQuality + qualityStep));
+				this.timeout = Math.max(0, this.targetTimeout - this.duration);
 			}
-			return this._timeout;
+			return this.timeout;
 		} catch (error) {
 			console.error('Error updating framerate:', error);
 		}
 	}
 }
 
+/**
+ * Manages JPEG quality settings and persists them using localStorage.
+ */
 class MJPEGControlLocalStorage {
 	constructor() {
-		this.min_jpeg_quality = 25;
-		this.max_jpeg_quality = 50;
+		/** @type {number} Minimum JPEG quality. */
+		this.minJpegQuality = 25;
+		/** @type {number} Maximum JPEG quality. */
+		this.maxJpegQuality = 50;
 		this.load();
 	}
-	set_max_quality(val) {
+
+	/**
+	 * Sets the maximum JPEG quality and adjusts the minimum quality accordingly.
+	 * @param {number} val - The maximum quality value.
+	 */
+	setMaxQuality(val) {
 		try {
 			if (val > 0 && val <= 100) {
-				this.max_jpeg_quality = val;
+				this.maxJpegQuality = val;
 				// Modify the minimum quality in lockstep with the maximum.
-				var _min = val / 2.0;
-				if (_min < 5) {
-					_min = 5;
+				let minQuality = val / 2.0;
+				if (minQuality < 5) {
+					minQuality = 5;
 				}
-				this.min_jpeg_quality = _min;
+				this.minJpegQuality = minQuality;
 			}
 		} catch (error) {
 			console.error('Error setting maximum quality:', error);
 		}
 	}
-	increase_quality() {
-		this.set_max_quality(this.max_jpeg_quality + 5);
+
+	/**
+	 * Increases the maximum JPEG quality.
+	 */
+	increaseQuality() {
+		this.setMaxQuality(this.maxJpegQuality + 5);
 	}
-	decrease_quality() {
-		this.set_max_quality(this.max_jpeg_quality - 5);
+
+	/**
+	 * Decreases the maximum JPEG quality.
+	 */
+	decreaseQuality() {
+		this.setMaxQuality(this.maxJpegQuality - 5);
 	}
+
+	/**
+	 * Loads the JPEG quality settings from localStorage.
+	 */
 	load() {
 		try {
-			var _quality_max = window.localStorage.getItem('mjpeg.quality.max');
-			if (_quality_max != null) {
-				this.set_max_quality(JSON.parse(_quality_max));
+			const qualityMax = window.localStorage.getItem('mjpeg.quality.max');
+			if (qualityMax != null) {
+				this.setMaxQuality(JSON.parse(qualityMax));
 			}
 		} catch (error) {
 			console.error('Error loading:', error);
 		}
 	}
+
+	/**
+	 * Saves the JPEG quality settings to localStorage.
+	 */
 	save() {
-		window.localStorage.setItem('mjpeg.quality.max', JSON.stringify(this.max_jpeg_quality));
+		window.localStorage.setItem('mjpeg.quality.max', JSON.stringify(this.maxJpegQuality));
 	}
 }
 
+/**
+ * Manages the communication with a real camera via WebSocket.
+ */
 class RealCameraController {
-	constructor(camera_position, frame_controller, message_callback) {
-		this.camera_position = camera_position;
-		this.message_callback = message_callback;
-		this.frame_controller = frame_controller;
-		this._socket_capture_timer = null;
-		this._socket_close_timer = null;
+	/**
+	 * Constructs a RealCameraController.
+	 * @param {string} cameraPosition - The position of the camera ('front' or 'rear').
+	 * @param {MJPEGFrameController} frameController - The frame controller instance.
+	 * @param {function} messageCallback - The callback function to handle messages.
+	 */
+	constructor(cameraPosition, frameController, messageCallback) {
+		this.cameraPosition = cameraPosition;
+		this.messageCallback = messageCallback;
+		this.frameController = frameController;
+		this.socketCaptureTimer = null;
+		this.socketCloseTimer = null;
 		this.socket = null;
 	}
-	_clear_socket_close_timer() {
-		if (this._socket_close_timer != undefined) {
-			clearTimeout(this._socket_close_timer);
+
+	clearSocketCloseTimer() {
+		if (this.socketCloseTimer !== undefined) {
+			clearTimeout(this.socketCloseTimer);
 		}
 	}
-	_clear_socket_capture_timer() {
-		if (this._socket_capture_timer != undefined) {
-			clearTimeout(this._socket_capture_timer);
+
+	clearSocketCaptureTimer() {
+		if (this.socketCaptureTimer !== undefined) {
+			clearTimeout(this.socketCaptureTimer);
 		}
 	}
+
+	/**
+	 * Captures a frame from the camera.
+	 */
 	capture() {
 		try {
-			var _instance = this;
-			_instance._clear_socket_close_timer();
-			_instance._clear_socket_capture_timer();
-			_instance._socket_close_timer = setTimeout(function () {
-				if (_instance.socket != undefined) {
-					_instance.socket.close(4001, 'Done waiting for the server to respond.');
+			this.clearSocketCloseTimer();
+			this.clearSocketCaptureTimer();
+			this.socketCloseTimer = setTimeout(() => {
+				if (this.socket != null) {
+					this.socket.close(4001, 'Done waiting for the server to respond.');
 				}
 			}, 1000);
-			// E.g. '{"camera": "front", "quality": 50, "display": "vga"}'
-			if (_instance.socket != undefined && _instance.socket.readyState == 1) {
-				_instance.socket.send(
+
+			if (this.socket != null && this.socket.readyState === 1) {
+				this.socket.send(
 					JSON.stringify({
-						quality: _instance.frame_controller.jpeg_quality,
+						quality: this.frameController.jpegQuality,
 					})
 				);
 			}
@@ -129,383 +193,496 @@ class RealCameraController {
 			console.error('Error capturing the frame:', error);
 		}
 	}
-	set_rate(rate) {
+
+	/**
+	 * Sets the frame capture rate.
+	 * @param {string} rate - The desired rate ('fast', 'slow', 'off').
+	 */
+	setRate(rate) {
 		try {
-			var _instance = this;
 			switch (rate) {
 				case 'fast':
-					_instance.frame_controller.set_target_fps(16);
-					_instance._socket_capture_timer = setTimeout(function () {
-						_instance.capture();
+					this.frameController.setTargetFps(16);
+					this.socketCaptureTimer = setTimeout(() => {
+						this.capture();
 					}, 0);
 					break;
 				case 'slow':
-					_instance.frame_controller.set_target_fps(4);
-					_instance._socket_capture_timer = setTimeout(function () {
-						_instance.capture();
+					this.frameController.setTargetFps(4);
+					this.socketCaptureTimer = setTimeout(() => {
+						this.capture();
 					}, 0);
 					break;
 				default:
-					_instance.frame_controller.set_target_fps(0);
+					this.frameController.setTargetFps(0);
 			}
 		} catch (error) {
 			console.error('Error setting the frame rate:', error);
 		}
 	}
 
-	start_socket() {
+	/**
+	 * Starts the WebSocket connection to the camera.
+	 */
+	startSocket() {
 		try {
-			var _instance = this;
-			var _cam_uri = '/ws/cam/' + _instance.camera_position;
-			socket_utils.create_socket(_cam_uri, true, 250, function (ws) {
-				_instance.socket = ws;
+			const cameraUri = `/ws/cam/${this.cameraPosition}`;
+			socket_utils.create_socket(cameraUri, true, 250, (ws) => {
+				this.socket = ws;
 				ws.attempt_reconnect = true;
 				ws.is_reconnect = function () {
 					return ws.attempt_reconnect;
 				};
-				ws.onopen = function () {
-					// console.log('MJPEG ' + _instance.camera_position + ' camera connection established.');
-					//_instance.capture();
+				ws.onopen = () => {
+					// Connection established
 				};
-				ws.onclose = function () {
-					//console.log("MJPEG " + _instance.camera_position + " camera connection closed.");
+				ws.onclose = () => {
+					// Connection closed
 				};
-				ws.onmessage = function (evt) {
-					_instance._clear_socket_close_timer();
-					const _timeout = _instance.frame_controller.update_framerate();
-					if (_timeout != undefined && _timeout >= 0) {
-						_instance._socket_capture_timer = setTimeout(function () {
-							_instance.capture();
-						}, _timeout);
+				ws.onmessage = (evt) => {
+					this.clearSocketCloseTimer();
+					const timeout = this.frameController.updateFramerate();
+					if (timeout !== undefined && timeout >= 0) {
+						this.socketCaptureTimer = setTimeout(() => {
+							this.capture();
+						}, timeout);
 					}
-					setTimeout(function () {
-						var cmd = null;
-						if (typeof evt.data == 'string') {
+					setTimeout(() => {
+						let cmd = null;
+						if (typeof evt.data === 'string') {
 							cmd = evt.data;
 						} else {
 							cmd = new Blob([new Uint8Array(evt.data)], { type: 'image/jpeg' });
 						}
-						_instance.message_callback(cmd);
+						this.messageCallback(cmd);
 					}, 0);
 				};
 			});
 		} catch (error) {
-			console.error(`error while opening ${_instance.camera_position} socket: `, error);
+			console.error(`Error while opening ${this.cameraPosition} socket:`, error);
 		}
 	}
 
-	stop_socket() {
+	/**
+	 * Stops the WebSocket connection to the camera.
+	 */
+	stopSocket() {
 		try {
-			if (this.socket != undefined) {
+			// Clear any pending timers to prevent further execution of capture
+			this.clearSocketCloseTimer();
+			this.clearSocketCaptureTimer();
+
+			if (this.socket != null) {
+				// Checks for both undefined and null
 				this.socket.attempt_reconnect = false;
 				if (this.socket.readyState < 2) {
 					try {
 						this.socket.close();
-					} catch (err) {}
+					} catch (err) {
+						// Ignore error
+					}
 				}
+				this.socket = null;
 			}
-			this.socket = null;
 		} catch (error) {
 			console.error('Error trying to stop the socket:', error);
 		}
 	}
 }
 
-// One for each camera.
-var front_camera_frame_controller = new MJPEGFrameController();
-var rear_camera_frame_controller = new MJPEGFrameController();
-var mjpeg_rear_camera;
-var mjpeg_front_camera;
+/**
+ * Manages MJPEG settings and interactions with the page elements.
+ */
+class MJPEGPageController {
+	constructor() {
+		/** @type {MJPEGControlLocalStorage} Stores JPEG quality settings. */
+		this.store = new MJPEGControlLocalStorage();
+		/** @type {Array<function>} Listeners for camera initialization. */
+		this.cameraInitListeners = [];
+		/** @type {Array<function>} Listeners for receiving camera images. */
+		this.cameraImageListeners = [];
+		/** @type {JQuery<HTMLElement>} jQuery element for the preview image. */
+		this.elPreviewImage = null;
+		/** @type {JQuery<HTMLElement>} jQuery element for the expand camera icon. */
+		this.expandCameraIcon = null;
+	}
 
-// Accessed outside of this module.
-var mjpeg_page_controller = {
-	store: new MJPEGControlLocalStorage(),
-	camera_init_listeners: [],
-	camera_image_listeners: [],
-	el_preview_image: null,
-	expand_camera_icon: null,
-
-	init: function (cameras) {
+	/**
+	 * Initializes the MJPEG page controller with the provided cameras.
+	 * @param {Array<RealCameraController>} cameras - The list of camera controllers.
+	 */
+	init(cameras) {
 		try {
 			this.cameras = cameras;
-			this.apply_limits();
-			this.refresh_page_values();
-			this.el_preview_image = $('img#second_stream_view');
-			this.expand_camera_icon = $('img#expand_camera_icon');
-			this.expand_camera_icon.css({ cursor: 'zoom-in' });
-			this.set_camera_framerates(cameraControls.activeCamera);
-			this.bind_dom_actions();
+			this.applyLimits();
+			this.refreshPageValues();
+			this.elPreviewImage = $('img#second_stream_view');
+			this.expandCameraIcon = $('img#expand_camera_icon');
+			this.expandCameraIcon.css({ cursor: 'zoom-in' });
+			this.setCameraFramerates(cameraControls.activeCamera);
+			this.bindDomActions();
 			// Set the image receiver handlers.
-			this.add_camera_listener(
-				function (position, _cmd) {},
-				function (position, _blob) {
+			this.addCameraListener(
+				(position, cmd) => {},
+				(position, blob) => {
 					// Show the other camera in preview.
-					if (position != cameraControls.activeCamera) {
-            console.log(_blob)
-						mjpeg_page_controller.el_preview_image.attr('src', _blob);
+					if (position !== cameraControls.activeCamera) {
+						this.elPreviewImage.attr('src', blob);
 					}
 				}
 			);
 		} catch (error) {
-			console.error('Error while init camera:', error);
+			console.error('Error while initializing camera:', error);
 		}
-	},
+	}
 
-	bind_dom_actions: function () {
+	/**
+	 * Binds DOM actions for UI interactions.
+	 */
+	bindDomActions() {
 		try {
-			$('#caret_down').click(function () {
-				mjpeg_page_controller.decrease_quality();
-				mjpeg_page_controller.refresh_page_values();
+			$('#caret_down').click(() => {
+				this.decreaseQuality();
+				this.refreshPageValues();
 			});
-			$('#caret_up').click(function () {
-				mjpeg_page_controller.increase_quality();
-				mjpeg_page_controller.refresh_page_values();
+			$('#caret_up').click(() => {
+				this.increaseQuality();
+				this.refreshPageValues();
 			});
-			this.el_preview_image.click(function () {
+			this.elPreviewImage.click(() => {
 				cameraControls.toggleCamera();
 			});
-			this.expand_camera_icon.click(function () {
-				const _instance = mjpeg_page_controller;
-				const _state = _instance.el_preview_image.width() < 480 ? 'small' : 'medium';
-				switch (_state) {
+			this.expandCameraIcon.click(() => {
+				const state = this.elPreviewImage.width() < 480 ? 'small' : 'medium';
+				switch (state) {
 					case 'small':
-						_instance.el_preview_image.width(480);
-						_instance.el_preview_image.height(320);
-						_instance.el_preview_image.css({ opacity: 0.5 });
-						_instance.expand_camera_icon.css({ cursor: 'zoom-out' });
+						this.elPreviewImage.width(480);
+						this.elPreviewImage.height(320);
+						this.elPreviewImage.css({ opacity: 0.5 });
+						this.expandCameraIcon.css({ cursor: 'zoom-out' });
 						break;
 					default:
-						_instance.el_preview_image.width(320);
-						_instance.el_preview_image.height(240);
-						_instance.el_preview_image.css({ opacity: 1 });
-						_instance.expand_camera_icon.css({ cursor: 'zoom-in' });
+						this.elPreviewImage.width(320);
+						this.elPreviewImage.height(240);
+						this.elPreviewImage.css({ opacity: 1 });
+						this.expandCameraIcon.css({ cursor: 'zoom-in' });
 				}
 				// Reset the framerate.
-				_instance.set_camera_framerates(cameraControls.activeCamera);
+				this.setCameraFramerates(cameraControls.activeCamera);
 			});
 		} catch (error) {
-			console.error('Error while binding actions:', error);
+			console.error('Error while binding DOM actions:', error);
 		}
-	},
+	}
 
-	refresh_page_values: function () {
-		$('span#mjpeg_quality_val').text(this.get_max_quality());
-	},
-	add_camera_listener: function (cb_init, cb_image) {
-		this.camera_init_listeners.push(cb_init);
-		this.camera_image_listeners.push(cb_image);
-	},
-	notify_camera_init_listeners: function (camera_position, _cmd) {
-		this.camera_init_listeners.forEach(function (cb) {
-			cb(camera_position, _cmd);
+	/**
+	 * Refreshes the page values related to MJPEG settings.
+	 */
+	refreshPageValues() {
+		$('span#mjpeg_quality_val').text(this.getMaxQuality());
+	}
+
+	/**
+	 * Adds listeners for camera initialization and image reception.
+	 * @param {function} cbInit - Callback for camera initialization.
+	 * @param {function} cbImage - Callback for receiving images.
+	 */
+	addCameraListener(cbInit, cbImage) {
+		this.cameraInitListeners.push(cbInit);
+		this.cameraImageListeners.push(cbImage);
+	}
+
+	/**
+	 * Notifies all camera initialization listeners.
+	 * @param {string} cameraPosition - The position of the camera.
+	 * @param {object} cmd - The initialization command.
+	 */
+	notifyCameraInitListeners(cameraPosition, cmd) {
+		this.cameraInitListeners.forEach((cb) => {
+			cb(cameraPosition, cmd);
 		});
-	},
-	notify_camera_image_listeners: function (camera_position, _blob) {
-		this.camera_image_listeners.forEach(function (cb) {
-			cb(camera_position, _blob);
+	}
+
+	/**
+	 * Notifies all camera image listeners.
+	 * @param {string} cameraPosition - The position of the camera.
+	 * @param {string} blob - The image blob URL.
+	 */
+	notifyCameraImageListeners(cameraPosition, blob) {
+		this.cameraImageListeners.forEach((cb) => {
+			cb(cameraPosition, blob);
 		});
-	},
-	apply_limits: function () {
-		var _instance = this;
-		this.cameras.forEach(function (cam) {
-			cam.frame_controller.max_jpeg_quality = _instance.get_max_quality();
-			cam.frame_controller.min_jpeg_quality = _instance.get_min_quality();
+	}
+
+	/**
+	 * Applies the JPEG quality limits to all cameras.
+	 */
+	applyLimits() {
+		this.cameras.forEach((cam) => {
+			cam.frameController.maxJpegQuality = this.getMaxQuality();
+			cam.frameController.minJpegQuality = this.getMinQuality();
 		});
-	},
-	get_max_quality: function () {
-		return this.store.max_jpeg_quality;
-	},
-	get_min_quality: function () {
-		return this.store.min_jpeg_quality;
-	},
-	increase_quality: function () {
-		this.store.increase_quality();
-		this.apply_limits();
+	}
+
+	/**
+	 * Gets the maximum JPEG quality.
+	 * @returns {number} The maximum JPEG quality.
+	 */
+	getMaxQuality() {
+		return this.store.maxJpegQuality;
+	}
+
+	/**
+	 * Gets the minimum JPEG quality.
+	 * @returns {number} The minimum JPEG quality.
+	 */
+	getMinQuality() {
+		return this.store.minJpegQuality;
+	}
+
+	/**
+	 * Increases the maximum JPEG quality.
+	 */
+	increaseQuality() {
+		this.store.increaseQuality();
+		this.applyLimits();
 		this.store.save();
-	},
-	decrease_quality: function () {
-		this.store.decrease_quality();
-		this.apply_limits();
+	}
+
+	/**
+	 * Decreases the maximum JPEG quality.
+	 */
+	decreaseQuality() {
+		this.store.decreaseQuality();
+		this.applyLimits();
 		this.store.save();
-	},
-	set_camera_framerates: function (position) {
+	}
+
+	/**
+	 * Sets the frame rates for the cameras based on the active camera.
+	 * @param {string} position - The position of the active camera.
+	 */
+	setCameraFramerates(position) {
 		try {
-			// The camera rates depend on visibility on the main screen and on the overlay div.
-			const _mjpeg = page_utils.get_stream_type() == 'mjpeg';
-			const _front_camera = this.cameras[0];
-			const _rear_camera = this.cameras[1];
-			if (_mjpeg) {
-				_front_camera.set_rate(position == 'front' ? 'fast' : 'slow');
-				_rear_camera.set_rate(position == 'rear' ? 'fast' : 'slow');
+			const isMJPEG = page_utils.get_stream_type() === 'mjpeg';
+			const frontCamera = this.cameras.find((cam) => cam.cameraPosition === 'front');
+			const rearCamera = this.cameras.find((cam) => cam.cameraPosition === 'rear');
+			if (isMJPEG) {
+				frontCamera.setRate(position === 'front' ? 'fast' : 'slow');
+				rearCamera.setRate(position === 'rear' ? 'fast' : 'slow');
 			} else {
-				_front_camera.set_rate(position == 'front' ? 'off' : 'slow');
-				_rear_camera.set_rate(position == 'rear' ? 'off' : 'slow');
+				frontCamera.setRate(position === 'front' ? 'off' : 'slow');
+				rearCamera.setRate(position === 'rear' ? 'off' : 'slow');
 			}
 		} catch (error) {
-			console.error('Error setting camera frame rate:', error);
-		}
-	},
-};
-
-// Setup both the camera socket consumers.
-var mjpeg_rear_camera_consumer = function (_blob) {
-	try {
-		if (typeof _blob == 'string') {
-			mjpeg_page_controller.notify_camera_init_listeners(mjpeg_rear_camera.camera_position, JSON.parse(_blob));
-		} else {
-			mjpeg_page_controller.notify_camera_image_listeners(mjpeg_rear_camera.camera_position, URL.createObjectURL(_blob));
-			$('span#rear_camera_framerate').text(rear_camera_frame_controller.get_actual_fps().toFixed(0));
-		}
-	} catch (error) {
-		console.error('Error setting rear camera consumer:', error);
-	}
-};
-
-var mjpeg_front_camera_consumer = function (_blob) {
-	try {
-		if (typeof _blob == 'string') {
-			mjpeg_page_controller.notify_camera_init_listeners(mjpeg_front_camera.camera_position, JSON.parse(_blob));
-		} else {
-			mjpeg_page_controller.notify_camera_image_listeners(mjpeg_front_camera.camera_position, URL.createObjectURL(_blob));
-			$('span#front_camera_framerate').text(front_camera_frame_controller.get_actual_fps().toFixed(0));
-		}
-	} catch (error) {
-		console.error('Error setting front camera consumer:', error);
-	}
-};
-
-export function mjpeg_start_all() {
-  // Find and bind new canvas and img elements before starting the streams
-  findCanvasAndRebind();
-  if (mjpeg_rear_camera != undefined) {
-      mjpeg_rear_camera.start_socket();
-  }
-  if (mjpeg_front_camera != undefined) {
-      mjpeg_front_camera.start_socket();
-  }
-}
-
-
-export function mjpeg_stop_all() {
-	if (mjpeg_rear_camera != undefined) {
-		mjpeg_rear_camera.stop_socket();
-	}
-	if (mjpeg_front_camera != undefined) {
-		mjpeg_front_camera.stop_socket();
-	}
-}
-
-function initMJPEGController() {
-	mjpeg_page_controller.init([mjpeg_front_camera, mjpeg_rear_camera]);
-}
-
-function setupStreamTypeSelector() {
-	$('#video_stream_type').change(function () {
-		var selectedStreamType = $(this).val();
-		page_utils.set_stream_type(selectedStreamType);
-		location.reload();
-	});
-}
-
-function setupCameraActivationListener() {
-	// Set the socket desired fps when the active camera changes.
-	cameraControls.addCameraActivationListener(function (position) {
-		setTimeout(function () {
-			mjpeg_page_controller.set_camera_framerates(position);
-		}, 100);
-	});
-}
-
-function setupMJPEGCanvasRendering(canvas) {
-	if (page_utils.get_stream_type() !== 'mjpeg') return;
-
-	// Create a rendering context for the canvas
-	const display_ctx = canvas.getContext('2d');
-
-	// Define the callback function to handle camera initialization
-	function handleCameraInit(position, _cmd) {
-		try {
-			if (cameraControls.activeCamera == position && _cmd.action == 'init') {
-				canvas.width = _cmd.width;
-				canvas.height = _cmd.height;
-				roverUI.onCanvasInit(_cmd.width, _cmd.height);
-			}
-		} catch (error) {
-			console.error('Error handling camera initialization:', error);
+			console.error('Error setting camera frame rates:', error);
 		}
 	}
+}
 
-	// Define the callback function to handle image rendering
-	function handleImageRendering(position, _blob) {
-		try {
-			if (cameraControls.activeCamera == position) {
-				const img = new Image();
-				img.onload = function () {
-					try {
-						requestAnimationFrame(() => {
-							// Ensure the canvas draws are not run in parallel
-							display_ctx.drawImage(img, 0, 0);
-							roverUI.canvasUpdate(display_ctx);
-						});
-					} catch (error) {
-						console.error('Error during image rendering:', error);
+/**
+ * Main application class for MJPEG management.
+ */
+class MJPEGApplication {
+	constructor() {
+		this.mjpegPageController = new MJPEGPageController();
+		this.frontCameraFrameController = new MJPEGFrameController();
+		this.rearCameraFrameController = new MJPEGFrameController();
+		this.mjpegRearCamera = null;
+		this.mjpegFrontCamera = null;
+	}
+
+	init() {
+		this.mjpegRearCamera = new RealCameraController('rear', this.rearCameraFrameController, this.createCameraConsumer('rear'));
+		this.mjpegFrontCamera = new RealCameraController('front', this.frontCameraFrameController, this.createCameraConsumer('front'));
+		this.findCanvasAndExecute();
+	}
+
+	/**
+	 * Creates a camera consumer function for handling camera data.
+	 * @param {string} cameraPosition - The position of the camera.
+	 * @returns {function} The camera consumer function.
+	 */
+	createCameraConsumer(cameraPosition) {
+		return (data) => {
+			try {
+				if (typeof data === 'string') {
+					const cmd = JSON.parse(data);
+					this.mjpegPageController.notifyCameraInitListeners(cameraPosition, cmd);
+				} else {
+					const blobUrl = URL.createObjectURL(data);
+					this.mjpegPageController.notifyCameraImageListeners(cameraPosition, blobUrl);
+					if (cameraPosition === 'rear') {
+						$('span#rear_camera_framerate').text(this.rearCameraFrameController.getActualFps().toFixed(0));
+					} else if (cameraPosition === 'front') {
+						$('span#front_camera_framerate').text(this.frontCameraFrameController.getActualFps().toFixed(0));
 					}
-				};
-				// Set the src to trigger the image load
-				img.src = _blob;
+				}
+			} catch (error) {
+				console.error(`Error processing data for ${cameraPosition} camera:`, error);
 			}
-		} catch (error) {
-			console.error('Error handling image rendering:', error);
+		};
+	}
+
+	/**
+	 * Finds the canvas element and initializes the application.
+	 */
+	findCanvasAndExecute() {
+		const canvas = document.getElementById('main_stream_view');
+		if (canvas) {
+			this.initializeApplication(canvas);
+		} else {
+			setTimeout(() => this.findCanvasAndExecute(), 500);
 		}
 	}
 
-	// Add the camera listeners with the new standalone functions
-	try {
-		mjpeg_page_controller.add_camera_listener(handleCameraInit, handleImageRendering);
-	} catch (error) {
-		console.error('Error setting up camera listeners:', error);
+	/**
+	 * Initializes the application with the provided canvas.
+	 * @param {HTMLCanvasElement} canvas - The canvas element.
+	 */
+	initializeApplication(canvas) {
+		try {
+			this.mjpegPageController.init([this.mjpegFrontCamera, this.mjpegRearCamera]);
+			this.setupStreamTypeSelector();
+			this.setupCameraActivationListener();
+			this.setupMJPEGCanvasRendering(canvas);
+		} catch (error) {
+			console.error('Error initializing MJPEG application:', error);
+		}
+	}
+
+	/**
+	 * Sets up the stream type selector dropdown.
+	 */
+	setupStreamTypeSelector() {
+		$('#video_stream_type').change(function () {
+			const selectedStreamType = $(this).val();
+			page_utils.set_stream_type(selectedStreamType);
+			location.reload();
+		});
+	}
+
+	/**
+	 * Sets up the listener for camera activation changes.
+	 */
+	setupCameraActivationListener() {
+		// Set the socket desired fps when the active camera changes.
+		cameraControls.addCameraActivationListener((position) => {
+			setTimeout(() => {
+				this.mjpegPageController.setCameraFramerates(position);
+			}, 100);
+		});
+	}
+
+	/**
+	 * Sets up the MJPEG canvas rendering logic.
+	 * @param {HTMLCanvasElement} canvas - The canvas element.
+	 */
+	setupMJPEGCanvasRendering(canvas) {
+		if (page_utils.get_stream_type() !== 'mjpeg') return;
+
+		// Create a rendering context for the canvas
+		const displayCtx = canvas.getContext('2d');
+
+		// Define the callback function to handle camera initialization
+		const handleCameraInit = (position, cmd) => {
+			try {
+				if (cameraControls.activeCamera === position && cmd.action === 'init') {
+					canvas.width = cmd.width;
+					canvas.height = cmd.height;
+					roverUI.onCanvasInit(cmd.width, cmd.height);
+				}
+			} catch (error) {
+				console.error('Error handling camera initialization:', error);
+			}
+		};
+
+		// Define the callback function to handle image rendering
+		const handleImageRendering = (position, blobUrl) => {
+			try {
+				if (cameraControls.activeCamera === position) {
+					const img = new Image();
+					img.onload = function () {
+						try {
+							requestAnimationFrame(() => {
+								// Ensure the canvas draws are not run in parallel
+								displayCtx.drawImage(img, 0, 0);
+								roverUI.canvasUpdate(displayCtx);
+							});
+						} catch (error) {
+							console.error('Error during image rendering:', error);
+						}
+					};
+					// Set the src to trigger the image load
+					img.src = blobUrl;
+				}
+			} catch (error) {
+				console.error('Error handling image rendering:', error);
+			}
+		};
+
+		// Add the camera listeners with the new functions
+		try {
+			this.mjpegPageController.addCameraListener(handleCameraInit, handleImageRendering);
+		} catch (error) {
+			console.error('Error setting up camera listeners:', error);
+		}
+	}
+
+	/**
+	 * Starts all MJPEG streams.
+	 */
+	startAll() {
+		this.findCanvasAndRebind();
+		if (this.mjpegRearCamera) {
+			this.mjpegRearCamera.startSocket();
+		}
+		if (this.mjpegFrontCamera) {
+			this.mjpegFrontCamera.startSocket();
+		}
+	}
+
+	/**
+	 * Stops all MJPEG streams.
+	 */
+	stopAll() {
+		if (this.mjpegRearCamera) {
+			this.mjpegRearCamera.stopSocket();
+		}
+		if (this.mjpegFrontCamera) {
+			this.mjpegFrontCamera.stopSocket();
+		}
+	}
+
+	/**
+	 * Finds and rebinds the canvas and image elements.
+	 */
+	findCanvasAndRebind() {
+		// Find the canvas and img DOM elements
+		const canvas = document.getElementById('main_stream_view');
+		const imgPreview = document.querySelector('img#second_stream_view');
+
+		// Check if elements are found, and rebind them to their respective listeners
+		if (canvas && imgPreview) {
+			this.mjpegPageController.elPreviewImage = $(imgPreview);
+			this.setupMJPEGCanvasRendering(canvas); // Re-bind the canvas rendering logic
+		} else {
+			setTimeout(() => this.findCanvasAndRebind(), 500); // Retry if elements are not ready yet
+		}
 	}
 }
 
-function initializeApplication(canvas) {
-	try {
-		initMJPEGController();
-		setupStreamTypeSelector();
-		setupCameraActivationListener();
-		setupMJPEGCanvasRendering(canvas);
-	} catch (error) {
-		console.error('Error init MJPEG:', error);
-	}
+// Create a singleton instance of MJPEGApplication
+const mjpegApp = new MJPEGApplication();
+
+export function mjpegInit() {
+	mjpegApp.init();
 }
 
-function findCanvasAndExecute() {
-	const canvas = document.getElementById('main_stream_view');
-	if (canvas) {
-		initializeApplication(canvas);
-	} else {
-		setTimeout(findCanvasAndExecute, 500);
-	}
+export function mjpegStartAll() {
+	mjpegApp.startAll();
 }
 
-function findCanvasAndRebind() {
-  // Find the canvas and img DOM elements
-  const canvas = document.getElementById('main_stream_view');
-  const imgPreview = document.querySelector('img#second_stream_view');
-
-  // Check if elements are found, and rebind them to their respective listeners
-  if (canvas && imgPreview) {
-      mjpeg_page_controller.el_preview_image = $(imgPreview);
-      setupMJPEGCanvasRendering(canvas);  // Re-bind the canvas rendering logic
-      console.log('Re-bound canvas and image elements to the streams.');
-  } else {
-      console.error('Canvas or image elements not found. Retrying...');
-      setTimeout(findCanvasAndRebind, 500);  // Retry if elements are not ready yet
-  }
-}
-
-
-export function init_mjpeg() {
-	mjpeg_rear_camera = new RealCameraController('rear', rear_camera_frame_controller, mjpeg_rear_camera_consumer);
-	mjpeg_front_camera = new RealCameraController('front', front_camera_frame_controller, mjpeg_front_camera_consumer);
-	findCanvasAndExecute();
+export function mjpegStopAll() {
+	mjpegApp.stopAll();
 }
