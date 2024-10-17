@@ -33,4 +33,4 @@ ENV PYTHONPATH "/app:${PYTHONPATH}"
 
 WORKDIR /app/servos
 
-CMD ["python", "servos.py"]
+CMD ["python", "app.py"]
