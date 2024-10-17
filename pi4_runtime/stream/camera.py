@@ -21,7 +21,7 @@ from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from BYODR_utils.common import Application
 from BYODR_utils.common.option import parse_option
-from BYODR_utils.common.video import create_video_source
+from BYODR_utils.common.video import create_video_source  # it depends on G-stream
 from BYODR_utils.common.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSocket
 
 logger = logging.getLogger(__name__)
@@ -53,15 +53,25 @@ class CameraApplication(Application):
 
 
 gst_commands = {
-    "h264/rtsp": "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 drop-on-latency=true do-retransmission=false ! "
-    'queue ! rtph264depay ! h264parse ! queue ! video/x-h264,stream-format="byte-stream" ! queue ! appsink',
-    "raw/usb/h264/udp": "v4l2src device={uri} ! video/x-raw,width={src_width},height={src_height} ! videoflip method={video_flip} ! tee name=t "
-    "t. ! queue ! videoconvert ! videoscale ! video/x-raw,width={udp_width},height={udp_height} ! queue ! "
-    "omxh264enc target-bitrate={udp_bitrate} control-rate=1 interval-intraframes=50 ! queue ! "
-    "video/x-h264, profile=baseline ! rtph264pay ! udpsink host={udp_host} port={udp_port} sync=false async=false "
-    "t. ! queue ! videoconvert ! videoscale ! video/x-raw,width={out_width},height={out_height} ! queue ! "
-    "omxh264enc target-bitrate={out_bitrate} control-rate=1 interval-intraframes=50 ! queue ! "
-    'video/x-h264,profile=baseline,stream-format="byte-stream" ! queue ! appsink',
+    "h264/rtsp": (
+        "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 "
+        "drop-on-latency=true do-retransmission=false ! "
+        "queue ! rtph264depay ! h264parse ! queue ! "
+        "video/x-h264,stream-format=byte-stream ! queue ! appsink"
+    ),
+    "raw/usb/h264/udp": (
+        "v4l2src device={uri} ! video/x-raw,width={src_width},height={src_height} ! "
+        "videoflip method={video_flip} ! tee name=t "
+        "t. ! queue ! videoconvert ! videoscale ! "
+        "video/x-raw,width={udp_width},height={udp_height} ! queue ! "
+        "v4l2h264enc extra-controls=encode,frame_level_rate_control_enable=1,h264_i_frame_period=50 ! queue ! "
+        "video/x-h264,profile=baseline ! rtph264pay ! "
+        "udpsink host={udp_host} port={udp_port} sync=false async=false "
+        "t. ! queue ! videoconvert ! videoscale ! "
+        "video/x-raw,width={out_width},height={out_height} ! queue ! "
+        "v4l2h264enc extra-controls=encode,frame_level_rate_control_enable=1,h264_i_frame_period=50 ! queue ! "
+        "video/x-h264,profile=baseline,stream-format=byte-stream ! queue ! appsink"
+    ),
 }
 
 
