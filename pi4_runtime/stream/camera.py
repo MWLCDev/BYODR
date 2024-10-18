@@ -10,28 +10,26 @@ import shutil
 import signal
 import threading
 import time
-import subprocess
 import re
-import glob
 
-from configparser import ConfigParser as SafeConfigParser
+from configparser import ConfigParser
+from BYODR_utils.PI_specific.utilities import RaspberryPi
 
 from tornado import web, ioloop
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from BYODR_utils.common import Application
 from BYODR_utils.common.option import parse_option
-from BYODR_utils.common.video import create_video_source  # it depends on G-stream
+from BYODR_utils.common.video import create_video_source
 from BYODR_utils.common.websocket import HttpLivePlayerVideoSocket, JMuxerVideoStreamSocket
 
+# Setup logging
+log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d " "%(funcName)s %(threadName)s %(message)s"
+logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
 logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
-log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
-
-
-signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
-signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
-
+# Global event to signal quitting
 quit_event = multiprocessing.Event()
 
 
@@ -40,19 +38,12 @@ def _interrupt():
     quit_event.set()
 
 
-class CameraApplication(Application):
-    def __init__(self, stream, event):
-        super(CameraApplication, self).__init__(quit_event=event, run_hz=2)
-        self._stream = stream
+# Setup signal handlers
+signal.signal(signal.SIGINT, lambda sig, frame: _interrupt())
+signal.signal(signal.SIGTERM, lambda sig, frame: _interrupt())
 
-    def setup(self):
-        pass
-
-    def step(self):
-        self._stream.check()
-
-
-gst_commands = {
+# GStreamer commands
+GSTREAMER_COMMANDS = {
     "h264/rtsp": (
         "rtspsrc location=rtsp://{user}:{password}@{ip}:{port}{path} latency=0 "
         "drop-on-latency=true do-retransmission=false ! "
@@ -75,129 +66,227 @@ gst_commands = {
 }
 
 
-def change_segment_config(config_dir):
-    """Change the ips in all the config files the segment is using them.
-    It will count on the ip of the pi"""
-    # Get the local IP address's third octet
-    ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
-    third_octet_new = ip_address.split(".")[2]
+class CameraConfigFile:
+    """Handles configuration file parsing and updating."""
 
-    # Regular expression to match IP addresses
-    ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
+    def __init__(self, config_file):
+        self.config_file = config_file
+        self.parser = ConfigParser()
+        self.kwargs = {}
+        self._load_config()
 
-    with open(config_dir, "r") as f:
-        content = f.readlines()
+    def _load_config(self):
+        if os.path.exists(self.config_file) and os.path.isfile(self.config_file):
+            self.parser.read(self.config_file)
+            self.kwargs = dict(self.parser.items("camera"))
+            self._update_ip_addresses()
+        else:
+            self._create_default_config()
+            # If it created a new camera config file, update the IPs inside to be dynamic
+            self._update_ip_addresses()
+            self.parser.read(self.config_file)
+            self.kwargs = dict(self.parser.items("camera"))
 
-    updated_content = []
-    changes_made = []
-    changes_made_in_file = False  # Flag to track changes in the current file
+    def _update_ip_addresses(self):
+        """Update IP addresses in the config file to match the local IP's third octet."""
+        try:
+            ip_address = RaspberryPi.get_ip_address()
+            third_octet_new = ip_address.split(".")[2]
+            ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
+            with open(self.config_file, "r") as f:
+                content = f.readlines()
 
-    for line in content:
-        match = ip_regex.search(line)
-        if match:
-            third_octet_old = match.group(2)
-            if third_octet_old != third_octet_new:
-                # Replace the third octet
-                new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
-                updated_content.append(new_line)
-                changes_made.append((third_octet_old, third_octet_new))
-                changes_made_in_file = True
+            updated_content = []
+            changes_made = False
 
-                continue
-        updated_content.append(line)
+            for line in content:
+                match = ip_regex.search(line)
+                if match:
+                    third_octet_old = match.group(2)
+                    if third_octet_old != third_octet_new:
+                        new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
+                        updated_content.append(new_line)
+                        changes_made = True
+                        continue
+                updated_content.append(line)
 
-    # Write changes back to the file
-    with open(config_dir, "w") as f:
-        f.writelines(updated_content)
+            if changes_made:
+                with open(self.config_file, "w") as f:
+                    f.writelines(updated_content)
+                logger.info(f"Updated {self.config_file} with new IP address third octet {third_octet_new}")
+        except Exception as e:
+            logger.error(f"Error updating IP addresses in config file: {e}")
 
-    # Print changes made
-    if changes_made_in_file:
-        logger.info("Updated {} with a new ip address of {}".format(config_dir, third_octet_new))
+    def _create_default_config(self):
+        default_template = "/app/stream/camera.template"
+        if os.path.exists(default_template):
+            shutil.copyfile(default_template, self.config_file)
+            logger.info(f"Created a new camera configuration file from template at {self.config_file}")
+        else:
+            logger.error(f"Default config template {default_template} not found.")
+
+    def get_option(self, section, option, default=None, option_type=str):
+        return parse_option(f"{section}.{option}", option_type, default, **self.kwargs)
 
 
-def create_stream(config_file):
-    change_segment_config(config_file)
-    parser = SafeConfigParser()
-    parser.read(config_file)
-    kwargs = dict(parser.items("camera"))
-    name = os.path.basename(os.path.splitext(config_file)[0])
-    _type = parse_option("camera.type", str, **kwargs)
-    assert _type in list(gst_commands.keys()), "Unrecognized camera type '{}'.".format(_type)
-    if _type == "h264/rtsp":
-        out_width, out_height = [int(x) for x in parse_option("camera.output.shape", str, "640x480", **kwargs).split("x")]
+class CameraStream:
+    """Handles the creation of the camera stream based on configuration."""
+
+    def __init__(self, config):
+        self.config = config
+        self.name = os.path.basename(os.path.splitext(config.config_file)[0])
+        self.stream_type = self.config.get_option("camera", "type")
+        self.command = None
+        self.socket_ref = None
+        self.video_stream = None
+
+        self._validate_stream_type()
+        self._create_stream()
+
+    def _validate_stream_type(self):
+        if self.stream_type not in GSTREAMER_COMMANDS:
+            raise ValueError(f"Unrecognized camera type '{self.stream_type}'.")
+
+    def _create_stream(self):
+        try:
+            if self.stream_type == "h264/rtsp":
+                self._create_rtsp_stream()
+            elif self.stream_type == "raw/usb/h264/udp":
+                self._create_usb_udp_stream()
+            else:
+                raise ValueError(f"Unsupported stream type '{self.stream_type}'.")
+        except Exception as e:
+            logger.error(f"Error creating stream: {e}")
+            raise
+
+    def _create_rtsp_stream(self):
+        out_width, out_height = self._parse_resolution(self.config.get_option("camera", "output.shape", "640x480"))
         config = {
-            "ip": (parse_option("camera.ip", str, "192.168.1.64", **kwargs)),
-            "port": (parse_option("camera.port", int, 554, **kwargs)),
-            "user": (parse_option("camera.user", str, "user1", **kwargs)),
-            "password": (parse_option("camera.password", str, "HaikuPlot876", **kwargs)),
-            "path": (parse_option("camera.path", str, "/Streaming/Channels/103", **kwargs)),
+            "ip": self.config.get_option("camera", "ip", "192.168.1.64"),
+            "port": self.config.get_option("camera", "port", 554, int),
+            "user": self.config.get_option("camera", "user", "user1"),
+            "password": self.config.get_option("camera", "password", "HaikuPlot876"),
+            "path": self.config.get_option("camera", "path", "/Streaming/Channels/103"),
         }
-    else:
-        _type = "raw/usb/h264/udp"
-        src_width, src_height = [int(x) for x in parse_option("camera.source.shape", str, "640x480", **kwargs).split("x")]
-        udp_width, udp_height = [int(x) for x in parse_option("camera.udp.shape", str, "320x240", **kwargs).split("x")]
-        out_width, out_height = [int(x) for x in parse_option("camera.output.shape", str, "480x320", **kwargs).split("x")]
+        self.command = GSTREAMER_COMMANDS[self.stream_type].format(**config)
+        self.socket_ref = self.config.get_option("camera", "output.class", "http-live")
+        location = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:" f"{config['port']}{config['path']}"
+        logger.info(f"Socket '{self.name}' location={location}")
+        self.video_stream = create_video_source(self.name, shape=(out_height, out_width, 3), command=self.command)
+
+    def _create_usb_udp_stream(self):
+        src_width, src_height = self._parse_resolution(self.config.get_option("camera", "source.shape", "640x480"))
+        udp_width, udp_height = self._parse_resolution(self.config.get_option("camera", "udp.shape", "320x240"))
+        out_width, out_height = self._parse_resolution(self.config.get_option("camera", "output.shape", "480x320"))
         config = {
-            "uri": (parse_option("camera.uri", str, "/dev/video0", **kwargs)),
+            "uri": self.config.get_option("camera", "uri", "/dev/video0"),
             "src_width": src_width,
             "src_height": src_height,
-            "video_flip": (parse_option("camera.flip.method", str, "none", **kwargs)),
+            "video_flip": self.config.get_option("camera", "flip.method", "none"),
             "udp_width": udp_width,
             "udp_height": udp_height,
-            "udp_bitrate": (parse_option("camera.udp.bitrate", int, 1024000, **kwargs)),
-            "udp_host": (parse_option("camera.udp.host", str, "192.168.1.100", **kwargs)),
-            "udp_port": (parse_option("camera.udp.port", int, 5000, **kwargs)),
+            "udp_bitrate": self.config.get_option("camera", "udp.bitrate", 1024000, int),
+            "udp_host": self.config.get_option("camera", "udp.host", "192.168.1.100"),
+            "udp_port": self.config.get_option("camera", "udp.port", 5000, int),
             "out_width": out_width,
             "out_height": out_height,
-            "out_bitrate": (parse_option("camera.output.bitrate", int, 1024000, **kwargs)),
+            "out_bitrate": self.config.get_option("camera", "output.bitrate", 1024000, int),
         }
-    _command = gst_commands.get(_type).format(**config)
-    _socket_ref = parse_option("camera.output.class", str, "http-live", **kwargs)
-    location = f"rtsp://{config['user']}:{config['password']}@{config['ip']}:{config['port']}{config['path']}"
-    logger.info("Socket '{}' location={}".format(name, location))
-    # logger.info("Socket '{}' ref '{}' gst command={}".format(name, _socket_ref, _command))
-    return (create_video_source(name, shape=(out_height, out_width, 3), command=_command), _socket_ref)
+        self.command = GSTREAMER_COMMANDS[self.stream_type].format(**config)
+        self.socket_ref = self.config.get_option("camera", "output.class", "http-live")
+        self.video_stream = create_video_source(self.name, shape=(out_height, out_width, 3), command=self.command)
+
+    @staticmethod
+    def _parse_resolution(resolution_str):
+        try:
+            width, height = [int(x) for x in resolution_str.split("x")]
+            return width, height
+        except ValueError:
+            raise ValueError(f"Invalid resolution format: {resolution_str}")
+
+
+class CameraApplication(Application):
+    """Runs the camera application loop."""
+
+    def __init__(self, config_file, port, event):
+        super().__init__(quit_event=event, run_hz=2)
+        self.config_file = config_file
+        self.port = port
+        self.camera_stream = None
+        self.io_loop = None
+        self.server_thread = None
+
+    def setup(self):
+        try:
+            camera_config = CameraConfigFile(self.config_file)
+
+            self.camera_stream = CameraStream(camera_config)
+            # Setup the IO loop and web application
+            self._setup_web_server()
+        except Exception as e:
+            logger.error(f"Error during setup: {e}")
+            self.quit_event.set()
+
+    def _setup_web_server(self):
+        """Sets up the web server for the camera stream."""
+        # Create a new event loop directly
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
+
+        self.io_loop = ioloop.IOLoop.current()
+        socket_class = HttpLivePlayerVideoSocket if self.camera_stream.socket_ref == "http-live" else JMuxerVideoStreamSocket
+        web_app = web.Application(
+            [
+                (
+                    r"/",
+                    socket_class,
+                    dict(video_source=self.camera_stream.video_stream, io_loop=self.io_loop),
+                )
+            ]
+        )
+        rear_server = web.HTTPServer(web_app, xheaders=True)
+        rear_server.bind(self.port)
+        rear_server.start()
+        logger.info(f"Web service started on port {self.port}.")
+
+        # Run the IO loop in a separate thread
+        self.server_thread = threading.Thread(target=self.io_loop.start)
+        self.server_thread.start()
+
+    def step(self):
+        try:
+            if self.camera_stream and self.camera_stream.video_stream:
+                self.camera_stream.video_stream.check()
+        except Exception as e:
+            logger.error(f"Error in CameraApplication step: {e}")
+            self.quit_event.set()
+
+    def teardown(self):
+        if self.io_loop and not self.io_loop.is_closed():
+            self.io_loop.add_callback(self.io_loop.stop)
+            self.server_thread.join()
+            logger.info("Web server stopped.")
 
 
 def main():
+    """Main function to parse arguments and start the application."""
     parser = argparse.ArgumentParser(description="Camera web-socket server.")
     parser.add_argument("--config", type=str, default="/config/stream.ini", help="Configuration file.")
     parser.add_argument("--port", type=int, default=9101, help="Socket port.")
+
     args = parser.parse_args()
+    application = CameraApplication(args.config, args.port, quit_event)
 
-    config_file = args.config
-    if os.path.exists(config_file) and os.path.isfile(config_file):
-        video_stream, socket_type = create_stream(config_file)
-        application = CameraApplication(stream=video_stream, event=quit_event)
-
-        threads = [threading.Thread(target=application.run)]
+    try:
         if quit_event.is_set():
             return 0
+        application.run()
+    finally:
+        application.teardown()
 
-        [t.start() for t in threads]
-
-        asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
-        asyncio.set_event_loop(asyncio.new_event_loop())
-
-        io_loop = ioloop.IOLoop.instance()
-        class_ref = HttpLivePlayerVideoSocket if socket_type == "http-live" else JMuxerVideoStreamSocket
-        web_app = web.Application([(r"/", class_ref, dict(video_source=video_stream, io_loop=io_loop))])
-        rear_server = web.HTTPServer(web_app, xheaders=True)
-        rear_server.bind(args.port)
-        rear_server.start()
-        # logger.info("Web service started on port {}.".format(args.port))
-        io_loop.start()
-
-        logger.info("Waiting on threads to stop.")
-        [t.join() for t in threads]
-    else:
-        shutil.copyfile("/app/stream/camera.template", config_file)
-        logger.info("Created a new camera configuration file from template.")
-        while not quit_event.is_set():
-            time.sleep(1)
+    while not quit_event.is_set():
+        time.sleep(1)
 
 
 if __name__ == "__main__":
-    logging.basicConfig(format=log_format, datefmt="%Y%m%d:%H:%M:%S %p %Z")
-    logging.getLogger().setLevel(logging.INFO)
     main()
