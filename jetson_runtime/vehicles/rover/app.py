@@ -11,6 +11,8 @@ from BYODR_utils.common import Application, Configurable, PeriodicCallTrace, tim
 from BYODR_utils.common.ipc import ImagePublisher, JSONPublisher, LocalIPCServer, ReceiverThread, json_collector
 from BYODR_utils.common.location import GeoTracker
 from BYODR_utils.common.option import hash_dict, parse_option
+from BYODR_utils.JETSON_specific.utilities import Nano
+
 from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 
@@ -254,7 +256,7 @@ class ConfigFiles:
         """Change the ips in the config file the segment is using them.
         It will count on the ip of the nano"""
         # Get the local IP address's third octet
-        ip_address = subprocess.check_output("hostname -I | awk '{for (i=1; i<=NF; i++) if ($i ~ /^192\\.168\\./) print $i}'", shell=True).decode().strip().split()[0]
+        ip_address = Nano.get_ip_address()
         third_octet_new = ip_address.split(".")[2]
 
         _candidates = glob.glob(os.path.join(self._config_dir, "config.ini"))

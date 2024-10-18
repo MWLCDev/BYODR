@@ -174,6 +174,8 @@ class Application(object):
 
 
 class ApplicationExit(object):
+    """Encapsulate the logic for checking if an application should exit and then performing the necessary action to shut down the application. It's designed as a callable object (using the __call__ method) so that it can be used like a function."""
+
     def __init__(self, event, cb):
         self._event = event
         self._cb = cb

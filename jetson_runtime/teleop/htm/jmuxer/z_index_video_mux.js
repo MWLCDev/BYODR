@@ -32,6 +32,7 @@ if (page_utils.get_stream_type() == 'h264') {
             const ws_protocol = (document.location.protocol === "https:") ? "wss://" : "ws://";
             const uri = ws_protocol + document.location.hostname + ':' + port;
             this.socket = new WebSocket(uri);
+            
             this.socket.binaryType = 'arraybuffer';
             this.socket.attempt_reconnect = true;
             this.socket.addEventListener('message', function(event) {

@@ -17,7 +17,7 @@ from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
 
 from BYODR_utils.common import Application, ApplicationExit
-from BYODR_utils.common.ipc import JSONPublisher, LocalIPCServer, json_collector
+from BYODR_utils.common.ipc import JSONPublisher, LocalIPCServer, json_collector, JSONServerThread
 from BYODR_utils.common.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from BYODR_utils.common.option import parse_option
 from BYODR_utils.common.usbrelay import SearchUsbRelayFactory, StaticRelayHolder, TransientMemoryRelay
@@ -52,6 +52,8 @@ class PilotApplication(Application):
         self.ipc_chatter = None
         self.teleop = None
         self.ros = None
+        self.coms_receiver = None
+        self.movement_commands = None
         self.vehicle = None
         self.inference = None
         self._check_relay_type()
@@ -132,10 +134,11 @@ class PilotApplication(Application):
 
     def step(self):
         try:
-            teleop = self.teleop()
-            commands = (teleop, self.ros(), self.vehicle(), self.inference())
+            coms = self.coms_receiver()
+            commands = (coms, self.ros(), self.vehicle(), self.inference())
             pilot = self._processor.next_action(*commands)
-            self._monitor.step(pilot, teleop)
+            # print(f"Sending command to relay.py: {pilot}, {coms}.")
+            self._monitor.step(pilot, coms)
             if pilot is not None:
                 self.publisher.publish(pilot)
             chat = self.ipc_chatter()
@@ -156,21 +159,20 @@ def main():
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), config_dir=args.config)
+    coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
 
-    teleop = json_collector(url="ipc:///byodr/teleop.sock", topic=b"aav/teleop/input", event=quit_event)
     ros = json_collector(url="ipc:///byodr/ros.sock", topic=b"aav/ros/input", hwm=10, pop=True, event=quit_event)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event)
     ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
-    application.teleop = lambda: teleop.get()
     application.ros = lambda: ros.get()
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
     application.publisher = JSONPublisher(url="ipc:///byodr/pilot.sock", topic="aav/pilot/output")
     application.ipc_server = LocalIPCServer(url="ipc:///byodr/pilot_c.sock", name="pilot", event=quit_event)
-    threads = [teleop, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
+    threads = [coms_receiver, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 

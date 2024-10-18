@@ -4,7 +4,8 @@
       "GPIO",
       "Jetson",
       "mjpeg",
-      "teleop"
+      "teleop",
+      "VESC"
     ],
     "python.analysis.typeCheckingMode": "off",
     "liveServer.settings.port": 5501,

@@ -202,7 +202,7 @@ class EndpointHandlers:
 
     def get_navigation_image(self, image_id):
         return self.route_store.get_image(image_id)
-
+    
 
 class ThrottleController:
     def __init__(self, teleop_publisher, route_store, timeout=1.0):

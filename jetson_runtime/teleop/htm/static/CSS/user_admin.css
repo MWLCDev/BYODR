@@ -1,0 +1,78 @@
+
+html{
+  overflow: hidden; /* This will prevent scrollbar from appearing */
+}
+#container_admin_settings {
+  font-family: Helvetica, sans-serif;
+  padding-left: 1vw;
+}
+
+#segments_header,
+#header_found_segments {
+  font-size: xx-large;
+}
+
+#segment_table {
+  border-collapse: collapse;
+  /* This ensures that the cell borders are not doubled */
+  border-spacing: 0;
+  /* Removes space between borders */
+  -webkit-user-select: none;
+  /* Safari */
+  -ms-user-select: none;
+  /* IE 10+ and Edge */
+  user-select: none;
+  /* Standard syntax */
+}
+
+#segment_table th,
+#segment_table td {
+  border: 1px solid rgb(160, 160, 160);
+  /* Remove vertical lines */
+  border-left: none;
+  /* Remove vertical lines */
+  border-right: none;
+  /* Adds spacing between columns */
+  padding: 1em 0.5em;
+}
+
+#segment_table th {
+  border-top: none;
+  /* Remove top border from header */
+}
+
+.floating {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03);
+  z-index: 1000;
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+
+
+#segment_table td:first-child {
+  cursor: grab;
+}
+
+#segment_table td:first-child::before {
+  content: '☰';
+  display: inline-block;
+  padding-right: 10px;
+  cursor: grab;
+}
+
+.fade-in-left {
+  animation: fadeInLeft 0.5s ease-out;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
