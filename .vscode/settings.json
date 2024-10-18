@@ -1,0 +1,12 @@
+{
+    "cSpell.words": [
+      "BYODR",
+      "GPIO",
+      "Jetson",
+      "mjpeg",
+      "teleop"
+    ],
+    "python.analysis.typeCheckingMode": "off",
+    "liveServer.settings.port": 5501,
+    "editor.acceptSuggestionOnEnter": "on"
+}

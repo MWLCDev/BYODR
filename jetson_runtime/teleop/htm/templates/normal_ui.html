@@ -1,0 +1,96 @@
+<!-- Second Layer: Advanced View -->
+	<div id="debug_drive_values" class="advanced_view" title="Drive values">
+		<p>FPS front <span id="front_camera_framerate">0</span></p>
+		<p>FPS rear <span id="rear_camera_framerate">0</span></p>
+		<p>inference (Hz) <span id="inference_fps">0</span></p>
+		<p>st-mu <span id="inference_surprise">0</span></p>
+		<p>st-cri <span id="inference_critic">0</span></p>
+		<p>ob-mu <span id="inference_brake_critic">0</span></p>
+		<p>ob <span id="inference_obstacle">0</span></p>
+		<p>ds <span id="inference_desired_speed">0</span></p>
+		<p>bea <span id="navigation_heading">0</span></p>
+		<p>dist <span id="navigation_match_image_distance">0</span></p>
+		<p>cmd <span id="navigation_current_command">0</span></p>
+		<p>dir <span id="navigation_direction">0</span></p>
+		<p><span id="debug_screen_dimension"></span></p>
+	</div>
+
+<!-- Third Layer: Stream Quality and Options -->
+<div id="horizontal_bar">
+	<!-- Dashboard & Speed Section (Left Section) -->
+	<div id="dashboard" class="left_section">
+		<div class="stream_quality">
+			<p>Stream quality</p>
+			<div id="mjpeg_stream_controls">
+				<span id="caret_up" class="caret">&#9650;</span>
+				<div id="speed_value">
+					<span id="mjpeg_quality_val">0</span>
+				</div>
+				<span id="caret_down" class="caret">&#9660;</span>
+			</div>
+			<div id="stream_quality_dropdown">
+				<select id="video_stream_type" title="Select video stream type">
+					<option id="video_stream_h264" value="h264">h264</option>
+					<option id="video_stream_mjpeg" value="mjpeg">mjpeg</option>
+				</select>
+			</div>
+		</div>
+
+		<div class="speed_display">
+			<div class="rover_speed speed_value">
+				<p class="rover_speed_value">0</p>
+				<div class="rover_speed_label">km/h</div>
+			</div>
+		</div>
+	</div>
+
+	<!-- Middle Section -->
+	<div class="middle_section">
+		<p class="current_mode_text"></p>
+		<img src="../static/assets/pictures/manual_mode.png" class="steeringWheel deep_purple" />
+		<button class="current_mode_button"></button>
+		<p class="current_mode_state"></p>
+		<div class="inf_speed speed_value">
+			<p class="inf_speed_value">0</p>
+			<div class="inf_speed_label">Max Speed</div>
+		</div>
+	</div>
+	<!-- Right Section -->
+	<div class="right_section">
+		<button class="toggle_help_message">Toggle Help</button>
+		<!-- The content are in index.html -->
+	</div>
+</div>
+
+<!-- Fourth Layer: Camera Stream View -->
+<div id="viewport_container">
+	<div id="message_box_container">
+		<div id="message_box_message"></div>
+		<input id="message_box_button_take_control" type="button" value="Take over control" />
+	</div>
+	<iframe id="top_layer_iframe"></iframe>
+
+	<div id="camera_streams">
+		<div id="main_stream_container">
+			<canvas id="main_stream_view"></canvas>
+			<div id="overlay_distance_markers">
+				<div id="overlay_center_distance0" class="overlay_distance">1.0</div>
+				<div id="overlay_center_distance1" class="overlay_distance">0.5</div>
+				<div id="overlay_left_marker0" class="overlay_distance">0.5</div>
+				<div id="overlay_left_marker1" class="overlay_distance">0.25</div>
+				<div id="overlay_right_marker0" class="overlay_distance">0.5</div>
+				<div id="overlay_right_marker1" class="overlay_distance">0.25</div>
+			</div>
+		</div>
+		<div id="second_stream_container">
+			<img id="expand_camera_icon" src="../static/assets/pictures/expand_collapse.png" title="Expand or collapse the second camera stream" />
+
+			<img id="second_stream_view" title="click to switch this stream with the main one" />
+		</div>
+	</div>
+
+	<div id="geo_data">
+		<p>Lat <span id="navigation_geo_lat"></span></p>
+		<p>Lon <span id="navigation_geo_long"></span></p>
+	</div>
+</div>

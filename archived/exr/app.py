@@ -18,12 +18,12 @@ import numpy as np
 from can import CanError
 from pyueye import ueye
 
-from byodr.utils import timestamp
-from byodr.utils.ipc import ReceiverThread, JSONPublisher, ImagePublisher
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ipc import ReceiverThread, JSONPublisher, ImagePublisher
 from camera import Camera, FrameThread
 
 logger = logging.getLogger(__name__)
-log_format = '%(levelname)s: %(filename)s %(funcName)s %(message)s'
+log_format = "%(levelname)s: %(filename)s %(funcName)s %(message)s"
 
 quit_event = multiprocessing.Event()
 
@@ -44,21 +44,21 @@ def _interrupt():
 
 def init_drives(bus):
     """
-        Settings from 2018 RUVU Robotics Rein Appeldoorn / Rokus Ottervanger
+    Settings from 2018 RUVU Robotics Rein Appeldoorn / Rokus Ottervanger
 
-        can0  TX - -  100   [8]  00 00 00 00 00 00 00 3F   '.......?'
-        can0  TX - -  130   [8]  00 00 00 00 06 40 00 00   '.....@..'
-        can0  TX - -  120   [8]  64 00 00 00 06 40 00 00   'd....@..'
-        can0  TX - -  101   [8]  00 00 00 00 00 00 00 3F   '.......?'
-        can0  TX - -  131   [8]  00 00 00 00 06 40 00 00   '.....@..'
-        can0  TX - -  121   [8]  64 00 00 00 06 40 00 00   'd....@..'
+    can0  TX - -  100   [8]  00 00 00 00 00 00 00 3F   '.......?'
+    can0  TX - -  130   [8]  00 00 00 00 06 40 00 00   '.....@..'
+    can0  TX - -  120   [8]  64 00 00 00 06 40 00 00   'd....@..'
+    can0  TX - -  101   [8]  00 00 00 00 00 00 00 3F   '.......?'
+    can0  TX - -  131   [8]  00 00 00 00 06 40 00 00   '.....@..'
+    can0  TX - -  121   [8]  64 00 00 00 06 40 00 00   'd....@..'
     """
     # id=0x130,0x131 Bandwidth control last 4 bytes IQ20 [0; 100]
     # Left drive.
-    bus.send(can.Message(check=True, arbitration_id=0x100, is_extended_id=False, data=([0, 0, 0, 0, 0, 0, 0, 0x3f])))
+    bus.send(can.Message(check=True, arbitration_id=0x100, is_extended_id=False, data=([0, 0, 0, 0, 0, 0, 0, 0x3F])))
     bus.send(can.Message(check=True, arbitration_id=0x130, is_extended_id=False, data=([0, 0, 0, 0, 6, 0x40, 0, 0])))
     # Right drive.
-    bus.send(can.Message(check=True, arbitration_id=0x101, is_extended_id=False, data=([0, 0, 0, 0, 0, 0, 0, 0x3f])))
+    bus.send(can.Message(check=True, arbitration_id=0x101, is_extended_id=False, data=([0, 0, 0, 0, 0, 0, 0, 0x3F])))
     bus.send(can.Message(check=True, arbitration_id=0x131, is_extended_id=False, data=([0, 0, 0, 0, 6, 0x40, 0, 0])))
 
 
@@ -74,20 +74,20 @@ def tanh(x, scale):
     return (1 - math.exp(-scale * x)) / (1 + math.exp(-scale * x))
 
 
-def drive_values(steering=0., throttle=0., scale=1., is_teleop=True):
+def drive_values(steering=0.0, throttle=0.0, scale=1.0, is_teleop=True):
     # Disable tank drive or turn on spot unless under direct control.
-    _minimum = -1. if is_teleop else 0.
-    left = max(_minimum, min(1., throttle + tanh(steering, scale=scale)))
-    right = max(_minimum, min(1., throttle - tanh(steering, scale=scale)))
+    _minimum = -1.0 if is_teleop else 0.0
+    left = max(_minimum, min(1.0, throttle + tanh(steering, scale=scale)))
+    right = max(_minimum, min(1.0, throttle - tanh(steering, scale=scale)))
     return left, right
 
 
 def drive_bytes(x):
     """
-        IQ24 use half-power = [-2; 2].
+    IQ24 use half-power = [-2; 2].
     """
     x = 2 * max(-1, min(1, x))
-    return struct.pack('>i', int(x * math.pow(2, 24)))
+    return struct.pack(">i", int(x * math.pow(2, 24)))
 
 
 def m_speed_ref(steering, throttle, scale, is_teleop):
@@ -112,10 +112,10 @@ class NoneBus(object):
 
 
 class CanBusThread(threading.Thread):
-    def __init__(self, bus, event, scale=1., frequency=CAN_BUS_HZ):
+    def __init__(self, bus, event, scale=1.0, frequency=CAN_BUS_HZ):
         super(CanBusThread, self).__init__()
         self._bus_name = bus
-        self._ms = 1. / frequency
+        self._ms = 1.0 / frequency
         self._quit_event = event
         self._scale = scale
         self._queue = collections.deque(maxlen=1)
@@ -124,12 +124,12 @@ class CanBusThread(threading.Thread):
 
     def _create_bus(self):
         name = self._bus_name
-        if name in (None, 'None', 'none'):
+        if name in (None, "None", "none"):
             self._bus = NoneBus()
-        elif name.lower() == 'pcan':
-            self._bus = can.ThreadSafeBus(bustype='pcan', bitrate=PEAK_CAN_BIT_RATE)
+        elif name.lower() == "pcan":
+            self._bus = can.ThreadSafeBus(bustype="pcan", bitrate=PEAK_CAN_BIT_RATE)
         else:
-            self._bus = can.ThreadSafeBus(bustype='socketcan', channel=name, bitrate=PEAK_CAN_BIT_RATE)
+            self._bus = can.ThreadSafeBus(bustype="socketcan", channel=name, bitrate=PEAK_CAN_BIT_RATE)
 
     def _reset_once(self):
         self._bus.shutdown()
@@ -149,7 +149,7 @@ class CanBusThread(threading.Thread):
                 tries += 1
                 time.sleep(1)
 
-    def set_command(self, steering=0., throttle=0., is_teleop=True):
+    def set_command(self, steering=0.0, throttle=0.0, is_teleop=True):
         self._queue.appendleft((steering, throttle, is_teleop))
 
     def run(self):
@@ -188,7 +188,7 @@ class IDSImagingThread(FrameThread):
 
 
 class TwistHandler(object):
-    def __init__(self, image_shape=CAMERA_SHAPE, bus_name=None, event=quit_event, steering_scale=1., fn_callback=(lambda x: x)):
+    def __init__(self, image_shape=CAMERA_SHAPE, bus_name=None, event=quit_event, steering_scale=1.0, fn_callback=(lambda x: x)):
         super(TwistHandler, self).__init__()
         self._image_shape = image_shape
         self._bus_name = bus_name
@@ -226,9 +226,9 @@ class TwistHandler(object):
 
     def _drive(self, steering, throttle, driver=None):
         try:
-            is_teleop = driver == 'driver_mode.teleop.direct'
+            is_teleop = driver == "driver_mode.teleop.direct"
             if not is_teleop and abs(throttle) < 1e-2:
-                steering, throttle = 0., 0.
+                steering, throttle = 0.0, 0.0
             self._gate.set_command(steering=steering, throttle=throttle, is_teleop=is_teleop)
         except Exception as e:
             logger.error("{}".format(e))
@@ -236,49 +236,45 @@ class TwistHandler(object):
     @staticmethod
     def state():
         x, y = 0, 0
-        return dict(x_coordinate=x,
-                    y_coordinate=y,
-                    heading=0,
-                    velocity=0,
-                    time=timestamp())
+        return dict(x_coordinate=x, y_coordinate=y, heading=0, velocity=0, time=timestamp())
 
     def noop(self):
         self._drive(steering=0, throttle=0)
 
     def drive(self, cmd):
         if cmd is not None:
-            self._drive(steering=cmd.get('steering'), throttle=cmd.get('throttle'), driver=cmd.get('driver'))
+            self._drive(steering=cmd.get("steering"), throttle=cmd.get("throttle"), driver=cmd.get("driver"))
 
 
 def main():
-    parser = argparse.ArgumentParser(description='Exr main.')
-    parser.add_argument('--config', type=str, default='/config', help='Config directory path.')
+    parser = argparse.ArgumentParser(description="Exr main.")
+    parser.add_argument("--config", type=str, default="/config", help="Config directory path.")
     args = parser.parse_args()
 
     parser = SafeConfigParser()
-    [parser.read(_f) for _f in glob.glob(os.path.join(args.config, '*.ini'))]
-    cfg = dict(parser.items('vehicle'))
-    cfg.update(dict(parser.items('platform')))
+    [parser.read(_f) for _f in glob.glob(os.path.join(args.config, "*.ini"))]
+    cfg = dict(parser.items("vehicle"))
+    cfg.update(dict(parser.items("platform")))
 
-    _process_frequency = int(cfg.get('clock.hz'))
-    _patience_micro = float(cfg.get('patience.ms', 200)) * 1000
+    _process_frequency = int(cfg.get("clock.hz"))
+    _patience_micro = float(cfg.get("patience.ms", 200)) * 1000
     logger.info("Processing at {} Hz and a patience of {} ms.".format(_process_frequency, _patience_micro / 1000))
 
-    state_publisher = JSONPublisher(url='ipc:///byodr/vehicle.sock', topic='aav/vehicle/state')
-    image_publisher = ImagePublisher(url='ipc:///byodr/camera.sock', topic='aav/camera/0')
+    state_publisher = JSONPublisher(url="ipc:///byodr/vehicle.sock", topic="aav/vehicle/state")
+    image_publisher = ImagePublisher(url="ipc:///byodr/camera.sock", topic="aav/camera/0")
 
-    _interface = cfg.get('can.interface')
-    _steering_scale = float(cfg.get('drive.motor.steering.scale'))
+    _interface = cfg.get("can.interface")
+    _steering_scale = float(cfg.get("drive.motor.steering.scale"))
     vehicle = TwistHandler(bus_name=_interface, steering_scale=_steering_scale, fn_callback=(lambda im: image_publisher.publish(im)))
     threads = []
-    pilot = ReceiverThread(url='ipc:///byodr/pilot.sock', topic=b'aav/pilot/output', event=quit_event)
+    pilot = ReceiverThread(url="ipc:///byodr/pilot.sock", topic=b"aav/pilot/output", event=quit_event)
     threads.append(pilot)
     [t.start() for t in threads]
 
-    _period = 1. / _process_frequency
+    _period = 1.0 / _process_frequency
     while not quit_event.is_set():
         command = pilot.get_latest()
-        _command_time = 0 if command is None else command.get('time')
+        _command_time = 0 if command is None else command.get("time")
         _command_age = timestamp() - _command_time
         _on_time = _command_age < _patience_micro
         if _on_time:

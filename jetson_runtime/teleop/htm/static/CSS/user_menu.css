@@ -1,0 +1,263 @@
+#application_content {
+  flex: 1;
+  width: 100%;
+  /* overflow-y: auto;  */
+  /* Allow scrolling if content exceeds available space */
+  display: flex;
+  flex-direction: column;
+}
+
+/* TODO: make same id name as in normal_UI */
+/* Apply transitions to the blur effect */
+#application_content,
+#hamburger_menu_toggle,
+#header_bar {
+  transition: filter 0.5s ease;
+}
+
+
+/* Overlay when blurred*/
+#application_content::before,
+#hamburger_menu_toggle::before,
+#header_bar::before {
+  content: '';
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2;
+  transition: display 0.5s ease;
+  /* Below the sidebar and above the content */
+}
+
+#application_content.expanded,
+#hamburger_menu_toggle.expanded,
+#header_bar.expanded {
+  filter: blur(5px);
+  /* Adjust blur intensity as desired */
+}
+
+/* Apply the blur effect to the content  */
+#application_content.expanded::before,
+#hamburger_menu_toggle.expanded::before,
+#header_bar.expanded::before {
+  display: block;
+}
+
+
+.nav_logo {
+  width: 30px;
+  /* Smaller size */
+  height: auto;
+  vertical-align: middle;
+  margin-right: 10px;
+  /* Space between icon and text */
+}
+
+#hamburger_menu_toggle {
+  position: absolute;
+  top: 11px;
+  left: 2em;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  width: 20px;
+  height: 55px;
+  transition: left 0.5s ease-in-out;
+  z-index: 5;
+}
+
+#hamburger_menu_toggle.active {
+  left: calc(20em - 50px);
+  /* Moves to the end minus the width of the toggle */
+}
+
+#hamburger_menu_toggle .bar {
+  width: 100%;
+  height: 3px;
+  background-color: var(--VOR_color);
+  border-radius: 2px;
+  transition: transform 0.5s ease-in-out, opacity 0.5s ease-in-out;
+}
+
+#hamburger_menu_toggle.active .top {
+  transform: translateY(18px) rotate(45deg);
+  background-color: white;
+}
+
+
+#hamburger_menu_toggle.active .middle {
+  opacity: 0;
+}
+
+
+#hamburger_menu_toggle.active .bottom {
+  transform: translateY(-19px) rotate(-45deg);
+  background-color: white;
+}
+
+.hamburger_menu_nav {
+  height: 100vh;
+  position: fixed;
+  width: 20em;
+  border-right: 1px solid gray;
+  left: -20em;
+  /* Start off-screen */
+  transition: left 0.5s;
+  z-index: 3;
+  padding: 2rem 0 2rem 2rem;
+  background-color: var(--VOR_color);
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  background-image: url('../assets/pictures/nav_background.png');
+  background-position: bottom right;
+  background-repeat: no-repeat;
+}
+
+
+.hamburger_menu_nav a {
+  font-size: 1rem;
+  font-weight: 100;
+  color: #ffffff;
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  margin: 1rem 0;
+  transition: font-size 0.3s ease, color 0.3s ease;
+}
+
+
+
+.hamburger_menu_nav a:hover {
+  font-size: 110%;
+}
+
+.hamburger_menu_nav .nav_icon {
+  width: 25px;
+  height: auto;
+  margin-right: 10px;
+  color: #D0D0D0;
+}
+
+
+.hamburger_menu_nav a.active {
+  color: #F7DA6F;
+  /*light_gold  */
+}
+
+/* #573266 */
+.deep_purple {
+  filter: invert(25%) sepia(50%) saturate(600%) hue-rotate(240deg) brightness(80%) contrast(90%);
+}
+
+
+.black_nav_icon {
+  filter: brightness(0) saturate(100%);
+}
+
+
+.hamburger_menu_nav.active {
+  left: 0;
+}
+
+#hamburger_menu_top_nav {
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+#hamburger_menu_bottom_nav {
+  margin-top: auto;
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+#nav_dark_mode_toggle_container {
+  margin-top: 9vh;
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+  width: 70%;
+  align-content: center;
+  flex-wrap: nowrap;
+  justify-content: space-between;
+}
+
+/* The switch - the box around the slider */
+.hamburger_menu_nav #nav_dark_mode_toggle {
+  font-size: 17px;
+  position: relative;
+  display: inline-block;
+  width: 40%;
+}
+
+/* Hide default HTML checkbox */
+.hamburger_menu_nav #nav_dark_mode_toggle input {
+  opacity: 0;
+  /* It's typically set to 0 for aesthetics */
+  width: 0;
+  height: 0;
+}
+
+/* The slider */
+.hamburger_menu_nav .slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0px;
+  background: #fff;
+  transition: .4s;
+  border-radius: 30px;
+  /* Adjusted to keep the rounded look */
+  border: 1px solid #ccc;
+}
+
+.hamburger_menu_nav .slider:before {
+  position: absolute;
+  content: "";
+  height: 1.9em;
+  width: 1.9em;
+  left: -2px;
+  /* Ensure it fits the new slider width */
+  border-radius: 16px;
+  bottom: 0;
+  background-color: #c48edd;
+  /* box-shadow: 0 2px 5px #999999; */
+  transition: .4s;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.hamburger_menu_nav input:checked+.slider {
+  background-color: #6E6671;
+  border: 1px solid transparent;
+}
+
+.hamburger_menu_nav input:checked+.slider:before {
+  transform: translate(3.5em, -50%);
+}
+
+.hamburger_menu_nav #VOR_nav {
+  width: 5rem;
+  margin-left: auto;
+  margin-right: 1rem;
+  margin-top: 2vh;
+  color: var(--background_color_light_mode);
+}
+
+#nav_dark_mode_toggle_container p {
+  text-transform: uppercase;
+}

@@ -1,0 +1,242 @@
+#mobile_controller_container {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: center;
+  align-content: space-between;
+  width: 100%;
+  height: 100%;
+}
+
+#mobile_controller_container #horizontal_bar {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  padding: 1em 2em;
+  border-bottom: 1px solid var(--VOR_color);
+}
+
+#mobile_controller_container .left_section,
+#mobile_controller_container .right_section {
+  display: flex;
+  align-items: center;
+  flex-direction: row;
+}
+
+#mobile_controller_container .middle_section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+}
+
+#mobile_controller_container .left_section {
+  justify-content: flex-start;
+}
+
+#mobile_controller_container .right_section {
+  justify-content: flex-end;
+  flex: 2;
+}
+
+#mobile_controller_container .steeringWheel {
+  display: block;
+  max-width: 100%;
+  /* Ensures the steering wheel image is responsive */
+  height: auto;
+}
+
+
+#horizontal_bar .current_mode_text {
+  display: block;
+  text-transform: uppercase;
+  text-align: center;
+  white-space: nowrap;
+}
+
+#horizontal_bar .current_mode_text:before {
+  content: "manual drive";
+}
+
+.current_mode_button {
+  outline: none;
+  box-shadow: 4px 6px 8px #d0d0d0;
+  display: none;
+  width: 8em;
+  transition: background-color 0.3s, transform 0.2s;
+  cursor: pointer;
+  border: 2px solid;
+  border-radius: 8px;
+  font-weight: bold;
+  color: #451c58;
+  text-transform: uppercase;
+}
+
+#mobile_controller_container .inf_speed_label {
+  font-size: 8px;
+}
+
+#mobile_controller_container #main_view {
+  display: flex;
+  flex-direction: column;
+  gap: 1%;
+  width: 100%;
+  height: 100%;
+}
+
+.square {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  width: 100%;
+  max-width: 1000px;
+  height: 50%;
+  border: 0.5rem solid;
+  border-color: #f6f6f6;
+  border-radius: 1rem;
+}
+
+.square .trail_canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* Removes any default inline spacing */
+
+}
+
+#forward_square .square_text {
+  bottom: 2vh;
+}
+
+#forward_square .square_text:before {
+  content: "forward";
+}
+
+#backward_square .square_text {
+  top: 2vh;
+}
+
+#backward_square .square_text:before {
+  content: "backward";
+}
+
+.square_text {
+  pointer-events: none;
+  display: block;
+  position: absolute;
+  width: 100%;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #8b7597;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.stop_text {
+  pointer-events: none;
+  display: none;
+  position: absolute;
+  top: 50% !important;
+  left: 50% !important;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  font-size: 1rem;
+  font-weight: bold;
+  color: #ff0000;
+  text-align: center;
+  text-transform: uppercase;
+}
+
+.control_symbol {
+  box-shadow: inset 1px 1px 3px #fff;
+  display: none;
+  position: relative;
+  width: 40vw;
+  height: 40vw;
+  transition: background-color 0.5s ease, border-color 0.5s ease, color 0.5s ease;
+  background: var(--secondary_background_light_mode);
+  border: 14px solid #d0d0d0;
+  border-radius: 100%;
+  vertical-align: middle;
+}
+
+.control_symbol:before,
+.control_symbol:after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+
+.control_symbol.plus:before,
+.control_symbol.plus:after {
+  background: #d0d0d0;
+}
+
+.control_symbol.plus:before {
+  height: 4vw;
+  margin: auto 7vw;
+}
+
+.control_symbol.plus:after {
+  width: 4vw;
+  margin: 7vw auto;
+}
+
+.control_symbol.minus:before {
+  box-shadow: 0px 1px 1px #ffffff9e;
+  height: 4vw;
+  margin: auto 7vw;
+  background: #d0d0d0;
+}
+
+/* Smoothly transition colors on active state */
+.control_symbol:active {
+  background-color: #555;
+  border-color: #333;
+  color: #fff;
+}
+
+#mobile_controller_container canvas {
+  width: 100%;
+  height: 100%;
+}
+
+
+
+canvas#following_imageCanvas {
+  aspect-ratio: 4 / 3;
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 90vw;
+  height: 480px;
+  border: 3px solid #7a6087;
+  border-radius: 11px;
+}
+
+canvas#following_imageCanvas.map_view {
+  display: block;
+  bottom: 0;
+  transform: translate(-50%, -0%);
+  width: 100vw;
+  height: 85%;
+}
+
+#map_frame {
+  display: none;
+  z-index: 9999;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}

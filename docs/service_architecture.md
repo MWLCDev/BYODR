@@ -70,7 +70,7 @@ The BYODR project includes docker files that can be used to build a Docker image
 
 3. #### Zerotier
 
-Zerotier is a "freemium" P2P (Peer to Peer) VPN service that allows devices with internet capabilities to securely connect to P2P virtual software-defined networks. 
+Zerotier is a "freemium" P2P (Peer to Peer) VPN service that allows devices with internet capabilities to securely connect to P2P virtual software-defined networks.
 
 The Pi has a Zerotier instance running inside it. This means that it is equipped to work with a Zerotier client that is running on our devices, so that we can add the Pi to our VPN network.
 
@@ -87,7 +87,7 @@ Similarly to Zerotier, Wireguard is also a VPN. The difference here is that Wire
 
 This section will explaining each part of the CPUs, how is it working and the service inside of it
 
-## Raspberry Pi docker services:
+## Raspberry Pi docker services
 
 ### Stream0
 
@@ -98,8 +98,6 @@ This section will explaining each part of the CPUs, how is it working and the se
 **Output**: Sends the stream via RTSP to the web server located in Teleop.
 
 **Q1**: Why does the Pi create the streams, and not just send them from the cameras directly to the nano, bypassing the Pi?
-
-
 
 ### Stream1
 
@@ -123,7 +121,7 @@ This section will explaining each part of the CPUs, how is it working and the se
 
 ### Servos
 
-**Input**: Receives commands in JSON format from Teleop, Inference, Pilot that request movement from the motors. 
+**Input**: Receives commands in JSON format from Teleop, Inference, Pilot that request movement from the motors.
 
 **Function**: Sets up a JSON server that listens on `0.0.0.0:5555` for commands from other processes. Listening to `0.0.0.0` means listening from anywhere that has network access to this device. It also sets up  a JSON Publisher so that this service can send JSON data to any services that are listening to this service. Decodes commands received from the other services are decoded and stored in a deque.
 
@@ -143,7 +141,7 @@ This service also initiates an http server listening to port `9101` (default opt
 
 **Output**: Sends data to the BMS inside the battery.
 
-## Jetson Nano docker services:
+## Jetson Nano docker services
 
 ### HTTPD
 
@@ -215,7 +213,7 @@ Note, those commands could be old, repeated or empty commands (do nothing)
 - Vehicle service via `ipc:///byodr/vehicle_c.sock`
 
 **Function**: This service includes a web server that listens for inputs from multiple sources that are later used to move the robot. The key presses from the operator are registered and reflected upon the robot using this service.
-This service includes a logger that logs information regarding the manual control of the robot. 
+This service includes a logger that logs information regarding the manual control of the robot.
 In addition, there is a function in this server that encodes the streams from the cameras to MJPEG.
 It also hosts the site design files necessary to draw the Web App.
 
@@ -253,7 +251,6 @@ It also hosts the site design files necessary to draw the Web App.
 **Q3**: What do the video streams created in the server do exactly?
 This is meant as an abstraction to run byodr on different robot 'platforms', we also had different hardware platforms in the past, such as the EXR1 tank robot, or the Mule before that
 
-
 ### ROS Node
 
 **Input 1**: Receives a JSON from the Pilot service, that includes the proper action for the segment to take, depending on various factors. Potential actions are:
@@ -278,7 +275,7 @@ This is meant as an abstraction to run byodr on different robot 'platforms', we 
 **Input 3**: Receives the current state (location, speed, timestamp and more) of the segment that is located in the Carla simulation from Vehicle's Output 1.
 **Input 4**: Receives the AI model's current state (predicted action, obstacle avoidance, penalties, and other navigation-related information) from Inference's Output 1
 **Input 5**: Receives the timestamp with a 'restart' command from Output 6 of Teleop
-**Input 6: **Receives user input (????????????)
+**Input 6:**Receives user input (????????????)
 
 **Function**: This process sets up a JSON publisher and a local IPC server to send data to other services that have JSON collectors. It also is responsible for controlling the segment’s autonomous movement by using a pre-trained AI model.
 **Output 1** : Receives a JSON from the JSON Publisher, that includes the proper action for the segment to take, depending on various factors. Potential actions are:

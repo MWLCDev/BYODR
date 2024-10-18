@@ -64,14 +64,11 @@ class MemoryInfo:
         self.img_buff = img_buff
 
         rect_aoi = ueye.IS_RECT()
-        check(ueye.is_AOI(h_cam,
-                          ueye.IS_AOI_IMAGE_GET_AOI, rect_aoi, ueye.sizeof(rect_aoi)))
+        check(ueye.is_AOI(h_cam, ueye.IS_AOI_IMAGE_GET_AOI, rect_aoi, ueye.sizeof(rect_aoi)))
         self.width = rect_aoi.s32Width.value
         self.height = rect_aoi.s32Height.value
 
-        check(ueye.is_InquireImageMem(h_cam,
-                                      self.img_buff.mem_ptr,
-                                      self.img_buff.mem_id, self.x, self.y, self.bits, self.pitch))
+        check(ueye.is_InquireImageMem(h_cam, self.img_buff.mem_ptr, self.img_buff.mem_id, self.x, self.y, self.bits, self.pitch))
 
 
 class ImageData:
@@ -81,16 +78,12 @@ class ImageData:
         self.mem_info = MemoryInfo(h_cam, img_buff)
         self.color_mode = ueye.is_SetColorMode(h_cam, ueye.IS_GET_COLOR_MODE)
         self.bits_per_pixel = get_bits_per_pixel(self.color_mode)
-        self.array = ueye.get_data(self.img_buff.mem_ptr,
-                                   self.mem_info.width,
-                                   self.mem_info.height,
-                                   self.mem_info.bits,
-                                   self.mem_info.pitch,
-                                   copy_)
+        self.array = ueye.get_data(self.img_buff.mem_ptr, self.mem_info.width, self.mem_info.height, self.mem_info.bits, self.mem_info.pitch, copy_)
 
     def as_1d_image(self):
         channels = int((7 + self.bits_per_pixel) / 8)
         import numpy
+
         if channels > 1:
             return numpy.reshape(self.array, (self.mem_info.height, self.mem_info.width, channels))
         else:
@@ -120,10 +113,7 @@ class FrameThread(Thread):
     def run(self):
         while self.running:
             img_buffer = ImageBuffer()
-            ret = ueye.is_WaitForNextImage(self.cam.handle(),
-                                           self.timeout,
-                                           img_buffer.mem_ptr,
-                                           img_buffer.mem_id)
+            ret = ueye.is_WaitForNextImage(self.cam.handle(), self.timeout, img_buffer.mem_ptr, img_buffer.mem_id)
             if ret == ueye.IS_SUCCESS:
                 image_data = ImageData(self.cam.handle(), img_buffer, copy_=self.copy)
                 self.notify(image_data)
@@ -167,9 +157,7 @@ class Camera:
 
         for i in range(buffer_count):
             buff = ImageBuffer()
-            ueye.is_AllocImageMem(self.h_cam,
-                                  rect.width, rect.height, bpp,
-                                  buff.mem_ptr, buff.mem_id)
+            ueye.is_AllocImageMem(self.h_cam, rect.width, rect.height, bpp, buff.mem_ptr, buff.mem_id)
 
             check(ueye.is_AddToSequence(self.h_cam, buff.mem_ptr, buff.mem_id))
 
@@ -200,10 +188,7 @@ class Camera:
         rect_aoi = ueye.IS_RECT()
         ueye.is_AOI(self.h_cam, ueye.IS_AOI_IMAGE_GET_AOI, rect_aoi, ueye.sizeof(rect_aoi))
 
-        return Rect(rect_aoi.s32X.value,
-                    rect_aoi.s32Y.value,
-                    rect_aoi.s32Width.value,
-                    rect_aoi.s32Height.value)
+        return Rect(rect_aoi.s32X.value, rect_aoi.s32Y.value, rect_aoi.s32Width.value, rect_aoi.s32Height.value)
 
     def set_aoi(self, x, y, width, height):
         rect_aoi = ueye.IS_RECT()
@@ -238,6 +223,5 @@ class Camera:
         format_list = ueye.IMAGE_FORMAT_LIST(ueye.IMAGE_FORMAT_INFO * count.value)
         format_list.nSizeOfListEntry = ueye.sizeof(ueye.IMAGE_FORMAT_INFO)
         format_list.nNumListElements = count.value
-        check(ueye.is_ImageFormat(self.h_cam, ueye.IMGFRMT_CMD_GET_LIST,
-                                  format_list, ueye.sizeof(format_list)))
+        check(ueye.is_ImageFormat(self.h_cam, ueye.IMGFRMT_CMD_GET_LIST, format_list, ueye.sizeof(format_list)))
         return format_list

@@ -1,0 +1,38 @@
+<div id="mobile_controller_container">
+	<div id="horizontal_bar">
+		<div class="left_section">
+			<p class="current_mode_text"></p>
+			<div class="inf_speed speed_value">
+				<p class="inf_speed_value">0</p>
+				<div class="inf_speed_label">Max Speed</div>
+			</div>
+		</div>
+		<div class="middle_section">
+			<img src="../static/assets/pictures/manual_mode.png" class="steeringWheel deep_purple" />
+		</div>
+		<div class="right_section">
+			<button class="current_mode_button"></button>
+			<!-- The text inside `current mode button` is just a place holder. It will change with each mode -->
+			<p class="current_mode_state"></p>
+		</div>
+	</div>
+
+	<div id="main_view">
+		<iframe id="map_frame"></iframe>
+
+		<div id="forward_square" class="square">
+			<canvas class="trail_canvas"></canvas>
+			<p class="square_text"></p>
+			<span class="stop_text">drag your finger to this area to force the robot to stop</span>
+			<button class="control_symbol plus"></button>
+		</div>
+
+		<div id="backward_square" class="square">
+			<canvas class="trail_canvas"></canvas>
+			<p class="square_text"></p>
+			<span class="stop_text">drag your finger to this area to force the robot to stop</span>
+			<button class="control_symbol minus"></button>
+		</div>
+		<canvas id="following_imageCanvas"></canvas>
+	</div>
+</div>
