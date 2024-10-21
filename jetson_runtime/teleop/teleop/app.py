@@ -75,7 +75,7 @@ class TeleopApplication(Application):
 
     def __check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
-
+        # print(_candidates) #FOR DEBUGGING
         for file_path in _candidates:
             # Extract the filename from the path
             file_name = os.path.basename(file_path)
@@ -85,9 +85,9 @@ class TeleopApplication(Application):
             elif file_name == "config.ini":
                 self._user_config_file = file_path
 
-        # Optional: Check if both files were found
+        # Check if both files were found
         if self._robot_config_file is None or self._user_config_file is None:
-            logger.info("Warning: Not all config files were found")
+            logger.error("Warning: Not all config files were found")
 
     def _config(self):
         parser = SafeConfigParser()
@@ -103,8 +103,7 @@ class TeleopApplication(Application):
 
     def read_user_config(self):
         """
-        Reads the configuration file, flattens the configuration sections and keys,
-        and initializes components with specific configuration values.
+        Reads the configuration file, flattens the configuration sections and keys,and initializes components with specific configuration values.
         """
         config = configparser.ConfigParser()
         config.read(self.get_user_config_file())

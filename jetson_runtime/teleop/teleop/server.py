@@ -466,6 +466,8 @@ class ConfigManager(object):
     def reload(self):
         if os.path.exists(self._fname):
             self._parser.read(self._fname)
+        else:
+            logger.error("path doesn't exist:", self._fname)
 
     def save(self):
         # The options could have been updated on disk.
