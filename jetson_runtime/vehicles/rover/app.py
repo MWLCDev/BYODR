@@ -12,6 +12,7 @@ from BYODR_utils.common.ipc import ImagePublisher, JSONPublisher, LocalIPCServer
 from BYODR_utils.common.location import GeoTracker
 from BYODR_utils.common.option import hash_dict, parse_option
 from BYODR_utils.JETSON_specific.utilities import Nano
+from BYODR_utils.common.ssh import Router
 
 from configparser import ConfigParser as SafeConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
@@ -207,6 +208,9 @@ class RoverHandler(Configurable):
 class ConfigFiles:
     def __init__(self, config_dir):
         self._config_dir = config_dir
+        self._user_config_file = None
+        self._robot_config_file = None
+        self._router = Router()
         self.__set_parsers()
 
     def __set_parsers(self):
@@ -253,9 +257,7 @@ class ConfigFiles:
             config.write(configfile)
 
     def change_segment_config(self):
-        """Change the ips in the config file the segment is using them.
-        It will count on the ip of the nano"""
-        # Get the local IP address's third octet
+        """Change the IPs in the segment config file"""
         ip_address = Nano.get_ip_address()
         third_octet_new = ip_address.split(".")[2]
 
@@ -264,6 +266,7 @@ class ConfigFiles:
         # Regular expression to match IP addresses
         ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
 
+        # TODO: it doesn't need to go through all the config files. it should do it only with the segment config file
         for file in _candidates:
             with open(file, "r") as f:
                 content = f.readlines()
@@ -293,6 +296,44 @@ class ConfigFiles:
             # Print changes made
             if changes_made_in_file:
                 logger.info("Updated {file} with new ip address")
+
+    # def populate_robot_config(self):
+    #     """Add mac address, SSID, and IP for current robot in robot_config file"""
+    #     config = configparser.ConfigParser()
+    #     config.read(self._robot_config_file)
+
+    #     # Check how many segments are present
+    #     segments = [s for s in config.sections() if s.startswith("segment_")]
+    #     if len(segments) > 1:
+    #         logger.info("Part of robot. Nothing to do.")
+    #         return
+
+    #     if len(segments) == 1:
+    #         segment = segments[0]
+
+    #         # Fetch new values
+    #         new_values = {
+    #             "mac.address": self._router.fetch_router_mac(),
+    #             "wifi.name": self._router.fetch_ssid(),
+    #             "ip.number": Nano.get_ip_address(),
+    #         }
+
+    #         updated = False
+    #         for key, new_value in new_values.items():
+    #             # Get current value
+    #             current_value = config.get(segment, key, fallback="")
+
+    #             if new_value != current_value:
+    #                 config[segment][key] = new_value
+    #                 logger.info(f"Changed value of {key} with {new_value}")
+    #                 updated = True
+
+    #         # Write the updated configuration back to the file if there were updates
+    #         if updated:
+    #             with open(self._robot_config_file, "w") as configfile:
+    #                 config.write(configfile)
+    #         else:
+    #             logger.info("No changes made to the robot configuration.")
 
 
 class RoverApplication(Application):
