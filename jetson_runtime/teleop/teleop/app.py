@@ -184,7 +184,7 @@ def main():
     endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
-
+    application.setup()  # Ensure config files are loaded
     # fake_json_data = {
     #     "segment_1": {"ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "mac.address": "11:22:33:44:55:66", "v.number": "xx1xxxxxx", "main": "True"},
     #     "segment_2": {"ip.number": "192.168.2.100", "wifi.name": "CP_Davide", "mac.address": "22:33:44:55:66:77", "v.number": "xx2xxxxxx", "main": "False"},
