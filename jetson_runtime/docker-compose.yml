@@ -146,3 +146,15 @@ services:
     volumes:
       - volume_byodr_sockets:/byodr:rw
       - volume_byodr_config:/config:rw
+  coms:
+    cpuset: '3'
+    build:
+      context: .
+      dockerfile: coms/Dockerfile
+    restart: always
+    environment:
+      LD_PRELOAD: libgomp.so.1
+    volumes:
+      - volume_byodr_sockets:/byodr:rw
+      - volume_byodr_config:/config:rw
+    network_mode: 'host'
