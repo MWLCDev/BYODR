@@ -1,11 +1,14 @@
-import zmq
-import json
-import threading, time
-import logging
 import configparser
 import datetime
+import json
+import logging
+import threading
+import time
+
+import zmq
 from pythonping import ping
 
+from BYODR_utils.common.ssh import Router
 from BYODR_utils.JETSON_specific.utilities import Nano
 
 logger = logging.getLogger(__name__)
@@ -43,7 +46,7 @@ class DataPublisher(threading.Thread):
                 timestamp = datetime.datetime.now().isoformat()
                 combined_message = f"{self.json_data}|{timestamp}"
 
-                # print(f"Sent {combined_message}")
+                # logger.info(f"Sent {combined_message}")
                 self.pub_socket.send_string(combined_message)
                 time.sleep(self.sleep_time)
         except Exception as e:
@@ -111,7 +114,7 @@ class TeleopSubscriberThread(threading.Thread):
                 socks = dict(self.poller.poll(1000))  # Check every 1000 ms
                 if self.sub_socket in socks and socks[self.sub_socket] == zmq.POLLIN:
                     message = self.sub_socket.recv_string()
-                    # print(message)
+                    # logger.info(message)
                     self.process_message(message)
 
         finally:
@@ -133,9 +136,9 @@ class TeleopSubscriberThread(threading.Thread):
             # Manual parsing of the ISO format datetime string
             sent_time = datetime.datetime.strptime(timestamp, "%Y-%m-%dT%H:%M:%S.%f")
             time_diff = received_time - sent_time
-            # print(f"Time difference: {time_diff.total_seconds()} seconds")
+            # logger.info(f"Time difference: {time_diff.total_seconds()} seconds")
         except ValueError:
-            print("Invalid message format")
+            logger.error("Invalid message format")
 
     def cleanup(self):
         self.sub_socket.close()
@@ -223,7 +226,7 @@ class RobotActions:
     # ADD FUNCTION TO CHECK FOR HOST IN ROUTER VISIBILITY
     def router_visibility(self):
         current_state = self.current_segment.get("host")
-        # print(current_state)
+        # logger.info(current_state)
         # self._router.change_wifi_visibility(current_state)
 
     def check_adjacent_segments(self):
@@ -270,7 +273,7 @@ class RobotActions:
         """Ping the adjacent segment to make sure there is both ways connection to it"""
 
         sleeping_time, connection_timeout_limit = 1, 5
-        # print(adjacent_segment.get("ip.number"))
+        # logger.info(adjacent_segment.get("ip.number"))
         adjacent_nano_ip = self._router.get_ip_from_mac(adjacent_segment.get("mac.address"))[1]
         while sleeping_time <= connection_timeout_limit:
             if self._router.check_network_connection(adjacent_nano_ip):
@@ -343,10 +346,10 @@ class RobotActions:
             if matching_index > 0:
                 previous_section = segments[matching_index - 1]
                 section_data["wifi.name"] = config.get(previous_section, "wifi.name", fallback="Not available")
-                print(f"Lead segment WiFi name: {section_data['wifi.name']}")
+                logger.info(f"Lead segment WiFi name: {section_data['wifi.name']}")
                 self.remove_segment_connection(section_data)
             if matching_index < len(segments) - 1:
                 next_section = segments[matching_index + 1]
                 section_data["wifi.name"] = config.get(next_section, "wifi.name", fallback="Not available")
-                print(f"Follow segment WiFi name: {section_data['wifi.name']}")
+                logger.info(f"Follow segment WiFi name: {section_data['wifi.name']}")
                 self.remove_segment_connection(section_data)

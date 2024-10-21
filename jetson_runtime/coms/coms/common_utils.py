@@ -3,10 +3,11 @@ import glob
 import os
 import time
 
+from coms.robot_comm import *
+
 from BYODR_utils.common import Application, hash_dict, timestamp
 from BYODR_utils.common.ipc import JSONPublisher, json_collector
-
-from coms.robot_comm import *
+from BYODR_utils.common.ssh import Router
 
 
 class RepeatedTimer(object):
@@ -66,13 +67,7 @@ class RepeatedTimer(object):
 
 class ComsApplication(Application):
     def __init__(self, event, config_dir=os.getcwd()):
-        """set up configuration directory and a configuration file path
-
-        Args:
-            event: allow for thread-safe signaling between processes or threads, indicating when to gracefully shut down or quit certain operations. The TeleopApplication would use this event to determine if it should stop or continue its operations.
-
-            config_dir: specified by the command-line argument --config in the main function. Its default value is set to os.getcwd(), meaning if it's not provided externally, it'll default to the current working directory where the script is run. This directory is where the application expects to find its .ini configuration files.
-        """
+        """set up configuration directory and a configuration file path"""
         super(ComsApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
         self._config_hash = -1
@@ -113,7 +108,7 @@ class ComsApplication(Application):
         # Check if network_prefix is not None and is a digit string
         if network_prefix and network_prefix.replace(".", "").isdigit():
             target_nano = ".".join(network_prefix.split(".")[:3]) + ".100"
-            print(target_nano)
+            # logger.info(target_nano)
         return self._user_config_file
 
     def get_robot_config_file(self):
