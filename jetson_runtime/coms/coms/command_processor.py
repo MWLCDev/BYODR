@@ -1,5 +1,5 @@
 import logging
-from BYODR_utils import timestamp
+from BYODR_utils.common import timestamp
 
 
 # Declaring the logger

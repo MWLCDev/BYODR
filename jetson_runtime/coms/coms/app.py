@@ -3,12 +3,8 @@ import logging
 import multiprocessing
 import signal
 
-from BYODR_utils.common.ssh import Router
-
-from .common_utils import *
-from .robot_comm import *
-
-router = Router()
+from coms.common_utils import *
+from coms.robot_comm import *
 
 # This flag starts as false
 quit_event = multiprocessing.Event()
@@ -42,6 +38,8 @@ def main():
     try:
         while not quit_event.is_set():
             socket_manager.get_teleop_chatter()
+    except KeyboardInterrupt:
+        quit_event.set()
     finally:
         socket_manager.join_threads()
 

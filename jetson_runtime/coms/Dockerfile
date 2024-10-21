@@ -18,9 +18,9 @@ RUN pip3 install paramiko pythonping
 COPY ./BYODR_utils/common/ /app/BYODR_utils/common/
 COPY ./BYODR_utils/JETSON_specific/ /app/BYODR_utils/JETSON_specific/
 
-COPY ./coms /app/coms
+COPY ./coms/coms /app/coms
 ENV PYTHONPATH "/app:${PYTHONPATH}"
-WORKDIR /app/coms/coms
+WORKDIR /app/coms
 
 # CMD ["ls"]
 CMD ["python3", "app.py","--name", "coms"]

@@ -6,7 +6,7 @@ import time
 from BYODR_utils.common import Application, hash_dict, timestamp
 from BYODR_utils.common.ipc import JSONPublisher, json_collector
 
-from .robot_comm import *
+from coms.robot_comm import *
 
 
 class RepeatedTimer(object):
@@ -118,7 +118,10 @@ class ComsApplication(Application):
 
     def get_robot_config_file(self):
         return self._robot_config_file
-
+    
+    def get_user_config_file(self):
+        return self._user_config_file
+    
     def setup(self):
         if self.active():
             self.__check_configuration_files()
