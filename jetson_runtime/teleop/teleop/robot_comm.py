@@ -1,3 +1,4 @@
+# This file will have the ZMQ socket and dealing with the robot configuration file
 import zmq
 import json
 import threading, time
@@ -6,12 +7,10 @@ import configparser
 import datetime
 from pythonping import ping
 
-from byodr.utils.ssh import Router, Nano
+from BYODR_utils.common.ssh import Router
+from BYODR_utils.JETSON_specific.utilities import Nano
 
 logger = logging.getLogger(__name__)
-
-
-# This file will have the ZMQ socket and dealing with the robot configuration file
 
 
 class DataPublisher(threading.Thread):
