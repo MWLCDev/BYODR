@@ -52,7 +52,6 @@ class PilotApplication(Application):
         self.ipc_chatter = None
         self.teleop = None
         self.coms = None
-        self.coms_receiver = None
         self.movement_commands = None
         self.vehicle = None
         self.inference = None
@@ -134,7 +133,7 @@ class PilotApplication(Application):
 
     def step(self):
         try:
-            coms = self.coms_receiver()
+            coms = self.coms()
             commands = (self.coms(), self.vehicle(), self.inference())
             pilot = self._processor.next_action(*commands)
             # print(f"Sending command to relay.py: {pilot}, {coms}.")
@@ -146,7 +145,7 @@ class PilotApplication(Application):
                 if chat.get("command") == "restart":
                     self.setup()
         except Exception as e:
-            logger.error("Error during step: %s", e)
+            logger.error(f"Error during step: {e}")
             self.quit()
 
 
@@ -159,8 +158,8 @@ def main():
 
     route_store = ReloadableDataSource(FileSystemRouteDataSource(directory=args.routes, load_instructions=True))
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), config_dir=args.config)
-    coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
-
+    
+    coms = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event)
     ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
@@ -168,9 +167,11 @@ def main():
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()
+    application.coms = lambda: coms.get()
+    
     application.publisher = JSONPublisher(url="ipc:///byodr/pilot.sock", topic="aav/pilot/output")
     application.ipc_server = LocalIPCServer(url="ipc:///byodr/pilot_c.sock", name="pilot", event=quit_event)
-    threads = [coms_receiver, ros, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
+    threads = [coms, vehicle, inference, ipc_chatter, application.ipc_server, threading.Thread(target=application.run)]
     if quit_event.is_set():
         return 0
 
