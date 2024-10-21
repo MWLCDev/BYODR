@@ -11,13 +11,16 @@ RUN apt-get update && apt-get install -y \
   unzip  
 
 RUN python3 -m pip install -U pip
-RUN pip3 install paramiko
-RUN pip3 install pythonping
+RUN pip3 install paramiko pythonping
 
-COPY ./common common/
-COPY ./coms app/
-WORKDIR /app
 
-ENV PYTHONPATH "${PYTHONPATH}:/common"
+# Copy application files
+COPY ./BYODR_utils/common/ /app/BYODR_utils/common/
+COPY ./BYODR_utils/JETSON_specific/ /app/BYODR_utils/JETSON_specific/
 
-CMD ["python3", "app.py"]
+COPY ./coms /app/coms
+ENV PYTHONPATH "/app:${PYTHONPATH}"
+WORKDIR /app/coms/coms
+
+# CMD ["ls"]
+CMD ["python3", "app.py","--name", "coms"]
