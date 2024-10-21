@@ -51,7 +51,7 @@ class PilotApplication(Application):
         self.ipc_server = None
         self.ipc_chatter = None
         self.teleop = None
-        self.ros = None
+        self.coms = None
         self.coms_receiver = None
         self.movement_commands = None
         self.vehicle = None
@@ -135,7 +135,7 @@ class PilotApplication(Application):
     def step(self):
         try:
             coms = self.coms_receiver()
-            commands = (coms, self.ros(), self.vehicle(), self.inference())
+            commands = (self.coms(), self.vehicle(), self.inference())
             pilot = self._processor.next_action(*commands)
             # print(f"Sending command to relay.py: {pilot}, {coms}.")
             self._monitor.step(pilot, coms)
@@ -161,12 +161,10 @@ def main():
     application = PilotApplication(quit_event, processor=CommandProcessor(route_store), config_dir=args.config)
     coms_receiver = json_collector(url='ipc:///byodr/coms_to_pilot.sock', topic=b'aav/coms/input', event=quit_event)
 
-    ros = json_collector(url="ipc:///byodr/ros.sock", topic=b"aav/ros/input", hwm=10, pop=True, event=quit_event)
     vehicle = json_collector(url="ipc:///byodr/vehicle.sock", topic=b"aav/vehicle/state", event=quit_event)
     inference = json_collector(url="ipc:///byodr/inference.sock", topic=b"aav/inference/state", event=quit_event)
     ipc_chatter = json_collector(url="ipc:///byodr/teleop_c.sock", topic=b"aav/teleop/chatter", pop=True, event=quit_event)
 
-    application.ros = lambda: ros.get()
     application.vehicle = lambda: vehicle.get()
     application.inference = lambda: inference.get()
     application.ipc_chatter = lambda: ipc_chatter.get()

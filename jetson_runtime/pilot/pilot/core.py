@@ -847,24 +847,15 @@ class CommandProcessor(Configurable):
             finally:
                 self._cache[key] = 1
 
-    def _process_ros(self, c_ros):
-        # It could be a collection of ros commands.
-        ros_messages = [] if c_ros is None else c_ros if (isinstance(c_ros, tuple) or isinstance(c_ros, list)) else [c_ros]
-        for _msg in ros_messages:
-            if "pilot.driver.set" in _msg:
-                self._cache_safe("ros switch driver", lambda: self._driver.switch_ctl(_msg.get("pilot.driver.set")))
-            if "pilot.maximum.speed" in _msg:
-                self._cache_safe("ros set cruise speed", lambda: self._driver.set_cruise_speed(_msg.get("pilot.maximum.speed")))
 
-    def _process(self, c_teleop, c_ros, c_inference):
+    def _process(self, c_teleop, c_inference):
         # r_action = None if c_external is None else c_external.get('action', None)
         # if r_action == 'resume':
         #     self._cache_safe('external api call', lambda: self._driver.switch_ctl('driver_mode.inference.dnn'))
 
         self._driver.process_navigation(c_teleop, c_inference)
 
-        # Continue with ros instructions which take precedence over a route.
-        self._process_ros(c_ros)
+
 
         # Zero out max speed on any intervention as a safety rule for ap and to detect faulty controllers.
         # With the left button this behavior can be overridden to allow for steer corrections.
@@ -894,7 +885,7 @@ class CommandProcessor(Configurable):
         elif c_teleop.get("arrow_down", 0) == 1:
             self._cache_safe("decrease cruise speed", lambda: self._driver.decrease_cruise_speed())
 
-    def _unpack_commands(self, teleop, ros, vehicle, inference):
+    def _unpack_commands(self, teleop, vehicle, inference):
         _ts = timestamp()
         # Check if the incoming data is within the patience time limit.
         # print("Received teleop data:", teleop)
@@ -903,12 +894,12 @@ class CommandProcessor(Configurable):
         vehicle = vehicle if vehicle is not None and (_ts - vehicle.get("time", 0) < self._patience_micro) else None
         inference = inference if inference is not None and (_ts - inference.get("time", 0) < self._patience_micro) else None
         # ROS commands are processed each time as specified in your existing logic.
-        return teleop, ros, vehicle, inference
+        return teleop, vehicle, inference
 
     def next_action(self, *args):
-        teleop, ros, vehicle, inference = self._unpack_commands(*args)
+        teleop, vehicle, inference = self._unpack_commands(*args)
         # Handle instructions first.
-        self._process(teleop, ros, inference)
+        self._process(teleop, inference)
         # What to do on message timeout depends on which driver is active.
         _ctl = self._driver.get_driver_ctl()
         # Switch off autopilot on internal errors.
