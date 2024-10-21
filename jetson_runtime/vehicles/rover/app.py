@@ -215,30 +215,31 @@ class ConfigFiles:
 
     def __set_parsers(self):
         self.segment_config_dir = os.path.join(self._config_dir, "config.ini")
-        self.segment_config_parser = SafeConfigParser()
+        self.robot_config_dir = os.path.join(self._config_dir, "robot_config.ini")  # New robot config path
+        self.segment_config_parser = ConfigParser()
         self.segment_config_parser.read(self.segment_config_dir)
+        self.robot_config_parser = ConfigParser()  # Parser for robot config
+        self.robot_config_parser.read(self.robot_config_dir)
 
     def check_configuration_files(self):
-        """Checks if configuration file for segment exist, if not, then create it from the template"""
+        """Checks if config files exist, if not, create from templates and verify keys."""
         # FOR DEBUGGING
         # _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
         # print(_candidates)
-        required_files = ["config.ini"]
-        template_files = {"config.ini": "config.template"}
-        # Local mode => /mnt/data/docker/volumes/1_volume_byodr_config/_data/
-        for file in required_files:
+
+        required_files = {"config.ini": "config.template", "robot_config.ini": "robot_config.template"}  # Added robot config file check
+
+        for file, template in required_files.items():
             file_path = os.path.join(self._config_dir, file)
             if not os.path.exists(file_path):
-                template_file = template_files[file]
-                shutil.copyfile(template_file, file_path)
+                shutil.copyfile(template, file_path)
                 logger.info(f"Created {file} from template.")
 
-            # Verify and add missing keys
-            self._verify_and_add_missing_keys(file_path, template_files[file])
+            self._verify_and_add_missing_keys(file_path, template)
 
     def _verify_and_add_missing_keys(self, ini_file, template_file):
-        config = SafeConfigParser()
-        template_config = SafeConfigParser()
+        config = ConfigParser()
+        template_config = ConfigParser()
 
         config.read(ini_file)
         template_config.read(template_file)
@@ -261,79 +262,76 @@ class ConfigFiles:
         ip_address = Nano.get_ip_address()
         third_octet_new = ip_address.split(".")[2]
 
-        _candidates = glob.glob(os.path.join(self._config_dir, "config.ini"))
+        file = self.segment_config_dir  # Only deal with segment config
 
         # Regular expression to match IP addresses
         ip_regex = re.compile(r"(\d+\.\d+\.)(\d+)(\.\d+)")
 
-        # TODO: it doesn't need to go through all the config files. it should do it only with the segment config file
-        for file in _candidates:
-            with open(file, "r") as f:
-                content = f.readlines()
+        with open(file, "r") as f:
+            content = f.readlines()
 
-            updated_content = []
-            changes_made = []
-            changes_made_in_file = False  # Flag to track changes in the current file
+        updated_content = []
+        changes_made = []
+        changes_made_in_file = False  # Flag to track changes in the current file
 
-            for line in content:
-                match = ip_regex.search(line)
-                if match:
-                    third_octet_old = match.group(2)
-                    if third_octet_old != third_octet_new:
-                        # Replace the third octet
-                        new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
-                        updated_content.append(new_line)
-                        changes_made.append((third_octet_old, third_octet_new))
-                        changes_made_in_file = True
+        for line in content:
+            match = ip_regex.search(line)
+            if match:
+                third_octet_old = match.group(2)
+                if third_octet_old != third_octet_new:
+                    # Replace the third octet
+                    new_line = ip_regex.sub(r"\g<1>" + third_octet_new + r"\g<3>", line)
+                    updated_content.append(new_line)
+                    changes_made.append((third_octet_old, third_octet_new))
+                    changes_made_in_file = True
+                    continue
+            updated_content.append(line)
 
-                        continue
-                updated_content.append(line)
+        # Write changes back to the file
+        with open(file, "w") as f:
+            f.writelines(updated_content)
 
-            # Write changes back to the file
-            with open(file, "w") as f:
-                f.writelines(updated_content)
+        # Print changes made
+        if changes_made_in_file:
+            logger.info(f"Updated {file} with new IP address.")
 
-            # Print changes made
-            if changes_made_in_file:
-                logger.info("Updated {file} with new ip address")
+    def populate_robot_config(self):
+        """Add mac address, SSID, and IP for current robot in robot_config file"""
+        config = ConfigParser()
+        config.read(self.robot_config_dir)
 
-    # def populate_robot_config(self):
-    #     """Add mac address, SSID, and IP for current robot in robot_config file"""
-    #     config = configparser.ConfigParser()
-    #     config.read(self._robot_config_file)
+        # Check how many segments are present
+        segments = [s for s in config.sections() if s.startswith("segment_")]
+        if len(segments) > 1:
+            logger.info("Part of robot. Nothing to do.")
+            return
 
-    #     # Check how many segments are present
-    #     segments = [s for s in config.sections() if s.startswith("segment_")]
-    #     if len(segments) > 1:
-    #         logger.info("Part of robot. Nothing to do.")
-    #         return
+        if len(segments) == 1:
+            segment = segments[0]
 
-    #     if len(segments) == 1:
-    #         segment = segments[0]
+            # Fetch new values
+            new_values = {
+                "mac.address": self._router.fetch_router_mac(),
+                "wifi.name": self._router.fetch_ssid(),
+                "ip.number": Nano.get_ip_address(),
+            }
 
-    #         # Fetch new values
-    #         new_values = {
-    #             "mac.address": self._router.fetch_router_mac(),
-    #             "wifi.name": self._router.fetch_ssid(),
-    #             "ip.number": Nano.get_ip_address(),
-    #         }
+            updated = False
+            for key, new_value in new_values.items():
+                # Get current value
+                current_value = config.get(segment, key, fallback="")
 
-    #         updated = False
-    #         for key, new_value in new_values.items():
-    #             # Get current value
-    #             current_value = config.get(segment, key, fallback="")
+                if new_value != current_value:
+                    config[segment][key] = new_value
+                    logger.info(f"Changed value of {key} with {new_value}")
+                    updated = True
 
-    #             if new_value != current_value:
-    #                 config[segment][key] = new_value
-    #                 logger.info(f"Changed value of {key} with {new_value}")
-    #                 updated = True
-
-    #         # Write the updated configuration back to the file if there were updates
-    #         if updated:
-    #             with open(self._robot_config_file, "w") as configfile:
-    #                 config.write(configfile)
-    #         else:
-    #             logger.info("No changes made to the robot configuration.")
+            # Write the updated configuration back to the file if there were updates
+            if updated:
+                with open(self.robot_config_dir, "w") as configfile:
+                    config.write(configfile)
+            else:
+                logger.info("No changes made to the robot configuration.")
 
 
 class RoverApplication(Application):
@@ -350,7 +348,7 @@ class RoverApplication(Application):
         self._config_files_class = ConfigFiles(self._config_dir)
 
     def _config(self):
-        parser = SafeConfigParser()
+        parser = ConfigParser()
         [parser.read(_f) for _f in glob.glob(os.path.join(self._config_dir, "*.ini"))]
         cfg = dict(parser.items("vehicle")) if parser.has_section("vehicle") else {}
         cfg.update(dict(parser.items("camera")) if parser.has_section("camera") else {})
@@ -367,6 +365,7 @@ class RoverApplication(Application):
                 self._config_hash = _hash
                 self._config_files_class.check_configuration_files()
                 self._config_files_class.change_segment_config()
+                self._config_files_class.populate_robot_config()
                 _restarted = self._handler.restart(**_config)
                 if _restarted:
                     self.ipc_server.register_start(self._handler.get_errors(), self._capabilities())
