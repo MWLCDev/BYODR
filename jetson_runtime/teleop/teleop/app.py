@@ -19,12 +19,13 @@ from pymongo import MongoClient
 from tornado import ioloop, web
 from tornado.httpserver import HTTPServer
 from tornado.platform.asyncio import AnyThreadEventLoopPolicy
-from BYODR_utils.ssh import Nano, Router
 
 from BYODR_utils.common import Application, ApplicationExit, hash_dict
 from BYODR_utils.common.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from BYODR_utils.common.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.ssh import Router
+from BYODR_utils.JETSON_specific.utilities import Nano
 
 from .server import *
 from .tel_utils import EndpointHandlers, FollowingUtils, ThrottleController
@@ -87,7 +88,6 @@ class TeleopApplication(Application):
         # Optional: Check if both files were found
         if self._robot_config_file is None or self._user_config_file is None:
             logger.info("Warning: Not all config files were found")
-
 
     def _config(self):
         parser = SafeConfigParser()

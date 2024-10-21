@@ -6,7 +6,7 @@ import configparser
 import datetime
 from pythonping import ping
 
-from byodr.utils.ssh import Router, Nano
+from BYODR_utils.common.ssh import Router, Nano
 
 logger = logging.getLogger(__name__)
 

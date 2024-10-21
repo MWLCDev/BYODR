@@ -2,7 +2,7 @@ import socket
 import logging
 import time
 import json
-from byodr.utils.ssh import Nano
+from BYODR_utils.JETSON_specific.utilities import Nano
 nano_ip = Nano.get_ip_address()
 
 

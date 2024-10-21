@@ -14,7 +14,7 @@ from BYODR_utils.common.option import hash_dict, parse_option
 from BYODR_utils.JETSON_specific.utilities import Nano
 from BYODR_utils.common.ssh import Router
 
-from configparser import ConfigParser as SafeConfigParser
+from configparser import ConfigParser
 from core import ConfigurableImageGstSource, GpsPollerThreadSNMP, PTZCamera
 
 logger = logging.getLogger(__name__)

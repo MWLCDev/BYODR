@@ -3,8 +3,8 @@ import glob
 import os
 import time
 
-from byodr.utils import Application, hash_dict, timestamp
-from byodr.utils.ipc import JSONPublisher, json_collector
+from BYODR_utils.common import Application, hash_dict, timestamp
+from BYODR_utils.common.ipc import JSONPublisher, json_collector
 
 from .robot_comm import *
 

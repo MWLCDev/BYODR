@@ -24,7 +24,8 @@ from tornado import web, websocket
 from tornado.gen import coroutine
 
 from BYODR_utils.common import timestamp
-from BYODR_utils.common.ssh import Nano, Router
+from BYODR_utils.common.ssh import Router
+from BYODR_utils.JETSON_specific.utilities import Nano
 
 from .tel_utils import OverviewConfidence
 

@@ -3,7 +3,7 @@ import logging
 import multiprocessing
 import signal
 
-from byodr.utils.ssh import Router
+from BYODR_utils.common.ssh import Router
 
 from .common_utils import *
 from .robot_comm import *
