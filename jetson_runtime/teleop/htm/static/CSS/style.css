@@ -53,7 +53,8 @@ body {
 
 #logbox_container,
 #controls_settings_container,
-#advanced_settings_container {
+#advanced_settings_container,
+#robot_train_settings_container {
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
@@ -65,7 +66,8 @@ body {
 
 #advanced_settings_container .title,
 #controls_settings_container .title,
-#logbox_container .title {
+#logbox_container .title,
+#robot_train_settings_container .title {
   width: 100%;
   margin-bottom: 25px;
   padding-top: 40px;

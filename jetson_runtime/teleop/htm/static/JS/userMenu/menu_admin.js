@@ -1,214 +1,198 @@
-class AdminMenu {
-  constructor() {
-    // Automatically call the method when an instance is created
-    this.fetchSegmentDataAndDisplay();
-    this.enableDragAndDrop();
-    this.getNanoIP();
-    this.setupWifiNetworksButton();
-  }
+class RobotTrainSettings {
+	constructor() {
+		// Automatically call the method when an instance is created
+		this.fetchSegmentDataAndDisplay();
+		this.enableDragAndDrop();
+		this.getNanoIP();
+		this.setupWifiNetworksButton();
+	}
 
-  setupWifiNetworksButton() {
-    const wifiButton = document.getElementById('scanWifiNetworks');
-    wifiButton.addEventListener('click', () => {
-      this.getWifiNetworks();
-    });
-  }
+	setupWifiNetworksButton() {
+		const wifiButton = document.getElementById('scanWifiNetworks');
+		wifiButton.addEventListener('click', () => {
+			this.getWifiNetworks();
+		});
+	}
 
-  async callRouterApi(action, params = {}) {
-    try {
-      const options = {
-        method: Object.keys(params).length === 0 ? 'GET' : 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      };
+	async callRouterApi(action, params = {}) {
+		try {
+			const options = {
+				method: Object.keys(params).length === 0 ? 'GET' : 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+			};
 
-      // Add body only for POST requests
-      if (options.method === 'POST') {
-        options.body = JSON.stringify(params);
-      }
+			// Add body only for POST requests
+			if (options.method === 'POST') {
+				options.body = JSON.stringify(params);
+			}
 
-      const response = await fetch(`/ssh/router?action=${action}`, options);
-      const contentType = response.headers.get("content-type");
+			const response = await fetch(`/ssh/router?action=${action}`, options);
+			const contentType = response.headers.get('content-type');
 
-      if (contentType && contentType.includes("application/json")) {
-        return await response.json(); // Handle JSON response
-      } else {
-        return await response.text(); // Handle plain text response
-      }
-    } catch (error) {
-      console.error('Error while calling router endpoint:', error);
-      return null;
-    }
-  }
+			if (contentType && contentType.includes('application/json')) {
+				return await response.json(); // Handle JSON response
+			} else {
+				return await response.text(); // Handle plain text response
+			}
+		} catch (error) {
+			console.error('Error while calling router endpoint:', error);
+			return null;
+		}
+	}
 
+	// Method to fetch data from the API and display it
+	async fetchSegmentDataAndDisplay() {
+		try {
+			const response = await fetch('/teleop/robot/options');
+			const jsonData = await response.json();
+			console.log(jsonData);
+			// Extract only the segments data
+			const segmentsData = this.extractSegmentsData(jsonData);
+			// Call a function to update the table with segment in robot data
+			this.updateSegmentsTable(segmentsData);
+		} catch (error) {
+			console.error('There has been a problem with your fetch operation:', error);
+		}
+	}
 
-  // Method to fetch data from the API and display it
-  async fetchSegmentDataAndDisplay() {
-    try {
-      const response = await fetch('/teleop/robot/options');
-      const jsonData = await response.json();
-      console.log(jsonData);
-      // Extract only the segments data
-      const segmentsData = this.extractSegmentsData(jsonData);
-      // Call a function to update the table with segment in robot data
-      this.updateSegmentsTable(segmentsData);
-    } catch (error) {
-      console.error('There has been a problem with your fetch operation:', error);
-    }
-  }
+	// Function to extract only the segments data
+	extractSegmentsData(data) {
+		let segmentsData = {};
+		for (const key in data) {
+			if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
+				segmentsData[key] = data[key];
+			}
+		}
+		return segmentsData;
+	}
 
-  // Function to extract only the segments data
-  extractSegmentsData(data) {
-    let segmentsData = {};
-    for (const key in data) {
-      if (data.hasOwnProperty(key) && key.startsWith('segment_')) {
-        segmentsData[key] = data[key];
-      }
-    }
-    return segmentsData;
-  }
+	updateSegmentsTable(data) {
+		const tbody = document.querySelector('#container_segment_table table tbody');
+		tbody.innerHTML = ''; // Clear existing rows
+		for (const segment in data) {
+			const row = data[segment];
+			const tr = document.createElement('tr');
 
-  updateSegmentsTable(data) {
-    const tbody = document.querySelector('#container_segment_table table tbody');
-    tbody.innerHTML = ''; // Clear existing rows
-    for (const segment in data) {
-      const row = data[segment];
-      const tr = document.createElement('tr');
-
-      tr.innerHTML = `
+			tr.innerHTML = `
         <td></td>
-        <td></td>
+        <td>${row['position']}</td>
         <td>${row['wifi.name']}</td>
         <td><input type="radio" name="mainSegment"></td>
         <td><button type="button">X</button></td>
       `;
-      tbody.appendChild(tr);
-    }
-  }
+			tbody.appendChild(tr);
+		}
+	}
 
-  async getNanoIP() {
-    const data = await this.callRouterApi("get_nano_ip"); // Calls fetch_ssid function in Router class
-    const showSSID = document.getElementById("dummy_text");
-    console.log(data)
-    showSSID.innerHTML = data.message
-  }
+	async getNanoIP() {
+		const data = await this.callRouterApi('get_nano_ip'); // Calls fetch_ssid function in Router class
+		const showSSID = document.getElementById('dummy_text');
+		// console.log(data);
+		showSSID.innerHTML = data.message;
+	}
 
-  async getWifiNetworks() {
-    try {
-      let data = await this.callRouterApi("get_wifi_networks");
+	async getWifiNetworks() {
+		try {
+			let data = await this.callRouterApi('get_wifi_networks');
 
-      if (typeof data === 'string') {
-        data = JSON.parse(data);
-      }
+			if (typeof data === 'string') {
+				data = JSON.parse(data);
+			}
 
-      const tbody = document.querySelector('#connectable_networks_table tbody');
-      tbody.innerHTML = '';
-      console.log(data)
-      data.forEach((network, index) => {
-        const ssid = network['ESSID'];
-        const mac = network['MAC'];
+			const tbody = document.querySelector('#connectable_networks_table tbody');
+			tbody.innerHTML = '';
+			// console.log(data);
+			data.forEach((network, index) => {
+				const ssid = network['ESSID'];
+				const mac = network['MAC'];
 
-        const tr = document.createElement('tr');
-        const button = document.createElement('button');
-        button.type = "button";
-        button.textContent = "Add";
+				const tr = document.createElement('tr');
+				const button = document.createElement('button');
+				button.type = 'button';
+				button.textContent = 'Add';
 
-        button.addEventListener('click', () => {
-          const generatedString = this.generateStringFromSSID(ssid);
-          console.log(`Generated String: ${generatedString}`);
-          this.callRouterApi("add_network", { ssid: ssid, mac: mac, password: generatedString });
-        });
+				button.addEventListener('click', () => {
 
-        tr.innerHTML = `<td>${ssid}</td><td></td>`;
-        tr.children[1].appendChild(button);
+					this.callRouterApi('add_network', { ssid: ssid, mac: mac});
+				});
 
-        // Add animation with a delay
-        tr.style.animationDelay = `${index * 0.1}s`;
-        tr.classList.add('fade-in-left');
+				tr.innerHTML = `<td>${ssid}</td><td></td>`;
+				tr.children[1].appendChild(button);
 
-        tbody.appendChild(tr);
-      });
-    } catch (error) {
-      console.error('Error fetching WiFi networks:', error);
-    }
-  }
+				// Add animation with a delay
+				tr.style.animationDelay = `${index * 0.1}s`;
+				tr.classList.add('fade-in-left');
 
+				tbody.appendChild(tr);
+			});
+		} catch (error) {
+			console.error('Error fetching WiFi networks:', error);
+		}
+	}
 
-  generateStringFromSSID(ssid) {
-    const baseString = "Orangebachcps1n";
-    const splitSSID = ssid.split('_');
+	enableDragAndDrop() {
+		const tbody = document.querySelector('table tbody'); // Select only tbody
+		let draggedElement = null;
+		tbody.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
+		tbody.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
+		tbody.addEventListener('touchend', () => handleDragEnd(), false);
 
-    if (splitSSID.length > 1) {
-      const letter = splitSSID[1].charAt(0).toUpperCase();
-      const position = letter.charCodeAt(0) - 'A'.charCodeAt(0) + 1;
-      return baseString + position;
-    }
+		tbody.addEventListener('mousedown', (e) => handleDragStart(e.target.closest('tr')), false);
+		tbody.addEventListener('mousemove', (e) => handleDragMove(e), false);
+		tbody.addEventListener('mouseup', () => handleDragEnd(), false);
 
-    return baseString;
-  }
+		function handleDragStart(row) {
+			if (row && row.parentNode === tbody) {
+				draggedElement = row;
+				// Add a class to the dragged element for the floating effect
+				draggedElement.classList.add('floating');
+			}
+		}
 
-  enableDragAndDrop() {
-    const tbody = document.querySelector('table tbody'); // Select only tbody
-    let draggedElement = null;
-    tbody.addEventListener('touchstart', (e) => handleDragStart(e.target.closest('tr')), false);
-    tbody.addEventListener('touchmove', (e) => handleDragMove(e.touches[0]), false);
-    tbody.addEventListener('touchend', () => handleDragEnd(), false);
+		function handleDragMove(event) {
+			if (!draggedElement) return;
 
-    tbody.addEventListener('mousedown', (e) => handleDragStart(e.target.closest('tr')), false);
-    tbody.addEventListener('mousemove', (e) => handleDragMove(e), false);
-    tbody.addEventListener('mouseup', () => handleDragEnd(), false);
+			const targetElement = document.elementFromPoint(event.clientX, event.clientY);
+			const targetRow = targetElement?.closest('tr');
 
-    function handleDragStart(row) {
-      if (row && row.parentNode === tbody) {
-        draggedElement = row;
-        // Add a class to the dragged element for the floating effect
-        draggedElement.classList.add('floating');
-      }
-    }
+			if (targetRow && targetRow.parentNode === tbody && targetRow !== draggedElement) {
+				swapRows(draggedElement, targetRow);
+			}
+		}
 
-    function handleDragMove(event) {
-      if (!draggedElement) return;
+		function handleDragEnd() {
+			if (draggedElement) {
+				// Trigger the reverse transition for landing
+				draggedElement.style.transition = 'transform 0.2s, box-shadow 0.2s';
+				draggedElement.classList.remove('floating');
 
-      const targetElement = document.elementFromPoint(event.clientX, event.clientY);
-      const targetRow = targetElement?.closest('tr');
+				// Delay the removal of inline styles to allow the transition to complete
+				setTimeout(() => {
+					draggedElement.style.transition = '';
+					updateRowNumbers();
+				}, 200); // Duration should match the CSS transition time
 
-      if (targetRow && targetRow.parentNode === tbody && targetRow !== draggedElement) {
-        swapRows(draggedElement, targetRow);
-      }
-    }
+				draggedElement = null;
+			}
+		}
 
-    function handleDragEnd() {
-      if (draggedElement) {
-        // Trigger the reverse transition for landing
-        draggedElement.style.transition = 'transform 0.2s, box-shadow 0.2s';
-        draggedElement.classList.remove('floating');
+		function swapRows(row1, row2) {
+			const parentNode = row1.parentNode;
+			const nextSibling = row1.nextElementSibling === row2 ? row1 : row1.nextElementSibling;
+			parentNode.insertBefore(row2, nextSibling);
+		}
 
-        // Delay the removal of inline styles to allow the transition to complete
-        setTimeout(() => {
-          draggedElement.style.transition = '';
-          updateRowNumbers();
-        }, 200); // Duration should match the CSS transition time
-
-        draggedElement = null;
-      }
-    }
-
-
-    function swapRows(row1, row2) {
-      const parentNode = row1.parentNode;
-      const nextSibling = row1.nextElementSibling === row2 ? row1 : row1.nextElementSibling;
-      parentNode.insertBefore(row2, nextSibling);
-    }
-
-    function updateRowNumbers() {
-      const rows = tbody.querySelectorAll('tr');
-      rows.forEach((row, index) => {
-        console.log("made something here")
-        // Assuming the position number is in the second cell
-        row.cells[1].textContent = index + 1;
-      });
-    }
-  }
-
+		function updateRowNumbers() {
+			const rows = tbody.querySelectorAll('tr');
+			rows.forEach((row, index) => {
+				console.log('made something here');
+				// Assuming the position number is in the second cell
+				row.cells[1].textContent = index + 1;
+			});
+		}
+	}
 }
+
+export { RobotTrainSettings };

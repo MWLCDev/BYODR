@@ -62,7 +62,8 @@ body.dark-theme #video_stream_type {
 
 body.dark-theme #advanced_settings_container .title,
 body.dark-theme #controls_settings_container .title,
-body.dark-theme #logbox_container .title {
+body.dark-theme #logbox_container .title,
+body.dark-theme #robot_train_settings_container .title {
   color: var(--text_color_dark_mode);
 }
 

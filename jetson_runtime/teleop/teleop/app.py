@@ -244,6 +244,7 @@ def main():
                 (r"/(mc)", TemplateRenderer),
                 (r"/(normal_ui)", TemplateRenderer),
                 (r"/(menu_controls)", TemplateRenderer),
+                (r"/(menu_robot_train)", TemplateRenderer),
                 (r"/(menu_logbox)", TemplateRenderer),
                 (r"/(menu_settings)", TemplateRenderer),
                 (r"/run_get_SSID", GetSegmentSSID),

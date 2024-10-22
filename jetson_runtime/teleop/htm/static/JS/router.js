@@ -9,7 +9,7 @@ import CTRL_STAT from './mobileController/mobileController_z_state.js';
 import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
-
+import { RobotTrainSettings } from './userMenu/menu_admin.js';
 export class Router {
 	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, pipThemeManager, start_all_handlers) {
 		this.helpMessageManager = helpMessageManager;
@@ -63,7 +63,7 @@ export class Router {
 			$('#header_bar .left_section').show();
 			$('#header_bar .right_section').show();
 			$('.rover_speed_label').css('font-size', '8px');
-			if (['settings_link', 'controls_link', 'events_link'].includes(selectedLinkId)) {
+			if (['settings_link', 'controls_link', 'events_link', 'robot_train_link'].includes(selectedLinkId)) {
 				$('#header_bar .left_section').hide();
 				$('#header_bar .right_section').hide();
 			}
@@ -138,6 +138,7 @@ export class Router {
 					},
 				],
 				controls_link: ['/menu_controls', () => new ControlSettings()],
+				robot_train_link: ['/menu_robot_train', () => new RobotTrainSettings()],
 				events_link: ['/menu_logbox', () => new LogBox()],
 			};
 			const [url, callback] = pageMap[selectedLinkId] || [];

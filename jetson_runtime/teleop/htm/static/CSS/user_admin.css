@@ -1,10 +1,11 @@
-
-html{
-  overflow: hidden; /* This will prevent scrollbar from appearing */
+#container_segment_table,
+#container_connectable_networks_table {
+  margin-bottom: 2em;
 }
-#container_admin_settings {
-  font-family: Helvetica, sans-serif;
-  padding-left: 1vw;
+
+
+#connectable_networks_table {
+  margin-bottom: 20px;
 }
 
 #segments_header,
@@ -28,7 +29,6 @@ html{
 #segment_table th,
 #segment_table td {
   border: 1px solid rgb(160, 160, 160);
-  /* Remove vertical lines */
   border-left: none;
   /* Remove vertical lines */
   border-right: none;
@@ -38,14 +38,6 @@ html{
 
 #segment_table th {
   border-top: none;
-  /* Remove top border from header */
-}
-
-.floating {
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
-  transform: scale(1.03);
-  z-index: 1000;
-  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 
@@ -59,6 +51,19 @@ html{
   display: inline-block;
   padding-right: 10px;
   cursor: grab;
+}
+
+#connectable_networks_table th,
+#connectable_networks_table td {
+  /* Adds spacing between columns */
+  padding: 0.2em 1em;
+}
+
+.floating {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  transform: scale(1.03);
+  z-index: 1000;
+  transition: transform 0.2s, box-shadow 0.2s;
 }
 
 .fade-in-left {

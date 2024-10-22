@@ -7,13 +7,13 @@ body {
   width: 100%;
 }
 
-table#display {
+#logbox_container table#display {
   border-collapse: collapse;
   overflow: auto;
   width: 100%;
 }
 
-table td {
+#logbox_container table td {
   margin-right: 2vh;
   margin-left: 2vh;
   padding: 10px;
@@ -22,28 +22,28 @@ table td {
   white-space: nowrap;
 }
 
-table tbody>tr:nth-child(odd) {
+#logbox_container table tbody>tr:nth-child(odd) {
   background-color: var(--secondary_background_light_mode);
 }
 
-table tbody>tr:nth-child(even) {
+#logbox_container table tbody>tr:nth-child(even) {
   background-color: var(--tertiary_background_light_mode);
 }
 
-table th {
+#logbox_container table th {
   padding: 15px;
   font-size: 21px;
   font-weight: bold;
 }
 
-table tbody {
+#logbox_container table tbody {
   border-collapse: collapse;
   border-top: 1px solid #000000;
   border-bottom: 1px solid #000000;
 }
 
 
-button {
+#logbox_container button {
   min-width: 45px;
   min-height: 45px;
   margin: 2px;
@@ -52,38 +52,38 @@ button {
   font-weight: bold;
 }
 
-button.currentBtn {
+#logbox_container button.currentBtn {
   margin: 0px;
   cursor: default;
 }
 
-button#prevBtn,
-button#nextBtn {
+#logbox_container button#prevBtn,
+#logbox_container button#nextBtn {
   font-size: 1rem;
   font-weight: 400;
 }
 
-button#prevBtn.limit,
-button#nextBtn.limit {
+#logbox_container button#prevBtn.limit,
+#logbox_container button#nextBtn.limit {
   cursor: default;
 }
 
-#under_table {
+#logbox_container #under_table {
   display: flex;
   flex-direction: row;
   justify-content: space-between;
   width: 100%;
 }
 
-#total_rows_number p {
+#logbox_container #total_rows_number p {
   white-space: nowrap;
 }
 
-#pagination {
+#logbox_container #pagination {
   white-space: nowrap;
 }
 
-#mySelect {
+#logbox_container #mySelect {
   -moz-appearance: none;
   -webkit-appearance: none;
   appearance: none;
@@ -103,7 +103,7 @@ button#nextBtn.limit {
 }
 
 @media (max-width: 768px) {
-  #under_table {
+  #logbox_container #under_table {
     flex-direction: column;
     align-items: center;
     align-content: center;
