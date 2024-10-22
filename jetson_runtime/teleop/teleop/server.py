@@ -65,8 +65,19 @@ class RouterSSHHandler(tornado.web.RequestHandler):
             if action == "new_robot_config":
                 # self._robot_actions.driver(json_data)
                 self.write({"message": "Driver executed successfully"})
+
+            elif action == "add_network":
+                ssid = json_data.get("ssid")
+                mac = json_data.get("mac")
+
+                # Assuming there's a function to add network
+                print(f"passed parameters", ssid, mac)
+                self.router.connect_to_network(ssid, mac)
+
+                self.write({"Add network successfully"})
             else:
                 self.write({"error": "Invalid function parameter."})
+            action = self.get_argument("action", None)
 
         except Exception as e:
             # Handle any exception that occurs in the post method
@@ -598,6 +609,7 @@ class TemplateRenderer(tornado.web.RequestHandler):
     _TEMPLATES = {
         "nc": "index.html",
         "menu_controls": "userMenu/menu_controls.html",
+        "menu_robot_train": "userMenu/menu_robot_train.html",
         "menu_logbox": "userMenu/menu_logbox.html",
         "menu_settings": "userMenu/menu_settings.html",
         "mc": "mobile_controller_ui.html",
