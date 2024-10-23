@@ -34,9 +34,22 @@
 		</table>
 		<button id="scanWifiNetworks">search for other robots</button>
 	</div>
-	<!-- VIN add to the tr -->
-	<!-- TODO: add option for advanced view in this screen -->
-	<p id="dummy_text" style="display: none"></p>
+
+	<p id="dummy_text" style="display: block"></p>
 
 	<button type="submit" id="test_config">Test</button>
+
+	<!-- Ensure Modal is here in the DOM -->
+	<div id="passwordModal" class="modal">
+		<div class="modal-content">
+			<span id="password-modal-close">&times;</span>
+			<h2>Confirm Network Password</h2>
+			<p>Please confirm the password for <span id="network-name"></span>:</p>
+			<input type="text" id="password-input" placeholder="Password" />
+			<div class="button-group">
+				<button id="confirm-password-button">Continue</button>
+				<button id="cancel-button" class="cancel">Cancel</button>
+			</div>
+		</div>
+	</div>
 </div>

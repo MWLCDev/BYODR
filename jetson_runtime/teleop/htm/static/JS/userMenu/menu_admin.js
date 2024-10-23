@@ -1,3 +1,5 @@
+// This file isn't used anymore
+
 class RobotTrainSettings {
 	constructor() {
 		// Automatically call the method when an instance is created
@@ -114,8 +116,7 @@ class RobotTrainSettings {
 				button.textContent = 'Add';
 
 				button.addEventListener('click', () => {
-
-					this.callRouterApi('add_network', { ssid: ssid, mac: mac});
+					this.callRouterApi('add_network', { ssid: ssid, mac: mac });
 				});
 
 				tr.innerHTML = `<td>${ssid}</td><td></td>`;
@@ -194,5 +195,3 @@ class RobotTrainSettings {
 		}
 	}
 }
-
-export { RobotTrainSettings };

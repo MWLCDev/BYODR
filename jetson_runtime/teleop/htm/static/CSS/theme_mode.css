@@ -85,6 +85,12 @@ body.dark-theme table tbody>tr:nth-child(even) {
   background-color: var(--tertiary_background_dark_mode);
 }
 
+body.dark-theme #robot_train_settings_container .modal-content {
+  background-color: var(--secondary_background_dark_mode);
+  box-shadow: 0px 4px 15px rgba(var(--background_color_light_mode), 0.2);
+
+}
+
 /* #endregion */
 
 /* #region AI training feature */

@@ -9,7 +9,7 @@ import CTRL_STAT from './mobileController/mobileController_z_state.js';
 import { ControlSettings } from './userMenu/menu_controls.js';
 import { LogBox } from './userMenu/menu_logbox.js';
 import { UserSettingsManager } from './userMenu/menu_settings.js';
-import { RobotTrainSettings } from './userMenu/menu_admin.js';
+import { RobotTrainSettings } from './userMenu/robotConfiguration/robotConfiguration_a_app.js';
 export class Router {
 	constructor(helpMessageManager, messageContainerManager, advancedThemeManager, pipThemeManager, start_all_handlers) {
 		this.helpMessageManager = helpMessageManager;
