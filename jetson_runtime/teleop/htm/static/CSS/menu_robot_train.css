@@ -1,0 +1,164 @@
+#container_segment_table,
+#container_connectable_networks_table {
+  margin-bottom: 2em;
+}
+
+
+#connectable_networks_table {
+  margin-bottom: 20px;
+}
+
+#segments_header,
+#header_found_segments {
+  font-size: xx-large;
+}
+
+#segment_table {
+  border-collapse: collapse;
+  border-spacing: 0;
+  -webkit-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+#segment_table th,
+#segment_table td {
+  padding: 1em 0.5em;
+  border: 1px solid rgb(160, 160, 160);
+  border-right: none;
+  border-left: none;
+}
+
+#segment_table th {
+  border-top: none;
+}
+
+/* The Modal (background) */
+.modal {
+  display: none;
+  position: fixed;
+  z-index: 1000;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: 100%;
+  backdrop-filter: blur(5px);
+  transition: opacity 0.3s ease, visibility 0.3s ease; /* Smooth transition */
+  opacity: 0;
+  visibility: hidden; 
+}
+
+.modal.show {
+  opacity: 1;
+  visibility: visible; 
+}
+.modal-content {
+  position: relative;
+  margin: auto;
+  padding: 20px;
+  border-radius: 10px;
+  width: 30%;
+  background-color: var(--secondary_background_light_mode);
+  box-shadow: 0px 4px 15px rgba(var(--background_color_dark_mode), 0.2);
+  animation: fadeIn 0.3s ease;
+  top: 50%;
+  transform: translateY(-50%);
+  transition: transform 0.3s ease;
+}
+
+/* Close Button (X mark) */
+.close {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  font-size: 24px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.close:hover,
+.close:focus {
+  color: #000;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Button Group at the bottom */
+.modal-content .button-group {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Individual Buttons */
+.modal-content button {
+  margin-left: 10px;
+  padding: 10px 20px;
+  background-color: #4CAF50; /* Green background */
+  color: white;
+  border: none;
+  border-radius: 5px;
+  cursor: pointer;
+}
+
+.modal-content button.cancel {
+  background-color: #f44336; /* Red background for Cancel */
+}
+
+.modal-content button:hover {
+  opacity: 0.9; /* Slight hover effect */
+}
+
+/* Input field */
+.modal-content input {
+  padding: 8px;
+  margin: 15px 0;
+  width: 100%;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}
+
+/* Animation for fade-in effect */
+@keyframes fadeIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+/* #segment_table td:first-child {
+  cursor: grab;
+}
+
+#segment_table td:first-child::before {
+  content: '☰';
+  display: inline-block;
+  padding-right: 10px;
+  cursor: grab;
+} */
+
+#connectable_networks_table th,
+#connectable_networks_table td {
+  padding: 0.2em 1em;
+}
+
+.floating {
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  z-index: 1000;
+  transform: scale(1.03);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.fade-in-left {
+  animation: fadeInLeft 0.5s ease-out;
+}
+
+@keyframes fadeInLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}

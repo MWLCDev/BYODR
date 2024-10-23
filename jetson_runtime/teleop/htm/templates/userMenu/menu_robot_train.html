@@ -1,0 +1,55 @@
+<div id="robot_train_settings_container">
+	<h1 class="title">Robot Train</h1>
+
+	<div id="container_segment_table">
+		<h2 id="segments_header">Segments order</h2>
+		<table id="segment_table">
+			<thead>
+				<tr>
+					<th></th>
+					<th>Position</th>
+					<th>WiFi network name</th>
+					<th>Main segment</th>
+					<th>Remove</th>
+				</tr>
+			</thead>
+			<tbody></tbody>
+		</table>
+	</div>
+
+	<div id="container_connectable_networks_table">
+		<h2 id="header_found_segments">Found segments</h2>
+		<table id="connectable_networks_table">
+			<thead>
+				<tr>
+					<th>Segment name</th>
+					<th></th>
+				</tr>
+			</thead>
+			<tbody>
+				<tr>
+					<td>Loading data ..</td>
+				</tr>
+			</tbody>
+		</table>
+		<button id="scanWifiNetworks">search for other robots</button>
+	</div>
+
+	<p id="dummy_text" style="display: block"></p>
+
+	<button type="submit" id="test_config">Test</button>
+
+	<!-- Ensure Modal is here in the DOM -->
+	<div id="passwordModal" class="modal">
+		<div class="modal-content">
+			<span id="password-modal-close">&times;</span>
+			<h2>Confirm Network Password</h2>
+			<p>Please confirm the password for <span id="network-name"></span>:</p>
+			<input type="text" id="password-input" placeholder="Password" />
+			<div class="button-group">
+				<button id="confirm-password-button">Continue</button>
+				<button id="cancel-button" class="cancel">Cancel</button>
+			</div>
+		</div>
+	</div>
+</div>

@@ -17,20 +17,94 @@ import numpy as np
 import tornado
 import tornado.ioloop
 import tornado.web
-from BYODR_utils.common import timestamp
-from BYODR_utils.common.ssh import Router
+import tornado.websocket
 from six.moves import range
 from six.moves.configparser import SafeConfigParser
 from tornado import web, websocket
+from tornado.gen import coroutine
+
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.ssh import Router
+from BYODR_utils.JETSON_specific.utilities import Nano
 
 from .tel_utils import OverviewConfidence
 
 logger = logging.getLogger(__name__)
 
 
-import tornado.websocket
-
 latest_message = {}
+
+
+class SendConfigHandler(tornado.web.RequestHandler):
+    def initialize(self, **kwargs):
+        self.tel_socket = kwargs.get("tel_socket")
+
+    def post(self):
+        try:
+            original_data = json.loads(self.request.body)
+            data_to_send = {"robot_config": original_data}
+            self.tel_socket(data_to_send)
+            self.write({"status": "success"})
+        except json.JSONDecodeError as json_err:
+            self.write({"status": "error", "message": f"JSON decoding error: {str(json_err)}"})
+        except Exception as e:
+            self.write({"status": "error", "message": f"General error: {str(e)}"})
+
+
+class RouterSSHHandler(tornado.web.RequestHandler):
+    def initialize(self, **kwargs):
+        self.router = Router()
+        self.robot_config_dir = kwargs.get("robot_config_dir", None)
+        # self._robot_actions = RobotActions(self.robot_config_dir)
+
+    def post(self):
+        try:
+            json_data = tornado.escape.json_decode(self.request.body)
+            action = self.get_argument("action", None)
+
+            if action == "new_robot_config":
+                # self._robot_actions.driver(json_data)
+                self.write({"message": "Driver executed successfully"})
+
+            elif action == "add_network":
+                ssid = json_data.get("ssid")
+                mac = json_data.get("mac")
+
+                # Assuming there's a function to add network
+                print(f"passed parameters", ssid, mac)
+                self.router.connect_to_network(ssid, mac)
+
+                self.write({"Add network successfully"})
+            else:
+                self.write({"error": "Invalid function parameter."})
+            action = self.get_argument("action", None)
+
+        except Exception as e:
+            # Handle any exception that occurs in the post method
+            print(f"Error in POST method: {e}")
+            self.write({"error": str(e)})
+
+    def get(self):
+        action = self.get_argument("action", None)
+        if action == "fetch_ssid":
+            data = self.router.fetch_ssid()
+        elif action == "fetch_segment_ip":
+            data = self.router.fetch_ip_and_mac()
+        elif action == "get_nano_ip":
+            data = Nano.get_ip_address()
+        elif action == "get_wifi_networks":
+            data = self.router.get_wifi_networks()
+            # Convert the list to JSON string before sending
+            self.write(json.dumps(data))
+            return
+        else:
+            self.write("Invalid function parameter.")
+            return
+
+        if isinstance(data, dict):
+            self.write(data)
+        else:
+            self.write({"message": data})
 
 
 class LatestImageHandler(tornado.web.RequestHandler):
@@ -363,7 +437,26 @@ class NavImageHandler(web.RequestHandler):
         self.write(chunk.tobytes())
 
 
-class UserOptions(object):
+class ConfigManager(object):
+    """
+    Read from and write to a configuration file, manage sections and options within the file, and handle the reloading and saving of changes.
+
+    Attributes:
+        _fname (str): File name/path of the configuration file.
+        _parser (SafeConfigParser): Parser object to read and write configuration data.
+
+    Methods:
+        list_sections(): Lists all sections in the configuration file except 'inference'.
+        get_options(section): Retrieves all options (as a dictionary) for a given section.
+        get_option(section, name): Retrieves the value of a specific option in a given section.
+        set_option(section, name, value): Sets the value of a specific option in a given section.
+        reload(): Reloads the configuration data from the file.
+        save(): Saves the current configuration back to the file.
+
+    Args:
+        fname (str): File name/path of the configuration file to be managed.
+    """
+
     def __init__(self, fname):
         self._fname = fname
         self._parser = SafeConfigParser()
@@ -384,6 +477,8 @@ class UserOptions(object):
     def reload(self):
         if os.path.exists(self._fname):
             self._parser.read(self._fname)
+        else:
+            logger.error("path doesn't exist:", self._fname)
 
     def save(self):
         # The options could have been updated on disk.
@@ -514,6 +609,7 @@ class TemplateRenderer(tornado.web.RequestHandler):
     _TEMPLATES = {
         "nc": "index.html",
         "menu_controls": "userMenu/menu_controls.html",
+        "menu_robot_train": "userMenu/menu_robot_train.html",
         "menu_logbox": "userMenu/menu_logbox.html",
         "menu_settings": "userMenu/menu_settings.html",
         "mc": "mobile_controller_ui.html",

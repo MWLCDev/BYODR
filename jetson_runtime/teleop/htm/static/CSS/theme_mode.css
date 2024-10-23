@@ -62,7 +62,8 @@ body.dark-theme #video_stream_type {
 
 body.dark-theme #advanced_settings_container .title,
 body.dark-theme #controls_settings_container .title,
-body.dark-theme #logbox_container .title {
+body.dark-theme #logbox_container .title,
+body.dark-theme #robot_train_settings_container .title {
   color: var(--text_color_dark_mode);
 }
 
@@ -82,6 +83,12 @@ body.dark-theme table tbody>tr:nth-child(odd) {
 
 body.dark-theme table tbody>tr:nth-child(even) {
   background-color: var(--tertiary_background_dark_mode);
+}
+
+body.dark-theme #robot_train_settings_container .modal-content {
+  background-color: var(--secondary_background_dark_mode);
+  box-shadow: 0px 4px 15px rgba(var(--background_color_light_mode), 0.2);
+
 }
 
 /* #endregion */

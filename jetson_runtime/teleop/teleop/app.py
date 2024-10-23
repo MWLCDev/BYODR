@@ -24,6 +24,8 @@ from BYODR_utils.common import Application, ApplicationExit, hash_dict
 from BYODR_utils.common.ipc import CameraThread, JSONPublisher, JSONZmqClient, json_collector
 from BYODR_utils.common.navigate import FileSystemRouteDataSource, ReloadableDataSource
 from BYODR_utils.common.option import parse_option
+from BYODR_utils.common.ssh import Router
+from BYODR_utils.JETSON_specific.utilities import Nano
 
 from .server import *
 from .tel_utils import EndpointHandlers, FollowingUtils, ThrottleController
@@ -63,18 +65,29 @@ class TeleopApplication(Application):
         super(TeleopApplication, self).__init__(quit_event=event)
         self._config_dir = config_dir
         self._config_hash = -1
+        self._robot_config_file = None
         self._user_config_file = None
+        self._router = Router()
+        self._nano = Nano()
 
         self.rut_ip = None
         self.following_utils = FollowingUtils(tel_chatter, throttle_controller, fol_comm_socket)
 
-    def _check_user_config(self):
+    def __check_configuration_files(self):
         _candidates = glob.glob(os.path.join(self._config_dir, "*.ini"))
+        # print(_candidates) #FOR DEBUGGING
         for file_path in _candidates:
             # Extract the filename from the path
             file_name = os.path.basename(file_path)
-            if file_name == "config.ini":
+
+            if file_name == "robot_config.ini":
+                self._robot_config_file = file_path
+            elif file_name == "config.ini":
                 self._user_config_file = file_path
+
+        # Check if both files were found
+        if self._robot_config_file is None or self._user_config_file is None:
+            logger.error("Warning: Not all config files were found")
 
     def _config(self):
         parser = SafeConfigParser()
@@ -85,10 +98,12 @@ class TeleopApplication(Application):
     def get_user_config_file(self):
         return self._user_config_file
 
+    def get_robot_config_file(self):
+        return self._robot_config_file
+
     def read_user_config(self):
         """
-        Reads the configuration file, flattens the configuration sections and keys,
-        and initializes components with specific configuration values.
+        Reads the configuration file, flattens the configuration sections and keys,and initializes components with specific configuration values.
         """
         config = configparser.ConfigParser()
         config.read(self.get_user_config_file())
@@ -107,7 +122,7 @@ class TeleopApplication(Application):
 
     def setup(self):
         if self.active():
-            self._check_user_config()
+            self.__check_configuration_files()
             self.read_user_config()
             _config = self._config()
             self.following_utils.configs(self._user_config_file)
@@ -157,6 +172,7 @@ def main():
     teleop_publisher = JSONPublisher(url="ipc:///byodr/teleop.sock", topic="aav/teleop/input")
     chatter = JSONPublisher(url="ipc:///byodr/teleop_c.sock", topic="aav/teleop/chatter")
     zm_client = JSONZmqClient(urls=["ipc:///byodr/pilot_c.sock", "ipc:///byodr/inference_c.sock", "ipc:///byodr/vehicle_c.sock", "ipc:///byodr/relay_c.sock", "ipc:///byodr/camera_c.sock"])
+    coms_chatter = json_collector(url="ipc:///byodr/coms_c.sock", topic=b"aav/coms/chatter", pop=True, event=quit_event)
 
     logbox_user = SharedUser()
     logbox_state = SharedState(channels=(camera_front, (lambda: pilot.get()), (lambda: vehicle.get()), (lambda: inference.get())), hz=16)
@@ -167,11 +183,43 @@ def main():
     endpoint_handlers = EndpointHandlers(application, chatter, zm_client, route_store)
     logbox_thread = threading.Thread(target=log_application.run)
     package_thread = threading.Thread(target=package_application.run)
+    application.setup()  # Ensure config files are loaded
+    # fake_json_data = {
+    #     "segment_1": {"ip.number": "192.168.1.100", "wifi.name": "CP_Earl", "mac.address": "11:22:33:44:55:66", "v.number": "xx1xxxxxx", "main": "True"},
+    #     "segment_2": {"ip.number": "192.168.2.100", "wifi.name": "CP_Davide", "mac.address": "22:33:44:55:66:77", "v.number": "xx2xxxxxx", "main": "False"},
+    # }
+    # # "segment_3": {"ip.number": "192.168.3.100","v.number" : "xx3xxxxxx", "wifi.name": "CP_03_Carl", "main": "false"},
+    # # "segment_4": {"ip.number": "192.168.4.100", "wifi.name": "CP_Frank", "main": "false"},
+    # outer_teleop_publisher = DataPublisher(data=fake_json_data, robot_config_dir=application.get_robot_config_file(), event=quit_event, message="Remove")
 
-    threads = [camera_front, camera_rear, pilot, following_comm_socket, vehicle, inference, logbox_thread, package_thread, threading.Thread(target=application.run)]
-    application.setup()
-    if quit_event.is_set():
-        return 0
+    threads = [camera_front, camera_rear, pilot, following_comm_socket, vehicle, inference, coms_chatter, logbox_thread, package_thread, threading.Thread(target=application.run)]
+    teleop_to_coms_publisher = JSONPublisher(url="ipc:///byodr/teleop_to_coms.sock", topic="aav/teleop/input")
+
+    # def teleop_publish(cmd):
+    #     if coms_chatter.get():
+    #         logger.info(coms_chatter.get())
+    #     # We are the authority on route state.
+    #     cmd["navigator"] = dict(route=route_store.get_selected_route())
+
+    #     teleop_to_coms_publisher.publish(cmd)
+
+    # def teleop_publish_robot_config(cmd):
+    #     print(cmd)
+    #     chatter.publish(dict(time=timestamp(), command=cmd))
+
+    # def check_coms_chatter():
+    #     # Check if the application is signaled to shut down
+    #     if quit_event.is_set():
+    #         return
+
+    #     message = coms_chatter.get()
+    #     if message:
+    #         # Process the message
+    #         logger.info("Received message: {}".format(message))
+
+    # application.setup()
+    # if quit_event.is_set():
+    #     return 0
 
     [t.start() for t in threads]
     asyncio.set_event_loop_policy(AnyThreadEventLoopPolicy())
@@ -196,6 +244,7 @@ def main():
                 (r"/(mc)", TemplateRenderer),
                 (r"/(normal_ui)", TemplateRenderer),
                 (r"/(menu_controls)", TemplateRenderer),
+                (r"/(menu_robot_train)", TemplateRenderer),
                 (r"/(menu_logbox)", TemplateRenderer),
                 (r"/(menu_settings)", TemplateRenderer),
                 (r"/run_get_SSID", GetSegmentSSID),
@@ -211,7 +260,11 @@ def main():
                 (r"/ws/cam/rear", CameraMJPegSocket, dict(image_capture=(lambda: camera_rear.capture()))),
                 (r"/ws/nav", NavImageHandler, dict(fn_get_image=(lambda image_id: endpoint_handlers.get_navigation_image(image_id)))),
                 # Get or save the options for the user
-                (r"/teleop/user/options", ApiUserOptionsHandler, dict(user_options=(UserOptions(application.get_user_config_file())), fn_on_save=endpoint_handlers.on_options_save)),
+                (r"/teleop/user/options", ApiUserOptionsHandler, dict(user_options=(ConfigManager(application.get_user_config_file())), fn_on_save=endpoint_handlers.on_options_save)),
+                # Get or save the options for the robot
+                (r"/teleop/robot/options", ApiUserOptionsHandler, dict(user_options=(ConfigManager(application.get_robot_config_file())), fn_on_save=endpoint_handlers.on_options_save)),
+                # (r"/teleop/send_config", SendConfigHandler, dict(tel_socket=teleop_publish_robot_config)),
+                (r"/ssh/router", RouterSSHHandler, dict(robot_config_dir=application.get_robot_config_file())),
                 (r"/teleop/system/state", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_process_start_messages)),
                 (r"/teleop/system/capabilities", JSONMethodDumpRequestHandler, dict(fn_method=endpoint_handlers.list_service_capabilities)),
                 (r"/teleop/navigation/routes", JSONNavigationHandler, dict(route_store=route_store)),

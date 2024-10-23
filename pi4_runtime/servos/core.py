@@ -1,15 +1,77 @@
 import logging
 import math
+import os
+import shutil
+import subprocess
 import threading
+from configparser import ConfigParser
 
 import pyvesc
 import serial
-from BYODR_utils.common import timestamp
-from BYODR_utils.common.option import parse_option
 from gpiozero import DigitalInputDevice
 from pyvesc.VESC.messages import GetValues, SetDutyCycle, SetRPM
 
+from BYODR_utils.common import timestamp
+from BYODR_utils.common.option import parse_option
+
 logger = logging.getLogger(__name__)
+
+
+class DummyRelay:
+    def open(self):
+        pass
+
+    def close(self):
+        pass
+
+
+
+class ConfigFile:
+    def __init__(self, config_dir):
+        self._config_dir = config_dir
+        self.driver_config_dir = os.path.join(self._config_dir, "driver.ini")
+        self.driver_config_parser = ConfigParser()
+        self.check_configuration_files()
+
+    def check_configuration_files(self):
+        """Checks if the configuration file exists, if not, creates it from the template."""
+        config_file = "driver.ini"
+        template_file_path = "driver.template"
+
+        if not os.path.exists(self.driver_config_dir):
+            shutil.copyfile(template_file_path, self.driver_config_dir)
+            logger.info("Created {} from template at {}".format(config_file, self.driver_config_dir))
+
+        self._verify_and_add_missing_keys(self.driver_config_dir, template_file_path)
+
+    def _verify_and_add_missing_keys(self, ini_file, template_file):
+        config = ConfigParser()
+        template_config = ConfigParser()
+
+        config.read(ini_file)
+        template_config.read(template_file)
+
+        # Loop through each section and key in the template
+        for section in template_config.sections():
+            if not config.has_section(section):
+                config.add_section(section)
+            for key, value in template_config.items(section):
+                if not config.has_option(section, key):
+                    config.set(section, key, value)
+                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
+
+        # Save changes to the ini file if any modifications have been made
+        with open(ini_file, "w") as config_file:
+            config.write(config_file)
+
+    def read_configuration(self):
+        self.driver_config_parser.read(self.driver_config_dir)
+        servos_file_arguments = {}
+        if self.driver_config_parser.has_section("driver"):
+            servos_file_arguments.update(dict(self.driver_config_parser.items("driver")))
+        if self.driver_config_parser.has_section("odometer"):
+            servos_file_arguments.update(dict(self.driver_config_parser.items("odometer")))
+        return servos_file_arguments
 
 
 class CommandHistory(object):

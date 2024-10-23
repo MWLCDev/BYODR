@@ -4,15 +4,12 @@ import argparse
 import collections
 import logging
 import multiprocessing
-import os
-import shutil
 import signal
-import subprocess
 import time
 from abc import ABC, abstractmethod
-from configparser import ConfigParser
 
 import numpy as np
+from servos.core import CommandHistory, ConfigFile, DummyRelay, HallOdometer, VESCDrive
 from BYODR_utils.common import Application, timestamp
 from BYODR_utils.common.ipc import JSONPublisher, JSONServerThread
 from BYODR_utils.common.option import parse_option
@@ -20,7 +17,6 @@ from BYODR_utils.common.protocol import MessageStreamProtocol
 from BYODR_utils.common.usbrelay import SearchUsbRelayFactory
 from BYODR_utils.PI_specific.gpio_relay import ThreadSafePi4GpioRelay
 from BYODR_utils.PI_specific.utilities import RaspberryPi
-from servos.core import CommandHistory, HallOdometer, VESCDrive
 
 logger = logging.getLogger(__name__)
 log_format = "%(levelname)s: %(asctime)s %(filename)s:%(lineno)d %(funcName)s %(threadName)s %(message)s"
@@ -34,14 +30,6 @@ quit_event = multiprocessing.Event()
 def _interrupt():
     logger.info("Received interrupt, quitting.")
     quit_event.set()
-
-
-class DummyRelay:
-    def open(self):
-        pass
-
-    def close(self):
-        pass
 
 
 class AbstractDriver(ABC):
@@ -86,54 +74,6 @@ class AbstractDriver(ABC):
     @abstractmethod
     def quit(self):
         raise NotImplementedError()
-
-
-class ConfigFile:
-    def __init__(self, config_dir):
-        self._config_dir = config_dir
-        self.driver_config_dir = os.path.join(self._config_dir, "driver.ini")
-        self.driver_config_parser = ConfigParser()
-        self.check_configuration_files()
-
-    def check_configuration_files(self):
-        """Checks if the configuration file exists, if not, creates it from the template."""
-        config_file = "driver.ini"
-        template_file_path = "ras/driver.template"
-
-        if not os.path.exists(self.driver_config_dir):
-            shutil.copyfile(template_file_path, self.driver_config_dir)
-            logger.info("Created {} from template at {}".format(config_file, self.driver_config_dir))
-
-        self._verify_and_add_missing_keys(self.driver_config_dir, template_file_path)
-
-    def _verify_and_add_missing_keys(self, ini_file, template_file):
-        config = ConfigParser()
-        template_config = ConfigParser()
-
-        config.read(ini_file)
-        template_config.read(template_file)
-
-        # Loop through each section and key in the template
-        for section in template_config.sections():
-            if not config.has_section(section):
-                config.add_section(section)
-            for key, value in template_config.items(section):
-                if not config.has_option(section, key):
-                    config.set(section, key, value)
-                    logger.info("Added missing key '{}' in section '[{}]' to {}".format(key, section, ini_file))
-
-        # Save changes to the ini file if any modifications have been made
-        with open(ini_file, "w") as config_file:
-            config.write(config_file)
-
-    def read_configuration(self):
-        self.driver_config_parser.read(self.driver_config_dir)
-        servos_file_arguments = {}
-        if self.driver_config_parser.has_section("driver"):
-            servos_file_arguments.update(dict(self.driver_config_parser.items("driver")))
-        if self.driver_config_parser.has_section("odometer"):
-            servos_file_arguments.update(dict(self.driver_config_parser.items("odometer")))
-        return servos_file_arguments
 
 
 class DualVescDriver(AbstractDriver):
@@ -350,9 +290,9 @@ def main():
     args = parser.parse_args()
 
     ras_dynamic_ip = RaspberryPi.get_ip_address()
+    application = MainApplication(quit_event, args.config, hz=50)
 
     try:
-        application = MainApplication(quit_event, args.config, hz=50)
         application.publisher = JSONPublisher(url="tcp://{}:5555".format(ras_dynamic_ip), topic="ras/drive/status")
         application.platform = JSONServerThread(url="tcp://{}:5550".format(ras_dynamic_ip), event=quit_event, receive_timeout_ms=50)
         application.setup_components()
